@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  NAME: 'RedGo',
+  NAME: 'Bhookingo',
   VERSION: '1.0.0',
 };
 

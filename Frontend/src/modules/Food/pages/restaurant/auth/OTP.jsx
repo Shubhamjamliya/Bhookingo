@@ -9,7 +9,6 @@ import {
   setRestaurantPendingPhone,
 } from "@food/utils/auth"
 import { checkOnboardingStatus, isRestaurantOnboardingComplete } from "@food/utils/onboardingUtils"
-
 export default function RestaurantOTP() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -414,9 +413,9 @@ export default function RestaurantOTP() {
           {/* Main Title */}
           <div className="mb-5 text-center flex flex-col items-center">
             <img 
-              src="/bhookingo_logo_transparent.png" 
+              src="/bhookingo-logo.png" 
               alt="Bhookingo Logo" 
-              className="h-28 -mb-3.5 object-contain drop-shadow-md" 
+              className="h-28 -mb-3.5 object-contain drop-shadow-md rounded-xl" 
             />
             <h2 className="text-[25px] font-extrabold text-[#B80B3D] dark:text-red-400 tracking-tight font-['Outfit']">
               Restaurant Partner

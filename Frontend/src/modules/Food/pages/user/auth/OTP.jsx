@@ -6,6 +6,7 @@ import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
 import { authAPI } from "@food/api"
 import { setAuthData as setUserAuthData } from "@food/utils/auth"
+import loginBanner from "@food/assets/loginbanner.png"
 
 export default function OTP() {
   const navigate = useNavigate()
@@ -447,6 +448,7 @@ export default function OTP() {
         <div className="p-6 sm:p-8 md:p-10 space-y-6 md:space-y-8">
           {/* Message */}
           <div className="text-center space-y-4">
+            <img src="/bhookingo-logo.png" alt="Bhookingo Logo" className="h-20 mx-auto object-contain mb-2 rounded-xl shadow-sm" />
             {showNameInput && (
               <div className="flex justify-center">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">

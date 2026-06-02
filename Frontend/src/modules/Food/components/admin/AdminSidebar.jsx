@@ -54,9 +54,9 @@ import { Input } from "@food/components/ui/input"
 import { adminSidebarMenu } from "@food/utils/adminSidebarMenu"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png"
-const debugLog = (...args) => {}
-const debugWarn = (...args) => {}
-const debugError = (...args) => {}
+const debugLog = (...args) => { }
+const debugWarn = (...args) => { }
+const debugError = (...args) => { }
 
 
 // Icon mapping
@@ -631,12 +631,12 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
           <div className="flex items-center justify-between mb-3">
             {!isCollapsed && (
               <div className="flex items-center gap-2 animate-[slideIn_0.3s_ease-out]">
-                <div className="w-24 h-12 rounded-lg flex items-center justify-center shadow-black/20">
+                <div className="w-44 h-16 rounded-lg flex items-center justify-center -ml-1.5 shadow-black/20">
                   {logoUrl ? (
                     <img
                       src={logoUrl || quickSpicyLogo}
                       alt={companyName || "Company"}
-                      className="w-24 h-10 object-contain"
+                      className="w-44 h-14 object-contain"
                       loading="lazy"
                       onError={(e) => {
                         if (e.target.src !== quickSpicyLogo) {
@@ -649,7 +649,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                       {companyName}
                     </span>
                   ) : (
-                    <img src={quickSpicyLogo} alt="Company" className="w-24 h-10 object-contain" loading="lazy" />
+                    <img src={quickSpicyLogo} alt="Company" className="w-44 h-14 object-contain" loading="lazy" />
                   )}
                 </div>
               </div>
@@ -755,21 +755,21 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                     )}
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                      <div className="px-3 py-2 mb-2 flex items-center justify-between">
-                        <span className="text-neutral-400 font-bold text-sm uppercase tracking-wider text-left">
-                          {item.label}
-                        </span>
-                        {item.items.some(subItem => {
-                          const count = getBadgeCount(subItem.label, subItem.path);
-                          if (count > 0) return true;
-                          if (subItem.type === "expandable" && subItem.subItems) {
-                            return subItem.subItems.some(si => getBadgeCount(si.label, si.path) > 0);
-                          }
-                          return false;
-                        }) && (
+                    <div className="px-3 py-2 mb-2 flex items-center justify-between">
+                      <span className="text-neutral-400 font-bold text-sm uppercase tracking-wider text-left">
+                        {item.label}
+                      </span>
+                      {item.items.some(subItem => {
+                        const count = getBadgeCount(subItem.label, subItem.path);
+                        if (count > 0) return true;
+                        if (subItem.type === "expandable" && subItem.subItems) {
+                          return subItem.subItems.some(si => getBadgeCount(si.label, si.path) > 0);
+                        }
+                        return false;
+                      }) && (
                           <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse shadow-[0_0_8px_rgba(220,38,38,0.5)]" />
                         )}
-                      </div>
+                    </div>
                     <div className="space-y-1">
                       {item.items.map((subItem, subIndex) => renderMenuItem(subItem, `${index}-${subIndex}`, true))}
                     </div>

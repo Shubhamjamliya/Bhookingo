@@ -125,6 +125,7 @@ export default function SignIn() {
 
         <div className="p-6 sm:p-8 md:p-10 space-y-6 md:space-y-8">
           <div className="text-center space-y-2 md:space-y-3">
+            <img src="/bhookingo-logo.png" alt="Bhookingo Logo" className="h-20 mx-auto object-contain mb-4 rounded-xl shadow-sm" />
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight">
               Login or Signup
             </h2>

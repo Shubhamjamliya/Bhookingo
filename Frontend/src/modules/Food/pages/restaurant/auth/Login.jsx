@@ -9,7 +9,6 @@ import {
   setRestaurantPendingPhone,
 } from "@food/utils/auth"
 import { clearOnboardingFromLocalStorage, clearAllFilesFromDB, checkOnboardingStatus, isRestaurantOnboardingComplete } from "@/modules/Food/utils/onboardingUtils"
-
 const DEFAULT_COUNTRY_CODE = "+91"
 
 export default function RestaurantLogin() {
@@ -176,16 +175,16 @@ export default function RestaurantLogin() {
       }
       sessionStorage.setItem("restaurantAuthData", JSON.stringify(authData))
       sessionStorage.setItem("restaurantLoginPhone", phone)
-      
+
       // Navigate to /otp - Since both routes render RestaurantLogin,
       // it transitions inline without unmounting the parent waves!
       navigate("/food/restaurant/otp")
     } catch (apiErr) {
       const msg = apiErr?.response?.data?.error || apiErr?.response?.data?.message || apiErr?.message || "Failed to send OTP."
       const lowerMsg = msg.toLowerCase()
-      const isBlocked = lowerMsg.includes("blocked") || 
-                        lowerMsg.includes("too many attempts") || 
-                        lowerMsg.includes("try again after")
+      const isBlocked = lowerMsg.includes("blocked") ||
+        lowerMsg.includes("too many attempts") ||
+        lowerMsg.includes("try again after")
 
       if (isBlocked) {
         let totalMins = 3
@@ -280,9 +279,9 @@ export default function RestaurantLogin() {
       const message = err?.response?.data?.error || err?.response?.data?.message || "Invalid OTP. Please try again."
       setOtp(["", "", "", ""])
 
-      const isBlocked = message.toLowerCase().includes("blocked") || 
-                        message.toLowerCase().includes("too many attempts") || 
-                        message.toLowerCase().includes("try again after")
+      const isBlocked = message.toLowerCase().includes("blocked") ||
+        message.toLowerCase().includes("too many attempts") ||
+        message.toLowerCase().includes("try again after")
 
       if (isBlocked) {
         let totalSeconds = 180
@@ -298,13 +297,13 @@ export default function RestaurantLogin() {
         if (/pending approval|rejected/i.test(message)) {
           const pendingPhone = authData?.phone || authData?.email || contactInfo
           setRestaurantPendingPhone(pendingPhone)
-          
+
           navigate("/food/restaurant/pending-verification", {
             replace: true,
-            state: { 
+            state: {
               phone: pendingPhone || "",
               isRejected: /rejected/i.test(message),
-              message: message 
+              message: message
             },
           })
           return
@@ -479,15 +478,15 @@ export default function RestaurantLogin() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 pb-24 relative z-10">
         <div className="w-full max-w-sm flex flex-col relative -top-10">
-          
+
           {/* Logo & Header */}
           <div className="mb-5 text-center flex flex-col items-center">
             <img
-              src="/bhookingo_logo_transparent.png"
+              src="/bhookingo-logo.png"
               alt="Bhookingo Logo"
-              className="h-28 -mb-3.5 object-contain drop-shadow-md"
+              className="h-24 mt-8 -mb-4 object-contain drop-shadow-md rounded-xl"
             />
-            <h2 className="text-[25px] font-extrabold text-[#B80B3D] dark:text-red-400 tracking-tight font-['Outfit']">
+            <h2 className="text-[20px] mt-2 font-extrabold text-[#B80B3D] dark:text-red-400 tracking-tight font-['Outfit']">
               Restaurant Partner
             </h2>
             <div className="text-[13.5px] text-slate-600 dark:text-slate-350 font-['Outfit'] font-medium tracking-wide leading-relaxed max-w-[310px] text-center px-4 mt-3">

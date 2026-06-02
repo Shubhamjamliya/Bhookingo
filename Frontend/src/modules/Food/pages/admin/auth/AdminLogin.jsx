@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { adminAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
 import { ShieldCheck, UserCog, Star, Heart, ArrowRight, Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react"
-import logoNew from "@/assets/logo.png"
 import { toast } from "sonner"
 
 export default function AdminLogin() {
@@ -73,7 +72,7 @@ export default function AdminLogin() {
               className="relative inline-block mb-4"
             >
               <img 
-                src={logoNew} 
+                src="/bhookingo-logo.png" 
                 alt="Bhookingo Logo" 
                 className="w-32 h-32 md:w-36 md:h-36 object-contain mx-auto"
               />

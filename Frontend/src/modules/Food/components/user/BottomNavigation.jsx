@@ -107,26 +107,13 @@ export default function BottomNavigation() {
 
   const isTakeaway = normalizedPath === "/food/user/takeaway" || 
     normalizedPath.startsWith("/food/user/takeaway") ||
-    (isHomePaths && orderType === "takeaway");
-  
-  // Delivery is the default active state for the food module if nothing else is active
-  const isDelivery = !isDining && !isUnder250 && !isProfile && !isTakeaway && isHomePaths;
+    (isHomePaths && orderType === "takeaway") || isHomePaths; // Default to Takeaway
 
   const navItems = [
     {
-      id: 'delivery',
-      label: 'Delivery',
-      icon: Truck,
-      to: '/food/user',
-      active: isDelivery,
-      onClick: () => {
-        if (setOrderType) setOrderType('delivery');
-      }
-    },
-    {
       id: 'takeaway',
       label: 'Takeaway',
-      icon: ShoppingBag,
+      icon: Truck,
       to: '/food/user/takeaway',
       active: isTakeaway,
       onClick: () => {

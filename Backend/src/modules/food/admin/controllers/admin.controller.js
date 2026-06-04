@@ -614,112 +614,24 @@ export async function getPendingRestaurants(req, res, next) {
 }
 
 // ----- Delivery partner bonus (admin) -----
-export async function getDeliveryPartnerBonusTransactions(req, res, next) {
-    try {
-        const data = await adminService.getDeliveryPartnerBonusTransactions(req.query || {});
-        res.status(200).json({ success: true, message: 'Bonus transactions fetched successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function addDeliveryPartnerBonus(req, res, next) {
-    try {
-        const body = validateAddDeliveryBonusDto(req.body || {});
-        const created = await adminService.addDeliveryPartnerBonus(body, req.user);
-        res.status(201).json({ success: true, message: 'Bonus added successfully', data: { transaction: created } });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function getDeliveryEarnings(req, res, next) {
-    try {
-        const data = await adminService.getDeliveryEarnings(req.query || {});
-        res.status(200).json({ success: true, message: 'Delivery earnings fetched successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
+
+
+
 
 // ----- Earning Addon (admin) -----
-export async function getEarningAddons(req, res, next) {
-    try {
-        const data = await adminService.getEarningAddons();
-        res.status(200).json({ success: true, message: 'Earning addons fetched successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function createEarningAddon(req, res, next) {
-    try {
-        const body = validateEarningAddonUpsertDto(req.body || {});
-        const created = await adminService.createEarningAddon(body);
-        res.status(201).json({ success: true, message: 'Earning addon created successfully', data: { earningAddon: created } });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function updateEarningAddon(req, res, next) {
-    try {
-        const { id } = req.params;
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid earning addon id' });
-        }
-        const body = validateEarningAddonUpsertDto(req.body || {});
-        const updated = await adminService.updateEarningAddon(id, body);
-        if (!updated) {
-            return res.status(404).json({ success: false, message: 'Earning addon not found' });
-        }
-        res.status(200).json({ success: true, message: 'Earning addon updated successfully', data: { earningAddon: updated } });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function deleteEarningAddon(req, res, next) {
-    try {
-        const { id } = req.params;
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid earning addon id' });
-        }
-        const result = await adminService.deleteEarningAddon(id);
-        if (!result) {
-            return res.status(404).json({ success: false, message: 'Earning addon not found' });
-        }
-        res.status(200).json({ success: true, message: 'Earning addon deleted successfully', data: result });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function toggleEarningAddonStatus(req, res, next) {
-    try {
-        const { id } = req.params;
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid earning addon id' });
-        }
-        const { status } = validateToggleEarningAddonStatusDto(req.body || {});
-        const updated = await adminService.toggleEarningAddonStatus(id, status);
-        if (!updated) {
-            return res.status(404).json({ success: false, message: 'Earning addon not found' });
-        }
-        res.status(200).json({ success: true, message: 'Status updated successfully', data: { earningAddon: updated } });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function getEarningAddonHistory(req, res, next) {
-    try {
-        const data = await adminService.getEarningAddonHistory(req.query || {});
-        res.status(200).json({ success: true, message: 'Earning addon history fetched successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
+
+
+
+
+
+
 
 export async function creditEarningToWallet(req, res, next) {
     try {
@@ -738,32 +650,9 @@ export async function creditEarningToWallet(req, res, next) {
     }
 }
 
-export async function cancelEarningAddonHistory(req, res, next) {
-    try {
-        const { id } = req.params;
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid history id' });
-        }
-        const { reason } = validateEarningAddonHistoryActionDto(req.body || {});
-        const updated = await adminService.cancelEarningAddonHistory(id, reason);
-        if (!updated) {
-            return res.status(404).json({ success: false, message: 'History record not found' });
-        }
-        res.status(200).json({ success: true, message: 'Earning cancelled successfully', data: { history: updated } });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function checkEarningAddonCompletions(req, res, next) {
-    try {
-        const { deliveryPartnerId, force } = validateCheckCompletionsDto(req.body || {});
-        const data = await adminService.checkEarningAddonCompletions(deliveryPartnerId, force);
-        res.status(200).json({ success: true, message: 'Completion check done', data });
-    } catch (error) {
-        next(error);
-    }
-}
+
+
 
 // ----- Restaurant Commission (admin) -----
 export async function getRestaurantCommissions(req, res, next) {
@@ -860,77 +749,15 @@ export async function toggleRestaurantCommissionStatus(req, res, next) {
 }
 
 // ----- Delivery commission rules (admin) -----
-export async function getDeliveryCommissionRules(req, res, next) {
-    try {
-        const data = await adminService.getDeliveryCommissionRules();
-        res.status(200).json({ success: true, message: 'Commission rules fetched successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function createDeliveryCommissionRule(req, res, next) {
-    try {
-        const body = validateDeliveryCommissionRuleDto(req.body || {});
-        const created = await adminService.createDeliveryCommissionRule(body);
-        res.status(201).json({ success: true, message: 'Commission rule created successfully', data: { commission: created } });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function updateDeliveryCommissionRule(req, res, next) {
-    try {
-        const { id } = req.params;
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid commission id' });
-        }
-        const body = validateDeliveryCommissionRuleDto(req.body || {});
-        const updated = await adminService.updateDeliveryCommissionRule(id, body);
-        if (!updated) {
-            return res.status(404).json({ success: false, message: 'Commission rule not found' });
-        }
-        res.status(200).json({ success: true, message: 'Commission rule updated successfully', data: { commission: updated } });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function deleteDeliveryCommissionRule(req, res, next) {
-    try {
-        const { id } = req.params;
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid commission id' });
-        }
-        const result = await adminService.deleteDeliveryCommissionRule(id);
-        if (!result) {
-            return res.status(404).json({ success: false, message: 'Commission rule not found' });
-        }
-        res.status(200).json({ success: true, message: 'Commission rule deleted successfully', data: result });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function toggleDeliveryCommissionRuleStatus(req, res, next) {
-    try {
-        const { id } = req.params;
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ success: false, message: 'Invalid commission id' });
-        }
-        const { status } = validateOptionalStatusDto(req.body || {});
-        if (typeof status !== 'boolean') {
-            return res.status(400).json({ success: false, message: 'status is required' });
-        }
-        const updated = await adminService.toggleDeliveryCommissionRuleStatus(id, status);
-        if (!updated) {
-            return res.status(404).json({ success: false, message: 'Commission rule not found' });
-        }
-        res.status(200).json({ success: true, message: 'Status updated successfully', data: { commission: updated } });
-    } catch (error) {
-        next(error);
-    }
-}
+
+
+
+
+
 
 // ----- Fee Settings (admin) -----
 export async function getFeeSettings(req, res, next) {
@@ -973,23 +800,9 @@ export async function createOrUpdateReferralSettings(req, res, next) {
 }
 
 // ----- Delivery Cash Limit (admin) -----
-export async function getDeliveryCashLimit(req, res, next) {
-    try {
-        const data = await adminService.getDeliveryCashLimitSettings();
-        res.status(200).json({ success: true, message: 'Delivery cash limit fetched successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function updateDeliveryCashLimit(req, res, next) {
-    try {
-        const data = await adminService.upsertDeliveryCashLimitSettings(req.body || {});
-        res.status(200).json({ success: true, message: 'Delivery cash limit updated successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
+
+
 
 // ----- Delivery Emergency Help (admin) -----
 export async function getEmergencyHelp(req, res, next) {
@@ -1104,18 +917,7 @@ export async function deleteRestaurant(req, res, next) {
 }
 
 // ----- Delivery join requests -----
-export async function getDeliveryJoinRequests(req, res, next) {
-    try {
-        const data = await adminService.getDeliveryJoinRequests(req.query);
-        res.status(200).json({
-            success: true,
-            message: 'Delivery join requests fetched successfully',
-            data
-        });
-    } catch (error) {
-        next(error);
-    }
-}
+
 
 
 // ----- Support tickets -----
@@ -1165,31 +967,9 @@ export async function updateSupportTicket(req, res, next) {
 }
 
 // ----- Delivery partners -----
-export async function getDeliveryPartners(req, res, next) {
-    try {
-        const data = await adminService.getDeliveryPartners(req.query);
-        res.status(200).json({
-            success: true,
-            message: 'Delivery partners fetched successfully',
-            data
-        });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function getDeliverymanReviews(req, res, next) {
-    try {
-        const data = await adminService.getDeliverymanReviews(req.query);
-        res.status(200).json({
-            success: true,
-            message: 'Deliveryman reviews fetched successfully',
-            data
-        });
-    } catch (error) {
-        next(error);
-    }
-}
+
+
 
 export async function getContactMessages(req, res, next) {
     try {
@@ -1204,63 +984,11 @@ export async function getContactMessages(req, res, next) {
     }
 }
 
-export async function getDeliveryPartnerById(req, res, next) {
-    try {
-        const delivery = await adminService.getDeliveryPartnerById(req.params.id);
-        if (!delivery) {
-            return res.status(404).json({
-                success: false,
-                message: 'Delivery partner not found'
-            });
-        }
-        res.status(200).json({
-            success: true,
-            message: 'Delivery partner fetched successfully',
-            data: { delivery }
-        });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function approveDeliveryPartner(req, res, next) {
-    try {
-        const partner = await adminService.approveDeliveryPartner(req.params.id);
-        if (!partner) {
-            return res.status(404).json({
-                success: false,
-                message: 'Delivery partner not found'
-            });
-        }
-        res.status(200).json({
-            success: true,
-            message: 'Delivery partner approved successfully',
-            data: partner
-        });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function rejectDeliveryPartner(req, res, next) {
-    try {
-        const reason = req.body?.reason != null ? String(req.body.reason).trim() : '';
-        const partner = await adminService.rejectDeliveryPartner(req.params.id, reason);
-        if (!partner) {
-            return res.status(404).json({
-                success: false,
-                message: 'Delivery partner not found'
-            });
-        }
-        res.status(200).json({
-            success: true,
-            message: 'Delivery partner rejected successfully',
-            data: partner
-        });
-    } catch (error) {
-        next(error);
-    }
-}
+
+
+
 
 // ----- Zones -----
 export async function getZones(req, res, next) {
@@ -1390,52 +1118,15 @@ export async function processRefund(req, res, next) {
         next(error);
     }
 }
-export async function getWithdrawals(req, res, next) {
-    try {
-        const data = await adminService.getWithdrawals(req.query || {});
-        res.status(200).json({ success: true, message: 'Withdrawals fetched successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function updateWithdrawalStatus(req, res, next) {
-    try {
-        const { id } = req.params;
-        const data = await adminService.updateWithdrawalStatus(id, req.body || {});
-        res.status(200).json({ success: true, message: 'Withdrawal status updated successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function getDeliveryWithdrawals(req, res, next) {
-    try {
-        const data = await adminService.getDeliveryWithdrawals(req.query || {});
-        res.status(200).json({ success: true, message: 'Delivery withdrawals fetched successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function updateDeliveryWithdrawalStatus(req, res, next) {
-    try {
-        const { id } = req.params;
-        const data = await adminService.updateDeliveryWithdrawalStatus(id, req.body || {});
-        res.status(200).json({ success: true, message: 'Delivery withdrawal status updated successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
 
-export async function getDeliveryWallets(req, res, next) {
-    try {
-        const data = await adminService.getDeliveryWallets(req.query || {});
-        res.status(200).json({ success: true, message: 'Delivery wallets fetched successfully', data });
-    } catch (error) {
-        next(error);
-    }
-}
+
+
+
+
+
 
 export async function getCashLimitSettlements(req, res, next) {
     try {

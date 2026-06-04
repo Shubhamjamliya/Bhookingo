@@ -1,4 +1,3 @@
-import { FoodDeliveryPartner } from '../../modules/food/delivery/models/deliveryPartner.model.js';
 import { FoodOrder } from '../../modules/food/orders/models/order.model.js';
 import { logger } from '../../utils/logger.js';
 import { connectDB } from '../../config/db.js';
@@ -40,19 +39,6 @@ const handleHotSync = async ({ userId, orderId }) => {
         const orderData = orderRaw ? JSON.parse(orderRaw) : null;
 
         const updates = [];
-
-        if (riderData && userId) {
-            updates.push(
-                FoodDeliveryPartner.findByIdAndUpdate(userId, {
-                    $set: {
-                        lastLocation: {
-                            type: 'Point',
-                            coordinates: [riderData.lng, riderData.lat]
-                        }
-                    }
-                })
-            );
-        }
 
         if (orderData && orderId) {
             updates.push(

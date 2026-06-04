@@ -460,15 +460,15 @@ export default function Home() {
     } else if (routerLocation.pathname.includes("/dining")) {
       if (orderType !== "dining") setOrderType("dining");
     } else {
-      // Default home paths set back to delivery if they were takeaway/dining
+      // Default home paths set back to takeaway if they were dining
       const isHome = routerLocation.pathname === "/food/user" ||
         routerLocation.pathname === "/food/user/" ||
         routerLocation.pathname === "/user" ||
         routerLocation.pathname === "/user/" ||
         routerLocation.pathname === "/food" ||
         routerLocation.pathname === "/food/";
-      if (isHome && orderType === "dining") {
-        setOrderType("delivery");
+      if (isHome && orderType !== "takeaway") {
+        setOrderType("takeaway");
       }
     }
   }, [isTakeawayPage, routerLocation.pathname, orderType, setOrderType]);
@@ -2448,65 +2448,21 @@ export default function Home() {
               </div>
             )}
             <div className="relative z-10">
-              {orderType !== "takeaway" && !isTakeawayPage ? (
-                  <HomeHeader
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    location={effectiveLocation}
-                    handleSearchFocus={handleSearchFocus}
-                    placeholderIndex={placeholderIndex}
-                    placeholders={placeholders}
-                    vegMode={vegMode}
-                    handleVegModeChange={handleVegModeChange}
-                    vegModeToggleRef={vegModeToggleRef}
-                    // Pass Banner Props to Unified Component
-                    showBanner={activeTab === "food" && orderType !== "takeaway" && !isTakeawayPage}
-                    videoUrl={festVideoActive ? "" : festBannerVideoUrl}
-                    hideFoodImages={festVideoActive}
-                  />
-              ) : (
-                <div className="bg-white/0 dark:bg-black/0 px-4 pt-2 pb-4 border-b-0 dark:border-gray-800 backdrop-blur-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-gray-200 uppercase tracking-[0.2em] mb-0.5 drop-shadow-md">Self-Pickup</span>
-                      <h1 className="text-xl font-bold text-white flex items-center gap-2 drop-shadow-md">
-                        Takeaway
-                      </h1>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={handleSearchFocus}
-                        className="p-2.5 bg-white/20 dark:bg-black/20 backdrop-blur-md rounded-full active:scale-95 transition-all"
-                      >
-                        <Search className="h-5 w-5 text-white" strokeWidth={2.5} />
-                      </button>
-                      <Link 
-                        to="/food/user/profile" 
-                        onClick={(e) => {
-                          if (!isModuleAuthenticated('user')) {
-                            e.preventDefault();
-                            window.dispatchEvent(new CustomEvent('show-login-required'));
-                          }
-                        }}
-                        className="h-10 w-10 relative flex items-center justify-center rounded-full border-[1.5px] border-white shadow-none cursor-pointer active:scale-95 transition-all overflow-hidden ring-1 ring-red-500/80"
-                      >
-                        <Avatar className="h-full w-full bg-[#FFF5E6]">
-                          {userProfile?.profileImage && (
-                            <AvatarImage 
-                              src={userProfile.profileImage} 
-                              alt="Profile" 
-                              className="object-cover"
-                            />
-                          )}
-                          <AvatarFallback className="bg-[#FFF5E6] text-[20px] font-black text-[#DC2626] leading-none tracking-tighter antialiased">
-                            {userProfile?.name ? userProfile.name.charAt(0).toUpperCase() : (userProfile?.fullName ? userProfile.fullName.charAt(0).toUpperCase() : (userProfile?.firstName ? userProfile.firstName.charAt(0).toUpperCase() : "U"))}
-                          </AvatarFallback>
-                        </Avatar>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <HomeHeader
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                location={effectiveLocation}
+                handleSearchFocus={handleSearchFocus}
+                placeholderIndex={placeholderIndex}
+                placeholders={placeholders}
+                vegMode={vegMode}
+                handleVegModeChange={handleVegModeChange}
+                vegModeToggleRef={vegModeToggleRef}
+                // Pass Banner Props to Unified Component
+                showBanner={activeTab === "food"}
+                videoUrl={festVideoActive ? "" : festBannerVideoUrl}
+                hideFoodImages={festVideoActive}
+              />
 
             </div>
           </div>
@@ -2631,8 +2587,8 @@ export default function Home() {
                                 <span className="absolute inset-0 text-base text-gray-400 font-medium">Search "biryani"</span>
                               </div>
                               <div className="h-5 w-[1px] bg-gray-200 dark:bg-white/10 mx-2" />
-                              <Mic 
-                                className="h-5 w-5 text-[#DC2626] dark:text-[#a14b84]" 
+                              <Mic
+                                className="h-5 w-5 text-[#DC2626] dark:text-[#a14b84]"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setIsVoiceOverlayOpen(true);
@@ -3157,7 +3113,7 @@ export default function Home() {
         </motion.section>
       </div>
 
-      <VoiceSearchOverlay 
+      <VoiceSearchOverlay
         isOpen={isVoiceOverlayOpen}
         onClose={() => setIsVoiceOverlayOpen(false)}
         onSearchResult={(transcript) => {

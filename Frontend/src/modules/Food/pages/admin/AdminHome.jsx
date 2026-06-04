@@ -93,7 +93,7 @@ export default function AdminHome() {
   const getOrderStats = () => {
     if (!dashboardData?.orders?.byStatus) {
       return [
-        { label: "Delivered", value: 0, color: "#0ea5e9" },
+        { label: "Confirmed", value: 0, color: "#0ea5e9" },
         { label: "Cancelled", value: 0, color: "#ef4444" },
         { label: "Refunded", value: 0, color: "#f59e0b" },
         { label: "Pending", value: 0, color: "#10b981" },
@@ -102,7 +102,7 @@ export default function AdminHome() {
 
     const byStatus = dashboardData.orders.byStatus
     return [
-      { label: "Delivered", value: byStatus.delivered || 0, color: "#0ea5e9" },
+      { label: "Confirmed", value: byStatus.delivered || 0, color: "#0ea5e9" },
       { label: "Cancelled", value: byStatus.cancelled || 0, color: "#ef4444" },
       { label: "Refunded", value: 0, color: "#f59e0b" }, // Refunded not tracked separately
       { label: "Pending", value: byStatus.pending || 0, color: "#10b981" },
@@ -134,15 +134,12 @@ export default function AdminHome() {
   const commissionTotal = dashboardData?.commission?.total || 0
   const ordersTotal = dashboardData?.orders?.total || 0
   const platformFeeTotal = dashboardData?.platformFee?.total || 0
-  const deliveryFeeTotal = dashboardData?.deliveryFee?.total || 0
   const gstTotal = dashboardData?.gst?.total || 0
   const totalAdminEarnings = dashboardData?.totalAdminEarnings || 0
 
   // Additional stats
   const totalRestaurants = dashboardData?.restaurants?.total || 0
   const pendingRestaurantRequests = dashboardData?.restaurants?.pendingRequests || 0
-  const totalDeliveryBoys = dashboardData?.deliveryBoys?.total || 0
-  const pendingDeliveryBoyRequests = dashboardData?.deliveryBoys?.pendingRequests || 0
   const totalFoods = dashboardData?.foods?.total || 0
   const totalAddons = dashboardData?.addons?.total || 0
   const totalCustomers = dashboardData?.customers?.total || 0
@@ -156,7 +153,6 @@ export default function AdminHome() {
     fill: item.color,
   }))
 
-  const deliveryProfit = dashboardData?.deliveryProfit || 0
   const periodLabel = selectedPeriod === "overall" ? "Overall" : 
                     selectedPeriod === "today" ? "Today's" : 
                     `This ${selectedPeriod}'s`
@@ -165,7 +161,6 @@ export default function AdminHome() {
   const totalRevenueHelper = [
     `Comm: ${formatCurrency(commissionTotal)}`,
     `Platform: ${formatCurrency(platformFeeTotal)}`,
-    `Delivery Net: ${formatCurrency(deliveryProfit)}`,
     `GST: ${formatCurrency(gstTotal)}`,
   ].join(" + ")
 
@@ -252,14 +247,7 @@ export default function AdminHome() {
               accent="bg-purple-200/40"
               path="/admin/food/fee-settings"
             />
-            <MetricCard
-              title="Delivery fee"
-              value={formatCurrency(deliveryFeeTotal)}
-              helper={`Total delivery fees: ${periodLabel}`}
-              icon={<Truck className="h-5 w-5 text-blue-600" />}
-              accent="bg-blue-200/40"
-              path="/admin/food/transaction-report"
-            />
+
             <MetricCard
               title="GST"
               value={formatCurrency(gstTotal)}
@@ -292,22 +280,7 @@ export default function AdminHome() {
               accent="bg-orange-200/40"
               path="/admin/food/restaurants/joining-request"
             />
-            <MetricCard
-              title="Total delivery boy"
-              value={totalDeliveryBoys.toLocaleString("en-IN")}
-              helper="Approved delivery partners"
-              icon={<Truck className="h-5 w-5 text-indigo-600" />}
-              accent="bg-indigo-200/40"
-              path="/admin/food/delivery-partners"
-            />
-            <MetricCard
-              title="Delivery boy request pending"
-              value={pendingDeliveryBoyRequests.toLocaleString("en-IN")}
-              helper="Awaiting verification"
-              icon={<Clock className="h-5 w-5 text-yellow-600" />}
-              accent="bg-yellow-200/40"
-              path="/admin/food/delivery-partners/join-request"
-            />
+
             <MetricCard
               title="Total foods"
               value={totalFoods.toLocaleString("en-IN")}
@@ -343,7 +316,7 @@ export default function AdminHome() {
             <MetricCard
               title="Completed orders"
               value={completedOrders.toLocaleString("en-IN")}
-              helper="Successfully delivered"
+              helper="Successfully confirmed"
               icon={<CheckCircle className="h-5 w-5 text-emerald-600" />}
               accent="bg-emerald-200/40"
               path="/admin/food/orders/delivered"
@@ -453,7 +426,7 @@ export default function AdminHome() {
                       key={item.label}
                     onClick={() => {
                         const routes = {
-                          'Delivered': '/admin/food/orders/delivered',
+                          'Confirmed': '/admin/food/orders/delivered',
                           'Cancelled': '/admin/food/orders/canceled',
                           'Refunded': '/admin/food/orders/refunded',
                           'Pending': '/admin/food/orders/pending'
@@ -524,8 +497,7 @@ export default function AdminHome() {
                           return <XCircle className="h-4 w-4 text-red-600" />
                         case "restaurant":
                           return <Store className="h-4 w-4 text-blue-600" />
-                        case "delivery":
-                          return <Truck className="h-4 w-4 text-purple-600" />
+
                         case "customer":
                           return <UserCircle className="h-4 w-4 text-pink-600" />
                         default:
@@ -543,8 +515,7 @@ export default function AdminHome() {
                           return "bg-red-50"
                         case "restaurant":
                           return "bg-blue-50"
-                        case "delivery":
-                          return "bg-purple-50"
+
                         case "customer":
                           return "bg-pink-50"
                         default:
@@ -583,7 +554,7 @@ export default function AdminHome() {
                     key={item.label}
                     onClick={() => {
                       const routes = {
-                        'Delivered': '/admin/food/orders/delivered',
+                        'Confirmed': '/admin/food/orders/delivered',
                         'Cancelled': '/admin/food/orders/canceled',
                         'Refunded': '/admin/food/orders/refunded',
                         'Pending': '/admin/food/orders/pending'

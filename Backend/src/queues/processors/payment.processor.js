@@ -76,33 +76,6 @@ async function handleDeliveryCompleted(data) {
         }
     }
 
-    // 2. Credit delivery partner wallet with their earning
-    if (deliveryPartnerId && riderEarning > 0) {
-        try {
-            await creditWallet({
-                entityType: 'deliveryBoy',
-                entityId: deliveryPartnerId,
-                amount: riderEarning,
-                description: `Order ${orderId} - delivery earning`,
-                category: 'delivery_earning',
-                orderId: orderMongoId,
-                metadata: { orderId, paymentMethod }
-            });
-
-            // Increment delivery count
-            const { FoodDeliveryWallet } = await import('../../modules/food/delivery/models/deliveryWallet.model.js');
-            const mongoose = await import('mongoose');
-            await FoodDeliveryWallet.updateOne(
-                { deliveryPartnerId: new mongoose.default.Types.ObjectId(deliveryPartnerId) },
-                { $inc: { totalDeliveries: 1 } }
-            );
-
-            logger.info(`[PaymentProcessor] Delivery partner ${deliveryPartnerId} credited ${riderEarning} for order ${orderId}`);
-        } catch (err) {
-            logger.error(`[PaymentProcessor] Failed to credit delivery partner: ${err.message}`);
-        }
-    }
-
     // 3. Credit admin/platform wallet with platform profit
     if (platformProfit > 0) {
         try {

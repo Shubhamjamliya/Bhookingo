@@ -4,7 +4,6 @@ import { FoodUser } from "../users/user.model.js";
 import { FoodAdmin } from "../admin/admin.model.js";
 import { AdminResetOtp } from "../admin/adminResetOtp.model.js";
 import { FoodRestaurant } from "../../modules/food/restaurant/models/restaurant.model.js";
-import { FoodDeliveryPartner } from "../../modules/food/delivery/models/deliveryPartner.model.js";
 import { FoodReferralSettings } from "../../modules/food/admin/models/referralSettings.model.js";
 import { FoodReferralLog } from "../../modules/food/admin/models/referralLog.model.js";
 import { createOrUpdateOtp, verifyOtp } from "../otp/otp.service.js";
@@ -26,10 +25,6 @@ import { FoodRestaurantWithdrawal } from "../../modules/food/restaurant/models/f
 import { FoodAddon } from "../../modules/food/restaurant/models/foodAddon.model.js";
 import { FoodRestaurantOutletTimings } from "../../modules/food/restaurant/models/outletTimings.model.js";
 import { FoodRestaurantSupportTicket } from "../../modules/food/restaurant/models/supportTicket.model.js";
-import { FoodDeliveryWallet } from "../../modules/food/delivery/models/deliveryWallet.model.js";
-import { FoodDeliveryCashDeposit } from "../../modules/food/delivery/models/foodDeliveryCashDeposit.model.js";
-import { FoodDeliveryWithdrawal } from "../../modules/food/delivery/models/foodDeliveryWithdrawal.model.js";
-import { DeliverySupportTicket as FoodDeliverySupportTicket } from "../../modules/food/delivery/models/supportTicket.model.js";
 
 const ROLES = {
   USER: "USER",

@@ -4,7 +4,6 @@ import { resolve } from 'path';
 import mongoose from 'mongoose';
 import { FoodUser } from '../users/user.model.js';
 import { FoodRestaurant } from '../../modules/food/restaurant/models/restaurant.model.js';
-import { FoodDeliveryPartner } from '../../modules/food/delivery/models/deliveryPartner.model.js';
 import { FoodAdmin } from '../admin/admin.model.js';
 import { config } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
@@ -16,7 +15,6 @@ const FCM_SEND_URL = (projectId) =>
 const OWNER_MODELS = {
     USER: FoodUser,
     RESTAURANT: FoodRestaurant,
-    DELIVERY_PARTNER: FoodDeliveryPartner,
     ADMIN: FoodAdmin
 };
 const OWNER_TOKEN_FIELDS = {

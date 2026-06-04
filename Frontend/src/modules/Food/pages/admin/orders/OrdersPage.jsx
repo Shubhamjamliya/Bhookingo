@@ -30,7 +30,7 @@ const statusConfig = {
   "accepted": { title: "Accepted Orders", color: "green", icon: Package },
   "processing": { title: "Processing Orders", color: "orange", icon: Package },
   "food-on-the-way": { title: "Food On The Way Orders", color: "amber", icon: Package },
-  "delivered": { title: "Delivered Orders", color: "emerald", icon: Package },
+  "delivered": { title: "Confirmed Orders", color: "emerald", icon: Package },
   "canceled": { title: "Canceled Orders", color: "rose", icon: Package },
   "restaurant-cancelled": { title: "Restaurant Cancelled Orders", color: "red", icon: Package },
   "payment-failed": { title: "Payment Failed Orders", color: "red", icon: Package },
@@ -463,7 +463,7 @@ export default function OrdersPage({ statusKey = "all" }) {
       } else if (backendStatus === "picked_up") {
         displayStatus = "Food On The Way"
       } else if (backendStatus === "delivered") {
-        displayStatus = "Delivered"
+        displayStatus = "Confirmed"
       } else if (backendStatus === "cancelled_by_restaurant") {
         displayStatus = "Cancelled by Restaurant"
       } else if (backendStatus === "cancelled_by_user") {

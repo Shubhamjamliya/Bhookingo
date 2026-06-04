@@ -4,7 +4,7 @@ import { FoodOrder, FoodSettings } from '../models/order.model.js';
 import { logger } from '../../../../utils/logger.js';
 import { FoodUser } from '../../../../core/users/user.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
-import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
+
 import { FoodZone } from '../../admin/models/zone.model.js';
 import { FoodFeeSettings } from '../../admin/models/feeSettings.model.js';
 import { ValidationError, ForbiddenError, NotFoundError } from '../../../../core/auth/errors.js';
@@ -31,8 +31,8 @@ import { getFirebaseDB } from '../../../../config/firebase.js';
 import * as foodTransactionService from './foodTransaction.service.js';
 import * as userWalletService from '../../user/services/userWallet.service.js';
 import { calculateOrderPricing } from './order-pricing.service.js';
-import * as dispatchService from './order-dispatch.service.js';
-import * as deliveryService from './order-delivery.service.js';
+
+
 import * as paymentService from './order-payment.service.js';
 import {
   enqueueOrderEvent,
@@ -965,13 +965,7 @@ export async function submitOrderRatings(orderId, userId, dto) {
       order.restaurantId,
       dto.restaurantRating,
     ),
-    hasDeliveryPartner
-      ? applyAggregateRating(
-          FoodDeliveryPartner,
-          order.dispatch.deliveryPartnerId,
-          dto.deliveryPartnerRating,
-        )
-      : Promise.resolve(),
+    Promise.resolve(),
   ]);
 
     await order.save();
@@ -1483,35 +1477,7 @@ export async function listOrdersAdmin(query) {
   return { ...paginated, orders: paginated.data };
 }
 
-export async function assignDeliveryPartnerAdmin(
-  orderId,
-  deliveryPartnerId,
-  adminId,
-) {
-  const order = await FoodOrder.findById(orderId);
-  if (!order) throw new NotFoundError("Order not found");
-  if (order.dispatch.status === "accepted")
-    throw new ValidationError("Order already accepted by partner");
 
-  const partner = await FoodDeliveryPartner.findById(deliveryPartnerId)
-    .select("status")
-    .lean();
-  if (!partner || partner.status !== "approved")
-    throw new ValidationError("Delivery partner not available");
-
-    order.dispatch.status = 'assigned';
-    order.dispatch.deliveryPartnerId = new mongoose.Types.ObjectId(deliveryPartnerId);
-    order.dispatch.assignedAt = new Date();
-    pushStatusHistory(order, { byRole: 'ADMIN', byId: adminId, from: order.dispatch.status, to: 'assigned' });
-    await order.save();
-    enqueueOrderEvent('delivery_partner_assigned', {
-        orderMongoId: order._id?.toString?.(),
-        orderId: order._id.toString(),
-        deliveryPartnerId,
-        adminId
-    });
-    return normalizeOrderForClient(order);
-}
 
 export async function deleteOrderAdmin(orderId, adminId) {
   const identity = buildOrderIdentityFilter(orderId);

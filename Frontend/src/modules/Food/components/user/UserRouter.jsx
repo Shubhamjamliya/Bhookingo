@@ -117,10 +117,9 @@ const RequireInitialAuth = ({ children }) => {
   const currentPath = location.pathname;
   const isNonUserModulePath = 
     currentPath.startsWith("/food/restaurant") ||
-    currentPath.startsWith("/food/delivery") ||
     currentPath.startsWith("/food/admin");
 
-  // If this is a restaurant/delivery/admin path that fell through to catch-all, skip the gate
+  // If this is a restaurant/admin path that fell through to catch-all, skip the gate
   if (isNonUserModulePath) {
     return children;
   }
@@ -262,6 +261,8 @@ export default function UserRouter() {
 
             {/* Complaints */}
             <Route path="complaints/submit/:orderId" element={<SubmitComplaint />} />
+            {/* Catch-all redirect for any invalid/old routes (like delivery) */}
+            <Route path="*" element={<Navigate to="/food/user/takeaway" replace />} />
           </Route>
         </Route>
       </Routes>

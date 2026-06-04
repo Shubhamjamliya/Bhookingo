@@ -33,7 +33,7 @@ const AdminSignup = lazy(() => import("@food/pages/admin/auth/AdminSignup"))
 const AdminForgotPassword = lazy(() => import("@food/pages/admin/auth/AdminForgotPassword"))
 
 // Delivery Module
-const DeliveryRouter = lazy(() => import("../DeliveryV2"))
+// Removed DeliveryRouter
 
 const UserRouterWrapper = () => {
   const location = useLocation();
@@ -119,7 +119,6 @@ export default function App() {
       const loginPaths = {
         admin: '/food/admin/login',
         restaurant: '/food/restaurant/login',
-        delivery: '/food/delivery/login',
         user: '/food/user/login'
       }
 
@@ -132,11 +131,10 @@ export default function App() {
 
     const handleStorageChange = (e) => {
       // Cross-tab instant logout (Bhookingo v2 upgrade)
-      if ((e.key === "restaurant_accessToken" || e.key === "delivery_accessToken") && !e.newValue) {
-        const module = e.key === "restaurant_accessToken" ? "restaurant" : "delivery"
+      if (e.key === "restaurant_accessToken" && !e.newValue) {
+        const module = "restaurant"
         const loginPaths = {
           restaurant: '/food/restaurant/login',
-          delivery: '/food/delivery/login',
         }
         // ONLY redirect if we are currently inside the affected module!
         if (location.pathname.startsWith(`/food/${module}`)) {
@@ -152,17 +150,11 @@ export default function App() {
     const safetyInterval = setInterval(() => {
       // Don't kick users out of auth pages or public legal pages!
       const isRestaurantAuth = location.pathname.includes('/login') || location.pathname.includes('/otp') || location.pathname.includes('/signup') || location.pathname.includes('/auth') || location.pathname.includes('/forgot-password')
-      const isDeliveryAuth = location.pathname.includes('/login') || location.pathname.includes('/otp') || location.pathname.includes('/signup') || location.pathname.includes('/auth')
       const isPublicLegalPage = location.pathname.includes('/privacy') || location.pathname.includes('/terms') || location.pathname.includes('/help-content') || location.pathname.includes('/help/content') || location.pathname.includes('/help-centre/support')
       
       if (location.pathname.startsWith('/food/restaurant') && !isRestaurantAuth && !isPublicLegalPage) {
         if (!localStorage.getItem('restaurant_accessToken')) {
           navigate('/food/restaurant/login', { replace: true })
-        }
-      }
-      if (location.pathname.startsWith('/food/delivery') && !isDeliveryAuth && !isPublicLegalPage) {
-        if (!localStorage.getItem('delivery_accessToken')) {
-          navigate('/food/delivery/login', { replace: true })
         }
       }
     }, 2000)
@@ -172,13 +164,11 @@ export default function App() {
     const handleFocus = async () => {
       try {
         const hasRestaurantToken = !!localStorage.getItem('restaurant_accessToken');
-        const hasDeliveryToken = !!localStorage.getItem('delivery_accessToken');
         
         // Dynamically import authAPI to avoid circular dependencies
-        if (hasRestaurantToken || hasDeliveryToken) {
+        if (hasRestaurantToken) {
           const { authAPI } = await import('@food/api');
           if (hasRestaurantToken) authAPI.me('restaurant').catch(() => {});
-          if (hasDeliveryToken) authAPI.me('delivery').catch(() => {});
         }
       } catch (error) {
         // Silently catch - if it fails authAPI will handle the 401
@@ -212,15 +202,7 @@ export default function App() {
             }
           />
 
-          {/* Delivery Module - Already mapped to /delivery */}
-          <Route
-            path="delivery/*"
-            element={
-              <Suspense fallback={<AppShellSkeleton />}>
-                <DeliveryRouter />
-              </Suspense>
-            }
-          />
+
 
           {/* User Module - Explicitly mapped to /user and the catch-all for /food/ and / */}
           {/* NOTE: /user/food is a common mis-navigation - redirect to correct /food/user home */}

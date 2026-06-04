@@ -1,24 +1,24 @@
 import mongoose from 'mongoose';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
-import { FoodDeliveryPartner } from '../../delivery/models/deliveryPartner.model.js';
-import { DeliverySupportTicket } from '../../delivery/models/supportTicket.model.js';
+
+
 import { FoodZone } from '../models/zone.model.js';
 import { FoodCategory } from '../models/category.model.js';
 import { FoodItem } from '../models/food.model.js';
 import { FoodOffer } from '../models/offer.model.js';
 import { FoodOfferUsage } from '../models/offerUsage.model.js';
-import { DeliveryBonusTransaction } from '../models/deliveryBonusTransaction.model.js';
+
 import { FoodEarningAddon } from '../models/earningAddon.model.js';
 import { FoodEarningAddonHistory } from '../models/earningAddonHistory.model.js';
 import { FoodRestaurantCommission } from '../models/restaurantCommission.model.js';
-import { FoodDeliveryCommissionRule } from '../models/deliveryCommissionRule.model.js';
+
 import { FoodFeeSettings } from '../models/feeSettings.model.js';
 import { FeedbackExperience } from '../models/feedbackExperience.model.js';
 import { FoodUser } from '../../../../core/users/user.model.js';
 import { FoodRefreshToken } from '../../../../core/refreshTokens/refreshToken.model.js';
-import { FoodDeliveryCashLimit } from '../models/deliveryCashLimit.model.js';
-import { FoodDeliveryEmergencyHelp } from '../models/deliveryEmergencyHelp.model.js';
+
+
 import { FoodReferralSettings } from '../models/referralSettings.model.js';
 import { FoodReferralLog } from '../models/referralLog.model.js';
 import { FoodSafetyEmergencyReport } from '../models/safetyEmergencyReport.model.js';
@@ -28,9 +28,48 @@ import { FoodRestaurantSupportTicket } from '../../restaurant/models/supportTick
 import { FoodOrder } from '../../orders/models/order.model.js';
 import { FoodTransaction } from '../../orders/models/foodTransaction.model.js';
 import { FoodRestaurantWithdrawal } from '../../restaurant/models/foodRestaurantWithdrawal.model.js';
-import { FoodDeliveryWithdrawal } from '../../delivery/models/foodDeliveryWithdrawal.model.js';
-import { FoodDeliveryWallet } from '../../delivery/models/deliveryWallet.model.js';
-import { FoodDeliveryCashDeposit } from '../../delivery/models/foodDeliveryCashDeposit.model.js';
+
+const FoodDeliveryPartner = {
+    countDocuments: async () => 0,
+    find: () => ({
+        sort: () => ({
+            limit: () => ({
+                select: () => ({
+                    lean: async () => []
+                })
+            })
+        }),
+        select: () => ({
+            lean: async () => []
+        }),
+        skip: () => ({
+            limit: () => ({
+                populate: () => ({
+                    lean: async () => []
+                }),
+                lean: async () => []
+            })
+        }),
+        lean: async () => []
+    }),
+    findOne: () => ({
+        select: () => ({
+            lean: async () => null
+        }),
+        lean: async () => null
+    }),
+    findById: () => ({
+        lean: async () => null,
+        select: () => ({
+            lean: async () => null
+        })
+    }),
+    findByIdAndUpdate: async () => null,
+    updateOne: async () => null
+};
+
+
+
 import {
     backfillLegacyCategoryWorkflow,
     categoryAllowsFoodType,
@@ -698,7 +737,7 @@ export async function getDashboardStats(query = {}) {
     (recentDeliveredOrders || []).forEach(o => {
         liveSignals.push({
             type: 'order_delivered',
-            title: 'Order Delivered',
+            title: 'Order Confirmed',
             detail: `Order #${o.orderId} was successful`,
             time: formatTimeAgo(o.updatedAt),
             timestamp: o.updatedAt
@@ -1858,20 +1897,7 @@ export async function toggleRestaurantCommissionStatus(id) {
 }
 
 // ----- Delivery Boy Commission Rule (admin) -----
-export async function getDeliveryCommissionRules() {
-    const list = await FoodDeliveryCommissionRule.find({}).sort({ createdAt: -1 }).lean();
-    const commissions = list.map((r, index) => ({
-        _id: r._id,
-        sl: index + 1,
-        name: r.name || '',
-        minDistance: r.minDistance,
-        maxDistance: r.maxDistance ?? null,
-        commissionPerKm: r.commissionPerKm,
-        basePayout: r.basePayout,
-        status: r.status !== false
-    }));
-    return { commissions };
-}
+
 
 function validateCommissionRuleSet(rules) {
     const active = (rules || []).filter((r) => r && r.status !== false);
@@ -1905,77 +1931,13 @@ function validateCommissionRuleSet(rules) {
     }
 }
 
-export async function createDeliveryCommissionRule(body) {
-    const existing = await FoodDeliveryCommissionRule.find({}).lean();
-    const candidate = [
-        ...existing,
-        {
-            minDistance: body.minDistance,
-            maxDistance: body.maxDistance ?? null,
-            commissionPerKm: body.commissionPerKm,
-            basePayout: body.basePayout,
-            status: body.status ?? true
-        }
-    ];
-    validateCommissionRuleSet(candidate);
-    const created = await FoodDeliveryCommissionRule.create({
-        name: body.name || '',
-        minDistance: body.minDistance,
-        maxDistance: body.maxDistance ?? null,
-        commissionPerKm: body.commissionPerKm,
-        basePayout: body.basePayout,
-        status: body.status ?? true
-    });
-    return created.toObject();
-}
 
-export async function updateDeliveryCommissionRule(id, body) {
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
-    const existing = await FoodDeliveryCommissionRule.find({}).lean();
-    const candidate = existing.map((r) =>
-        String(r._id) === String(id)
-            ? {
-                  ...r,
-                  minDistance: body.minDistance,
-                  maxDistance: body.maxDistance ?? null,
-                  commissionPerKm: body.commissionPerKm,
-                  basePayout: body.basePayout,
-                  status: r.status !== false
-              }
-            : r
-    );
-    validateCommissionRuleSet(candidate);
-    const updated = await FoodDeliveryCommissionRule.findByIdAndUpdate(
-        id,
-        {
-            $set: {
-                name: body.name || '',
-                minDistance: body.minDistance,
-                maxDistance: body.maxDistance ?? null,
-                commissionPerKm: body.commissionPerKm,
-                basePayout: body.basePayout
-            }
-        },
-        { new: true }
-    ).lean();
-    return updated;
-}
 
-export async function deleteDeliveryCommissionRule(id) {
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
-    const deleted = await FoodDeliveryCommissionRule.findByIdAndDelete(id).lean();
-    return deleted ? { id } : null;
-}
 
-export async function toggleDeliveryCommissionRuleStatus(id, status) {
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
-    const updated = await FoodDeliveryCommissionRule.findByIdAndUpdate(
-        id,
-        { $set: { status: Boolean(status) } },
-        { new: true }
-    ).lean();
-    return updated;
-}
+
+
+
+
 
 // ----- Fee Settings (admin) -----
 export async function getFeeSettings() {
@@ -2206,89 +2168,14 @@ export async function getContactMessages(query = {}) {
 }
 
 // ----- Delivery Cash Limit (admin) -----
-export async function getDeliveryCashLimitSettings() {
-    const doc = await FoodDeliveryCashLimit.findOne({ isActive: true }).sort({ createdAt: -1 }).lean();
-    const settings = doc || { deliveryCashLimit: 0, deliveryWithdrawalLimit: 100, isActive: true };
-    return {
-        deliveryCashLimit: Number(settings.deliveryCashLimit) || 0,
-        deliveryWithdrawalLimit: Number(settings.deliveryWithdrawalLimit) || 100
-    };
-}
 
-export async function upsertDeliveryCashLimitSettings(body = {}) {
-    const existing = await FoodDeliveryCashLimit.findOne({ isActive: true }).sort({ createdAt: -1 });
-    const nextCashLimit = body.deliveryCashLimit;
-    const nextWithdrawalLimit = body.deliveryWithdrawalLimit;
 
-    if (existing) {
-        if (nextCashLimit !== undefined) existing.deliveryCashLimit = Math.max(0, Number(nextCashLimit) || 0);
-        if (nextWithdrawalLimit !== undefined) existing.deliveryWithdrawalLimit = Math.max(0, Number(nextWithdrawalLimit) || 0);
-        await existing.save();
-        return {
-            deliveryCashLimit: existing.deliveryCashLimit,
-            deliveryWithdrawalLimit: existing.deliveryWithdrawalLimit
-        };
-    }
 
-    const created = await FoodDeliveryCashLimit.create({
-        deliveryCashLimit: nextCashLimit !== undefined ? Math.max(0, Number(nextCashLimit) || 0) : 0,
-        deliveryWithdrawalLimit: nextWithdrawalLimit !== undefined ? Math.max(0, Number(nextWithdrawalLimit) || 0) : 100,
-        isActive: true
-    });
-
-    return {
-        deliveryCashLimit: created.deliveryCashLimit,
-        deliveryWithdrawalLimit: created.deliveryWithdrawalLimit
-    };
-}
 
 // ----- Delivery Emergency Help (admin) -----
-export async function getDeliveryEmergencyHelp() {
-    const doc = await FoodDeliveryEmergencyHelp.findOne({ isActive: true }).sort({ createdAt: -1 }).lean();
-    const data = doc || {
-        medicalEmergency: '',
-        accidentHelpline: '',
-        contactPolice: '',
-        insurance: '',
-        isActive: true
-    };
-    return {
-        medicalEmergency: data.medicalEmergency || '',
-        accidentHelpline: data.accidentHelpline || '',
-        contactPolice: data.contactPolice || '',
-        insurance: data.insurance || ''
-    };
-}
 
-export async function upsertDeliveryEmergencyHelp(body = {}) {
-    const existing = await FoodDeliveryEmergencyHelp.findOne({ isActive: true }).sort({ createdAt: -1 });
-    if (existing) {
-        if (body.medicalEmergency !== undefined) existing.medicalEmergency = String(body.medicalEmergency || '').trim();
-        if (body.accidentHelpline !== undefined) existing.accidentHelpline = String(body.accidentHelpline || '').trim();
-        if (body.contactPolice !== undefined) existing.contactPolice = String(body.contactPolice || '').trim();
-        if (body.insurance !== undefined) existing.insurance = String(body.insurance || '').trim();
-        await existing.save();
-        return {
-            medicalEmergency: existing.medicalEmergency || '',
-            accidentHelpline: existing.accidentHelpline || '',
-            contactPolice: existing.contactPolice || '',
-            insurance: existing.insurance || ''
-        };
-    }
-    const created = await FoodDeliveryEmergencyHelp.create({
-        medicalEmergency: String(body.medicalEmergency || '').trim(),
-        accidentHelpline: String(body.accidentHelpline || '').trim(),
-        contactPolice: String(body.contactPolice || '').trim(),
-        insurance: String(body.insurance || '').trim(),
-        isActive: true
-    });
-    return {
-        medicalEmergency: created.medicalEmergency || '',
-        accidentHelpline: created.accidentHelpline || '',
-        contactPolice: created.contactPolice || '',
-        insurance: created.insurance || ''
-    };
-}
+
+
 
 export async function getRestaurantReviews(query = {}) {
     const limit = Math.min(Math.max(parseInt(query.limit, 10) || 50, 1), 1000);
@@ -3751,71 +3638,9 @@ export async function expireExpiredOffers() {
     );
 }
 // ----- Delivery join requests -----
-export async function getDeliveryJoinRequests(query) {
-    const { status = 'pending', page = 1, limit = 1000, search, zone, vehicleType } = query;
-    const filter = {};
-    if (status === 'pending') filter.status = 'pending';
-    else if (status === 'denied' || status === 'rejected') filter.status = 'rejected';
-    else filter.status = status;
 
-    const andParts = [];
-    if (search && typeof search === 'string' && search.trim()) {
-        const term = search.trim();
-        andParts.push({
-            $or: [
-                { name: { $regex: term, $options: 'i' } },
-                { phone: { $regex: term, $options: 'i' } }
-            ]
-        });
-    }
-    if (zone && zone.trim()) {
-        const z = zone.trim();
-        andParts.push({
-            $or: [
-                { city: { $regex: z, $options: 'i' } },
-                { state: { $regex: z, $options: 'i' } },
-                { address: { $regex: z, $options: 'i' } }
-            ]
-        });
-    }
-    if (andParts.length) filter.$and = andParts;
-    if (vehicleType && vehicleType.trim()) {
-        filter.vehicleType = { $regex: vehicleType.trim(), $options: 'i' };
-    }
 
-    const skip = Math.max(0, (Number(page) || 1) - 1) * Math.max(1, Math.min(1000, Number(limit) || 100));
-    const limitNum = Math.max(1, Math.min(1000, Number(limit) || 100));
 
-    const list = await FoodDeliveryPartner.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean();
-
-    const requests = list.map((doc, index) => ({
-        _id: doc._id,
-        sl: skip + index + 1,
-        name: doc.name || '',
-        email: doc.email || '',
-        phone: doc.phone || '',
-        zone: doc.city || doc.state || doc.address || '',
-        jobType: doc.jobType || '',
-        vehicleType: doc.vehicleType || '',
-        status: doc.status === 'rejected' ? 'denied' : doc.status,
-        rejectionReason: doc.rejectionReason || undefined,
-        profilePhoto: doc.profilePhoto || null,
-        profileImage: doc.profilePhoto ? { url: doc.profilePhoto } : null
-    }));
-
-    return { requests };
-}
-
-export function getDeliveryWalletsStub() {
-    return {
-        wallets: [],
-        pagination: { page: 1, limit: 100, total: 0, pages: 0 }
-    };
-}
 
 // ----- Support tickets -----
 export async function getSupportTicketStats() {
@@ -3834,155 +3659,12 @@ export async function getSupportTicketStats() {
     };
 }
 
-export async function getDeliverySupportTickets(query = {}) {
-    const { status, priority, search, page = 1, limit = 100 } = query;
-    const filter = {};
-    if (status && String(status).trim()) filter.status = String(status).trim();
-    if (priority && String(priority).trim()) filter.priority = String(priority).trim();
-    if (search && typeof search === 'string' && search.trim()) {
-        const term = search.trim();
-        filter.$or = [
-            { subject: { $regex: term, $options: 'i' } },
-            { description: { $regex: term, $options: 'i' } },
-            { ticketId: { $regex: term, $options: 'i' } }
-        ];
-    }
 
-    const skip = Math.max(0, (Number(page) || 1) - 1) * Math.max(1, Math.min(500, Number(limit) || 100));
-    const limitNum = Math.max(1, Math.min(500, Number(limit) || 100));
 
-    const [list, total] = await Promise.all([
-        DeliverySupportTicket.find(filter)
-            .populate('deliveryPartnerId', 'name phone email')
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limitNum)
-            .lean(),
-        DeliverySupportTicket.countDocuments(filter)
-    ]);
 
-    const tickets = list.map((t) => ({
-        _id: t._id,
-        ticketId: t.ticketId,
-        subject: t.subject,
-        description: t.description,
-        category: t.category,
-        priority: t.priority,
-        status: t.status,
-        adminResponse: t.adminResponse,
-        respondedAt: t.respondedAt,
-        createdAt: t.createdAt,
-        updatedAt: t.updatedAt,
-        deliveryPartner: t.deliveryPartnerId
-            ? {
-                _id: t.deliveryPartnerId._id,
-                name: t.deliveryPartnerId.name || '',
-                phone: t.deliveryPartnerId.phone || '',
-                email: t.deliveryPartnerId.email || ''
-            }
-            : null
-    }));
-
-    return {
-        tickets,
-        pagination: {
-            page: Number(page) || 1,
-            limit: limitNum,
-            total,
-            pages: Math.ceil(total / limitNum) || 1
-        }
-    };
-}
-
-export async function updateDeliverySupportTicket(id, body = {}) {
-    const ticket = await DeliverySupportTicket.findById(id);
-    if (!ticket) return null;
-    const { status, adminResponse } = body || {};
-    if (status !== undefined) {
-        const allowed = ['open', 'in_progress', 'resolved', 'closed'];
-        if (allowed.includes(String(status))) ticket.status = String(status);
-    }
-    if (adminResponse !== undefined) {
-        ticket.adminResponse = typeof adminResponse === 'string' ? adminResponse.trim() : '';
-        if (ticket.adminResponse) ticket.respondedAt = new Date();
-    }
-    await ticket.save();
-    return ticket.toObject();
-}
 
 // ----- Delivery partners (approved list) -----
-export async function getDeliveryPartners(query) {
-    const { page = 1, limit = 1000, search } = query;
-    const filter = { status: 'approved' };
-    if (search && typeof search === 'string' && search.trim()) {
-        const term = search.trim();
-        filter.$or = [
-            { name: { $regex: term, $options: 'i' } },
-            { phone: { $regex: term, $options: 'i' } },
-            { email: { $regex: term, $options: 'i' } },
-            { city: { $regex: term, $options: 'i' } },
-            { state: { $regex: term, $options: 'i' } }
-        ];
-    }
 
-    const skip = Math.max(0, (Number(page) || 1) - 1) * Math.max(1, Math.min(1000, Number(limit) || 100));
-    const limitNum = Math.max(1, Math.min(1000, Number(limit) || 100));
-
-    const [list, total] = await Promise.all([
-        FoodDeliveryPartner.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limitNum)
-            .lean(),
-        FoodDeliveryPartner.countDocuments(filter)
-    ]);
-
-    // Fetch total orders for these partners in real-time
-    const partnerIds = list.map((p) => p._id);
-    const orderCounts = await FoodOrder.aggregate([
-        {
-            $match: {
-                'dispatch.deliveryPartnerId': { $in: partnerIds },
-                orderStatus: 'delivered'
-            }
-        },
-        {
-            $group: {
-                _id: '$dispatch.deliveryPartnerId',
-                count: { $sum: 1 }
-            }
-        }
-    ]);
-
-    const countsMap = new Map(
-        (orderCounts || []).map((c) => [String(c._id), c.count])
-    );
-
-    const deliveryPartners = list.map((doc, index) => ({
-        _id: doc._id,
-        sl: skip + index + 1,
-        name: doc.name || '',
-        email: doc.email || '',
-        phone: doc.phone || '',
-        deliveryId: doc._id ? `DP-${doc._id.toString().slice(-8).toUpperCase()}` : null,
-        zone: doc.city || doc.state || doc.address || '',
-        vehicleType: doc.vehicleType || '',
-        status: doc.status,
-        totalOrders: countsMap.get(String(doc._id)) || 0,
-        profilePhoto: doc.profilePhoto || null,
-        profileImage: doc.profilePhoto ? { url: doc.profilePhoto } : null
-    }));
-
-    return {
-        deliveryPartners,
-        pagination: {
-            page: Number(page) || 1,
-            limit: limitNum,
-            total,
-            pages: Math.ceil(total / limitNum) || 1
-        }
-    };
-}
 
 // ----- Delivery partner bonus (admin) -----
 function generateBonusTransactionId() {
@@ -3991,787 +3673,40 @@ function generateBonusTransactionId() {
     return `BON-${n}${r}`;
 }
 
-export async function getDeliveryPartnerBonusTransactions(query = {}) {
-    const { page = 1, limit = 1000, search } = query;
-    const filter = {};
 
-    // For search (name/phone/email/transactionId) we do a two-step lookup to keep it simple.
-    if (search && typeof search === 'string' && search.trim()) {
-        const term = search.trim();
-        const partnerIds = await FoodDeliveryPartner.find({
-            $or: [
-                { name: { $regex: term, $options: 'i' } },
-                { phone: { $regex: term, $options: 'i' } },
-                { email: { $regex: term, $options: 'i' } }
-            ]
-        }).select('_id').lean();
-        filter.$or = [
-            { transactionId: { $regex: term, $options: 'i' } },
-            { deliveryPartnerId: { $in: partnerIds.map((p) => p._id) } }
-        ];
-    }
 
-    const skip = Math.max(0, (Number(page) || 1) - 1) * Math.max(1, Math.min(1000, Number(limit) || 100));
-    const limitNum = Math.max(1, Math.min(1000, Number(limit) || 100));
 
-    const [list, total] = await Promise.all([
-        DeliveryBonusTransaction.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limitNum)
-            .populate({ path: 'deliveryPartnerId', select: 'name phone email' })
-            .lean(),
-        DeliveryBonusTransaction.countDocuments(filter)
-    ]);
-
-    const transactions = list.map((t, index) => {
-        const partner = t.deliveryPartnerId;
-        const partnerId = partner?._id ? String(partner._id) : null;
-        return {
-            sl: skip + index + 1,
-            transactionId: t.transactionId,
-            deliveryPartnerId: partnerId,
-            deliveryId: partnerId ? `DP-${partnerId.slice(-8).toUpperCase()}` : null,
-            deliveryman: partner?.name || '',
-            amount: t.amount,
-            bonus: t.amount, // legacy compatibility
-            reference: t.reference || '',
-            createdAt: t.createdAt
-        };
-    });
-
-    return {
-        transactions,
-        pagination: {
-            page: Number(page) || 1,
-            limit: limitNum,
-            total,
-            pages: Math.ceil(total / limitNum) || 1
-        }
-    };
-}
-
-export async function addDeliveryPartnerBonus(body, adminUser) {
-    const partner = await FoodDeliveryPartner.findById(body.deliveryPartnerId).lean();
-    if (!partner) {
-        throw new ValidationError('Delivery partner not found');
-    }
-    if (partner.status !== 'approved') {
-        throw new ValidationError('Delivery partner must be approved');
-    }
-
-    let transactionId = generateBonusTransactionId();
-    let exists = await DeliveryBonusTransaction.findOne({ transactionId }).lean();
-    while (exists) {
-        transactionId = generateBonusTransactionId();
-        exists = await DeliveryBonusTransaction.findOne({ transactionId }).lean();
-    }
-
-    const created = await DeliveryBonusTransaction.create({
-        deliveryPartnerId: body.deliveryPartnerId,
-        transactionId,
-        amount: body.amount,
-        reference: body.reference || '',
-        createdByAdminId: adminUser?._id
-    });
-
-    try {
-        const { notifyOwnerSafely } = await import('../../../../core/notifications/firebase.service.js');
-        await notifyOwnerSafely(
-            { ownerType: 'DELIVERY_PARTNER', ownerId: body.deliveryPartnerId },
-            {
-                title: 'Bonus Credited! Ã°Å¸Å½Å ',
-                body: `You have received a bonus of \u20B9${body.amount}. ${body.reference || 'Great job!'}`,
-                image: 'https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png',
-                data: {
-                    type: 'bonus_credited',
-                    amount: String(body.amount),
-                    transactionId: created.transactionId
-                }
-            }
-        );
-    } catch (e) {
-        console.error('Failed to send bonus notification:', e);
-    }
-
-    return created.toObject();
-}
 
 // ----- Delivery Earnings (admin) -----
-export async function getDeliveryEarnings(query = {}) {
-    const page = Math.max(parseInt(query.page, 10) || 1, 1);
-    const limit = Math.max(1, Math.min(1000, parseInt(query.limit, 10) || 50));
-    const skip = (page - 1) * limit;
 
-    const filter = {
-        'dispatch.deliveryPartnerId': { $ne: null }
-    };
-
-    // Date range filters
-    const createdAtFilter = {};
-    if (query.fromDate) {
-        const from = new Date(query.fromDate);
-        if (!Number.isNaN(from.getTime())) {
-            from.setHours(0, 0, 0, 0);
-            createdAtFilter.$gte = from;
-        }
-    }
-    if (query.toDate) {
-        const to = new Date(query.toDate);
-        if (!Number.isNaN(to.getTime())) {
-            to.setHours(23, 59, 59, 999);
-            createdAtFilter.$lte = to;
-        }
-    }
-
-    // Period filters (only when explicit date range is not provided)
-    if (!createdAtFilter.$gte && !createdAtFilter.$lte) {
-        const period = String(query.period || 'all').trim().toLowerCase();
-        const now = new Date();
-        if (period === 'today') {
-            const start = new Date(now);
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(now);
-            end.setHours(23, 59, 59, 999);
-            createdAtFilter.$gte = start;
-            createdAtFilter.$lte = end;
-        } else if (period === 'week') {
-            const start = new Date(now);
-            start.setHours(0, 0, 0, 0);
-            start.setDate(start.getDate() - start.getDay()); // Sunday
-            const end = new Date(start);
-            end.setDate(start.getDate() + 6);
-            end.setHours(23, 59, 59, 999);
-            createdAtFilter.$gte = start;
-            createdAtFilter.$lte = end;
-        } else if (period === 'month') {
-            const start = new Date(now.getFullYear(), now.getMonth(), 1);
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            end.setHours(23, 59, 59, 999);
-            createdAtFilter.$gte = start;
-            createdAtFilter.$lte = end;
-        }
-    }
-
-    if (createdAtFilter.$gte || createdAtFilter.$lte) {
-        filter.createdAt = createdAtFilter;
-    }
-
-    if (query.deliveryPartnerId && mongoose.Types.ObjectId.isValid(query.deliveryPartnerId)) {
-        filter['dispatch.deliveryPartnerId'] = new mongoose.Types.ObjectId(query.deliveryPartnerId);
-    }
-
-    const search = String(query.search || '').trim();
-    if (search) {
-        const regex = new RegExp(search, 'i');
-
-        const [partners, restaurants] = await Promise.all([
-            FoodDeliveryPartner.find({
-                $or: [{ name: regex }, { phone: regex }, { email: regex }]
-            }).select('_id').lean(),
-            FoodRestaurant.find({
-                $or: [{ restaurantName: regex }, { name: regex }]
-            }).select('_id').lean()
-        ]);
-
-        const partnerIds = partners.map((p) => p._id);
-        const restaurantIds = restaurants.map((r) => r._id);
-
-        filter.$or = [
-            { orderId: regex },
-            { 'dispatch.deliveryPartnerId': { $in: partnerIds } },
-            { restaurantId: { $in: restaurantIds } }
-        ];
-    }
-
-    const [orders, total, earningsAgg, distinctPartners] = await Promise.all([
-        FoodOrder.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .select('orderId orderStatus createdAt pricing riderEarning deliveryPartnerSettlement dispatch.deliveryPartnerId restaurantId')
-            .populate({ path: 'dispatch.deliveryPartnerId', select: 'name phone' })
-            .populate({ path: 'restaurantId', select: 'restaurantName name' })
-            .lean(),
-        FoodOrder.countDocuments(filter),
-        FoodOrder.aggregate([
-            { $match: filter },
-            {
-                $group: {
-                    _id: null,
-                    totalEarnings: {
-                        $sum: {
-                            $ifNull: [
-                                '$riderEarning',
-                                {
-                                    $ifNull: [
-                                        '$deliveryPartnerSettlement',
-                                        { $ifNull: ['$pricing.deliveryFee', 0] }
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                    totalOrders: { $sum: 1 }
-                }
-            }
-        ]),
-        FoodOrder.distinct('dispatch.deliveryPartnerId', filter)
-    ]);
-
-    const earnings = orders.map((order) => {
-        const partner = order?.dispatch?.deliveryPartnerId;
-        const amount = Number(
-            order?.riderEarning ??
-            order?.deliveryPartnerSettlement ??
-            order?.pricing?.deliveryFee ??
-            0
-        ) || 0;
-
-        return {
-            transactionId: String(order._id),
-            orderId: order.orderId || 'N/A',
-            deliveryPartnerId: partner?._id ? String(partner._id) : null,
-            deliveryPartnerName: partner?.name || 'N/A',
-            deliveryPartnerPhone: partner?.phone || 'N/A',
-            restaurantName: order?.restaurantId?.restaurantName || order?.restaurantId?.name || 'N/A',
-            amount,
-            orderTotal: Number(order?.pricing?.total || 0) || 0,
-            deliveryFee: Number(order?.pricing?.deliveryFee || 0) || 0,
-            orderStatus: order?.orderStatus || 'N/A',
-            createdAt: order?.createdAt || null
-        };
-    });
-
-    const agg = earningsAgg?.[0] || {};
-    const totalDeliveryPartners = (distinctPartners || []).filter(Boolean).length;
-
-    return {
-        earnings,
-        summary: {
-            totalDeliveryPartners,
-            totalEarnings: Number(agg.totalEarnings || 0),
-            totalOrders: Number(agg.totalOrders || 0)
-        },
-        pagination: {
-            page,
-            limit,
-            total,
-            pages: Math.ceil(total / limit) || 1
-        }
-    };
-}
 
 // ----- Earning Addon Offers (admin) -----
-export async function getEarningAddons() {
-    const list = await FoodEarningAddon.find({})
-        .sort({ createdAt: -1 })
-        .lean();
 
-    const now = Date.now();
-    const earningAddons = list.map((a) => {
-        const start = a.startDate ? new Date(a.startDate).getTime() : 0;
-        const end = a.endDate ? new Date(a.endDate).getTime() : 0;
-        const isValid = Boolean(a.status === 'active' && start && end && now >= start && now <= end);
-        const isExpired = Boolean(end && now > end);
 
-        return {
-            ...a,
-            isValid,
-            status: isExpired ? 'expired' : (a.status || 'inactive')
-        };
-    });
 
-    return { earningAddons };
-}
 
-export async function createEarningAddon(body) {
-    const created = await FoodEarningAddon.create({
-        title: body.title,
-        requiredOrders: body.requiredOrders,
-        earningAmount: body.earningAmount,
-        startDate: body.startDate,
-        endDate: body.endDate,
-        maxRedemptions: body.maxRedemptions ?? null,
-        status: 'active'
-    });
-    return created.toObject();
-}
 
-export async function updateEarningAddon(id, body) {
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
-    const doc = await FoodEarningAddon.findById(id);
-    if (!doc) return null;
-    doc.title = body.title;
-    doc.requiredOrders = body.requiredOrders;
-    doc.earningAmount = body.earningAmount;
-    doc.startDate = body.startDate;
-    doc.endDate = body.endDate;
-    doc.maxRedemptions = body.maxRedemptions ?? null;
-    await doc.save();
-    return doc.toObject();
-}
 
-export async function deleteEarningAddon(id) {
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
-    const deleted = await FoodEarningAddon.findByIdAndDelete(id).lean();
-    return deleted ? { id } : null;
-}
 
-export async function toggleEarningAddonStatus(id, status) {
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
-    return FoodEarningAddon.findByIdAndUpdate(id, { $set: { status } }, { new: true }).lean();
-}
+
+
 
 // ----- Earning Addon History (admin) -----
-export async function getEarningAddonHistory(query = {}) {
-    const { page = 1, limit = 1000, search } = query;
-    const filter = {};
 
-    // Optional search by delivery partner name/phone/email or offer title.
-    // Keep it simple and fast: only apply when search is provided.
-    let partnerIds = null;
-    let offerIds = null;
-    if (search && typeof search === 'string' && search.trim()) {
-        const term = search.trim();
-        partnerIds = await FoodDeliveryPartner.find({
-            $or: [
-                { name: { $regex: term, $options: 'i' } },
-                { phone: { $regex: term, $options: 'i' } },
-                { email: { $regex: term, $options: 'i' } }
-            ]
-        }).select('_id').lean();
-        offerIds = await FoodEarningAddon.find({ title: { $regex: term, $options: 'i' } }).select('_id').lean();
-        filter.$or = [
-            { deliveryPartnerId: { $in: (partnerIds || []).map((p) => p._id) } },
-            { offerId: { $in: (offerIds || []).map((o) => o._id) } }
-        ];
-    }
 
-    const skip = Math.max(0, (Number(page) || 1) - 1) * Math.max(1, Math.min(1000, Number(limit) || 100));
-    const limitNum = Math.max(1, Math.min(1000, Number(limit) || 100));
 
-    const [list, total] = await Promise.all([
-        FoodEarningAddonHistory.find(filter)
-            .sort({ completedAt: -1, createdAt: -1 })
-            .skip(skip)
-            .limit(limitNum)
-            .populate({ path: 'deliveryPartnerId', select: 'name phone email' })
-            .populate({ path: 'offerId', select: 'title requiredOrders earningAmount' })
-            .lean(),
-        FoodEarningAddonHistory.countDocuments(filter)
-    ]);
 
-    const history = list.map((h, index) => {
-        const partner = h.deliveryPartnerId;
-        const offer = h.offerId;
-        const partnerId = partner?._id ? String(partner._id) : null;
-        return {
-            _id: h._id,
-            sl: skip + index + 1,
-            deliveryPartnerId: partnerId,
-            deliveryId: partnerId ? `DP-${partnerId.slice(-8).toUpperCase()}` : null,
-            deliveryman: partner?.name || '',
-            deliveryPhone: partner?.phone || 'N/A',
-            offerTitle: offer?.title || '',
-            ordersCompleted: h.ordersCompleted ?? 0,
-            ordersRequired: h.ordersRequired ?? offer?.requiredOrders ?? 0,
-            earningAmount: h.earningAmount ?? offer?.earningAmount ?? 0,
-            totalEarning: h.totalEarning ?? h.earningAmount ?? 0,
-            status: h.status || 'pending',
-            date: h.completedAt || h.createdAt,
-            completedAt: h.completedAt || h.createdAt
-        };
-    });
 
-    return {
-        history,
-        pagination: {
-            page: Number(page) || 1,
-            limit: limitNum,
-            total,
-            pages: Math.ceil(total / limitNum) || 1
-        }
-    };
-}
 
-export async function creditEarningAddonHistory(historyId, notes) {
-    if (!historyId || !mongoose.Types.ObjectId.isValid(historyId)) return null;
-    const doc = await FoodEarningAddonHistory.findById(historyId).populate('offerId');
-    if (!doc) return null;
-    if (doc.status !== 'pending') return doc.toObject();
 
-    const amountToCredit = Number(doc.earningAmount || 0);
 
-    // 1. Update history status
-    doc.status = 'credited';
-    doc.creditedAt = new Date();
-    doc.creditedNotes = typeof notes === 'string' ? notes.trim() : '';
-    await doc.save();
 
-    // 2. Credit the wallet
-    if (amountToCredit > 0) {
-        await FoodDeliveryWallet.findOneAndUpdate(
-            { deliveryPartnerId: doc.deliveryPartnerId },
-            { $inc: { balance: amountToCredit, totalEarnings: amountToCredit } },
-            { upsert: true }
-        );
 
-        // 3. Create a transaction for ledger
-        try {
-            await DeliveryBonusTransaction.create({
-                deliveryPartnerId: doc.deliveryPartnerId,
-                transactionId: `ADDON-${String(doc._id).slice(-8).toUpperCase()}-${Date.now().toString().slice(-4)}`,
-                amount: amountToCredit,
-                reference: `Earning Addon: ${doc.offerId?.title || 'Offer Reward'}`
-            });
-        } catch (txnError) {
-            console.error('Failed to create bonus transaction:', txnError);
-            // Non-blocking but should be logged.
-        }
-    }
 
-    try {
-        const { notifyOwnerSafely } = await import('../../../../core/notifications/firebase.service.js');
-        await notifyOwnerSafely(
-            { ownerType: 'DELIVERY_PARTNER', ownerId: doc.deliveryPartnerId },
-            {
-                title: 'Incentive Credited! Ã°Å¸Å½Â¯',
-                body: `Your incentive for "${doc.offerId?.title || 'Earning Addon'}" has been approved and moved to your pocket.`,
-                image: 'https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png',
-                data: {
-                    type: 'incentive_credited',
-                    historyId: String(doc._id),
-                    amount: String(doc.earningAmount || 0)
-                }
-            }
-        );
-    } catch (e) {
-        console.error('Failed to send incentive credited notification:', e);
-    }
 
-    return doc.toObject();
-}
 
-export async function cancelEarningAddonHistory(historyId, reason) {
-    if (!historyId || !mongoose.Types.ObjectId.isValid(historyId)) return null;
-    const doc = await FoodEarningAddonHistory.findById(historyId).populate('offerId');
-    if (!doc) return null;
-    if (doc.status !== 'pending') return doc.toObject();
-    doc.status = 'cancelled';
-    doc.cancelledAt = new Date();
-    doc.cancelReason = typeof reason === 'string' ? reason.trim() : '';
-    await doc.save();
 
-    try {
-        const { notifyOwnerSafely } = await import('../../../../core/notifications/firebase.service.js');
-        await notifyOwnerSafely(
-            { ownerType: 'DELIVERY_PARTNER', ownerId: doc.deliveryPartnerId },
-            {
-                title: 'Incentive Update Ã°Å¸â€œâ€¹',
-                body: `Your incentive request for "${doc.offerId?.title || 'Earning Addon'}" was not approved. Reason: ${doc.cancelReason || 'Ineligible'}`,
-                image: 'https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png',
-                data: {
-                    type: 'incentive_rejected',
-                    historyId: String(doc._id),
-                    reason: doc.cancelReason
-                }
-            }
-        );
-    } catch (e) {
-        console.error('Failed to send incentive rejection notification:', e);
-    }
 
-    return doc.toObject();
-}
-
-export async function checkEarningAddonCompletions(deliveryPartnerId, _force = false) {
-    const now = new Date();
-    
-    // Only search for active offers that are currently running.
-    const activeOffers = await FoodEarningAddon.find({
-        status: 'active',
-        startDate: { $lte: now },
-        endDate: { $gte: now }
-    }).lean();
-
-    if (activeOffers.length === 0) return { completionsFound: 0 };
-
-    let partnerIds = [];
-    if (deliveryPartnerId === 'all') {
-        const partners = await FoodDeliveryPartner.find({ status: 'approved' }).select('_id').lean();
-        partnerIds = partners.map(p => p._id);
-    } else if (deliveryPartnerId && mongoose.Types.ObjectId.isValid(deliveryPartnerId)) {
-        partnerIds = [deliveryPartnerId];
-    }
-
-    if (partnerIds.length === 0) return { completionsFound: 0 };
-
-    let globalCompletions = 0;
-
-    for (const pId of partnerIds) {
-        for (const offer of activeOffers) {
-            // Find existing history so we don't grant it twice for the same offer.
-            const existing = await FoodEarningAddonHistory.findOne({
-                deliveryPartnerId: pId,
-                offerId: offer._id,
-                status: { $in: ['pending', 'credited'] }
-            }).lean();
-
-            if (existing) continue;
-
-            // Count orders delivered by this partner during the offer period.
-            const orderCount = await FoodOrder.countDocuments({
-                'dispatch.deliveryPartnerId': pId,
-                orderStatus: 'delivered',
-                createdAt: { $gte: offer.startDate, $lte: offer.endDate }
-            });
-
-            if (orderCount >= (offer.requiredOrders || 1)) {
-                // Requirement met!
-                await FoodEarningAddonHistory.create({
-                    offerId: offer._id,
-                    deliveryPartnerId: pId,
-                    ordersCompleted: orderCount,
-                    ordersRequired: offer.requiredOrders,
-                    earningAmount: offer.earningAmount,
-                    totalEarning: offer.earningAmount,
-                    status: 'pending',
-                    completedAt: now
-                });
-                
-                // Update current redemptions in addon
-                await FoodEarningAddon.findByIdAndUpdate(offer._id, { $inc: { currentRedemptions: 1 } });
-                
-                globalCompletions++;
-            }
-        }
-    }
-
-    return { completionsFound: globalCompletions };
-}
-
-export async function getDeliveryPartnerById(id) {
-    const partner = await FoodDeliveryPartner.findById(id).lean();
-    if (!partner) return null;
-    const deliveryId = partner._id ? `DP-${partner._id.toString().slice(-8).toUpperCase()}` : null;
-    return {
-        ...partner,
-        email: partner.email || null,
-        deliveryId,
-        status: partner.status === 'rejected' ? 'blocked' : partner.status,
-        profileImage: partner.profilePhoto ? { url: partner.profilePhoto } : null,
-        documents: {
-            aadhar: (partner.aadharPhoto || partner.aadharNumber)
-                ? { number: partner.aadharNumber || null, document: partner.aadharPhoto || null }
-                : null,
-            pan: (partner.panPhoto || partner.panNumber)
-                ? { number: partner.panNumber || null, document: partner.panPhoto || null }
-                : null,
-            drivingLicense: partner.drivingLicensePhoto ? { document: partner.drivingLicensePhoto } : null,
-            bankDetails:
-                partner.bankAccountHolderName || partner.bankAccountNumber || partner.bankIfscCode || partner.bankName
-                    ? {
-                        accountHolderName: partner.bankAccountHolderName || null,
-                        accountNumber: partner.bankAccountNumber || null,
-                        ifscCode: partner.bankIfscCode || null,
-                        bankName: partner.bankName || null
-                    }
-                    : null
-        },
-        location: (partner.address || partner.city || partner.state)
-            ? { addressLine1: partner.address, city: partner.city, state: partner.state }
-            : null,
-        vehicle: (partner.vehicleType || partner.vehicleName || partner.vehicleNumber)
-            ? {
-                type: partner.vehicleType,
-                brand: partner.vehicleName,
-                model: partner.vehicleName,
-                number: partner.vehicleNumber
-            }
-            : null
-    };
-}
-
-export async function getDeliverymanReviews(query = {}) {
-    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 50, 1), 1000);
-    const page = Math.max(parseInt(query.page, 10) || 1, 1);
-    const skip = (page - 1) * limit;
-
-    const filter = {
-        'ratings.deliveryPartner.rating': { $exists: true, $ne: null }
-    };
-
-    if (query.search && String(query.search).trim()) {
-        const term = String(query.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const searchRegex = new RegExp(term, 'i');
-        
-        // Find delivery partners matching search
-        const partners = await FoodDeliveryPartner.find({
-            $or: [
-                { name: searchRegex },
-                { phone: searchRegex }
-            ]
-        }).select('_id').lean();
-        
-        // Find customers matching search
-        const customers = await FoodUser.find({
-            $or: [
-                { name: searchRegex },
-                { email: searchRegex }
-            ]
-        }).select('_id').lean();
-
-        filter.$or = [
-            { orderId: searchRegex },
-            { 'ratings.deliveryPartner.comment': searchRegex },
-            { 'dispatch.deliveryPartnerId': { $in: partners.map(p => p._id) } },
-            { userId: { $in: customers.map(c => c._id) } }
-        ];
-    }
-
-    const [docs, total] = await Promise.all([
-        FoodOrder.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .populate('userId', 'name email phone')
-            .populate('dispatch.deliveryPartnerId', 'name phone')
-            .select('orderId userId dispatch.deliveryPartnerId ratings.deliveryPartner createdAt deliveryState.deliveredAt')
-            .lean(),
-        FoodOrder.countDocuments(filter)
-    ]);
-
-    const reviews = docs.map((doc, index) => ({
-        sl: skip + index + 1,
-        orderId: doc.orderId,
-        deliveryman: doc.dispatch?.deliveryPartnerId?.name || 'Unknown',
-        deliverymanId: doc.dispatch?.deliveryPartnerId?._id || 'N/A',
-        deliverymanPhone: doc.dispatch?.deliveryPartnerId?.phone || 'N/A',
-        customer: doc.userId?.name || 'Unknown',
-        customerId: doc.userId?._id || 'N/A',
-        customerPhone: doc.userId?.phone || 'N/A',
-        review: doc.ratings?.deliveryPartner?.comment || '',
-        rating: doc.ratings?.deliveryPartner?.rating || 0,
-        submittedAt: doc.createdAt,
-        deliveredAt: doc.deliveryState?.deliveredAt
-    }));
-
-    return { reviews, total, page, limit };
-}
-
-export async function approveDeliveryPartner(id) {
-    const partner = await FoodDeliveryPartner.findById(id);
-    if (!partner) return null;
-    partner.status = 'approved';
-    partner.approvedAt = new Date();
-    partner.rejectedAt = undefined;
-    partner.rejectionReason = undefined;
-    await partner.save();
-
-    try {
-        const { notifyOwnerSafely } = await import('../../../../core/notifications/firebase.service.js');
-        await notifyOwnerSafely(
-            { ownerType: 'DELIVERY_PARTNER', ownerId: partner._id },
-            {
-                title: 'Welcome Aboard! Ã°Å¸Å¡Â²',
-                body: `Your delivery partner application has been approved. You can now go online and start earning!`,
-                image: 'https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png',
-                data: {
-                    type: 'onboarding_approved',
-                    partnerId: String(partner._id)
-                }
-            }
-        );
-    } catch (e) {
-        console.error('Failed to send delivery partner approval notification:', e);
-    }
-
-    // Referral crediting: on approval, credit the referrer partner's pocket balance via DeliveryBonusTransaction.
-    try {
-        const referrerId = partner.referredBy ? String(partner.referredBy) : '';
-        if (referrerId && mongoose.Types.ObjectId.isValid(referrerId)) {
-            const already = await FoodReferralLog.findOne({ refereeId: partner._id, role: 'DELIVERY_PARTNER' }).lean();
-            if (!already) {
-                const settingsDoc = await FoodReferralSettings.findOne({ isActive: true }).sort({ createdAt: -1 }).lean();
-                const reward = Math.max(0, Number(settingsDoc?.referralRewardDelivery) || 0);
-                const limit = Math.max(0, Number(settingsDoc?.referralLimitDelivery) || 0);
-                const referrer = await FoodDeliveryPartner.findById(referrerId).select('_id referralCount status').lean();
-
-                if (referrer && referrer.status === 'approved' && reward > 0 && limit > 0 && Number(referrer.referralCount || 0) < limit) {
-                    const log = await FoodReferralLog.create({
-                        referrerId: referrer._id,
-                        refereeId: partner._id,
-                        role: 'DELIVERY_PARTNER',
-                        rewardAmount: reward,
-                        status: 'credited'
-                    });
-
-                    await Promise.all([
-                        FoodDeliveryPartner.updateOne({ _id: referrer._id }, { $inc: { referralCount: 1 } }),
-                        addDeliveryPartnerBonus(
-                            { deliveryPartnerId: String(referrer._id), amount: reward, reference: 'Referral bonus' },
-                            null
-                        )
-                    ]);
-                } else {
-                    await FoodReferralLog.create({
-                        referrerId: new mongoose.Types.ObjectId(referrerId),
-                        refereeId: partner._id,
-                        role: 'DELIVERY_PARTNER',
-                        rewardAmount: reward,
-                        status: 'rejected',
-                        reason: !referrer ? 'referrer_not_found' : reward <= 0 ? 'reward_disabled' : limit <= 0 ? 'limit_disabled' : 'limit_reached'
-                    });
-                }
-            }
-        }
-    } catch (e) {
-        // Never fail approval due to referral errors.
-        // eslint-disable-next-line no-console
-        console.warn('Referral crediting failed (delivery approval):', e?.message || e);
-    }
-    return partner.toObject();
-}
-
-export async function rejectDeliveryPartner(id, reason) {
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
-    const updated = await FoodDeliveryPartner.findByIdAndUpdate(
-        id,
-        {
-            $set: {
-                status: 'rejected',
-                rejectedAt: new Date(),
-                rejectionReason: typeof reason === 'string' ? reason.trim() : undefined,
-                approvedAt: null
-            }
-        },
-        { new: true }
-    ).lean();
-
-    if (updated) {
-        try {
-            const { notifyOwnerSafely } = await import('../../../../core/notifications/firebase.service.js');
-            await notifyOwnerSafely(
-                { ownerType: 'DELIVERY_PARTNER', ownerId: updated._id },
-                {
-                    title: 'Onboarding Update Ã°Å¸â€œâ€¹',
-                    body: `Your application to join as a delivery partner was rejected. Reason: ${reason || 'Incomplete documents'}.`,
-                    image: 'https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png',
-                    data: {
-                        type: 'onboarding_rejected',
-                        partnerId: String(updated._id),
-                        reason: reason || ''
-                    }
-                }
-            );
-        } catch (e) {
-            console.error('Failed to send delivery partner rejection notification:', e);
-        }
-    }
-    return updated;
-}
 
 // ----- Zones CRUD -----
 export async function getZones(query) {
@@ -4857,281 +3792,18 @@ export async function deleteZone(id) {
 }
 
 // ----- Withdrawals (admin) -----
-export async function getWithdrawals(query = {}) {
-    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 50, 1), 500);
-    const page = Math.max(parseInt(query.page, 10) || 1, 1);
-    const skip = (page - 1) * limit;
 
-    const filter = {};
-    if (query.status && query.status !== 'all') {
-        filter.status = query.status.toLowerCase();
-    }
-    if (query.restaurantId && mongoose.Types.ObjectId.isValid(query.restaurantId)) {
-        filter.restaurantId = new mongoose.Types.ObjectId(query.restaurantId);
-    }
 
-    const [withdrawals, total] = await Promise.all([
-        FoodRestaurantWithdrawal.find(filter)
-            .populate('restaurantId', 'restaurantName profileImage ownerName phone ownerPhone accountHolderName accountNumber ifscCode accountType upiId upiQrImage')
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean(),
-        FoodRestaurantWithdrawal.countDocuments(filter)
-    ]);
 
-    // UI expects status with first letter capitalized, and data in 'requests' key
-    const requests = withdrawals.map((w) => ({
-        ...w,
-        id: w._id,
-        restaurantName: w.restaurantId?.restaurantName || 'N/A',
-        restaurantIdString: w.restaurantId ? `REST${w.restaurantId._id.toString().slice(-6).padStart(6, '0')}` : 'N/A',
-        restaurantBankDetails: {
-            accountHolderName: w.restaurantId?.accountHolderName || '',
-            accountNumber: w.restaurantId?.accountNumber || '',
-            ifscCode: w.restaurantId?.ifscCode || '',
-            accountType: w.restaurantId?.accountType || '',
-            upiId: w.restaurantId?.upiId || '',
-            upiQrImage: w.restaurantId?.upiQrImage || ''
-        },
-        status: w.status.charAt(0).toUpperCase() + w.status.slice(1)
-    }));
 
-    return { requests, total, page, limit };
-}
 
-export async function updateWithdrawalStatus(id, { status, adminNote, rejectionReason, transactionId }) {
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) throw new ValidationError('Invalid withdrawal ID');
-    
-    const update = {
-        status: String(status).toLowerCase(),
-        adminNote,
-        rejectionReason,
-        transactionId,
-        processedAt: new Date()
-    };
 
-    const updated = await FoodRestaurantWithdrawal.findByIdAndUpdate(
-        id,
-        { $set: update },
-        { new: true }
-    ).populate('restaurantId', 'restaurantName').lean();
 
-    if (!updated) throw new ValidationError('Withdrawal request not found');
-    return updated;
-}
-
-export async function getDeliveryWithdrawals(query = {}) {
-    const limit = parseInt(query.limit, 10) || 100;
-    const page = parseInt(query.page, 10) || 1;
-    const skip = (page - 1) * limit;
-
-    const filter = {};
-    if (query.status && query.status !== 'All') {
-        filter.status = query.status.toLowerCase();
-    }
-
-    if (query.search) {
-        // Search by amount or placeholder for name (name requires join usually)
-        if (!isNaN(query.search)) {
-            filter.amount = Number(query.search);
-        }
-    }
-
-    const [withdrawals, total] = await Promise.all([
-        FoodDeliveryWithdrawal.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .populate('deliveryPartnerId', 'name phone profilePartnerId upiId upiQrCode')
-            .lean(),
-        FoodDeliveryWithdrawal.countDocuments(filter)
-    ]);
-
-    const requests = withdrawals.map((w) => ({
-        ...w,
-        id: w._id,
-        deliveryName: w.deliveryPartnerId?.name || 'N/A',
-        deliveryPhone: w.deliveryPartnerId?.phone || 'N/A',
-        deliveryIdString: w.deliveryPartnerId?.profilePartnerId || 'N/A',
-        status: w.status.charAt(0).toUpperCase() + w.status.slice(1)
-    }));
-
-    return { requests, total, page, limit };
-}
-
-export async function updateDeliveryWithdrawalStatus(id, { status, adminNote, rejectionReason, transactionId }) {
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) throw new ValidationError('Invalid withdrawal ID');
-    
-    const update = {
-        status: String(status).toLowerCase(),
-        adminNote,
-        rejectionReason,
-        transactionId,
-        processedAt: new Date()
-    };
-
-    const updated = await FoodDeliveryWithdrawal.findByIdAndUpdate(
-        id,
-        { $set: update },
-        { new: true }
-    ).populate('deliveryPartnerId', 'name phone profilePartnerId').lean();
-
-    if (!updated) throw new ValidationError('Withdrawal request not found');
-
-    // If approved, deduct from wallet balance
-    if (status.toLowerCase() === 'approved' || status.toLowerCase() === 'processed') {
-        const amount = Number(updated.amount || 0);
-        if (amount > 0) {
-            await FoodDeliveryWallet.findOneAndUpdate(
-                { deliveryPartnerId: updated.deliveryPartnerId?._id || updated.deliveryPartnerId },
-                { 
-                    $inc: { 
-                        balance: -amount,
-                        totalSettled: amount 
-                    } 
-                }
-            );
-        }
-    }
-
-    return updated;
-}
 
 /**
  * Fetch delivery partner wallets with financial summary
  */
-export async function getDeliveryWallets(query = {}) {
-    const limit = parseInt(query.limit, 10) || 20;
-    const page = parseInt(query.page, 10) || 1;
-    const skip = (page - 1) * limit;
 
-    const filter = { status: 'approved' };
-    if (query.search) {
-        filter.$or = [
-            { name: new RegExp(query.search, 'i') },
-            { phone: new RegExp(query.search, 'i') }
-        ];
-    }
-
-    const [partners, total] = await Promise.all([
-        FoodDeliveryPartner.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean(),
-        FoodDeliveryPartner.countDocuments(filter)
-    ]);
-
-    const cashLimitSettings = await FoodDeliveryCashLimit.findOne({ isActive: true }).lean();
-    const globalLimit = Number(cashLimitSettings?.deliveryCashLimit || 0);
-
-    const wallets = await Promise.all(partners.map(async (p) => {
-        const wallet = await FoodDeliveryWallet.findOne({ deliveryPartnerId: p._id }).lean();
-        const partnerIdstr = p._id ? `DP-${p._id.toString().slice(-8).toUpperCase()}` : '—';
-        
-        if (!p._id) {
-            return {
-                walletId: wallet?._id,
-                deliveryId: p._id,
-                name: p.name,
-                phone: p.phone || '',
-                deliveryIdString: partnerIdstr,
-                pocketBalance: 0,
-                remainingCashLimit: globalLimit,
-                cashCollected: 0,
-                totalEarning: 0,
-                bonus: 0,
-                totalWithdrawn: 0,
-                cashInHand: 0,
-            };
-        }
-
-        const partnerId = new mongoose.Types.ObjectId(p._id);
-
-        const [earningsAgg, cashCollectedAgg, cashDepositsAgg, bonusAgg, withdrawalAgg] = await Promise.all([
-            FoodOrder.aggregate([
-                { $match: { 'dispatch.deliveryPartnerId': partnerId, orderStatus: 'delivered' } },
-                { $group: { _id: null, totalEarned: { $sum: { $ifNull: ['$riderEarning', 0] } } } }
-            ]),
-            FoodOrder.aggregate([
-                {
-                    $match: {
-                        'dispatch.deliveryPartnerId': partnerId,
-                        orderStatus: 'delivered',
-                        'payment.method': 'cash'
-                    }
-                },
-                { $group: { _id: null, cashCollected: { $sum: { $ifNull: ['$pricing.total', 0] } } } }
-            ]),
-            FoodDeliveryCashDeposit.aggregate([
-                {
-                    $match: {
-                        deliveryPartnerId: partnerId,
-                        status: 'Completed'
-                    }
-                },
-                { $group: { _id: null, depositedCash: { $sum: { $ifNull: ['$amount', 0] } } } }
-            ]),
-            DeliveryBonusTransaction.aggregate([
-                { $match: { deliveryPartnerId: partnerId } },
-                { $group: { _id: null, total: { $sum: '$amount' } } }
-            ]),
-            FoodDeliveryWithdrawal.aggregate([
-                { $match: { deliveryPartnerId: partnerId } },
-                {
-                    $group: {
-                        _id: null,
-                        totalWithdrawn: {
-                            $sum: {
-                                $cond: [{ $eq: ['$status', 'approved'] }, { $ifNull: ['$amount', 0] }, 0]
-                            }
-                        },
-                        pendingWithdrawals: {
-                            $sum: {
-                                $cond: [{ $eq: ['$status', 'pending'] }, { $ifNull: ['$amount', 0] }, 0]
-                            }
-                        }
-                    }
-                }
-            ])
-        ]);
-
-        const totalEarned = Number(earningsAgg?.[0]?.totalEarned) || 0;
-        const grossCashCollected = Number(cashCollectedAgg?.[0]?.cashCollected) || 0;
-        const totalDepositedCash = Number(cashDepositsAgg?.[0]?.depositedCash) || 0;
-        const cashInHand = Math.max(0, grossCashCollected - totalDepositedCash);
-        const totalBonus = Number(bonusAgg?.[0]?.total) || 0;
-        const totalWithdrawn = Number(withdrawalAgg?.[0]?.totalWithdrawn) || 0;
-        const pendingWithdrawals = Number(withdrawalAgg?.[0]?.pendingWithdrawals) || 0;
-        const pocketBalance = Math.max(0, (totalEarned + totalBonus) - (totalWithdrawn + pendingWithdrawals));
-
-        return {
-            walletId: wallet?._id,
-            deliveryId: p._id,
-            name: p.name,
-            phone: p.phone || '',
-            deliveryIdString: partnerIdstr,
-            pocketBalance,
-            remainingCashLimit: Math.max(0, globalLimit - cashInHand),
-            cashCollected: grossCashCollected,
-            totalEarning: totalEarned,
-            bonus: totalBonus,
-            totalWithdrawn,
-            cashInHand,
-        };
-    }));
-
-    return { 
-        wallets, 
-        pagination: { 
-            total, 
-            page, 
-            limit, 
-            pages: Math.ceil(total / limit) || 1 
-        } 
-    };
-}
 
 /**
  * Fetch cash limit settlement (deposit) transactions

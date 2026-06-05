@@ -593,111 +593,6 @@ export const adminAPI = {
     apiClient.delete(`/food/admin/offers/${String(offerId)}`, {
       contextModule: "admin",
     }),
-
-  /** Delivery Partner Bonus (admin) */
-  getDeliveryPartnerBonusTransactions: (params = {}) =>
-    apiClient.get("/food/admin/delivery/bonus-transactions", {
-      params,
-      contextModule: "admin",
-    }),
-  /** Delivery Earnings (admin) */
-  getDeliveryEarnings: (params = {}) =>
-    apiClient.get("/food/admin/delivery/earnings", {
-      params,
-      contextModule: "admin",
-    }),
-  addDeliveryPartnerBonus: (deliveryPartnerId, amount, reference = "") =>
-    apiClient.post(
-      "/food/admin/delivery/bonus",
-      {
-        deliveryPartnerId: String(deliveryPartnerId),
-        amount: Number(amount),
-        reference: String(reference || ""),
-      },
-      { contextModule: "admin" },
-    ),
-
-  /** Earning Addon Offers (admin) */
-  getEarningAddons: (params = {}) =>
-    apiClient.get("/food/admin/delivery/earning-addons", {
-      params,
-      contextModule: "admin",
-    }),
-  createEarningAddon: (body) =>
-    apiClient.post("/food/admin/delivery/earning-addons", body ?? {}, {
-      contextModule: "admin",
-    }),
-  updateEarningAddon: (id, body) =>
-    apiClient.patch(
-      `/food/admin/delivery/earning-addons/${String(id)}`,
-      body ?? {},
-      { contextModule: "admin" },
-    ),
-  deleteEarningAddon: (id) =>
-    apiClient.delete(`/food/admin/delivery/earning-addons/${String(id)}`, {
-      contextModule: "admin",
-    }),
-  toggleEarningAddonStatus: (id, status) =>
-    apiClient.patch(
-      `/food/admin/delivery/earning-addons/${String(id)}/status`,
-      { status: String(status) },
-      { contextModule: "admin" },
-    ),
-
-  /** Earning Addon History (admin) */
-  getEarningAddonHistory: (params = {}) =>
-    apiClient.get("/food/admin/delivery/earning-addon-history", {
-      params,
-      contextModule: "admin",
-    }),
-  creditEarningToWallet: (historyId, notes = "") =>
-    apiClient.post(
-      `/food/admin/delivery/earning-addon-history/${String(historyId)}/credit`,
-      { notes: String(notes || "") },
-      { contextModule: "admin" },
-    ),
-  cancelEarningAddonHistory: (historyId, reason = "") =>
-    apiClient.post(
-      `/food/admin/delivery/earning-addon-history/${String(historyId)}/cancel`,
-      { reason: String(reason || "") },
-      { contextModule: "admin" },
-    ),
-  checkEarningAddonCompletions: (deliveryPartnerId, force = false) =>
-    apiClient.post(
-      "/food/admin/delivery/earning-addon-completions/check",
-      { deliveryPartnerId: String(deliveryPartnerId), force: Boolean(force) },
-      { contextModule: "admin" },
-    ),
-  
-  getDeliveryWithdrawals: (params = {}) =>
-    apiClient.get("/food/admin/delivery/withdrawals", {
-      params,
-      contextModule: "admin",
-    }),
-  updateDeliveryWithdrawalStatus: (id, body) =>
-    apiClient.patch(`/food/admin/delivery/withdrawals/${String(id)}`, body, {
-      contextModule: "admin",
-    }),
-  
-
-  /** Restaurant Commission (admin) */
-  getRestaurantCommissionBootstrap: () =>
-    apiClient.get("/food/admin/restaurant-commissions/bootstrap", {
-      contextModule: "admin",
-    }),
-  getRestaurantCommissions: (params = {}) =>
-    apiClient.get("/food/admin/restaurant-commissions", {
-      params,
-      contextModule: "admin",
-    }),
-  getRestaurantCommissionById: (id) =>
-    apiClient.get(`/food/admin/restaurant-commissions/${String(id)}`, {
-      contextModule: "admin",
-    }),
-  createRestaurantCommission: (body) =>
-    apiClient.post("/food/admin/restaurant-commissions", body ?? {}, {
-      contextModule: "admin",
-    }),
   updateRestaurantCommission: (id, body) =>
     apiClient.patch(
       `/food/admin/restaurant-commissions/${String(id)}`,
@@ -721,31 +616,6 @@ export const adminAPI = {
       contextModule: "admin",
     }),
 
-  /** Delivery Boy Commission Rules (admin) */
-  getCommissionRules: () =>
-    apiClient.get("/food/admin/delivery/commission-rules", {
-      contextModule: "admin",
-    }),
-  createCommissionRule: (body) =>
-    apiClient.post("/food/admin/delivery/commission-rules", body ?? {}, {
-      contextModule: "admin",
-    }),
-  updateCommissionRule: (id, body) =>
-    apiClient.patch(
-      `/food/admin/delivery/commission-rules/${String(id)}`,
-      body ?? {},
-      { contextModule: "admin" },
-    ),
-  deleteCommissionRule: (id) =>
-    apiClient.delete(`/food/admin/delivery/commission-rules/${String(id)}`, {
-      contextModule: "admin",
-    }),
-  toggleCommissionRuleStatus: (id, status) =>
-    apiClient.patch(
-      `/food/admin/delivery/commission-rules/${String(id)}/status`,
-      { status: Boolean(status) },
-      { contextModule: "admin" },
-    ),
 
   /** Fee Settings (admin) */
   getFeeSettings: () =>
@@ -783,20 +653,6 @@ export const adminAPI = {
     ),
   deleteSafetyEmergencyReport: (id) =>
     apiClient.delete(`/food/admin/safety-emergency-reports/${String(id)}`, {
-      contextModule: "admin",
-    }),
-
-  /** Delivery Cash Limit (admin) */
-  
-  
-
-  /** Delivery Emergency Help (admin) */
-  getEmergencyHelp: () =>
-    apiClient.get("/food/admin/delivery-emergency-help", {
-      contextModule: "admin",
-    }),
-  createOrUpdateEmergencyHelp: (body) =>
-    apiClient.put("/food/admin/delivery-emergency-help", body ?? {}, {
       contextModule: "admin",
     }),
 

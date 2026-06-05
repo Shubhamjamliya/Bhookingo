@@ -56,7 +56,7 @@ const allOrdersStatusPriority = {
   confirmed: 1,
   preparing: 2,
   ready: 3,
-  out_for_delivery: 4,
+  
   scheduled: 5,
   delivered: 6,
   completed: 6,
@@ -93,7 +93,7 @@ const transformOrderForList = (order) => ({
   photoUrl: order.items?.[0]?.image || null,
   photoAlt: order.items?.[0]?.name || "Order",
   paymentMethod: order.paymentMethod || order.payment?.method || null,
-  deliveryPartnerId: order.deliveryPartnerId || null,
+  
   dispatchStatus: order.dispatch?.status || null,
   preparingTimestamp: order.tracking?.preparing?.timestamp
     ? new Date(order.tracking.preparing.timestamp)
@@ -3607,7 +3607,7 @@ function PreparingOrders({
                   .join(", ") || "No items",
               photoUrl: order.items?.[0]?.image || null,
               photoAlt: order.items?.[0]?.name || "Order",
-              deliveryPartnerId: order.deliveryPartnerId || null,
+              
               dispatchStatus: order.dispatch?.status || null,
               paymentMethod:
                 order.paymentMethod || order.payment?.method || null,
@@ -3857,7 +3857,7 @@ function PreparingOrders({
                 photoUrl={order.photoUrl}
                 photoAlt={order.photoAlt}
                 paymentMethod={order.paymentMethod}
-                deliveryPartnerId={order.deliveryPartnerId}
+                
                 dispatchStatus={order.dispatchStatus}
                 onSelect={onSelectOrder}
                 onCancel={onCancel}
@@ -3917,7 +3917,7 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
             photoUrl: order.items?.[0]?.image || null,
             photoAlt: order.items?.[0]?.name || "Order",
             paymentMethod: order.paymentMethod || order.payment?.method || null,
-            deliveryPartnerId: order.deliveryPartnerId || null,
+            
             dispatchStatus: order.dispatch?.status || null,
             scheduledAt: order.scheduledAt || null,
             restaurantNote: order.restaurantNote || null,
@@ -4037,7 +4037,7 @@ const OutForDeliveryOrders = ({ onSelectOrder, refreshToken = 0 }) => {
             photoUrl: order.items?.[0]?.image || null,
             photoAlt: order.items?.[0]?.name || "Order",
             paymentMethod: order.paymentMethod || order.payment?.method || null,
-            deliveryPartnerId: order.deliveryPartnerId || null,
+            
             dispatchStatus: order.dispatch?.status || null,
             scheduledAt: order.scheduledAt || null,
             restaurantNote: order.restaurantNote || null,

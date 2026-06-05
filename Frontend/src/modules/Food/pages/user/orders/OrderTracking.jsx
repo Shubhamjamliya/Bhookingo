@@ -579,8 +579,6 @@ export default function OrderTracking() {
       })
     }
 
-    window.addEventListener('deliveryDropOtp', handleDeliveryDropOtp)
-    return () => window.removeEventListener('deliveryDropOtp', handleDeliveryDropOtp)
   }, [orderId, order])
 
   // --- Start: Sync arrival time with Home Page logic ---
@@ -1538,15 +1536,7 @@ export default function OrderTracking() {
       {/* Map Section */}
       {!isDeliveredOrder && orderStatus !== 'cancelled' && !(isScheduledOrder && ['placed', 'confirmed'].includes(orderStatus)) && (
         <MapErrorBoundary>
-          <DeliveryMap
-            orderId={orderId}
-            order={order}
-            isVisible={order !== null}
-            fallbackCustomerCoords={fallbackCustomerCoords}
-            userLiveCoords={userLiveCoords}
-            userLocationAccuracy={userLiveLocation?.accuracy ?? null}
-            onEtaUpdate={handleEtaUpdate}
-          />
+          
         </MapErrorBoundary>
       )}
 

@@ -8,10 +8,6 @@ const rangeSchema = z.object({
 });
 
 const feeSettingsUpsertSchema = z.object({
-    deliveryFee: z.number().min(0).nullable().optional(),
-    deliveryFeeRanges: z.array(rangeSchema).optional(),
-    freeDeliveryUpTo: z.number().min(0).nullable().optional(),
-    freeDeliveryThreshold: z.number().min(0).nullable().optional(),
     platformFee: z.number().min(0).nullable().optional(),
     packagingFee: z.number().min(0).nullable().optional(),
     gstRate: z.number().min(0).max(100).nullable().optional(),
@@ -20,30 +16,16 @@ const feeSettingsUpsertSchema = z.object({
 
 export const validateFeeSettingsUpsertDto = (body) => {
     const normalized = {
-        deliveryFee:
-            body?.deliveryFee === null
                 ? null
-                : body?.deliveryFee !== undefined
-                    ? Number(body.deliveryFee)
                     : undefined,
-        deliveryFeeRanges: Array.isArray(body?.deliveryFeeRanges)
-            ? body.deliveryFeeRanges.map((r) => ({
                 min: Number(r?.min),
                 max: Number(r?.max),
                 fee: Number(r?.fee)
             }))
             : undefined,
-        freeDeliveryUpTo:
-            body?.freeDeliveryUpTo === null
                 ? null
-                : body?.freeDeliveryUpTo !== undefined
-                    ? Number(body.freeDeliveryUpTo)
                     : undefined,
-        freeDeliveryThreshold:
-            body?.freeDeliveryThreshold === null
                 ? null
-                : body?.freeDeliveryThreshold !== undefined
-                    ? Number(body.freeDeliveryThreshold)
                     : undefined,
         platformFee:
             body?.platformFee === null ? null : body?.platformFee !== undefined ? Number(body.platformFee) : undefined,
@@ -60,7 +42,6 @@ export const validateFeeSettingsUpsertDto = (body) => {
     }
 
     // Validate ranges: min < max, non-overlapping after sorting
-    const ranges = Array.isArray(result.data.deliveryFeeRanges) ? result.data.deliveryFeeRanges : undefined;
     if (ranges) {
         const sorted = [...ranges].sort((a, b) => a.min - b.min);
         for (const r of sorted) {
@@ -72,10 +53,8 @@ export const validateFeeSettingsUpsertDto = (body) => {
             const prev = sorted[i - 1];
             const cur = sorted[i];
             if (cur.min < prev.max) {
-                throw new ValidationError('Delivery fee ranges must not overlap');
             }
         }
-        result.data.deliveryFeeRanges = sorted;
     }
 
     return result.data;

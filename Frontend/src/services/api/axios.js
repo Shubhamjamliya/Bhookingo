@@ -36,13 +36,7 @@ function getModuleFromUrl(url = "") {
     normalized.includes("admin/login")
   ) return "admin";
   
-  // Delivery detection - Catch all delivery-specific functional and auth routes
-  if (
-    normalized.includes("/food/delivery") || 
-    normalized.includes("/auth/delivery") || 
-    normalized.includes("/delivery/")
-  ) return "delivery";
-  
+
   // Restaurant detection - Catch all restaurant-specific functional and auth routes
   if (
     normalized.includes("/food/restaurant/") || 
@@ -73,7 +67,6 @@ function getAccessToken(config) {
     if (moduleToken) return moduleToken;
 
     // 2. Fallback to legacy generic token only for user module.
-    // Using generic token for delivery/restaurant can send wrong role token
     // and trigger 403 on protected role-based endpoints.
     if (module === "user") {
       return localStorage.getItem("accessToken") || null;

@@ -50,14 +50,11 @@ const buildFacilities = (restaurant) => {
 
   if (restaurant?.diningSettings?.tableBookingEnabled !== false) facilities.push("Dinner")
   if (restaurant?.isAcceptingOrders !== false) facilities.push("Lunch")
-  if (restaurant?.diningSettings?.homeDeliveryAvailable || restaurant?.homeDeliveryAvailable) facilities.push("Home delivery")
   if (restaurant?.diningSettings?.takeawayAvailable || restaurant?.takeawayAvailable) facilities.push("Takeaway available")
   if (restaurant?.diningSettings?.vegOnly || restaurant?.vegOnly) facilities.push("Vegetarian only")
   if (restaurant?.diningSettings?.lessNoisy || restaurant?.ambience === "quiet") facilities.push("Less noisy")
 
-  return facilities.length > 0
-    ? facilities
-    : ["Dinner", "Lunch", "Home delivery", "Takeaway available", "Vegetarian only", "Less noisy"]
+  return facilities.length > 0 ? facilities : []
 }
 
 const buildFeaturedSections = (menuSections) =>

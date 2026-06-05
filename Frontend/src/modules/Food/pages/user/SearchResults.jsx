@@ -322,14 +322,12 @@ export default function SearchResults() {
               "Flat 50% OFF",
               "Flat ₹40 OFF above ₹149"
             ]
-            const defaultDeliveryTimes = ["25-30 mins", "20-25 mins", "30-35 mins"]
             const defaultDistances = ["1.2 km", "1 km", "0.8 km"]
             const defaultFeaturedPrice = 249
 
             if (fieldName === 'offer' && defaultOffers.includes(value)) {
               return true
             }
-            if (fieldName === 'deliveryTime' && defaultDeliveryTimes.includes(value)) {
               return true
             }
             if (fieldName === 'distance' && defaultDistances.includes(value)) {
@@ -357,13 +355,10 @@ export default function SearchResults() {
             })
             .map((restaurant) => {
               // Use backend data directly - filter out default values
-              let deliveryTime = restaurant.estimatedDeliveryTime || null
               let distance = restaurant.distance || null
               let offer = restaurant.offer || null
 
               // Filter out default values
-              if (isDefaultValue(deliveryTime, 'deliveryTime')) {
-                deliveryTime = null
               }
               if (isDefaultValue(distance, 'distance')) {
                 distance = null
@@ -408,7 +403,6 @@ export default function SearchResults() {
                 name: restaurant.name,
                 cuisine: cuisine,
                 rating: restaurant.rating || null, // Use backend rating or null
-                deliveryTime: deliveryTime,
                 distance: distance,
                 image: image,
                 images: allImages,
@@ -731,8 +725,6 @@ export default function SearchResults() {
     // Apply filters
     if (activeFilters.has('under-30-mins')) {
       filtered = filtered.filter(r => {
-        if (!r.deliveryTime) return false
-        const timeMatch = r.deliveryTime.match(/(\d+)/)
         return timeMatch && parseInt(timeMatch[1]) <= 30
       })
     }
@@ -836,8 +828,6 @@ export default function SearchResults() {
     // Apply filters
     if (activeFilters.has('under-30-mins')) {
       filtered = filtered.filter(r => {
-        if (!r.deliveryTime) return false
-        const timeMatch = r.deliveryTime.match(/(\d+)/)
         return timeMatch && parseInt(timeMatch[1]) <= 30
       })
     }
@@ -1046,10 +1036,8 @@ export default function SearchResults() {
                       <h3 className="font-semibold text-gray-900 dark:text-white text-xs line-clamp-1">
                         {restaurant.name}
                       </h3>
-                      {restaurant.deliveryTime && (
                         <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-[10px]">
                           <Clock className="h-2.5 w-2.5" />
-                          <span>{restaurant.deliveryTime}</span>
                         </div>
                       )}
                     </div>
@@ -1158,16 +1146,11 @@ export default function SearchResults() {
                         )}
                       </div>
 
-                      {/* Delivery Time & Distance - Only show if data exists */}
-                      {(restaurant.deliveryTime || restaurant.distance) && (
                         <div className="flex items-center gap-1 text-sm lg:text-base text-gray-500 dark:text-gray-400 mb-2 lg:mb-3">
-                          {restaurant.deliveryTime && (
                             <>
                               <Clock className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={1.5} />
-                              <span className="font-medium">{restaurant.deliveryTime}</span>
                             </>
                           )}
-                          {restaurant.deliveryTime && restaurant.distance && (
                             <span className="mx-1">|</span>
                           )}
                           {restaurant.distance && (

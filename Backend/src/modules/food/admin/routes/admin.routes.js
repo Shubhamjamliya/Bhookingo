@@ -137,9 +137,7 @@ router.patch('/business-settings', upload.fields([
 router.get('/archived-accounts', adminController.getArchivedAccounts);
 
 
-// ----- Withdrawals (admin) -----
-router.get('/withdrawals', adminController.getWithdrawals);
-router.patch('/withdrawals/:id', adminController.updateWithdrawalStatus);
+
 
 
 router.get('/contact-messages', adminController.getContactMessages);

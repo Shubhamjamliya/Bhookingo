@@ -21,7 +21,6 @@ const PageLoader = () => (
 /**
  * FoodAppWrapper — Quick-spicy App. को /food prefix के साथ render करता है.
  * 
- * Quick-spicy की App.jsx में routes /restaurant, /usermain, /admin, /delivery
  * जैसे hain (bina /food prefix ke). Yahan hum useLocation se /food ke baad wala
  * path nikalne ke baad FoodApp render karte hain. FoodApp internally BrowserRouter
  * nahi use karta (sirf Routes use karta hai), isliye ye directly kaam karta hai.
@@ -35,10 +34,8 @@ const FoodAppWrapper = () => {
   const authStatus = localStorage.getItem("user_authenticated");
   const token = localStorage.getItem("user_accessToken");
   
-  // Never redirect restaurant/delivery/admin paths to user login
   const isNonUserModulePath = 
     location.pathname.startsWith('/food/restaurant') ||
-    location.pathname.startsWith('/food/delivery') ||
     location.pathname.startsWith('/food/admin');
 
   const isUserPath = !isNonUserModulePath && (

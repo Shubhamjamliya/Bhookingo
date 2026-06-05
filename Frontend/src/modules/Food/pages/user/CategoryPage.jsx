@@ -315,7 +315,6 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
             : (fallbackImage ? [fallbackImage] : []),
           cuisine: matchedRestaurant?.cuisine || null,
           rating: matchedRestaurant?.rating || null,
-          deliveryTime: matchedRestaurant?.deliveryTime || null,
           distance: matchedRestaurant?.distance || null,
           offer: matchedRestaurant?.offer || null,
           featuredDish: matchedRestaurant?.featuredDish || food?.name || null,
@@ -417,7 +416,6 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
     return match ? Number(match[1]) : null
   }
 
-  const getComparableDeliveryTime = (row) => parseFirstNumber(row?.deliveryTime)
 
   const getComparableDistance = (row) => {
     const raw = String(row?.distance || "").trim().toLowerCase()
@@ -447,19 +445,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
   const applyFiltersAndSorting = (rows) => {
     let nextRows = Array.isArray(rows) ? [...rows] : []
 
-    if (activeFilters.has('under-30-mins')) {
-      nextRows = nextRows.filter((row) => {
-        const time = getComparableDeliveryTime(row)
-        return time != null && time <= 30
-      })
-    }
 
-    if (activeFilters.has('delivery-under-45')) {
-      nextRows = nextRows.filter((row) => {
-        const time = getComparableDeliveryTime(row)
-        return time != null && time <= 45
-      })
-    }
 
     if (activeFilters.has('rating-35-plus')) {
       nextRows = nextRows.filter((row) => {
@@ -911,12 +897,10 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
               "Flat 50% OFF",
               "Flat ₹40 OFF above ₹149"
             ]
-            const defaultDeliveryTimes = ["25-30 mins", "20-25 mins", "30-35 mins"]
             const defaultDistances = ["1.2 km", "1 km", "0.8 km"]
             const defaultFeaturedPrice = 249
 
             if (fieldName === 'offer' && defaultOffers.includes(value)) return true
-            if (fieldName === 'deliveryTime' && defaultDeliveryTimes.includes(value)) return true
             if (fieldName === 'distance' && defaultDistances.includes(value)) return true
             if (fieldName === 'featuredPrice' && value === defaultFeaturedPrice) return true
 
@@ -931,11 +915,9 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
               return hasName
             })
             .map((restaurant) => {
-              let deliveryTime = restaurant.estimatedDeliveryTime || null
               let distance = restaurant.distance || null
               let offer = restaurant.offer || null
 
-              if (isDefaultValue(deliveryTime, 'deliveryTime')) deliveryTime = null
               if (isDefaultValue(distance, 'distance')) distance = null
               if (isDefaultValue(offer, 'offer')) offer = null
 
@@ -974,7 +956,6 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                 name: restaurant.restaurantName || restaurant.name,
                 cuisine: cuisine,
                 rating: restaurant.rating || null,
-                deliveryTime: deliveryTime,
                 distance: distance,
                 image: image,
                 images: allImages,
@@ -1521,7 +1502,6 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                 </Button>
                 {[
                   { id: 'under-30-mins', label: 'Under 30 mins' },
-                  { id: 'delivery-under-45', label: 'Under 45 mins' },
                   { id: 'rating-4-plus', label: 'Rating 4.0+' },
                   { id: 'rating-45-plus', label: 'Rating 4.5+' },
                 ].map((filter) => {
@@ -1667,12 +1647,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                             {restaurant.name}
                           </p>
                         )}
-                        {restaurant.deliveryTime && (
-                          <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-[10px] md:text-xs">
-                            <Clock className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                            <span>{restaurant.deliveryTime}</span>
-                          </div>
-                        )}
+
                       </div>
                     </Link>
                   )
@@ -1801,19 +1776,11 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                           </div>
                         </div>
 
-                        {/* Delivery Time & Distance */}
-                        {(restaurant.deliveryTime || restaurant.distance) && (
+                        {/* Distance */}
+                        {restaurant.distance && (
                           <div className="flex items-center gap-1 text-sm md:text-base lg:text-lg text-gray-500 dark:text-gray-400 mb-2 lg:mb-3">
-                            {restaurant.deliveryTime && (
-                              <>
-                                <Clock className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={1.5} />
-                                <span className="font-medium">{restaurant.deliveryTime}</span>
-                              </>
-                            )}
-                            {restaurant.deliveryTime && restaurant.distance && <span className="mx-1">|</span>}
-                            {restaurant.distance && (
-                              <span className="font-medium">{restaurant.distance}</span>
-                            )}
+                            <Clock className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={1.5} />
+                            <span className="font-medium">{restaurant.distance}</span>
                           </div>
                         )}
 
@@ -1980,16 +1947,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                             <Timer className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('under-30-mins') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
                             <span className={`text-sm md:text-base font-medium ${activeFilters.has('under-30-mins') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under 30 mins</span>
                           </button>
-                          <button
-                            onClick={() => toggleFilter('delivery-under-45')}
-                            className={`flex flex-col items-center gap-2 p-4 md:p-5 rounded-xl border transition-colors ${activeFilters.has('delivery-under-45')
-                              ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
-                              }`}
-                          >
-                            <Timer className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('delivery-under-45') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('delivery-under-45') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under 45 mins</span>
-                          </button>
+
                         </div>
                       </div>
 
@@ -2198,4 +2156,5 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
     </div>
   )
 }
+
 

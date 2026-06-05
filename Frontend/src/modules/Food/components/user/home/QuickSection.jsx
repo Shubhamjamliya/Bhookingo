@@ -63,7 +63,6 @@ export default function QuickSection() {
             <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center">
               <Clock className="h-4 w-4 text-blue-500" />
             </div>
-            <span className="text-[8px] font-bold text-gray-400">FAST DELIVERY</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <div className="h-8 w-8 rounded-full bg-orange-50 flex items-center justify-center">

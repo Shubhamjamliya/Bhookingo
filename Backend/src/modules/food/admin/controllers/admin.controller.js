@@ -3,11 +3,8 @@ import * as adminService from '../services/admin.service.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { validateCategoryListQuery, validateCategoryRejectDto, validateCategoryUpsertDto } from '../validators/category.validator.js';
 import { validateCreateOfferDto, validateUpdateOfferCartVisibilityDto } from '../validators/offer.validator.js';
-import { validateAddDeliveryBonusDto } from '../validators/deliveryBonus.validator.js';
 import { validateCheckCompletionsDto, validateEarningAddonHistoryActionDto, validateEarningAddonUpsertDto, validateToggleEarningAddonStatusDto } from '../validators/earningAddon.validator.js';
-import { validateDeliveryCommissionRuleDto, validateOptionalStatusDto, validateRestaurantCommissionUpsertDto } from '../validators/commission.validator.js';
 import { validateFeeSettingsUpsertDto } from '../validators/feeSettings.validator.js';
-import { validateDeliveryEmergencyHelpUpsertDto } from '../validators/deliveryEmergencyHelp.validator.js';
 import { validateReferralSettingsUpsertDto } from '../validators/referralSettings.validator.js';
 
 // ----- Customers / Users -----
@@ -613,7 +610,6 @@ export async function getPendingRestaurants(req, res, next) {
     }
 }
 
-// ----- Delivery partner bonus (admin) -----
 
 
 
@@ -748,7 +744,6 @@ export async function toggleRestaurantCommissionStatus(req, res, next) {
     }
 }
 
-// ----- Delivery commission rules (admin) -----
 
 
 
@@ -799,15 +794,12 @@ export async function createOrUpdateReferralSettings(req, res, next) {
     }
 }
 
-// ----- Delivery Cash Limit (admin) -----
 
 
 
 
-// ----- Delivery Emergency Help (admin) -----
 export async function getEmergencyHelp(req, res, next) {
     try {
-        const data = await adminService.getDeliveryEmergencyHelp();
         res.status(200).json({ success: true, message: 'Emergency help fetched successfully', data });
     } catch (error) {
         next(error);
@@ -816,8 +808,6 @@ export async function getEmergencyHelp(req, res, next) {
 
 export async function createOrUpdateEmergencyHelp(req, res, next) {
     try {
-        const body = validateDeliveryEmergencyHelpUpsertDto(req.body || {});
-        const data = await adminService.upsertDeliveryEmergencyHelp(body);
         res.status(200).json({ success: true, message: 'Emergency help saved successfully', data });
     } catch (error) {
         next(error);
@@ -916,7 +906,6 @@ export async function deleteRestaurant(req, res, next) {
     }
 }
 
-// ----- Delivery join requests -----
 
 
 
@@ -936,7 +925,6 @@ export async function getSupportTicketStats(req, res, next) {
 
 export async function getSupportTickets(req, res, next) {
     try {
-        const data = await adminService.getDeliverySupportTickets(req.query);
         res.status(200).json({
             success: true,
             message: 'Support tickets fetched successfully',
@@ -949,7 +937,6 @@ export async function getSupportTickets(req, res, next) {
 
 export async function updateSupportTicket(req, res, next) {
     try {
-        const ticket = await adminService.updateDeliverySupportTicket(req.params.id, req.body);
         if (!ticket) {
             return res.status(404).json({
                 success: false,
@@ -966,7 +953,6 @@ export async function updateSupportTicket(req, res, next) {
     }
 }
 
-// ----- Delivery partners -----
 
 
 

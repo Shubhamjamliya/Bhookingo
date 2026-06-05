@@ -646,7 +646,7 @@ export default function Feedback() {
                   <div>
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Issue Type</h4>
                     <div className="flex flex-wrap gap-2">
-                      {["Missing Item", "Wrong Item", "Quality Issue", "Delivery Delay", "Other"].map((type) => (
+                      {['Food Quality', 'Packaging', 'Missing Item', 'Wrong Order', 'Other'].map((type) => (
                         <button
                           key={type}
                           onClick={() => {

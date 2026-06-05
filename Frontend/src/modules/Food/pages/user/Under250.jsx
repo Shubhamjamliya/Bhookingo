@@ -135,7 +135,6 @@ export default function Under250() {
   const sortOptions = [
     { id: null, label: 'Relevance' },
     { id: 'rating-high', label: 'Rating: High to Low' },
-    { id: 'delivery-time-low', label: 'Estimated Time: Low to High' },
     { id: 'distance-low', label: 'Distance: Low to High' },
   ]
 
@@ -154,11 +153,9 @@ export default function Under250() {
     setShowSortPopup(false)
   }
 
-  // Helper function to parse delivery time (e.g., "12-15 mins" -> 12 or average)
-  const parseDeliveryTime = (deliveryTime) => {
-    if (typeof deliveryTime === "number" && Number.isFinite(deliveryTime)) return deliveryTime
-    if (!deliveryTime) return 999 // Default high value for sorting
-    const value = String(deliveryTime)
+  const parseDeliveryTime = (time) => {
+    if (!time) return 999
+    const value = String(time)
     const rangeMatch = value.match(/(\d+)\s*-\s*(\d+)/)
     if (rangeMatch) {
       return (parseInt(rangeMatch[1]) + parseInt(rangeMatch[2])) / 2 // Average
@@ -211,8 +208,6 @@ export default function Under250() {
     // Apply "Under 30 mins" filter
     if (under30MinsFilter) {
       filtered = filtered.filter(restaurant => {
-        const deliveryTime = parseDeliveryTime(restaurant.deliveryTime)
-        return deliveryTime <= 30
       })
     }
 
@@ -436,9 +431,6 @@ export default function Under250() {
             name: restaurant?.restaurantName || restaurant?.name || "Restaurant",
             rating: Number(restaurant?.rating || 0),
             totalRatings: Number(restaurant?.totalRatings || restaurant?.ratingCount || 0),
-            deliveryTime:
-              restaurant?.estimatedDeliveryTime ||
-              (restaurant?.estimatedDeliveryTimeMinutes ? `${restaurant.estimatedDeliveryTimeMinutes} mins` : "30 mins"),
             distance: distanceInKm !== null ? formatDistance(distanceInKm) : fallbackDistance,
             distanceInKm,
             // Backend already filtered and attached menuItems
@@ -1079,7 +1071,6 @@ export default function Under250() {
                     <div className="flex items-center gap-2 md:gap-4 mt-1.5 flex-wrap">
                       <div className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-gray-500 dark:text-gray-400">
                         <Clock className="h-3.5 w-3.5 md:h-4 md:w-4" strokeWidth={2.5} />
-                        <span>{restaurant.deliveryTime}</span>
                       </div>
                       <div className="w-[1px] h-3 bg-gray-200 dark:bg-gray-800 hidden xs:block"></div>
                       <div className="flex items-center gap-1.5 text-xs md:text-sm font-semibold text-gray-500 dark:text-gray-400">

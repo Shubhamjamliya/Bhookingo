@@ -137,15 +137,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                   <p className="text-lg font-bold text-slate-950 tracking-[0.2em]">{order.orderOtp}</p>
                 </div>
               )}
-              {order.estimatedDeliveryTime && (
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    Estimated Delivery Time
-                  </p>
-                  <p className="text-sm font-medium text-slate-900">{order.estimatedDeliveryTime} minutes</p>
-                </div>
-              )}
+
               {order.deliveredAt && (
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
@@ -201,25 +193,13 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                     Payment Status
                   </p>
                   <p className={`text-sm font-medium ${getPaymentStatusColor(
-                    order.paymentType === 'Cash on Delivery' || order.payment?.method === 'cash' || order.payment?.method === 'cod'
-                      ? (order.paymentCollectionStatus ? 'Collected' : (order.status === 'delivered' ? 'Collected' : 'Not Collected'))
-                      : order.paymentStatus
+                      order.paymentCollectionStatus || order.paymentStatus
                   )}`}>
-                    {order.paymentType === 'Cash on Delivery' || order.payment?.method === 'cash' || order.payment?.method === 'cod'
-                      ? (order.paymentCollectionStatus ? 'Collected' : (order.status === 'delivered' ? 'Collected' : 'Not Collected'))
-                      : order.paymentStatus}
+                      {order.paymentCollectionStatus || order.paymentStatus}
                   </p>
                 </div>
               )}
-              {order.deliveryType && (
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                    <Truck className="w-4 h-4" />
-                    Delivery Type
-                  </p>
-                  <p className="text-sm font-medium text-slate-900">{order.deliveryType}</p>
-                </div>
-              )}
+
             </div>
           </div>
 
@@ -310,17 +290,15 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
             </div>
           )}
 
-          {/* Bill Image (Captured by Delivery Boy) */}
-          {(order.billImageUrl || order.billImage || order.deliveryState?.billImageUrl) && (
+          {order.billImageUrl && (
             <div className="border-t border-slate-200 pt-4">
               <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
                 <Receipt className="w-4 h-4 text-orange-600" />
-                Bill Image (Captured by Delivery Boy)
+                Bill Details
               </h3>
               <div className="space-y-3">
                 <div className="relative w-full max-w-2xl border-2 border-slate-300 rounded-xl overflow-hidden bg-white shadow-sm">
                   <img
-                    src={order.billImageUrl || order.billImage || order.deliveryState?.billImageUrl}
                     alt="Order Bill"
                     className="w-full h-auto object-contain max-h-[500px] mx-auto block"
                     loading="lazy"
@@ -341,7 +319,6 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <a
-                    href={order.billImageUrl || order.billImage || order.deliveryState?.billImageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
@@ -350,7 +327,6 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                     View Full Size
                   </a>
                   <a
-                    href={order.billImageUrl || order.billImage || order.deliveryState?.billImageUrl}
                     download
                     className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                   >
@@ -362,12 +338,10 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
             </div>
           )}
 
-          {/* Delivery Address */}
           {order.address && (
             <div className="border-t border-slate-200 pt-4">
               <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
-                Delivery Address
               </h3>
               <div className="space-y-2 p-4 bg-slate-50 rounded-lg">
                 <p className="text-sm text-slate-900">{formatAddress(order.address)}</p>
@@ -385,29 +359,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
             </div>
           )}
 
-          {/* Delivery Partner Information */}
-          {(order.deliveryPartnerName || order.deliveryPartnerPhone) && (
-            <div className="border-t border-slate-200 pt-4">
-              <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                <Truck className="w-4 h-4" />
-                Delivery Partner
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {order.deliveryPartnerName && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Name</p>
-                    <p className="text-sm font-medium text-slate-900">{order.deliveryPartnerName}</p>
-                  </div>
-                )}
-                {order.deliveryPartnerPhone && (
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</p>
-                    <p className="text-sm font-medium text-slate-900">{order.deliveryPartnerPhone}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+
 
           {/* Pricing Breakdown */}
           <div className="border-t border-slate-200 pt-4">
@@ -431,14 +383,7 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                   <span className="font-medium text-emerald-600">-₹{order.couponDiscount.toFixed(2)}</span>
                 </div>
               )}
-              {order.deliveryCharge !== undefined && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Delivery Charge</span>
-                  <span className="font-medium text-slate-900">
-                    {order.deliveryCharge > 0 ? `₹${order.deliveryCharge.toFixed(2)}` : <span className="text-emerald-600">Free delivery</span>}
-                  </span>
-                </div>
-              )}
+
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600">Platform Fee</span>
                 <span className="font-medium text-slate-900">

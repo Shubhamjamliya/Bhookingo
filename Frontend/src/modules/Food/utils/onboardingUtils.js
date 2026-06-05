@@ -38,8 +38,6 @@ const isStepComplete = (stepData, stepNumber) => {
     return (
       Array.isArray(stepData.cuisines) &&
       stepData.cuisines.length > 0 &&
-      stepData.deliveryTimings?.openingTime &&
-      stepData.deliveryTimings?.closingTime &&
       Array.isArray(stepData.openDays) &&
       stepData.openDays.length > 0 &&
       // Check for menu images (must have at least one)
@@ -80,14 +78,8 @@ const isStepComplete = (stepData, stepNumber) => {
 const buildOnboardingLikeDataFromRestaurant = (restaurant) => {
   const onboarding = restaurant?.onboarding || {}
 
-  const openingTime =
-    restaurant?.openingTime ||
-    restaurant?.deliveryTimings?.openingTime ||
-    onboarding?.step2?.deliveryTimings?.openingTime
-  const closingTime =
-    restaurant?.closingTime ||
-    restaurant?.deliveryTimings?.closingTime ||
-    onboarding?.step2?.deliveryTimings?.closingTime
+  const openingTime = restaurant?.openingTime || null;
+  const closingTime = restaurant?.closingTime || null;
 
   return {
     completedSteps: onboarding.completedSteps,
@@ -115,9 +107,7 @@ const buildOnboardingLikeDataFromRestaurant = (restaurant) => {
     },
     step2: onboarding.step2 || {
       cuisines: restaurant?.cuisines,
-      deliveryTimings:
-        restaurant?.deliveryTimings ||
-        (openingTime || closingTime ? { openingTime, closingTime } : null),
+      timing: (openingTime || closingTime ? { openingTime, closingTime } : null),
       openDays: restaurant?.openDays,
       menuImageUrls: restaurant?.menuImages,
       profileImageUrl: restaurant?.profileImage,

@@ -116,7 +116,6 @@ export default function LocationPrompt() {
         </h3>
         
         <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center mt-3 leading-relaxed px-1">
-          Allow location access to discover great local restaurants near you, view accurate delivery times, and explore exclusive offers in your area.
         </p>
 
         {/* Buttons */}

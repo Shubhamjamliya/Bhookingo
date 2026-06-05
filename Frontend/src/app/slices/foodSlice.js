@@ -8,7 +8,6 @@ const findCartItemIndex = (items, id, restaurantId) =>
   )
 
 const initialState = {
-  // Cart: food delivery items
   cart: {
     items: [], // [{ id, restaurantId, name, price, quantity, ... }]
   },

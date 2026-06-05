@@ -45,7 +45,6 @@ export default function OrdersPage() {
         ...newOrder,
         orderMongoId: newOrder.orderMongoId || newOrder._id || newOrder.id,
         total: newOrder.total ?? newOrder.pricing?.total ?? 0,
-        customerAddress: newOrder.customerAddress || newOrder.deliveryAddress || newOrder.address,
       }
     : null
 
@@ -165,7 +164,6 @@ export default function OrdersPage() {
               mongoId: order._id,
               items: order.items?.length || 0,
               timeAgo: timeAgo,
-              deliveryType: 'Home Delivery',
               amount: order.pricing?.total || 0,
               status: order.status || 'pending',
               createdAt: order.createdAt,
@@ -235,7 +233,6 @@ export default function OrdersPage() {
                 mongoId: order._id,
                 items: order.items?.length || 0,
                 timeAgo: timeAgo,
-                deliveryType: 'Home Delivery',
                 amount: order.pricing?.total || 0,
                 status: order.status || 'pending',
                 createdAt: order.createdAt,
@@ -288,7 +285,6 @@ export default function OrdersPage() {
                 mongoId: order._id,
                 items: order.items?.length || 0,
                 timeAgo: timeAgo,
-                deliveryType: 'Home Delivery',
                 amount: order.pricing?.total || 0,
                 status: order.status || 'pending',
                 createdAt: order.createdAt,
@@ -365,7 +361,6 @@ export default function OrdersPage() {
         return "bg-blue-100 text-blue-700"
       case 'ready':
         return "bg-purple-100 text-purple-700"
-      case 'out_for_delivery':
         return "bg-indigo-100 text-indigo-700"
       case 'delivered':
         return "bg-green-100 text-green-700"
@@ -527,7 +522,6 @@ export default function OrdersPage() {
                   {/* Footer Row */}
                   <div className="flex items-center justify-between pt-2 md:pt-3 border-t border-gray-100 pb-3 md:pb-0">
                     <span className="text-[#B80B3D] text-xs md:text-sm font-medium">
-                      {order.deliveryType}
                     </span>
                     <div className="text-right">
                       <p className="text-gray-500 text-[10px] md:text-xs mb-0.5">Amount</p>

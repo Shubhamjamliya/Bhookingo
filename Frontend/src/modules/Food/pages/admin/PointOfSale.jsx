@@ -637,8 +637,6 @@ export default function PointOfSale() {
                     <span className="text-sm font-semibold text-[#334257]">{formatCurrency(paymentSummary?.tax || 0)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-[#e3e6ef]">
-                    <span className="text-sm text-[#8a94aa]">Delivery Fee</span>
-                    <span className="text-sm font-semibold text-[#334257]">{formatCurrency(paymentSummary?.deliveryFee || 0)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-[#e3e6ef]">
                     <span className="text-sm text-[#8a94aa]">Platform Fee</span>

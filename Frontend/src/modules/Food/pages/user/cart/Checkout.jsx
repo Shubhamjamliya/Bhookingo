@@ -60,15 +60,13 @@ export default function Checkout() {
   }, [addresses, selectedAddressId, getDefaultAddress])
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity * 83, 0)
-  const deliveryFee = orderType === "takeaway" ? 0 : (2.99 * 83)
   const tax = subtotal * 0.08
-  const total = subtotal + deliveryFee + tax
+  const total = subtotal + tax
 
   const [restaurantNote, setRestaurantNote] = useState("")
 
   const handlePlaceOrder = async () => {
     if (orderType !== "takeaway" && !selectedAddress) {
-      alert("Please select a delivery address")
       return
     }
     if (!selectedPayment) {
@@ -94,10 +92,9 @@ export default function Checkout() {
           image: item.image
         })),
         address: orderType === "takeaway" ? null : selectedAddress,
-        paymentMethod: selectedPayment === "cod" ? { id: "cod", name: "Cash on Delivery" } : defaultPayment,
         orderType: orderType,
         subtotal,
-        deliveryFee,
+
         tax,
         total,
         restaurant: cart[0]?.restaurant || cart[0]?.name || "Multiple Restaurants",
@@ -150,7 +147,6 @@ export default function Checkout() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           {/* Left Column - Order Details */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Delivery/Pickup Information */}
             <ScrollReveal delay={0.1}>
               <Card>
                 <CardHeader>
@@ -163,7 +159,6 @@ export default function Checkout() {
                     ) : (
                       <>
                         <MapPin className="h-5 w-5 text-[#DC2626]" />
-                        Delivery Address
                       </>
                     )}
                   </CardTitle>
@@ -255,7 +250,6 @@ export default function Checkout() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
-                    {/* Cash on Delivery */}
                     {(orderType !== "takeaway" || isTakeawayCodEnabled) && (
                       <div
                         className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${selectedPayment === "cod"
@@ -268,7 +262,6 @@ export default function Checkout() {
                           <div className="flex items-center gap-3">
                             <CreditCard className="h-5 w-5 text-gray-500" />
                             <div>
-                              <p className="font-semibold">Cash on Delivery</p>
                               <p className="text-xs text-muted-foreground">Pay when you {orderType === "takeaway" ? "pickup" : "receive"} your order</p>
                             </div>
                           </div>
@@ -386,12 +379,6 @@ export default function Checkout() {
                       <span className="text-muted-foreground">Subtotal</span>
                       <span className="dark:text-gray-200">₹{subtotal.toFixed(0)}</span>
                     </div>
-                    {orderType !== "takeaway" && (
-                    <div className="flex justify-between text-sm md:text-base">
-                      <span className="text-muted-foreground">Delivery Fee</span>
-                      <span className="dark:text-gray-200">₹{deliveryFee.toFixed(0)}</span>
-                    </div>
-                    )}
                     <div className="flex justify-between text-sm md:text-base">
                       <span className="text-muted-foreground">Tax</span>
                       <span className="dark:text-gray-200">₹{tax.toFixed(0)}</span>

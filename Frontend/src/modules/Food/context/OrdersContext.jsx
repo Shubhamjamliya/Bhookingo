@@ -34,7 +34,6 @@ export function OrdersProvider({ children }) {
       tracking: {
         confirmed: { status: true, timestamp: new Date().toISOString() },
         preparing: { status: false, timestamp: null },
-        outForDelivery: { status: false, timestamp: null },
         delivered: { status: false, timestamp: null }
       }
     }
@@ -56,8 +55,6 @@ export function OrdersProvider({ children }) {
         const updatedTracking = { ...order.tracking }
         if (status === "preparing") {
           updatedTracking.preparing = { status: true, timestamp: new Date().toISOString() }
-        } else if (status === "outForDelivery") {
-          updatedTracking.outForDelivery = { status: true, timestamp: new Date().toISOString() }
         } else if (status === "delivered") {
           updatedTracking.delivered = { status: true, timestamp: new Date().toISOString() }
         }

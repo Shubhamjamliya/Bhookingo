@@ -39,10 +39,7 @@ export const upsertAdminPageController = async (req, res, next) => {
             return sendResponse(res, 200, 'Page updated successfully', result.data);
         }
         const allowedLegalKeys = [
-            'terms', 'terms_user', 'terms_restaurant', 'terms_delivery',
-            'privacy', 'privacy_user', 'privacy_restaurant', 'privacy_delivery',
             'refund', 'shipping', 'cancellation',
-            'support_user', 'support_restaurant', 'support_delivery'
         ];
         if (allowedLegalKeys.includes(key)) {
             const result = await upsertLegalPage(key, req.body ?? {}, updatedBy);

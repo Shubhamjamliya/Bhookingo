@@ -32,8 +32,6 @@ const AdminLogin = lazy(() => import("@food/pages/admin/auth/AdminLogin"))
 const AdminSignup = lazy(() => import("@food/pages/admin/auth/AdminSignup"))
 const AdminForgotPassword = lazy(() => import("@food/pages/admin/auth/AdminForgotPassword"))
 
-// Delivery Module
-// Removed DeliveryRouter
 
 const UserRouterWrapper = () => {
   const location = useLocation();

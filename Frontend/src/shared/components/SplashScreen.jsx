@@ -125,7 +125,6 @@ export default function SplashScreen({ onFinish }) {
                 transition={{ delay: 0.5, duration: 0.6 }}
                 className="text-center text-white/90 font-black tracking-[0.5em] text-[10px] md:text-[12px] uppercase mt-5"
               >
-                Premium Food Delivery
               </motion.p>
             </div>
 

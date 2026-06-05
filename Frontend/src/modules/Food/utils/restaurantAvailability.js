@@ -193,12 +193,10 @@ export const getRestaurantAvailabilityStatus = (restaurant, now = new Date(), op
 
   const openingTime =
     todayTiming?.openingTime ||
-    restaurant?.deliveryTimings?.openingTime ||
     restaurant?.openingTime ||
     null
   const closingTime =
     todayTiming?.closingTime ||
-    restaurant?.deliveryTimings?.closingTime ||
     restaurant?.closingTime ||
     null
 

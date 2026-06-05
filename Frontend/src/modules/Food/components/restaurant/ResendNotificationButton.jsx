@@ -19,7 +19,6 @@ export default function ResendNotificationButton({ orderId, mongoId, onSuccess }
     try {
       setLoading(true);
       const id = mongoId || orderId;
-      const response = await restaurantAPI.resendDeliveryNotification(id);
 
       if (response.data?.success) {
         const notifiedCount = Number(response.data.data?.notifiedCount || 0);
@@ -27,8 +26,6 @@ export default function ResendNotificationButton({ orderId, mongoId, onSuccess }
         const connectedSocketCount = Number(response.data.data?.connectedSocketCount || 0);
         toast.success(
           notifiedCount > 0
-            ? `Notification sent to ${notifiedCount} delivery partners (live sockets: ${connectedSocketCount})`
-            : `Notification sent to 0 delivery partners${shortlistedCount > 0 ? ` (shortlisted: ${shortlistedCount}, live sockets: ${connectedSocketCount})` : ''}`,
         );
         // Refresh orders if onSuccess callback is provided
         if (onSuccess) {
@@ -54,7 +51,7 @@ export default function ResendNotificationButton({ orderId, mongoId, onSuccess }
       onClick={handleResend}
       disabled={loading}
       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      title="Resend notification to delivery partners">
+    >
       {loading ? (
         <>
           <Loader2 className="w-3 h-3 animate-spin" />

@@ -29,7 +29,7 @@ import { FoodOrder } from '../../orders/models/order.model.js';
 import { FoodTransaction } from '../../orders/models/foodTransaction.model.js';
 import { FoodRestaurantWithdrawal } from '../../restaurant/models/foodRestaurantWithdrawal.model.js';
 
-const FoodDeliveryPartner = {
+
     countDocuments: async () => 0,
     find: () => ({
         sort: () => ({
@@ -297,19 +297,17 @@ export async function globalSearch(query = '') {
 }
 
 export async function getArchivedAccounts() {
-    const [users, restaurants, deliveryPartners] = await Promise.all([
         FoodUser.find({ isActive: false })
             .select('name phone email profileImage createdAt updatedAt deletedAt')
             .lean(),
         FoodRestaurant.find({ status: 'deleted' })
             .select('restaurantName ownerPhone ownerEmail profileImage createdAt updatedAt deletedAt')
             .lean(),
-        FoodDeliveryPartner.find({ status: 'deleted' })
+
             .select('name phone email profilePhoto createdAt updatedAt deletedAt')
             .lean(),
     ]);
 
-    console.log(`[Archived-Debug] Found Inactive Users: ${users.length}, Restaurants: ${restaurants.length}, Delivery: ${deliveryPartners.length}`);
 
     // Helper to get original phone (remove _deleted_ suffix)
     const getOriginalPhone = (p) => String(p || '').split('_')[0];
@@ -339,15 +337,12 @@ export async function getArchivedAccounts() {
             deletedAt: r.deletedAt || r.updatedAt,
             status: 'Deleted'
         })),
-        ...deliveryPartners.map(d => ({
             id: d._id,
             name: d.name,
             phone: d.phone,
             originalPhone: getOriginalPhone(d.phone),
             email: d.email || 'N/A',
             profileImage: d.profilePhoto,
-            role: 'Delivery Partner',
-            type: 'delivery',
             deletedAt: d.deletedAt || d.updatedAt,
             status: 'Deleted'
         }))
@@ -360,8 +355,7 @@ export async function getArchivedAccounts() {
             newAccount = await FoodUser.findOne({ phone: acc.originalPhone, isActive: true }).select('createdAt').lean();
         } else if (acc.type === 'restaurant') {
             newAccount = await FoodRestaurant.findOne({ ownerPhone: acc.originalPhone, status: { $ne: 'deleted' } }).select('createdAt').lean();
-        } else if (acc.type === 'delivery') {
-            newAccount = await FoodDeliveryPartner.findOne({ phone: acc.originalPhone, status: { $ne: 'deleted' } }).select('createdAt').lean();
+
         }
 
         return {
@@ -438,7 +432,6 @@ const DASHBOARD_DERIVED_PLATFORM_FEE_EXPR = {
                                 { $ifNull: ['$pricing.packagingFee', 0] }
                             ]
                         },
-                        { $ifNull: ['$pricing.deliveryFee', 0] }
                     ]
                 },
                 {
@@ -454,12 +447,9 @@ const DASHBOARD_DERIVED_PLATFORM_FEE_EXPR = {
 const DASHBOARD_PLATFORM_FEE_EXPR = {
     $ifNull: ['$pricing.platformFee', DASHBOARD_DERIVED_PLATFORM_FEE_EXPR]
 };
-const DASHBOARD_DELIVERY_FEE_EXPR = {
     $ifNull: [
-        '$pricing.deliveryFee',
         {
             $ifNull: [
-                '$deliveryPartnerSettlement',
                 { $ifNull: ['$riderEarning', 0] }
             ]
         }
@@ -543,13 +533,10 @@ export async function getDashboardStats(query = {}) {
         monthlyAgg,
         restaurantsTotal,
         restaurantsPending,
-        deliveryTotal,
-        deliveryPending,
         foodsTotal,
         addonsTotal,
         customersTotal,
         recentPendingRestaurants,
-        recentPendingDelivery,
         recentPendingOrders,
         recentDeliveredOrders,
         recentCancelledOrders,
@@ -597,9 +584,7 @@ export async function getDashboardStats(query = {}) {
                             $cond: [DELIVERED_ORDER_STATUS_EXPR, DASHBOARD_PLATFORM_FEE_EXPR, 0] 
                         } 
                     },
-                    deliveryFeeTotal: { 
                         $sum: { 
-                            $cond: [DELIVERED_ORDER_STATUS_EXPR, DASHBOARD_DELIVERY_FEE_EXPR, 0] 
                         } 
                     },
                     gstTotal: { 
@@ -652,15 +637,15 @@ export async function getDashboardStats(query = {}) {
         ]),
         FoodRestaurant.countDocuments({ ...restaurantMatch, status: 'approved' }),
         FoodRestaurant.countDocuments({ ...restaurantMatch, status: 'pending' }),
-        FoodDeliveryPartner.countDocuments({ status: 'approved' }),
-        FoodDeliveryPartner.countDocuments({ status: 'pending' }),
+        0,
+        0,
         FoodItem.countDocuments({ approvalStatus: 'approved', ...zoneScopedRestaurantMatch }),
         FoodAddon.countDocuments({ approvalStatus: 'approved', isDeleted: { $ne: true }, ...zoneScopedRestaurantMatch }),
         zoneId
             ? FoodOrder.distinct('userId', { ...orderMatch, userId: { $ne: null } }).then((ids) => ids.length)
             : FoodUser.countDocuments({}),
         FoodRestaurant.find({ ...restaurantMatch, status: 'pending' }).sort({ createdAt: -1 }).limit(5).select('restaurantName createdAt').lean(),
-        FoodDeliveryPartner.find({ status: 'pending' }).sort({ createdAt: -1 }).limit(5).select('name createdAt').lean(),
+        [],
         FoodOrder.find({ 
             ...orderMatch,
             orderStatus: { $in: PENDING_ORDER_STATUSES },
@@ -714,10 +699,7 @@ export async function getDashboardStats(query = {}) {
         });
     });
 
-    (recentPendingDelivery || []).forEach(d => {
         liveSignals.push({
-            type: 'delivery',
-            title: 'New Delivery Partner',
             detail: `${d.name} requested to join`,
             time: formatTimeAgo(d.createdAt),
             timestamp: d.createdAt
@@ -805,7 +787,6 @@ export async function getDashboardStats(query = {}) {
                         $cond: [{ $in: ['$status', ['captured', 'settled']] }, { $ifNull: ['$amounts.platformNetProfit', 0] }, 0]
                     }
                 },
-                deliveryFeeTotal: {
                     $sum: {
                         $cond: [{ $in: ['$status', ['captured', 'settled']] }, { $ifNull: ['$amounts.riderShare', 0] }, 0]
                     }
@@ -837,7 +818,7 @@ export async function getDashboardStats(query = {}) {
             revenueTotal: txAgg[0].revenueTotal || totals.revenueTotal || 0,
             commissionTotal: txAgg[0].commissionTotal || totals.commissionTotal || 0,
             platformFeeTotal: txAgg[0].platformFeeTotal || totals.platformFeeTotal || 0,
-            deliveryFeeTotal: txAgg[0].deliveryFeeTotal || totals.deliveryFeeTotal || 0,
+            
             gstTotal: txAgg[0].gstTotal || totals.gstTotal || 0,
             adminNetProfit: txAgg[0].adminNetProfit || totals.adminNetProfit || 0
         };
@@ -915,18 +896,15 @@ export async function getDashboardStats(query = {}) {
         revenue: { total: Number(totals.revenueTotal || 0) },
         commission: { total: Number(totals.commissionTotal || 0) },
         platformFee: { total: Number(totals.platformFeeTotal || 0) },
-        deliveryFee: { total: Number(totals.deliveryFeeTotal || 0) },
+        
         gst: { total: Number(totals.gstTotal || 0) },
         totalAdminEarnings: Number(totals.adminNetProfit || 0) + Number(totals.gstTotal || 0),
-        deliveryProfit: Number(totals.adminNetProfit || 0) - Number(totals.commissionTotal || 0) - Number(totals.platformFeeTotal || 0),
+        
         restaurants: {
             total: Number(restaurantsTotal || 0),
             pendingRequests: Number(restaurantsPending || 0)
         },
-        deliveryBoys: {
-            total: Number(deliveryTotal || 0),
-            pendingRequests: Number(deliveryPending || 0)
-        },
+        
         foods: { total: Number(foodsTotal || 0) },
         addons: { total: Number(addonsTotal || 0) },
         customers: { total: Number(customersTotal || 0) },
@@ -1036,17 +1014,16 @@ export async function getTransactionReport(query = {}) {
         const pricing = order.pricing || {};
         const subtotal = Number(pricing.subtotal || 0) || 0;
         const packagingFee = Number(pricing.packagingFee || 0) || 0;
-        const deliveryFee = Number(pricing.deliveryFee || 0) || 0;
+        
         const tax = Number(pricing.tax || 0) || 0;
         const discount = Number(pricing.discount || 0) || 0;
         const total = Number(pricing.total || 0) || 0;
 
         // "Platform fee" should come from pricing.platformFee when available.
         // For older orders where pricing.platformFee isn't stored, derive it from the pricing equation:
-        // total = subtotal + packagingFee + deliveryFee + platformFee + tax - discount
         const platformFeeDerived = Math.max(
             0,
-            total - subtotal - packagingFee - deliveryFee - tax + discount
+            total - subtotal - packagingFee - tax + discount
         );
         const platformFee =
             pricing.platformFee !== undefined && pricing.platformFee !== null
@@ -1063,7 +1040,7 @@ export async function getTransactionReport(query = {}) {
             referralDiscount: 0, // Placeholder
             discountedAmount: Math.max(0, (pricing.subtotal || 0) - (pricing.discount || 0)),
             vatTax: tx.amounts?.taxAmount || pricing.tax || 0,
-            deliveryCharge: pricing.deliveryFee || 0,
+            
             platformFee,
             orderAmount: tx.amounts?.totalCustomerPaid || pricing.total || 0,
             status: tx.status
@@ -1074,7 +1051,7 @@ export async function getTransactionReport(query = {}) {
     let refundedTransaction = 0;
     let adminEarning = 0;
     let restaurantEarning = 0;
-    let deliverymanEarning = 0;
+    
 
     for (const tx of transactionRows) {
         // Calculate Summary
@@ -1082,7 +1059,7 @@ export async function getTransactionReport(query = {}) {
             completedTransaction += tx.amounts?.totalCustomerPaid || 0;
             adminEarning += tx.amounts?.platformNetProfit || 0;
             restaurantEarning += tx.amounts?.restaurantShare || 0;
-            deliverymanEarning += tx.amounts?.riderShare || 0;
+            
         }
         if (tx.status === 'refunded' || (tx.orderId && tx.orderId.orderStatus === 'cancelled_by_admin')) {
             // Count number of refunded transactions according to old logic or sum them
@@ -1095,7 +1072,7 @@ export async function getTransactionReport(query = {}) {
         refundedTransaction, // Returning amount instead of count for consistency, frontend might expect count though
         adminEarning,
         restaurantEarning,
-        deliverymanEarning,
+        
     };
 
     return { transactions, summary };
@@ -1324,7 +1301,6 @@ export async function getTaxReport(query = {}) {
         match.orderId = { $regex: search, $options: 'i' };
     }
 
-    // Aggregate tax by income source (Restaurants, Delivery, Platform)
     // For now, we'll group by Restaurant as the primary income source
     const taxData = await FoodOrder.aggregate([
         { $match: match },
@@ -1896,7 +1872,6 @@ export async function toggleRestaurantCommissionStatus(id) {
     return doc.toObject();
 }
 
-// ----- Delivery Boy Commission Rule (admin) -----
 
 
 function validateCommissionRuleSet(rules) {
@@ -1953,16 +1928,13 @@ export async function upsertFeeSettings(body) {
         const $set = {};
         const $unset = {};
 
-        if (body.deliveryFee === null) $unset.deliveryFee = 1;
-        else if (body.deliveryFee !== undefined) $set.deliveryFee = body.deliveryFee;
+        
 
-        if (body.deliveryFeeRanges !== undefined) $set.deliveryFeeRanges = body.deliveryFeeRanges;
+        
 
-        if (body.freeDeliveryUpTo === null) $unset.freeDeliveryUpTo = 1;
-        else if (body.freeDeliveryUpTo !== undefined) $set.freeDeliveryUpTo = body.freeDeliveryUpTo;
+        
 
-        if (body.freeDeliveryThreshold === null) $unset.freeDeliveryThreshold = 1;
-        else if (body.freeDeliveryThreshold !== undefined) $set.freeDeliveryThreshold = body.freeDeliveryThreshold;
+        
 
         if (body.platformFee === null) $unset.platformFee = 1;
         else if (body.platformFee !== undefined) $set.platformFee = body.platformFee;
@@ -1985,12 +1957,12 @@ export async function upsertFeeSettings(body) {
     }
 
     const payload = {
-        deliveryFeeRanges: body.deliveryFeeRanges ?? [],
+        
         isActive: body.isActive !== false
     };
-    if (body.deliveryFee !== undefined && body.deliveryFee !== null) payload.deliveryFee = body.deliveryFee;
-    if (body.freeDeliveryUpTo !== undefined && body.freeDeliveryUpTo !== null) payload.freeDeliveryUpTo = body.freeDeliveryUpTo;
-    if (body.freeDeliveryThreshold !== undefined && body.freeDeliveryThreshold !== null) payload.freeDeliveryThreshold = body.freeDeliveryThreshold;
+    
+    
+    
     if (body.platformFee !== undefined && body.platformFee !== null) payload.platformFee = body.platformFee;
     if (body.packagingFee !== undefined && body.packagingFee !== null) payload.packagingFee = body.packagingFee;
     if (body.gstRate !== undefined && body.gstRate !== null) payload.gstRate = body.gstRate;
@@ -2011,9 +1983,9 @@ export async function upsertReferralSettings(body = {}) {
         const $set = {};
 
         if (body.referralRewardUser !== undefined) $set.referralRewardUser = Math.max(0, Number(body.referralRewardUser) || 0);
-        if (body.referralRewardDelivery !== undefined) $set.referralRewardDelivery = Math.max(0, Number(body.referralRewardDelivery) || 0);
+        
         if (body.referralLimitUser !== undefined) $set.referralLimitUser = Math.max(0, Number(body.referralLimitUser) || 0);
-        if (body.referralLimitDelivery !== undefined) $set.referralLimitDelivery = Math.max(0, Number(body.referralLimitDelivery) || 0);
+        
         if (body.isActive !== undefined) $set.isActive = Boolean(body.isActive);
 
         if (!Object.keys($set).length) return existing.toObject();
@@ -2023,9 +1995,7 @@ export async function upsertReferralSettings(body = {}) {
 
     const created = await FoodReferralSettings.create({
         referralRewardUser: Math.max(0, Number(body.referralRewardUser) || 0),
-        referralRewardDelivery: Math.max(0, Number(body.referralRewardDelivery) || 0),
         referralLimitUser: Math.max(0, Number(body.referralLimitUser) || 0),
-        referralLimitDelivery: Math.max(0, Number(body.referralLimitDelivery) || 0),
         isActive: body.isActive !== false
     });
     return created.toObject();
@@ -2119,9 +2089,7 @@ export async function getContactMessages(query = {}) {
             FoodRestaurant.find({
                 $or: [{ restaurantName: searchRegex }, { ownerEmail: searchRegex }, { ownerPhone: searchRegex }]
             }).select('_id').lean(),
-            FoodDeliveryPartner.find({
-                $or: [{ name: searchRegex }, { email: searchRegex }, { phone: searchRegex }]
-            }).select('_id').lean()
+            []
         ]);
 
         filter.$or = [
@@ -2167,12 +2135,10 @@ export async function getContactMessages(query = {}) {
     };
 }
 
-// ----- Delivery Cash Limit (admin) -----
 
 
 
 
-// ----- Delivery Emergency Help (admin) -----
 
 
 
@@ -2356,7 +2322,6 @@ export async function getRestaurantAnalytics(restaurantId) {
         subtotal: sum(completedTx, (tx) => tx?.pricing?.subtotal ?? tx?.orderId?.pricing?.subtotal),
         tax: sum(completedTx, (tx) => tx?.pricing?.tax ?? tx?.amounts?.taxAmount ?? tx?.orderId?.pricing?.tax),
         packagingFee: sum(completedTx, (tx) => tx?.pricing?.packagingFee ?? tx?.orderId?.pricing?.packagingFee),
-        deliveryFee: sum(completedTx, (tx) => tx?.pricing?.deliveryFee ?? tx?.orderId?.pricing?.deliveryFee),
         platformFee: sum(completedTx, (tx) => tx?.pricing?.platformFee ?? tx?.orderId?.pricing?.platformFee),
         discount: sum(completedTx, (tx) => tx?.pricing?.discount ?? tx?.orderId?.pricing?.discount),
         total: totalRevenue,
@@ -2456,17 +2421,10 @@ export async function updateRestaurantById(id, body = {}) {
     }
     if (body.offer !== undefined) doc.offer = toStr(body.offer);
 
-    if (body.estimatedDeliveryTime !== undefined) {
-        doc.estimatedDeliveryTime = toStr(body.estimatedDeliveryTime);
     }
-    if (body.estimatedDeliveryTimeMinutes !== undefined) {
-        const minutes = toFiniteNumber(body.estimatedDeliveryTimeMinutes);
         if (minutes === null) {
-            doc.estimatedDeliveryTimeMinutes = undefined;
         } else if (minutes < 0) {
-            throw new ValidationError('estimatedDeliveryTimeMinutes must be >= 0');
         } else {
-            doc.estimatedDeliveryTimeMinutes = Math.round(minutes);
         }
     }
 
@@ -3355,7 +3313,6 @@ export async function createRestaurantByAdmin(body) {
         panImage: toUrl(body.panImage),
         gstImage: toUrl(body.gstImage),
         fssaiImage: toUrl(body.fssaiImage),
-        estimatedDeliveryTime: toStr(body.estimatedDeliveryTime),
         featuredDish: toStr(body.featuredDish),
         featuredPrice: typeof body.featuredPrice === 'number' ? body.featuredPrice : (parseFloat(body.featuredPrice) || undefined),
         offer: toStr(body.offer),
@@ -3637,7 +3594,6 @@ export async function expireExpiredOffers() {
         { $set: { status: 'inactive' } }
     );
 }
-// ----- Delivery join requests -----
 
 
 
@@ -3645,10 +3601,10 @@ export async function expireExpiredOffers() {
 // ----- Support tickets -----
 export async function getSupportTicketStats() {
     const [open, inProgress, resolved, closed] = await Promise.all([
-        DeliverySupportTicket.countDocuments({ status: 'open' }),
-        DeliverySupportTicket.countDocuments({ status: 'in_progress' }),
-        DeliverySupportTicket.countDocuments({ status: 'resolved' }),
-        DeliverySupportTicket.countDocuments({ status: 'closed' })
+
+
+
+
     ]);
     return {
         total: open + inProgress + resolved + closed,
@@ -3663,10 +3619,8 @@ export async function getSupportTicketStats() {
 
 
 
-// ----- Delivery partners (approved list) -----
 
 
-// ----- Delivery partner bonus (admin) -----
 function generateBonusTransactionId() {
     const n = Date.now().toString(36).slice(-6).toUpperCase();
     const r = Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -3677,7 +3631,6 @@ function generateBonusTransactionId() {
 
 
 
-// ----- Delivery Earnings (admin) -----
 
 
 // ----- Earning Addon Offers (admin) -----
@@ -3801,7 +3754,6 @@ export async function deleteZone(id) {
 
 
 /**
- * Fetch delivery partner wallets with financial summary
  */
 
 
@@ -3822,21 +3774,17 @@ export async function getCashLimitSettlements(query = {}) {
     }
 
     const [deposits, total] = await Promise.all([
-        FoodDeliveryCashDeposit.find(filter)
+
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .populate('deliveryPartnerId', 'name phone')
             .lean(),
-        FoodDeliveryCashDeposit.countDocuments(filter)
+
     ]);
 
     const transactions = deposits.map((d) => ({
         id: d._id,
         createdAt: d.createdAt,
-        deliveryId: d.deliveryPartnerId?._id,
-        deliveryName: d.deliveryPartnerId?.name || 'N/A',
-        deliveryIdString: d.deliveryPartnerId?.phone || 'N/A',
         amount: Number(d.amount || 0),
         status: d.status,
         razorpayPaymentId: d.razorpayPaymentId || '-'
@@ -3857,47 +3805,43 @@ export async function getSidebarBadges() {
     try {
         const [
             pendingRestaurants,
-            pendingDeliveryPartners,
             pendingFoods,
             pendingAddons,
             pendingOrders,
             pendingOfflinePayments,
             pendingRestaurantWithdrawals,
-            pendingDeliveryWithdrawals,
             openUserSupportTickets,
-            openDeliverySupportTickets,
+
             pendingEarningAddons,
             pendingSafetyReports,
             pendingEmergencyHelp,
             pendingRestaurantComplaints
         ] = await Promise.all([
             FoodRestaurant.countDocuments({ status: 'pending' }),
-            FoodDeliveryPartner.countDocuments({ status: 'pending' }),
+            0,
             FoodItem.countDocuments({ status: 'pending' }),
             FoodAddon.countDocuments({ status: 'pending' }),
             FoodOrder.countDocuments({ orderStatus: 'pending' }),
             FoodOrder.countDocuments({ paymentMethod: 'offline_payment', orderStatus: 'pending' }),
             FoodRestaurantWithdrawal.countDocuments({ status: 'pending' }),
-            FoodDeliveryWithdrawal.countDocuments({ status: 'pending' }),
+
             FoodSupportTicket.countDocuments({ status: 'open', userId: { $exists: true }, restaurantId: { $exists: false } }),
-            DeliverySupportTicket.countDocuments({ status: 'open' }),
+
             FoodEarningAddonHistory.countDocuments({ status: 'pending' }),
             FoodSafetyEmergencyReport.countDocuments({ status: 'pending' }),
-            FoodDeliveryEmergencyHelp.countDocuments({ status: 'pending' }),
+
             FoodSupportTicket.countDocuments({ status: 'open', restaurantId: { $exists: true } })
         ]);
 
         return {
             restaurants: pendingRestaurants,
-            deliveryPartners: pendingDeliveryPartners,
             foods: pendingFoods + pendingAddons,
             foodApprovals: pendingFoods,
             orders: pendingOrders,
             offlinePayments: pendingOfflinePayments,
             restaurantWithdrawals: pendingRestaurantWithdrawals,
-            deliveryWithdrawals: pendingDeliveryWithdrawals,
             userSupportTickets: openUserSupportTickets,
-            deliverySupportTickets: openDeliverySupportTickets,
+
             earningAddons: pendingEarningAddons,
             safetyReports: pendingSafetyReports,
             emergencyHelp: pendingEmergencyHelp,

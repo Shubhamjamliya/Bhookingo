@@ -10,7 +10,6 @@ export default function SupportCMS() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState("edit"); // "edit" | "preview"
-  const [activeRole, setActiveRole] = useState("user"); // "user" | "restaurant" | "delivery"
   const [supportData, setSupportData] = useState({
     title: "Help & Support",
     content: "",
@@ -131,7 +130,7 @@ export default function SupportCMS() {
 
           {/* Module Selector - same style as LegalTerms */}
           <div className="inline-flex p-1 bg-white border border-slate-200 rounded-xl shadow-sm">
-            {["user", "restaurant", "delivery"].map((role) => (
+            {["user", "restaurant"].map((role) => (
               <button
                 key={role}
                 onClick={() => setActiveRole(role)}

@@ -29,8 +29,6 @@ export const createFeedbackExperience = async (req, res) => {
         if (req.user?.role === 'RESTAURANT') {
             feedbackData.userModel = 'FoodRestaurant';
             feedbackData.restaurantId = userId;
-        } else if (req.user?.role === 'DELIVERY_PARTNER') {
-            feedbackData.userModel = 'FoodDeliveryPartner';
         } else {
             feedbackData.userModel = 'FoodUser';
         }

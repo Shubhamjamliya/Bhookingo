@@ -50,7 +50,6 @@ export const validateOptionalStatusDto = (body) => {
     return result.data;
 };
 
-const deliveryRuleSchema = z.object({
     name: z.string().optional().or(z.literal('')),
     minDistance: z.number().min(0, 'Minimum distance must be 0 or greater'),
     maxDistance: z.number().nullable().optional(),
@@ -59,7 +58,6 @@ const deliveryRuleSchema = z.object({
     status: z.boolean().optional()
 });
 
-export const validateDeliveryCommissionRuleDto = (body) => {
     const normalized = {
         name: body?.name != null ? String(body.name) : '',
         minDistance: Number(body?.minDistance),
@@ -68,7 +66,6 @@ export const validateDeliveryCommissionRuleDto = (body) => {
         basePayout: Number(body?.basePayout),
         status: body?.status
     };
-    const result = deliveryRuleSchema.safeParse(normalized);
     if (!result.success) {
         throw new ValidationError(result.error.errors[0].message);
     }

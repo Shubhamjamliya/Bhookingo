@@ -60,7 +60,6 @@ export async function getBalance(entityType, entityId) {
  * in a single MongoDB transaction. This is the ONLY way to change wallet balances.
  *
  * @param {Object} payload
- * @param {string} payload.entityType - 'user' | 'restaurant' | 'deliveryBoy' | 'admin'
  * @param {string} payload.entityId - ObjectId of the entity
  * @param {string} payload.type - 'credit' | 'debit'
  * @param {number} payload.amount - positive amount

@@ -11,7 +11,7 @@ import {
   ThumbsUp,
   ThumbsDown,
 } from "lucide-react"
-import BottomPopup from "@delivery/components/BottomPopup"
+import BottomPopup from "../../components/BottomPopup.jsx"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -23,7 +23,6 @@ const accordionItems = [
   {
     id: 1,
     question: "How is my restaurant's rating calculated",
-    answer: "Your restaurant's rating is calculated based on customer reviews and ratings from delivery and dining orders. The system takes an average of all ratings received, with more recent reviews having slightly more weight."
   },
   {
     id: 2,
@@ -37,8 +36,6 @@ const accordionItems = [
   },
   {
     id: 4,
-    question: "How to raise a concern if I think rating was bad due to delivery partner",
-    answer: "If you believe a low rating was due to delivery partner issues, you can raise a concern through the order details page. Navigate to the specific order, click on 'Raise Concern', and select 'Delivery Partner Issue'."
   },
   {
     id: 5,

@@ -79,7 +79,6 @@ const filterOptions = {
   "Order status": [
     { id: "preparing", label: "Preparing", key: "orderStatus" },
     { id: "ready", label: "Ready", key: "orderStatus" },
-    { id: "out-for-delivery", label: "Out for delivery", key: "orderStatus" },
     { id: "delivered", label: "Delivered", key: "orderStatus" },
     { id: "rejected", label: "Rejected", key: "orderStatus" },
     { id: "cancelled", label: "Cancelled", key: "orderStatus" }
@@ -107,7 +106,6 @@ const filterOptions = {
     { id: "not-delivered", label: "Order not delivered", key: "complaints" }
   ],
   "Order type": [
-    { id: "self-delivery", label: "Self delivery", key: "orderType" },
     { id: "food-rescue", label: "Food rescue", key: "orderType" },
     { id: "large-order", label: "Large order", key: "orderType" },
     { id: "veg-only", label: "Veg only", key: "orderType" },
@@ -176,8 +174,6 @@ export default function AllOrdersPage() {
     const date = createdAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
     const time = createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
     
-    // Format address (backend: deliveryAddress)
-    const addr = order.deliveryAddress || order.address || null
     const address =
       addr?.formattedAddress ||
       addr?.address ||
@@ -204,7 +200,6 @@ export default function AllOrdersPage() {
     else if (status === 'DELIVERED') status = 'DELIVERED'
     else if (status === 'PREPARING') status = 'PREPARING'
     else if (status === 'READY') status = 'READY'
-    else if (status === 'OUT_FOR_DELIVERY' || status === 'OUT FOR DELIVERY') status = 'OUT FOR DELIVERY'
     
     // Get rejection/cancellation reason
     let reason = null
@@ -222,7 +217,6 @@ export default function AllOrdersPage() {
     const tags = []
     if (order.scheduledAt) tags.push('SCHEDULED')
     if (order.sendCutlery) tags.push('CUTLERY')
-    tags.push('HOME DELIVERY')
     // Check if all items are veg
     const allVeg = items.every(item => item.isVeg !== false)
     if (allVeg && items.length > 0) tags.push('VEG ONLY')
@@ -430,7 +424,6 @@ export default function AllOrdersPage() {
         return "bg-yellow-600 text-white"
       case "READY":
         return "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white"
-      case "OUT FOR DELIVERY":
         return "bg-purple-600 text-white"
       default:
         return "bg-gray-600 text-white"
@@ -454,7 +447,6 @@ export default function AllOrdersPage() {
       const statusMap = {
         'preparing': 'PREPARING',
         'ready': 'READY',
-        'out-for-delivery': 'OUT FOR DELIVERY',
         'delivered': 'DELIVERED',
         'rejected': 'REJECTED',
         'cancelled': 'CANCELLED'

@@ -162,7 +162,6 @@ export default function UserOrderDetails() {
     // Priority 5: order-level restaurantAddress if present
     if (order.restaurantAddress) return order.restaurantAddress
 
-    // Don't fallback to user delivery address - show empty or "Address not available"
     return "Address not available"
   })()
 
@@ -248,9 +247,9 @@ export default function UserOrderDetails() {
       doc.text(userName || 'Customer', 60, yPos)
       yPos += 7
 
-      // Delivery Address
+      // Address
       doc.setFont('helvetica', 'bold')
-      doc.text('Delivery Address:', 20, yPos)
+      doc.text('Address:', 20, yPos)
       doc.setFont('helvetica', 'normal')
       const addressLines = doc.splitTextToSize(addressText || 'N/A', 130)
       doc.text(addressLines, 60, yPos)
@@ -531,17 +530,7 @@ export default function UserOrderDetails() {
                 ₹{Number(pricing.tax || 0).toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-400 dark:text-gray-500 font-medium">Delivery fee</span>
-              {pricing.deliveryFee === 0 && (
-                <span className="text-[#DC2626] text-[10px] font-bold border border-[#DC2626] px-1 rounded ml-1">
-                  FREE
-                </span>
-              )}
-              <span className="text-[#DC2626] dark:text-[#a04882] font-medium uppercase">
-                {pricing.deliveryFee ? `₹${Number(pricing.deliveryFee).toFixed(2)}` : "Free"}
-              </span>
-            </div>
+
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">Platform fee</span>
               <span className="text-gray-800 dark:text-gray-200">
@@ -591,7 +580,6 @@ export default function UserOrderDetails() {
           )}
         </div>
 
-        {/* User & Delivery Details */}
         <div className="bg-white dark:bg-[#121212] p-4 rounded-xl shadow-sm space-y-5 border dark:border-gray-800">
           {/* User */}
           <div className="flex gap-3">
@@ -641,7 +629,7 @@ export default function UserOrderDetails() {
             </div>
             <div>
               <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
-                Delivery address
+                Address
               </h4>
               <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5 leading-relaxed">
                 {addressText || "Address not available"}

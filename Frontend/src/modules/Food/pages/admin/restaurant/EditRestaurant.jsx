@@ -77,13 +77,7 @@ const normalizeDetailsFormFromRestaurant = (restaurant) => {
     primaryContactNumber: restaurant?.primaryContactNumber || "",
     email: restaurant?.email || "",
     cuisinesText: Array.isArray(restaurant?.cuisines) ? restaurant.cuisines.join(", ") : "",
-    estimatedDeliveryTimeMinutes:
-      restaurant?.estimatedDeliveryTimeMinutes ??
-      restaurant?.estimatedDeliveryTime ??
-      "",
     offer: restaurant?.offer || "",
-    openingTime: restaurant?.openingTime || restaurant?.deliveryTimings?.openingTime || "",
-    closingTime: restaurant?.closingTime || restaurant?.deliveryTimings?.closingTime || "",
     isActive: restaurant?.isActive !== false,
     takeawayEnabled: restaurant?.takeawaySettings?.isEnabled ?? false,
   }
@@ -310,10 +304,6 @@ export default function EditRestaurant() {
         primaryContactNumber: detailsForm.primaryContactNumber,
         email: detailsForm.email,
         cuisines,
-        estimatedDeliveryTimeMinutes:
-          detailsForm.estimatedDeliveryTimeMinutes === ""
-            ? undefined
-            : Number(detailsForm.estimatedDeliveryTimeMinutes),
         offer: detailsForm.offer,
         openingTime: detailsForm.openingTime,
         closingTime: detailsForm.closingTime,
@@ -488,11 +478,8 @@ export default function EditRestaurant() {
                   <Input value={detailsForm.cuisinesText} onChange={(e) => setDetailsForm((p) => ({ ...p, cuisinesText: e.target.value }))} />
                 </div>
                 <div>
-                  <Label>Estimated Delivery Time (minutes)</Label>
                   <Input
                     type="number"
-                    value={detailsForm.estimatedDeliveryTimeMinutes}
-                    onChange={(e) => setDetailsForm((p) => ({ ...p, estimatedDeliveryTimeMinutes: e.target.value }))}
                   />
                 </div>
                 <div>

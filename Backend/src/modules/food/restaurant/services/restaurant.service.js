@@ -84,7 +84,6 @@ const timeToMinutes = (value) => {
     return h * 60 + m;
 };
 
-const parseEstimatedDeliveryMinutes = (value) => {
     const raw = String(value || '').trim();
     if (!raw) return null;
     const matches = raw.match(/\d+/g);
@@ -175,10 +174,6 @@ const toRestaurantProfile = (doc) => {
         openingTime: normalizeRestaurantTime(doc.openingTime) || null,
         closingTime: normalizeRestaurantTime(doc.closingTime) || null,
         openDays: Array.isArray(doc.openDays) ? doc.openDays : [],
-        estimatedDeliveryTime: doc.estimatedDeliveryTime || '',
-        estimatedDeliveryTimeMinutes:
-            Number.isFinite(Number(doc.estimatedDeliveryTimeMinutes))
-                ? Number(doc.estimatedDeliveryTimeMinutes)
                 : null,
         diningSettings: {
             isEnabled: doc.diningSettings?.isEnabled !== false,
@@ -208,7 +203,6 @@ const normalizeCuisine = (value) => String(value || '').trim().slice(0, 80);
 
 const parseSortBy = (value) => {
     const v = String(value || '').trim();
-    const allowed = new Set(['nearest', 'rating', 'newest', 'deliveryTime', 'price-low', 'price-high', 'rating-high', 'rating-low']);
     return allowed.has(v) ? v : null;
 };
 
@@ -265,7 +259,6 @@ export const registerRestaurant = async (payload, files) => {
         openingTime,
         closingTime,
         openDays,
-        estimatedDeliveryTime,
         panNumber,
         nameOnPan,
         gstRegistered,
@@ -330,8 +323,6 @@ export const registerRestaurant = async (payload, files) => {
             throw new ValidationError('Closing time cannot be less than opening time');
         }
     }
-    const estimatedDeliveryTimeText = String(estimatedDeliveryTime || '').trim();
-    const estimatedDeliveryTimeMinutes = parseEstimatedDeliveryMinutes(estimatedDeliveryTimeText);
 
     try {
         const latNum = toFiniteNumber(latitude);
@@ -370,8 +361,6 @@ export const registerRestaurant = async (payload, files) => {
             openingTime: normalizedOpeningTime || undefined,
             closingTime: normalizedClosingTime || undefined,
             openDays: openDays || [],
-            estimatedDeliveryTime: estimatedDeliveryTimeText || undefined,
-            estimatedDeliveryTimeMinutes: estimatedDeliveryTimeMinutes ?? undefined,
             panNumber,
             nameOnPan,
             gstRegistered,
@@ -450,8 +439,6 @@ export const getCurrentRestaurantProfile = async (restaurantId) => {
                 'openingTime',
                 'closingTime',
                 'openDays',
-                'estimatedDeliveryTime',
-                'estimatedDeliveryTimeMinutes',
                 'diningSettings',
                 'takeawaySettings',
                 'isAcceptingOrders',
@@ -618,8 +605,6 @@ export const updateCurrentRestaurantDiningSettings = async (restaurantId, body =
                 'openingTime',
                 'closingTime',
                 'openDays',
-                'estimatedDeliveryTime',
-                'estimatedDeliveryTimeMinutes',
                 'diningSettings',
                 'isAcceptingOrders',
                 'status',
@@ -699,8 +684,6 @@ export const updateCurrentRestaurantTakeawaySettings = async (restaurantId, body
                 'openingTime',
                 'closingTime',
                 'openDays',
-                'estimatedDeliveryTime',
-                'estimatedDeliveryTimeMinutes',
                 'diningSettings',
                 'takeawaySettings',
                 'isAcceptingOrders',
@@ -913,10 +896,6 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             .filter(Boolean)
             .slice(0, 7);
     }
-    if (body.estimatedDeliveryTime !== undefined) {
-        const estimatedDeliveryTimeText = String(body.estimatedDeliveryTime || '').trim();
-        update.estimatedDeliveryTime = estimatedDeliveryTimeText;
-        update.estimatedDeliveryTimeMinutes = parseEstimatedDeliveryMinutes(estimatedDeliveryTimeText) ?? undefined;
     }
 
     const openingMinutes = body.openingTime !== undefined ? timeToMinutes(update.openingTime) : null;
@@ -1075,8 +1054,6 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                     'accountType',
                     'upiId',
                     'upiQrImage',
-                    'estimatedDeliveryTime',
-                    'estimatedDeliveryTimeMinutes',
                     'zoneId'
                 ].join(' ')
             }
@@ -1279,9 +1256,6 @@ export const listApprovedRestaurants = async (query = {}) => {
     if (minRating !== null) {
         filter.rating = { $gte: Math.max(0, Math.min(5, minRating)) };
     }
-    const maxDeliveryTime = toFiniteNumber(query.maxDeliveryTime);
-    if (maxDeliveryTime !== null) {
-        filter.estimatedDeliveryTimeMinutes = { $lte: Math.max(0, Math.round(maxDeliveryTime)) };
     }
     const maxPrice = toFiniteNumber(query.maxPrice);
     if (maxPrice !== null) {
@@ -1339,8 +1313,6 @@ export const listApprovedRestaurants = async (query = {}) => {
         profileImage: 1,
         coverImages: 1,
         menuImages: 1,
-        estimatedDeliveryTime: 1,
-        estimatedDeliveryTimeMinutes: 1,
         offer: 1,
         featuredDish: 1,
         featuredPrice: 1,
@@ -1406,7 +1378,6 @@ export const listApprovedRestaurants = async (query = {}) => {
         if (sortBy === 'rating-low') return { $sort: { rating: 1, distanceMeters: 1, createdAt: -1 } };
         if (sortBy === 'price-low') return { $sort: { featuredPrice: 1, distanceMeters: 1, createdAt: -1 } };
         if (sortBy === 'price-high') return { $sort: { featuredPrice: -1, distanceMeters: 1, createdAt: -1 } };
-        if (sortBy === 'deliveryTime') return { $sort: { estimatedDeliveryTimeMinutes: 1, distanceMeters: 1, createdAt: -1 } };
         if (sortBy === 'newest') return { $sort: { createdAt: -1 } };
         return { $sort: { distanceMeters: 1, createdAt: -1 } };
     })();
@@ -1521,7 +1492,6 @@ export const listPublicOffers = async () => {
 
     const list = await FoodOffer.find(filter)
         .sort({ createdAt: -1 })
-        .populate({ path: 'restaurantId', select: 'restaurantName restaurantNameNormalized profileImage estimatedDeliveryTime rating' })
         .lean();
 
     const allOffers = list.map((o) => {
@@ -1551,7 +1521,6 @@ export const listPublicOffers = async () => {
             restaurantName,
             restaurantSlug,
             restaurantImage: restaurant?.profileImage || null,
-            deliveryTime: restaurant?.estimatedDeliveryTime || null,
             restaurantRating: typeof restaurant?.rating === 'number' ? restaurant.rating : 0,
             endDate: o.endDate || null,
             showInCart: o.showInCart !== false,
@@ -1586,7 +1555,6 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
         zoneId: new mongoose.Types.ObjectId(zoneIdRaw),
         status: 'approved'
     })
-    .select('restaurantName slug area city rating totalRatings estimatedDeliveryTime estimatedDeliveryTimeMinutes profileImage coverImages menuImages location pureVegRestaurant isActive isAcceptingOrders openingTime closingTime openDays')
     .lean();
 
     if (restaurantsInZone.length === 0) {

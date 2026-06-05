@@ -45,7 +45,6 @@ export default function RestaurantReviews() {
       alert("No data to export")
       return
     }
-    // Reuse deliveryman export utils or create new ones if needed
     switch (format) {
       case "csv": exportReviewsToCSV(filteredReviews); break
       case "excel": exportReviewsToExcel(filteredReviews); break

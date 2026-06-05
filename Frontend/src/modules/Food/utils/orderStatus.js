@@ -54,7 +54,6 @@ export const normalizeStatus = (status) => {
     'ready': ORDER_STATUS.READY_TO_HANDOVER,
     'ready to handover': ORDER_STATUS.READY_TO_HANDOVER,
     'ready_to_handover': ORDER_STATUS.READY_TO_HANDOVER,
-    'onway': ORDER_STATUS.READY_TO_HANDOVER, // "onway" means ready for delivery
     'on the way': ORDER_STATUS.READY_TO_HANDOVER,
     'delivered': ORDER_STATUS.DELIVERED, // Delivered orders (past orders)
     'refunded': ORDER_STATUS.REFUNDED // Refunded orders (past orders)

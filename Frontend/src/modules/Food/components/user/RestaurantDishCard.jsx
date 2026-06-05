@@ -54,7 +54,6 @@ const RestaurantDishCard = ({
           </div>
           <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg text-[10px] sm:text-xs font-bold ring-1 ring-white/20">
             <Clock className="w-3 h-3 text-white" />
-            <span>{restaurant.deliveryTime || "25 min"}</span>
           </div>
         </div>
       </div>

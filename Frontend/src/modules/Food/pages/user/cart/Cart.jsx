@@ -190,14 +190,7 @@ export default function Cart() {
   const [orderSuccessSavingsAmount, setOrderSuccessSavingsAmount] = useState(0)
   const [placedOrderId, setPlacedOrderId] = useState(null)
   const [selectedAddressId, setSelectedAddressId] = useState(null)
-  const [deliveryAddressMode, setDeliveryAddressMode] = useState(() => {
-    try {
-      if (typeof window === "undefined") return "saved"
-      return localStorage.getItem("deliveryAddressMode") || "saved"
-    } catch {
-      return "saved"
-    }
-  })
+  
   useEffect(() => {
     const audio = new Audio(zoopSound)
     audio.preload = "auto"
@@ -215,7 +208,6 @@ export default function Cart() {
   const [customizationSettings, setCustomizationSettings] = useState({
     cod_enabled: true,
     takeaway_cod_enabled: true,
-    delivery_cod_enabled: true,
     dining_cod_enabled: true,
     wallet_payment_enabled: true,
     online_payment_enabled: true,
@@ -247,7 +239,6 @@ export default function Cart() {
       }
 
       if (orderType === "takeaway") return customizationSettings.takeaway_cod_enabled !== false
-      if (orderType === "delivery") return customizationSettings.delivery_cod_enabled !== false
       if (orderType === "dining") return customizationSettings.dining_cod_enabled !== false
       return true
     }
@@ -312,10 +303,6 @@ export default function Cart() {
 
   // Fee settings from database (used for platform fee and GST fallback only)
   const [feeSettings, setFeeSettings] = useState({
-    deliveryFee: 25,
-    deliveryFeeRanges: [],
-    freeDeliveryUpTo: 0,
-    freeDeliveryThreshold: 149,
     platformFee: 5,
     packagingFee: 0,
     gstRate: 5,
@@ -425,7 +412,6 @@ export default function Cart() {
     if (!formattedAddress || formattedAddress === "Select location") return null
 
     return {
-      // Backend deliveryAddressSchema expects label in ['Home','Office','Other'].
       label: "Home",
       formattedAddress,
       address: formattedAddress,
@@ -453,15 +439,11 @@ export default function Cart() {
     currentLocation?.zipCode,
     userProfile?.phone,
     // Re-evaluate derived address when mode changes (overlay closes -> Cart rerenders).
-    deliveryAddressMode,
   ])
 
   const defaultAddress = useMemo(() => {
-    return deliveryAddressMode === "current"
-      ? currentLocationAddress || selectedAddress || savedAddress || null
-      : selectedAddress || savedAddress || currentLocationAddress || null
-  }, [deliveryAddressMode, currentLocationAddress, selectedAddress, savedAddress])
-
+    return selectedAddress || savedAddress || currentLocationAddress || null
+  }, [selectedAddress, savedAddress, currentLocationAddress])
   const hasSavedAddress = Boolean(defaultAddress && formatFullAddress(defaultAddress))
   const recipientName = String(recipientDetails.name || "").trim() || userProfile?.name || "Your Name"
   const recipientPhone = sanitizeRecipientPhone(recipientDetails.phone || "") || userProfile?.phone || ""
@@ -476,12 +458,9 @@ export default function Cart() {
   const defaultPayment = getDefaultPaymentMethod()
 
   useEffect(() => {
-    // Sync delivery mode from overlay/localStorage changes.
     // No dependency array: overlay open/close re-renders Cart via provider state update,
     // even when GPS coords don't move enough to update `currentLocation`.
     try {
-      const mode = localStorage.getItem("deliveryAddressMode") || "saved"
-      setDeliveryAddressMode((prev) => (prev === mode ? prev : mode))
     } catch {
       // ignore
     }
@@ -558,17 +537,13 @@ export default function Cart() {
   }, [restaurantNote, showRestaurantNoteInput])
 
   useEffect(() => {
-    if (deliveryAddressMode === "current") {
-      setSelectedAddressId(null)
-    }
-  }, [deliveryAddressMode])
+    setSelectedAddressId(null)
+  }, [])
 
   useEffect(() => {
     const defaultId = getAddressId(savedAddress)
-    if (deliveryAddressMode !== "current" && !selectedAddressId && defaultId) {
-      setSelectedAddressId(defaultId)
-    }
-  }, [savedAddress, selectedAddressId, deliveryAddressMode])
+    setSelectedAddressId(defaultId)
+  }, [savedAddress])
 
   // Get restaurant ID from cart or restaurant data
   // Priority: restaurantData > cart[0].restaurantId
@@ -949,7 +924,6 @@ export default function Cart() {
     const calculatePricing = async () => {
       const resolvedRestaurantId = restaurantData?.restaurantId || restaurantData?._id || cart[0]?.restaurantId || undefined
       
-      // For takeaway, we don't need a delivery address to calculate pricing, but we MUST have a restaurantId
       const canCalculate = cart.length > 0 && resolvedRestaurantId && (orderType === "takeaway" || hasSavedAddress)
       
       if (!canCalculate) {
@@ -978,7 +952,6 @@ export default function Cart() {
         const requestBody = {
           items,
           restaurantId: resolvedRestaurantId,
-          deliveryAddress: orderType === "takeaway" ? undefined : (defaultAddress || undefined),
           couponCode: resolvedCouponCode,
           orderType: orderType
         }
@@ -1057,10 +1030,6 @@ export default function Cart() {
         const response = await adminAPI.getPublicFeeSettings()
         if (response.data.success && response.data.data.feeSettings) {
           setFeeSettings({
-            deliveryFee: response.data.data.feeSettings.deliveryFee ?? 25,
-            deliveryFeeRanges: response.data.data.feeSettings.deliveryFeeRanges ?? [],
-            freeDeliveryUpTo: response.data.data.feeSettings.freeDeliveryUpTo ?? 0,
-            freeDeliveryThreshold: response.data.data.feeSettings.freeDeliveryThreshold ?? 149,
             platformFee: response.data.data.feeSettings.platformFee ?? 5,
             packagingFee: response.data.data.feeSettings.packagingFee ?? 0,
             gstRate: response.data.data.feeSettings.gstRate ?? 5,
@@ -1088,64 +1057,11 @@ export default function Cart() {
 
   // Use backend pricing if available, otherwise fallback to database fee settings
   const subtotal = pricing?.subtotal || cart.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0)
-  const fallbackDeliveryFee = (() => {
-    if (appliedCoupon?.freeDelivery) {
-      return 0
-    }
-
-    const freeUpTo = Number(feeSettings.freeDeliveryUpTo || 0)
-    if (Number.isFinite(freeUpTo) && freeUpTo > 0 && subtotal >= freeUpTo) {
-      return 0
-    }
-
-    const distanceKm = (() => {
-      const rCoords = restaurantData?.location?.coordinates
-      const dCoords = defaultAddress?.location?.coordinates
-      if (!Array.isArray(rCoords) || !Array.isArray(dCoords)) return null
-      if (rCoords.length !== 2 || dCoords.length !== 2) return null
-      const [rLng, rLat] = rCoords
-      const [dLng, dLat] = dCoords
-      return calculateDistance(rLat, rLng, dLat, dLng)
-    })()
-
-    const ranges = Array.isArray(feeSettings.deliveryFeeRanges) ? [...feeSettings.deliveryFeeRanges] : []
-    if (ranges.length > 0 && Number.isFinite(distanceKm)) {
-      const sortedRanges = ranges.sort((a, b) => Number(a.min) - Number(b.min))
-      for (let i = 0; i < sortedRanges.length; i += 1) {
-        const range = sortedRanges[i]
-        const min = Number(range.min)
-        const max = Number(range.max)
-        const fee = Number(range.fee)
-        const isLastRange = i === sortedRanges.length - 1
-        const inRange = isLastRange
-          ? distanceKm >= min && distanceKm <= max
-          : distanceKm >= min && distanceKm < max
-
-        if (inRange) return fee
-      }
-
-      return 0
-    }
-
-    if (subtotal >= feeSettings.freeDeliveryThreshold) {
-      return 0
-    }
-
-    return Number(feeSettings.deliveryFee || 0)
-  })()
-  const deliveryFee = pricing != null ? (pricing.deliveryFee ?? 0) : fallbackDeliveryFee
-  const deliveryFeeBreakdown = pricing?.deliveryFeeBreakdown || null
-  const hasDistanceDeliveryBreakdown =
-    deliveryFeeBreakdown?.source === "distance" &&
-    Number.isFinite(Number(deliveryFeeBreakdown?.distanceKm))
-  const deliveryFeeBreakdownText = hasDistanceDeliveryBreakdown
-    ? `Distance ${Number(deliveryFeeBreakdown.distanceKm).toFixed(1)} km`
-    : null
-  const platformFee = pricing != null ? (pricing.platformFee ?? 0) : (feeSettings.platformFee ?? 0)
+    const platformFee = pricing != null ? (pricing.platformFee ?? 0) : (feeSettings.platformFee ?? 0)
   const packagingFee = pricing != null ? (pricing.packagingFee ?? 0) : (feeSettings.packagingFee ?? 0)
   const gstCharges = pricing != null ? (pricing.tax ?? 0) : Math.round(subtotal * ((feeSettings.gstRate ?? 0) / 100))
   const discount = pricing?.discount || (appliedCoupon ? Math.min(appliedCoupon.discount, subtotal * 0.5) : 0)
-  const totalBeforeDiscount = subtotal + deliveryFee + platformFee + packagingFee + gstCharges
+  const totalBeforeDiscount = subtotal + platformFee + packagingFee + gstCharges
   const total = pricing?.total || (totalBeforeDiscount - discount)
   const savings = pricing?.savings ?? Math.max(0, totalBeforeDiscount - total)
   
@@ -1209,7 +1125,7 @@ export default function Cart() {
       ? "Wallet"
       : selectedPaymentMethod === "razorpay"
         ? "Online Payment"
-        : "Cash on Delivery"
+        : "Cash"
 
   // Restaurant name from data or cart
   const restaurantName = restaurantData?.name || cart[0]?.restaurant || "Restaurant"
@@ -1414,8 +1330,6 @@ export default function Cart() {
       }
       // User selected a saved address from Cart; prefer saved mode.
       try {
-        localStorage.setItem("deliveryAddressMode", "saved")
-        setDeliveryAddressMode("saved")
       } catch { }
 
       toast.success(`${address.label || "Saved"} address selected!`)
@@ -1455,7 +1369,6 @@ export default function Cart() {
         const response = await orderAPI.calculateOrder({
           items,
           restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
-          deliveryAddress: defaultAddress,
           couponCode: coupon.code
         })
 
@@ -1485,7 +1398,6 @@ export default function Cart() {
     }
 
     if (cart.length === 0 || !hasSavedAddress) {
-      toast.error("Add items and delivery address first")
       return
     }
 
@@ -1516,7 +1428,6 @@ export default function Cart() {
       const response = await orderAPI.calculateOrder({
         items,
         restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
-        deliveryAddress: defaultAddress,
         couponCode: inputCode
       })
 
@@ -1575,7 +1486,6 @@ export default function Cart() {
         const response = await orderAPI.calculateOrder({
           items,
           restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
-          deliveryAddress: defaultAddress,
           couponCode: null
         })
 
@@ -1591,7 +1501,6 @@ export default function Cart() {
 
   const handlePlaceOrder = async () => {
     if (!hasSavedAddress) {
-      toast.error("Please choose a delivery location to continue")
       openLocationSelector()
       return
     }
@@ -1622,12 +1531,10 @@ export default function Cart() {
       debugLog("?? Starting order placement process...")
       debugLog("?? Cart items:", cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })))
       debugLog("?? Applied coupon:", appliedCoupon?.code || "None")
-      debugLog("?? Delivery address:", defaultAddress?.label || defaultAddress?.city)
 
       // Ensure couponCode is included in pricing
       const orderPricing = pricing || {
         subtotal,
-        deliveryFee,
         tax: gstCharges,
         platformFee,
         discount,
@@ -1868,7 +1775,6 @@ export default function Cart() {
 
       // Cash flow: order placed without online payment
       if (selectedPaymentMethod === "cash") {
-        toast.success("Order placed with Cash on Delivery")
         setPlacedOrderId(order?._id || order?.orderId || order?.id || null)
         setOrderSuccessSavingsAmount(platformPricingSavings.totalSavings > 0 ? platformPricingSavings.totalSavings : 0)
         if (platformPricingSavings.totalSavings > 0) {
@@ -2196,7 +2102,6 @@ export default function Cart() {
                   </div>
                 ) : (
                   <p className="text-sm md:text-base font-medium text-gray-800 dark:text-white truncate">
-                    {restaurantData?.estimatedDeliveryTime || "10-15 mins"} to <span className="font-semibold">Location</span>
                     <span className="text-gray-400 dark:text-gray-500 ml-1 text-xs md:text-sm">{defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || defaultAddress?.city || "Select address") : "Select address"}</span>
                   </p>
                 )}
@@ -2512,7 +2417,6 @@ export default function Cart() {
                 )}
               </div>
 
-              {/* Delivery Time - Hidden in Takeaway */}
               {orderType !== "takeaway" && (
                 <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
                   <div className="flex items-start gap-3 md:gap-4">
@@ -2521,7 +2425,6 @@ export default function Cart() {
                     </div>
                     <div className="flex-1">
                       <p className="text-base text-gray-800 dark:text-gray-200">
-                        Delivery in <span className="text-green-600 font-bold">{restaurantData?.estimatedDeliveryTime || "15-20 mins"}</span>
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
                         Want this later?
@@ -2580,7 +2483,6 @@ export default function Cart() {
                 </div>
               )}
 
-              {/* Delivery Address or Pickup Info */}
               <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
                 {orderType === "takeaway" ? (
                   <div className="flex items-start gap-4">
@@ -2612,40 +2514,39 @@ export default function Cart() {
                       <div className="flex-1">
                           <div className="flex flex-col">
                             <p className="text-sm md:text-base text-gray-800 dark:text-gray-200">
-                              Delivery at{" "}
                               <span className="font-semibold">
-                                {deliveryAddressMode === "current" ? "Current location" : "Location"}
                               </span>
                             </p>
-                            {deliveryAddressMode === "current" ? (
-                              <div className="mt-1">
-                                {currentLocationLoading || !currentLocationAddress ? (
-                                  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 animate-pulse">
-                                    Finding your current address...
-                                  </p>
+                              <div className="flex-1">
+                                {isCurrentLocation ? (
+                                  <div className="mt-1">
+                                    {currentLocationLoading || !currentLocationAddress ? (
+                                      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 animate-pulse">
+                                        Finding your current address...
+                                      </p>
+                                    ) : (
+                                      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                                        {formatFullAddress(currentLocationAddress) ||
+                                          currentLocationAddress?.formattedAddress ||
+                                          currentLocationAddress?.address || "Location unavailable"}
+                                      </p>
+                                    )}
+                                    <div className="mt-1 flex items-center gap-2">
+                                       <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] md:text-[11px] font-semibold bg-[#DC262605] text-[#DC2626] dark:bg-[#DC262610] dark:text-[#DC2626] border border-[#DC2626]/30">
+                                         GPS enabled
+                                       </span>
+                                    </div>
+                                  </div>
                                 ) : (
-                                  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                                    {formatFullAddress(currentLocationAddress) ||
-                                      currentLocationAddress?.formattedAddress ||
-                                      currentLocationAddress?.address ||
-                                      "Add delivery address"}
+                                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 pr-4">
+                                    {defaultAddress ? formatFullAddress(defaultAddress) : "No address selected"}
                                   </p>
                                 )}
-                                <div className="mt-1 flex items-center gap-2">
-                                   <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] md:text-[11px] font-semibold bg-[#DC262605] text-[#DC2626] dark:bg-[#DC262610] dark:text-[#DC2626] border border-[#DC2626]/30">
-                                     GPS enabled
-                                   </span>
-                                </div>
                               </div>
-                            ) : (
-                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 pr-4">
-                                {defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Add delivery address") : "Add delivery address"}
-                              </p>
-                            )}
                           </div>
                           {!hasSavedAddress && (
                              <p className="text-sm text-[#DC2626] mt-2 font-medium">
-                               Select a delivery location to continue
+                               Please select a location
                              </p>
                           )}
                           {/* Address Selection Buttons */}
@@ -2812,37 +2713,8 @@ export default function Cart() {
 
                 {showBillDetails && (
                   <div className="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-gray-800 space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">Item Total</span>
-                      <span className="text-gray-800 dark:text-gray-200 font-medium">{RUPEE_SYMBOL}{subtotal.toFixed(2)}</span>
-                    </div>
+                    
 
-                    {orderType !== "takeaway" && (
-                      <>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600 dark:text-gray-400">Delivery Fee</span>
-                           <span className={deliveryFee === 0 ? "text-[#DC2626] font-medium" : "text-gray-800 dark:text-gray-200 font-medium"}>
-                             {deliveryFee === 0 ? "FREE" : `${RUPEE_SYMBOL}${deliveryFee.toFixed(2)}`}
-                           </span>
-                        </div>
-                        {deliveryFeeBreakdownText && (
-                          <div className="text-[11px] text-gray-500 dark:text-gray-400 -mt-1.5 ml-1 border-l-2 border-gray-100 pl-2">
-                            {deliveryFeeBreakdownText}
-                          </div>
-                        )}
-                        {Number((pricing?.freeDeliveryUpTo ?? feeSettings.freeDeliveryUpTo) || 0) > 0 && (
-                          <div className="-mt-1.5">
-                            <div className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#DC2626]/10 via-[#DC2626]/20 to-[#DC2626]/10 text-[#DC2626] border border-[#DC2626]/25 px-2.5 py-1 text-[11px] font-semibold shadow-sm animate-pulse">
-                              <Sparkles className="h-3 w-3" />
-                              <span>Free delivery at</span>
-                              <span className="text-[#991B1B]">
-                                {RUPEE_SYMBOL}{Number((pricing?.freeDeliveryUpTo ?? feeSettings.freeDeliveryUpTo) || 0).toFixed(0)}+
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
 
                     {/* Removed TAKEAWAY ORDER badge from here */}
                     {platformFee > 0 && (
@@ -3011,12 +2883,11 @@ export default function Cart() {
                           ? `Pay ${RUPEE_SYMBOL}${total.toFixed(2)} online (Razorpay)`
                           : selectedPaymentMethod === "wallet"
                             ? `Pay ${RUPEE_SYMBOL}${total.toFixed(2)} from Wallet`
-                            : `Pay on delivery (COD)`}
+                            : `Pay at Counter / Cash`}
                       </p>
                     </div>
                   </div>
 
-                  {/* Delivery Address */}
                   <div className="flex items-center gap-4 mb-8">
                     <div className="w-14 h-14 rounded-xl border border-gray-200 flex items-center justify-center bg-gray-50">
                       <svg className="w-7 h-7 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -3234,7 +3105,6 @@ export default function Cart() {
                     </h2>
                   </div>
                   <p className="text-gray-500 dark:text-gray-400 text-base">
-                    {defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Delivery Address") : "Delivery Address"}
                   </p>
                 </div>
 
@@ -3352,7 +3222,6 @@ export default function Cart() {
                         },
                         {
                           id: 'cash',
-                          name: 'Cash on Delivery',
                           description: 'Pay when order arrives',
                           icon: <Banknote className="w-5 h-5" />,
                           color: 'bg-orange-50 text-#991B1B dark:bg-orange-900/40 dark:text-orange-400',

@@ -295,11 +295,6 @@ export default function Dining() {
           featuredDish: String(restaurant?.featuredDish || "Chef's special").trim(),
           featuredPrice: Number(restaurant?.featuredPrice || 0),
           rating: Number(restaurant?.rating || restaurant?.avgRating || 0),
-          deliveryTime: String(
-            restaurant?.estimatedDeliveryTime ||
-            restaurant?.deliveryTime ||
-            (restaurant?.estimatedDeliveryTimeMinutes ? `${restaurant.estimatedDeliveryTimeMinutes} mins` : "30-40 mins")
-          ).trim(),
           distanceValue: distanceKm,
           diningType: (() => {
             const rawType = restaurant?.diningSettings?.diningType
@@ -383,20 +378,7 @@ export default function Dining() {
   const filteredRestaurants = useMemo(() => {
     let filtered = [...nearbyPopularRestaurants]
 
-    if (activeFilters.has('delivery-under-30')) {
-      filtered = filtered.filter(r => {
-        const timeStr = String(r.deliveryTime || '')
-        const timeMatch = timeStr.match(/(\d+)/)
-        return timeMatch && parseInt(timeMatch[1], 10) <= 30
-      })
-    }
-    if (activeFilters.has('delivery-under-45')) {
-      filtered = filtered.filter(r => {
-        const timeStr = String(r.deliveryTime || '')
-        const timeMatch = timeStr.match(/(\d+)/)
-        return timeMatch && parseInt(timeMatch[1], 10) <= 45
-      })
-    }
+
     if (activeFilters.has('distance-under-1km')) {
       filtered = filtered.filter(r => (r.distanceValue || 0) <= 1.0)
     }
@@ -857,8 +839,6 @@ export default function Dining() {
 
                 {/* Filter Buttons */}
                 {[
-                  { id: 'delivery-under-30', label: 'Under 30 mins' },
-                  { id: 'delivery-under-45', label: 'Under 45 mins' },
                   { id: 'distance-under-1km', label: 'Under 1km', icon: MapPin },
                   { id: 'distance-under-2km', label: 'Under 2km', icon: MapPin },
                   { id: 'rating-35-plus', label: '3.5+ Rating' },
@@ -916,7 +896,6 @@ export default function Dining() {
                     name: restaurant.name,
                     cuisine: restaurant.cuisine,
                     rating: restaurant.rating,
-                    deliveryTime: restaurant.deliveryTime,
                     distance: restaurant.distance,
                     image: restaurant.image
                   })
@@ -1106,10 +1085,8 @@ export default function Dining() {
                               </motion.div>
                             </div>
 
-                            {/* Delivery Time & Distance */}
                             <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 mb-2">
                               <Clock className="h-4 w-4" strokeWidth={1.5} />
-                              <span className="font-medium">{restaurant.deliveryTime}</span>
                               <span className="mx-1">|</span>
                               <span className="font-medium">{restaurant.distance}</span>
                             </div>
@@ -1155,7 +1132,6 @@ export default function Dining() {
                     name: restaurant.name,
                     cuisine: restaurant.cuisine,
                     rating: restaurant.rating,
-                    deliveryTime: restaurant.deliveryTime,
                     distance: restaurant.distance,
                     image: restaurant.image
                   })
@@ -1316,7 +1292,6 @@ export default function Dining() {
                             <div className="flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400 mb-2.5">
                               <div className="flex items-center gap-1">
                                 <Clock className="h-4 w-4 text-gray-400" strokeWidth={2} />
-                                <span>{restaurant.deliveryTime}</span>
                               </div>
                               <span className="mx-0.5 text-gray-300">|</span>
                               <div className="flex items-center gap-1">
@@ -1384,7 +1359,6 @@ export default function Dining() {
               <div className="w-24 sm:w-28 md:w-32 bg-gray-50 dark:bg-[#0a0a0a] border-r dark:border-gray-800 flex flex-col">
                 {[
                   { id: 'sort', label: 'Sort By', icon: ArrowDownUp },
-                  { id: 'time', label: 'Time', icon: Timer },
                   { id: 'rating', label: 'Rating', icon: Star },
                   { id: 'distance', label: 'Distance', icon: MapPin },
                   { id: 'price', label: 'Dish Price', icon: IndianRupee },
@@ -1438,34 +1412,6 @@ export default function Dining() {
                   </div>
                 )}
 
-                {/* Time Tab */}
-                {activeFilterTab === 'time' && (
-                  <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Estimated Time</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => toggleFilter('delivery-under-30')}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('delivery-under-30')
-                          ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
-                          }`}
-                      >
-                        <Timer className={`h-6 w-6 ${activeFilters.has('delivery-under-30') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
-                        <span className={`text-sm font-medium ${activeFilters.has('delivery-under-30') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under 30 mins</span>
-                      </button>
-                      <button
-                        onClick={() => toggleFilter('delivery-under-45')}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('delivery-under-45')
-                          ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
-                          }`}
-                      >
-                        <Timer className={`h-6 w-6 ${activeFilters.has('delivery-under-45') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
-                        <span className={`text-sm font-medium ${activeFilters.has('delivery-under-45') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under 45 mins</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {/* Rating Tab */}
                 {activeFilterTab === 'rating' && (

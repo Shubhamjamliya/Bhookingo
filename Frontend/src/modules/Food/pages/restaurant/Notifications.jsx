@@ -16,7 +16,6 @@ const getStatusLabel = (status = "") => {
   if (normalized === "confirmed") return "New order received"
   if (normalized === "preparing") return "Order is preparing"
   if (normalized === "ready") return "Order is ready for pickup"
-  if (normalized === "out_for_delivery") return "Order out for delivery"
   if (normalized === "delivered") return "Order delivered"
   if (normalized === "cancelled") return "Order cancelled"
   if (normalized === "rejected") return "Order rejected"

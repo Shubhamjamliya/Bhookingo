@@ -6,7 +6,6 @@ const TARGET_OPTIONS = [
   { value: "ALL", label: "All" },
   { value: "USER", label: "Users" },
   { value: "RESTAURANT", label: "Restaurants" },
-  { value: "DELIVERY", label: "Delivery Partners" },
   { value: "CUSTOM", label: "Particular Persons" },
 ];
 
@@ -72,10 +71,9 @@ export default function NotificationBroadcast() {
   const loadRecipients = async () => {
     try {
       setRecipientLoading(true);
-      const [customersRes, restaurantsRes, deliveryRes] = await Promise.all([
+      const [customersRes, restaurantsRes] = await Promise.all([
         adminAPI.getCustomers({ page: 1, limit: 500 }),
         adminAPI.getRestaurants({ page: 1, limit: 500 }),
-        adminAPI.getDeliveryPartners({ page: 1, limit: 500 }),
       ]);
 
       const customers = normalizeRecipients(customersRes, "USER", (item, ownerType) => ({
@@ -92,14 +90,7 @@ export default function NotificationBroadcast() {
         subLabel: [item?.ownerPhone, item?.ownerEmail].filter(Boolean).join(" • "),
       }));
 
-      const deliveryPartners = normalizeRecipients(deliveryRes, "DELIVERY_PARTNER", (item, ownerType) => ({
-        ownerType,
-        ownerId: String(item?._id || item?.id || ""),
-        label: String(item?.name || item?.phone || "Delivery Partner").trim(),
-        subLabel: [item?.phone, item?.email].filter(Boolean).join(" • "),
-      }));
-
-      setAllRecipients([...customers, ...restaurants, ...deliveryPartners]);
+      setAllRecipients([...customers, ...restaurants]);
     } catch {
       setAllRecipients([]);
     } finally {
@@ -254,7 +245,6 @@ export default function NotificationBroadcast() {
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search users, restaurants, or delivery partners"
                   className="w-full text-sm bg-transparent outline-none"
                 />
               </div>

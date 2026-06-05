@@ -16,7 +16,6 @@ import {
 const MODULES = [
   {
     id: "food",
-    title: "Food Delivery",
     description: "Delicious meals from your favorite restaurants delivered hot and fast to your doorstep.",
     icon: UtensilsCrossed,
     color: "from-orange-500 to-rose-500",
@@ -48,7 +47,6 @@ const MODULES = [
     bg: "bg-emerald-50",
     iconColor: "text-emerald-600",
     path: "/quick-commerce",
-    stats: "10 Min Delivery"
   }
 ]
 

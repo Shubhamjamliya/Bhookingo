@@ -3,7 +3,6 @@ import mongoose from 'mongoose';
 const earningAddonHistorySchema = new mongoose.Schema(
     {
         offerId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodEarningAddon', required: true, index: true },
-        deliveryPartnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodDeliveryPartner', required: true, index: true },
 
         ordersCompleted: { type: Number, default: 0 },
         ordersRequired: { type: Number, default: 0 },
@@ -23,8 +22,6 @@ const earningAddonHistorySchema = new mongoose.Schema(
     { collection: 'food_earning_addon_history', timestamps: true }
 );
 
-earningAddonHistorySchema.index({ deliveryPartnerId: 1, completedAt: -1 });
-earningAddonHistorySchema.index({ offerId: 1, deliveryPartnerId: 1, status: 1 });
 
 export const FoodEarningAddonHistory = mongoose.model('FoodEarningAddonHistory', earningAddonHistorySchema);
 

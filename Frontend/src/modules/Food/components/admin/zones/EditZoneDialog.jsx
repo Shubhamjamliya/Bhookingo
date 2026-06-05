@@ -13,7 +13,7 @@ const languageTabs = [
   { key: "en", label: "English(EN)" },
   { key: "bn", label: "Bengali - ?????(BN)" },
   { key: "ar", label: "Arabic - ??????? (AR)" },
-  { key: "es", label: "Spanish - español(ES)" }
+  { key: "es", label: "Spanish - espaï¿½ol(ES)" }
 ]
 
 export default function EditZoneDialog({ isOpen, onOpenChange, zone, onSave }) {
@@ -124,8 +124,6 @@ export default function EditZoneDialog({ isOpen, onOpenChange, zone, onSave }) {
                     <span className="ml-2 text-slate-600">{zone.restaurants}</span>
                   </div>
                   <div>
-                    <span className="font-semibold text-slate-700">Deliverymen:</span>
-                    <span className="ml-2 text-slate-600">{zone.deliverymen}</span>
                   </div>
                   <div>
                     <span className="font-semibold text-slate-700">Status:</span>

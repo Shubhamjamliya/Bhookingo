@@ -10,7 +10,7 @@ const languageTabs = [
   { key: "en", label: "English(EN)" },
   { key: "bn", label: "Bengali - বাংলা(BN)" },
   { key: "ar", label: "Arabic - العربية (AR)" },
-  { key: "es", label: "Spanish - espa�ol(ES)" }
+  { key: "es", label: "Spanish - espa�ol(ES)" }
 ]
 
 const notificationMessages = [
@@ -44,9 +44,6 @@ const notificationMessages = [
   },
   {
     id: 5,
-    key: "orderOutForDelivery",
-    label: "Order out for delivery message",
-    defaultText: "Your order {orderId} is out for delivery",
     enabled: true
   },
   {
@@ -58,16 +55,10 @@ const notificationMessages = [
   },
   {
     id: 7,
-    key: "deliverymanAssign",
-    label: "Deliveryman assign message",
-    defaultText: "Deliveryman {userName} has been assigned to your order {orderId}",
     enabled: true
   },
   {
     id: 8,
-    key: "deliverymanDelivered",
-    label: "Deliveryman delivered message",
-    defaultText: "Deliveryman {userName} has delivered your order {orderId}",
     enabled: true
   },
   {

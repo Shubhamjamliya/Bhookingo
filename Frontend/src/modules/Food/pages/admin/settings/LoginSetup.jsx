@@ -21,8 +21,6 @@ const panelLoginUrls = [
   },
   {
     id: 3,
-    panelName: "Deliveryman Panel",
-    loginUrl: "https://delivery.stackfood.com/login",
     status: "active"
   },
   {

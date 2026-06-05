@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
 import Lenis from "lenis"
 import { ArrowLeft, ChevronDown } from "lucide-react"
-import BottomPopup from "@delivery/components/BottomPopup"
+import BottomPopup from "../../components/BottomPopup.jsx"
 import { restaurantAPI } from "@food/api"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -261,7 +261,6 @@ export default function EditRestaurantAddress() {
           {/* Informational Banner */}
           <div className="bg-blue-100 rounded-lg px-4 py-3 mb-4">
             <p className="text-sm text-gray-900">
-              Customers and Zomato delivery partners will use this to locate your outlet.
             </p>
           </div>
 

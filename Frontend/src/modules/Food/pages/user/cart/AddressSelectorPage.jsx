@@ -230,7 +230,6 @@ export default function AddressSelectorPage() {
       
       if (loc) {
         sessionStorage.setItem("manual_location_update", "true")
-        localStorage.setItem("deliveryAddressMode", "current")
         window.dispatchEvent(new CustomEvent("userLocationUpdated"))
         // Go back instantly after successful location lock!
         handleBack()
@@ -252,7 +251,6 @@ export default function AddressSelectorPage() {
       setDefaultAddress(id)
       
       try { 
-        localStorage.setItem("deliveryAddressMode", "saved")
         window.dispatchEvent(new CustomEvent("userLocationUpdated"))
         // Go back immediately!
         handleBack()
@@ -314,7 +312,6 @@ export default function AddressSelectorPage() {
         // Save to local storage
         localStorage.setItem("userLocation", JSON.stringify(finalLoc))
         sessionStorage.setItem("manual_location_update", "true")
-        localStorage.setItem("deliveryAddressMode", "current")
         
         // Dispatch update event
         window.dispatchEvent(new CustomEvent("userLocationUpdated"))
@@ -459,7 +456,6 @@ export default function AddressSelectorPage() {
         if (id) await setDefaultAddress(id)
         try { 
           sessionStorage.setItem("manual_location_update", "true");
-          localStorage.setItem("deliveryAddressMode", "saved")
           window.dispatchEvent(new CustomEvent("userLocationUpdated"))
         } catch {}
         // toast.success("Address saved")
@@ -515,7 +511,6 @@ export default function AddressSelectorPage() {
           <Button variant="ghost" size="icon" onClick={handleCancelAddressForm} className="rounded-full">
             <ChevronLeft className="h-6 w-6" />
           </Button>
-          <h1 className="text-lg font-bold">Add delivery location</h1>
         </div>
 
         <div

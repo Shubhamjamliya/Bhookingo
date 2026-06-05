@@ -74,7 +74,6 @@ export default function ArchivedAccounts() {
     switch (type) {
       case 'user': return <User className="w-4 h-4" />
       case 'restaurant': return <Store className="w-4 h-4" />
-      case 'delivery': return <Truck className="w-4 h-4" />
       default: return <User className="w-4 h-4" />
     }
   }
@@ -83,7 +82,6 @@ export default function ArchivedAccounts() {
     switch (type) {
       case 'user': return 'bg-blue-50 text-blue-600 border-blue-100'
       case 'restaurant': return 'bg-orange-50 text-orange-600 border-orange-100'
-      case 'delivery': return 'bg-purple-50 text-purple-600 border-purple-100'
       default: return 'bg-gray-50 text-gray-600 border-gray-100'
     }
   }
@@ -107,7 +105,6 @@ export default function ArchivedAccounts() {
               Archived Accounts
             </h1>
             <p className="text-slate-500 mt-1 text-sm font-medium">
-              View and track deleted users, restaurants, and delivery partners.
             </p>
           </div>
 
@@ -163,14 +160,7 @@ export default function ArchivedAccounts() {
                 >
                   Restaurants
                 </button>
-                <button
-                  onClick={() => setRoleFilter("delivery")}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    roleFilter === "delivery" ? "bg-white text-purple-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  Delivery
-                </button>
+
               </div>
             </div>
           </div>

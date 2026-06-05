@@ -27,7 +27,6 @@ export default function Gallery() {
     "Advertisem": { type: "folder", items: [] },
     "React_land": { type: "folder", items: [] },
     "Header_ima": { type: "folder", items: [] },
-    "Delivery-M": { type: "folder", items: [] },
     "Vendor": { type: "folder", items: [] },
     "Cuisine": { type: "folder", items: [] },
     "Opportunit": { type: "folder", items: [] },

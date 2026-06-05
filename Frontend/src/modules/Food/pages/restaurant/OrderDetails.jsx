@@ -114,7 +114,6 @@ export default function OrderDetails() {
             ) ?? 0
 
           const packagingFee = firstNumber(pricing.packagingFee, order.packagingFee) ?? 0
-          const deliveryFee = firstNumber(pricing.deliveryFee, order.deliveryFee) ?? 0
           const platformFee = firstNumber(pricing.platformFee, order.platformFee) ?? 0
           const discount = firstNumber(pricing.discount, order.discount) ?? 0
           const couponDiscount = firstNumber(pricing.couponDiscount, order.couponDiscount) ?? 0
@@ -133,7 +132,6 @@ export default function OrderDetails() {
               itemSubtotal +
                 taxes +
                 packagingFee +
-                deliveryFee +
                 platformFee -
                 discount
             )
@@ -150,13 +148,7 @@ export default function OrderDetails() {
           const fullAddress =
             order.address?.formattedAddress ||
             order.address?.address ||
-            order.deliveryAddress?.formattedAddress ||
-            order.deliveryAddress?.address ||
             [
-              order.deliveryAddress?.street,
-              order.deliveryAddress?.city,
-              order.deliveryAddress?.state,
-              order.deliveryAddress?.zipCode
             ].filter(Boolean).join(", ") ||
             (addressParts.length > 0 ? addressParts.join(", ") : "") ||
             "Address not available"
@@ -166,8 +158,6 @@ export default function OrderDetails() {
             order.customerName,
             order.customer?.name,
             order.customerInfo?.name,
-            order.deliveryAddress?.name,
-            order.deliveryAddress?.fullName,
             order.address?.name
           ) || "Customer"
 
@@ -198,10 +188,6 @@ export default function OrderDetails() {
           
           const statusLower = orderStatusRaw
           const reached = {
-            confirmed: order.tracking?.confirmed?.status || ["confirmed", "preparing", "ready", "ready_for_pickup", "picked_up", "out_for_delivery", "delivered"].includes(statusLower),
-            preparing: order.tracking?.preparing?.status || ["preparing", "ready", "ready_for_pickup", "picked_up", "out_for_delivery", "delivered"].includes(statusLower),
-            ready: order.tracking?.ready?.status || ["ready", "ready_for_pickup", "picked_up", "out_for_delivery", "delivered"].includes(statusLower),
-            outForDelivery: order.tracking?.outForDelivery?.status || ["picked_up", "out_for_delivery", "delivered"].includes(statusLower),
             delivered: order.tracking?.delivered?.status || statusLower === "delivered"
           }
 
@@ -217,7 +203,6 @@ export default function OrderDetails() {
               name: customerName,
               orderCount: order.userId?.orderCount || 1,
               location: fullAddress,
-              distance: order.deliveryDistance ? `${order.deliveryDistance} km` : ''
             },
             items: order.items?.map(item => ({
               name: item.name,
@@ -230,7 +215,6 @@ export default function OrderDetails() {
               itemSubtotal,
               taxes,
               packagingFee,
-              deliveryFee,
               platformFee,
               discount,
               couponDiscount,
@@ -239,7 +223,6 @@ export default function OrderDetails() {
               paidAmount,
               paymentStatus
             },
-            deliveryPartnerId: order.deliveryPartnerId || order.dispatch?.deliveryPartnerId || null,
             dispatchStatus: order.dispatch?.status || null,
             reason: order.cancellationReason || '',
             restaurantNote: order.restaurantNote || '',
@@ -248,7 +231,6 @@ export default function OrderDetails() {
               ...(reached.confirmed ? [{ event: 'Order confirmed', timestamp: order.tracking?.confirmed?.timestamp ? new Date(order.tracking.confirmed.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
               ...(reached.preparing ? [{ event: 'Preparing', timestamp: order.tracking?.preparing?.timestamp ? new Date(order.tracking.preparing.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
               ...(reached.ready ? [{ event: 'Ready for pickup', timestamp: order.tracking?.ready?.timestamp ? new Date(order.tracking.ready.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
-              ...(reached.outForDelivery ? [{ event: 'Out for delivery', timestamp: order.tracking?.outForDelivery?.timestamp ? new Date(order.tracking.outForDelivery.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
               ...(reached.delivered ? [{ event: 'Delivered', timestamp: order.tracking?.delivered?.timestamp ? new Date(order.tracking.delivered.timestamp).toLocaleString('en-GB') : '', status: 'completed' }] : []),
               ...(statusLower === 'cancelled' ? [{ event: 'Cancelled', timestamp: order.cancelledAt ? new Date(order.cancelledAt).toLocaleString('en-GB') : '', status: 'rejected', reason: order.cancellationReason }] : [])
             ]
@@ -467,9 +449,6 @@ export default function OrderDetails() {
     ]
     if (Number(orderData.billing.packagingFee) > 0) {
       billRows.push(["Packaging Fee:", formatMoney(orderData.billing.packagingFee)])
-    }
-    if (Number(orderData.billing.deliveryFee) > 0) {
-      billRows.push(["Delivery Fee:", formatMoney(orderData.billing.deliveryFee)])
     }
     if (Number(orderData.billing.platformFee) > 0) {
       billRows.push(["Platform Fee:", formatMoney(orderData.billing.platformFee)])
@@ -901,12 +880,7 @@ export default function OrderDetails() {
                 <span className="text-sm text-gray-900">{formatMoney(orderData.billing.packagingFee)}</span>
               </div>
             )}
-            {Number(orderData.billing.deliveryFee) > 0 && (
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-600">Delivery fee</span>
-                <span className="text-sm text-gray-900">{formatMoney(orderData.billing.deliveryFee)}</span>
-              </div>
-            )}
+
             {Number(orderData.billing.platformFee) > 0 && (
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-gray-600">Platform fee</span>

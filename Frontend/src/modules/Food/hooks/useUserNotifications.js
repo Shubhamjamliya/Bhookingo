@@ -22,7 +22,6 @@ export const useUserNotifications = () => {
   const lastDropOtpToastRef = useRef({ key: '', at: 0 });
   const lastOrderStatusToastRef = useRef({ key: '', at: 0 });
 
-  const DROP_OTP_TOAST_ID = 'user-delivery-drop-otp';
   const DROP_OTP_DEDUPE_MS = 15000;
   const ORDER_STATUS_TOAST_ID = 'user-order-status-update';
   const ORDER_STATUS_DEDUPE_MS = 4000;
@@ -126,55 +125,13 @@ export const useUserNotifications = () => {
           orderStatus: data.orderStatus, // Ensure compatibility with different UI checks
           title,
           message,
-          deliveryState: data.deliveryState,
-          deliveryVerification: data.deliveryVerification,
           timestamp: new Date().toISOString()
         }
       });
       window.dispatchEvent(event);
     });
 
-    /** Customer receives handover OTP when partner confirms "reached drop" (never shown to partner). */
-    socketRef.current.on('delivery_drop_otp', (payload) => {
-      debugLog('🔐 Delivery handover OTP:', payload?.orderId);
-      const otp = payload?.otp != null ? String(payload.otp) : '';
-      const orderId = payload?.orderId != null ? String(payload.orderId) : '';
-      const message = payload?.message != null ? String(payload.message) : '';
 
-      const otpKey = `${orderId}:${otp}`;
-      const now = Date.now();
-      const lastToast = lastDropOtpToastRef.current;
-      const isDuplicateOtp =
-        otpKey &&
-        otpKey === lastToast.key &&
-        now - lastToast.at < DROP_OTP_DEDUPE_MS;
-
-      if (isDuplicateOtp) {
-        return;
-      }
-
-      lastDropOtpToastRef.current = { key: otpKey, at: now };
-
-      window.dispatchEvent(
-        new CustomEvent('deliveryDropOtp', {
-          detail: {
-            orderMongoId: payload?.orderMongoId,
-            orderId,
-            otp,
-            message
-          }
-        })
-      );
-      const title = orderId ? `Order ${orderId}` : 'Delivery OTP';
-      const parts = [message, otp ? `OTP: ${otp}` : ''].filter(Boolean);
-
-      toast.dismiss(DROP_OTP_TOAST_ID);
-      toast.message(title, {
-        id: DROP_OTP_TOAST_ID,
-        description: parts.join(' — ') || 'Handover OTP from your delivery partner.',
-        duration: 12_000
-      });
-    });
 
     socketRef.current.on('admin_notification', (payload) => {
       toast.message(payload?.title || 'Notification', {

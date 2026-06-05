@@ -145,14 +145,7 @@ export default function OrdersTable({
                   </div>
                 </th>
               )}
-              {visibleColumns.deliveryCharge && (
-                <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  <div className="flex items-center justify-end gap-2">
-                    <span>Delivery Charge</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400 cursor-pointer hover:text-slate-600" />
-                  </div>
-                </th>
-              )}
+
               {visibleColumns.totalAmount && (
                 <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-700 uppercase tracking-wider">
                   <div className="flex items-center justify-end gap-2">
@@ -282,19 +275,7 @@ export default function OrdersTable({
                     </div>
                   </td>
                 )}
-                {visibleColumns.deliveryCharge && (
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <span className="text-sm font-medium text-slate-700">
-                      {(() => {
-                        const deliveryCharge = Number(order.deliveryCharge ?? 0)
-                        return `₹${deliveryCharge.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}`
-                      })()}
-                    </span>
-                  </td>
-                )}
+
                 {visibleColumns.totalAmount && (
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="text-sm font-medium text-slate-900">
@@ -329,7 +310,6 @@ export default function OrdersTable({
                         paymentTypeDisplay = 'COD (QR)';
                       } else if (!paymentTypeDisplay) {
                         if (paymentMethod === 'cash' || paymentMethod === 'cod') {
-                          paymentTypeDisplay = 'Cash on Delivery';
                         } else if (paymentMethod === 'wallet') {
                           paymentTypeDisplay = 'Wallet';
                         } else {
@@ -342,7 +322,6 @@ export default function OrdersTable({
                         paymentTypeDisplay = 'Wallet';
                       }
                       
-                      const isCod = paymentTypeDisplay === 'Cash on Delivery' || paymentTypeDisplay === 'COD (QR)';
                       const isWallet = paymentTypeDisplay === 'Wallet';
                       
                       return (
@@ -389,7 +368,6 @@ export default function OrdersTable({
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.orderStatus)}`}>
                           {order.orderStatus}
                         </span>
-                        <span className="text-xs text-slate-500">{order.deliveryType}</span>
                       </div>
                       {order.cancellationReason && (
                         <div className="text-xs text-red-600 mt-1">
@@ -473,11 +451,9 @@ export default function OrdersTable({
                                           order.orderStatus === "Cancelled by User" ||
                                           (order.status === "cancelled" && (order.cancelledBy === "user" || order.cancelledBy === "restaurant"));
                         
-                        // Check if payment type is Online or Wallet (not Cash on Delivery)
                         const paymentMethod = order.payment?.method || order.paymentMethod;
                         const isOnlinePayment = order.paymentType === "Online" ||
-                                              (order.paymentType !== "Cash on Delivery" && 
-                                               order.payment?.method !== "cash" && 
+                                               (order.payment?.method !== "cash" && 
                                                order.payment?.method !== "cod" &&
                                                (order.paymentMethod === "razorpay" || 
                                                 order.paymentMethod === "online" || 

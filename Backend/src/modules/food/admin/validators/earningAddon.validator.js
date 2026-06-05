@@ -63,13 +63,8 @@ export const validateEarningAddonHistoryActionDto = (body) => {
 };
 
 export const validateCheckCompletionsDto = (body) => {
-    const deliveryPartnerId = body?.deliveryPartnerId ? String(body.deliveryPartnerId) : '';
     const force = Boolean(body?.force);
     
-    const isValidId = mongoose.Types.ObjectId.isValid(deliveryPartnerId);
-    if (!deliveryPartnerId || (!isValidId && deliveryPartnerId !== 'all')) {
-        throw new ValidationError('Invalid deliveryPartnerId');
     }
-    return { deliveryPartnerId, force };
 };
 

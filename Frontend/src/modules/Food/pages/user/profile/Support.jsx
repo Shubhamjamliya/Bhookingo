@@ -232,7 +232,6 @@ export default function Support() {
                     <ChevronRight className="h-4 w-4 text-slate-400" />
                   </div>
                   <p className="mt-3 font-semibold text-slate-900 dark:text-white">Order Issue</p>
-                  <p className="text-xs text-slate-500 mt-1">Missing item, wrong item, delivery issue</p>
                 </button>
 
                 <button onClick={() => handlePick("restaurant")} className="w-full border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">

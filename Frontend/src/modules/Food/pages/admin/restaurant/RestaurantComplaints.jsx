@@ -35,7 +35,6 @@ const COMPLAINT_TYPE_OPTIONS = [
   { value: 'food_quality', label: 'Food Quality' },
   { value: 'wrong_item', label: 'Wrong Item' },
   { value: 'missing_item', label: 'Missing Item' },
-  { value: 'delivery_issue', label: 'Delivery Issue' },
   { value: 'packaging', label: 'Packaging' },
   { value: 'pricing', label: 'Pricing' },
   { value: 'service', label: 'Service' },

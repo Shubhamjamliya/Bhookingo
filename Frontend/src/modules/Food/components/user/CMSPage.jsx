@@ -8,20 +8,18 @@ import api from "@food/api"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
 
 /**
- * Shared CMS display component for Help & Support (and other legal pages).
+ * Shared CMS display component for Help & Support (and other legal pages) for User & Restaurant.
  * Props:
  *   endpoint    - API endpoint to fetch the page data from
  *   title       - Default page title (fallback if API doesn't return one)
- *   module      - "USER" | "RESTAURANT" | "DELIVERY" (default: "USER")
- *   goBack      - Optional override for back navigation (for restaurant/delivery portals)
- *   fallbackPath - Where to navigate when there's no history (default: "/user")
+ *   fallbackPath - Where to navigate when there's no history
  */
 export default function CMSPage({
   endpoint,
   title: defaultTitle,
   module = "USER",
   goBack: externalGoBack,
-  fallbackPath = "/user",
+  fallbackPath,
 }) {
   const navigate = useNavigate()
   const appGoBack = useAppBackNavigation()
@@ -78,7 +76,8 @@ export default function CMSPage({
     if (window.history.length > 2) {
       appGoBack()
     } else {
-      navigate(fallbackPath)
+      const defaultFallback = module === "RESTAURANT" ? "/food/restaurant/dashboard" : "/user"
+      navigate(fallbackPath || defaultFallback)
     }
   }
 

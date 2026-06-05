@@ -113,7 +113,6 @@ const RequireInitialAuth = ({ children }) => {
   const authStatus = localStorage.getItem("user_authenticated");
   const token = localStorage.getItem("user_accessToken");
 
-  // Only enforce initial auth gate for actual user paths, not restaurant/delivery/admin
   const currentPath = location.pathname;
   const isNonUserModulePath = 
     currentPath.startsWith("/food/restaurant") ||
@@ -261,7 +260,6 @@ export default function UserRouter() {
 
             {/* Complaints */}
             <Route path="complaints/submit/:orderId" element={<SubmitComplaint />} />
-            {/* Catch-all redirect for any invalid/old routes (like delivery) */}
             <Route path="*" element={<Navigate to="/food/user/takeaway" replace />} />
           </Route>
         </Route>

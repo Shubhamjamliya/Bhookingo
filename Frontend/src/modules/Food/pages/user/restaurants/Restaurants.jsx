@@ -90,9 +90,7 @@ export default function Restaurants() {
             name: restaurant?.name || "Unknown Restaurant",
             cuisine,
             rating: Number(restaurant?.rating || 0) || 4.5,
-            deliveryTime: (orderType === "takeaway")
-              ? (restaurant.preparationTime || "20-25 mins")
-              : restaurant?.estimatedDeliveryTime || (restaurant?.estimatedDeliveryTimeMinutes ? `${restaurant.estimatedDeliveryTimeMinutes} mins` : "25-30 mins"),
+            time: restaurant?.preparationTime || "20-25 mins",
             distance: restaurant?.distance ? (typeof restaurant.distance === 'number' ? `${restaurant.distance.toFixed(1)} km` : restaurant.distance) : "1.2 km",
             priceRange: restaurant?.priceRange || "$$",
             image: pickRestaurantImage(restaurant),
@@ -157,7 +155,6 @@ export default function Restaurants() {
                     name: restaurant.name,
                     cuisine: restaurant.cuisine,
                     rating: restaurant.rating,
-                    deliveryTime: restaurant.deliveryTime,
                     distance: restaurant.distance,
                     priceRange: restaurant.priceRange,
                     image: restaurant.image,
@@ -202,7 +199,6 @@ export default function Restaurants() {
                               <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex-wrap">
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
-                                  <span className="font-medium whitespace-nowrap">{restaurant.deliveryTime}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />

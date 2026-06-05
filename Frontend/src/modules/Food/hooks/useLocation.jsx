@@ -1855,8 +1855,6 @@ export function useLocation() {
 
     try {
       try {
-        localStorage.setItem("deliveryAddressMode", "current")
-        window.dispatchEvent(new CustomEvent("deliveryAddressModeUpdated"))
       } catch {}
 
       // Clear cached location to force fresh fetch
@@ -1941,10 +1939,8 @@ export function useLocation() {
     return null
   }, [defaultSavedAddress])
 
-  // Listen to deliveryAddressMode changes using a local state
   const [addressMode, setAddressMode] = useState(() => {
     try {
-      return localStorage.getItem("deliveryAddressMode") || "saved"
     } catch {
       return "saved"
     }
@@ -1953,14 +1949,11 @@ export function useLocation() {
   useEffect(() => {
     const handleModeUpdate = () => {
       try {
-        setAddressMode(localStorage.getItem("deliveryAddressMode") || "saved")
       } catch {}
     }
     window.addEventListener("userLocationUpdated", handleModeUpdate)
-    window.addEventListener("deliveryAddressModeUpdated", handleModeUpdate)
     return () => {
       window.removeEventListener("userLocationUpdated", handleModeUpdate)
-      window.removeEventListener("deliveryAddressModeUpdated", handleModeUpdate)
     }
   }, [])
 

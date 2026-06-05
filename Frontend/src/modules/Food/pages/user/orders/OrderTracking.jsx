@@ -35,11 +35,11 @@ import { Textarea } from "@food/components/ui/textarea"
 import { useOrders } from "@food/context/OrdersContext"
 import { useProfile } from "@food/context/ProfileContext"
 import { useLocation as useUserLocation } from "@food/hooks/useLocation"
-import DeliveryTrackingMap from "@food/components/user/DeliveryTrackingMap"
+
 import { orderAPI, restaurantAPI } from "@food/api"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { useUserNotifications } from "@food/hooks/useUserNotifications"
-import { RESTAURANT_PIN_SVG, CUSTOMER_PIN_SVG, RIDER_BIKE_SVG } from "@food/constants/mapIcons"
+import { RESTAURANT_PIN_SVG, CUSTOMER_PIN_SVG } from "@food/constants/mapIcons"
 
 // Fallback definitions in case imports fail at runtime or are shadowed
 const DEFAULT_CUSTOMER_PIN = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#10B981"><path d="M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/><circle cx="12" cy="9" r="3" fill="#FFFFFF"/></svg>`;
@@ -142,12 +142,6 @@ const DeliveryMap = memo(({ orderId, order, isVisible, fallbackCustomerCoords = 
     return null;
   }, [order?.address, fallbackCustomerCoords]);
 
-  // Delivery boy data
-  const deliveryBoyData = useMemo(() => order?.deliveryPartner ? {
-    name: order.deliveryPartner.name || 'Delivery Partner',
-    avatar: order.deliveryPartner.avatar || null
-  } : null, [order?.deliveryPartner]);
-
   const effectiveCustomerCoords = useMemo(() => {
     if (customerCoords) return customerCoords;
     if (userLiveCoords && Number.isFinite(userLiveCoords.lat) && Number.isFinite(userLiveCoords.lng)) {
@@ -192,7 +186,6 @@ const DeliveryMap = memo(({ orderId, order, isVisible, fallbackCustomerCoords = 
 
         userLiveCoords={userLiveCoords}
         userLocationAccuracy={userLocationAccuracy}
-        deliveryBoyData={deliveryBoyData}
         order={order}
         onEtaUpdate={onEtaUpdate}
       />
@@ -366,20 +359,11 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
     total: apiOrder?.pricing?.total || previousOrder?.total || 0,
     // Backend canonical field is orderStatus; keep legacy `status` for UI compatibility.
     status: apiOrder?.orderStatus || apiOrder?.status || previousOrder?.status || 'pending',
-    deliveryPartner: apiOrder?.deliveryPartnerId ? {
-      name: apiOrder.deliveryPartnerId.name || apiOrder.deliveryPartnerId.fullName || 'Delivery Partner',
-      phone: apiOrder.deliveryPartnerId.phone || apiOrder.deliveryPartnerId.phoneNumber || '',
-      avatar: apiOrder.deliveryPartnerId.avatar || apiOrder.deliveryPartnerId.profilePicture || null
-    } : (previousOrder?.deliveryPartner || null),
-    deliveryPartnerId: apiOrder?.deliveryPartnerId?._id || apiOrder?.deliveryPartnerId || apiOrder?.dispatch?.deliveryPartnerId?._id || apiOrder?.dispatch?.deliveryPartnerId || apiOrder?.assignmentInfo?.deliveryPartnerId || null,
-    dispatch: apiOrder?.dispatch || previousOrder?.dispatch || null,
-    assignmentInfo: apiOrder?.assignmentInfo || previousOrder?.assignmentInfo || null,
     tracking: apiOrder?.tracking || previousOrder?.tracking || {},
-    deliveryState: apiOrder?.deliveryState || previousOrder?.deliveryState || null,
     scheduledAt: apiOrder?.scheduledAt || previousOrder?.scheduledAt || null,
     createdAt: apiOrder?.createdAt || previousOrder?.createdAt || null,
     totalAmount: apiOrder?.pricing?.total || apiOrder?.totalAmount || previousOrder?.totalAmount || 0,
-    deliveryFee: apiOrder?.pricing?.deliveryFee || apiOrder?.deliveryFee || previousOrder?.deliveryFee || 0,
+    
     gst: apiOrder?.pricing?.tax || apiOrder?.pricing?.gst || apiOrder?.gst || apiOrder?.tax || previousOrder?.gst || 0,
     packagingFee: apiOrder?.pricing?.packagingFee || apiOrder?.packagingFee || 0,
     platformFee: apiOrder?.pricing?.platformFee || apiOrder?.platformFee || 0,
@@ -387,42 +371,9 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
     subtotal: apiOrder?.pricing?.subtotal || apiOrder?.subtotal || 0,
     paymentMethod: apiOrder?.paymentMethod || apiOrder?.payment?.method || previousOrder?.paymentMethod || null,
     payment: apiOrder?.payment || previousOrder?.payment || null,
-    // Preserve delivery OTP code received via socket event.
-    // API responses intentionally strip the secret code for security,
-    // so without preserving it the UI would lose the OTP on each poll refresh.
-    deliveryVerification: (() => {
-      const prevDV = previousOrder?.deliveryVerification || null
-      const apiDV = apiOrder?.deliveryVerification || null
-      const handoverOtp = apiOrder?.handoverOtp || null
-      
-      if (!prevDV && !apiDV && !handoverOtp) return null
-
-      const prevDropOtp = prevDV?.dropOtp || null
-      const apiDropOtp = apiDV?.dropOtp || null
-      
-      const merged = {
-        ...(prevDV || {}),
-        ...(apiDV || {})
-      }
-
-      // Prioritize: 1. Real-time handoverOtp from current API response
-      // 2. Previously preserved code in local state (from socket or earlier poll)
-      // 3. Nested code field in API response (if ever present)
-      const finalCode = handoverOtp || prevDropOtp?.code || apiDropOtp?.code
-
-      if (finalCode || prevDropOtp?.required || apiDropOtp?.required) {
-        merged.dropOtp = {
-          ...(prevDropOtp || {}),
-          ...(apiDropOtp || {}),
-          code: finalCode
-        }
-      }
-      return merged
-    })(),
     cancellationReason: apiOrder?.cancellationReason || previousOrder?.cancellationReason || null,
     ratings: apiOrder?.ratings || previousOrder?.ratings || {},
     restaurantRating: apiOrder?.ratings?.restaurant?.rating || apiOrder?.restaurantRating || previousOrder?.restaurantRating || null,
-    deliveryPartnerRating: apiOrder?.ratings?.deliveryPartner?.rating || apiOrder?.deliveryPartnerRating || previousOrder?.deliveryPartnerRating || null,
   }
 }
 
@@ -451,16 +402,6 @@ function mapOrderToTrackingUiStatus(orderLike) {
   // Terminal states handled first
   if (isFoodOrderCancelledStatus(statusRaw)) return "cancelled"
   if (statusRaw === "delivered" || statusRaw === "completed") return "delivered"
-
-  // Live Ride / Phase-based mapping (Highest priority for precision)
-  const isRiderAccepted = orderLike.dispatch?.status === "accepted" || orderLike.assignmentInfo?.status === "accepted" || orderLike.deliveryPartner?.status === "accepted";
-  
-  if (phase === "reached_drop" || phase === "at_drop" || statusRaw === "at_drop") return "at_drop"
-  if (phase === "en_route_to_delivery" || statusRaw === "picked_up" || statusRaw === "out_for_delivery") return "on_way"
-  if (phase === "at_pickup" && orderLike.deliveryPartnerId && isRiderAccepted) return "at_pickup"
-  if (phase === "en_route_to_pickup" && orderLike.deliveryPartnerId && isRiderAccepted) return "assigned"
-
-  // Fallback to basic status mapping
   return mapBackendOrderStatusToUi(statusRaw)
 }
 
@@ -513,29 +454,21 @@ export default function OrderTracking() {
   // Rating states
   const [showRatingModal, setShowRatingModal] = useState(false)
   const [selectedRestaurantRating, setSelectedRestaurantRating] = useState(null)
-  const [selectedDeliveryRating, setSelectedDeliveryRating] = useState(null)
   const [restaurantFeedbackText, setRestaurantFeedbackText] = useState("")
-  const [deliveryFeedbackText, setDeliveryFeedbackText] = useState("")
   const [submittingRating, setSubmittingRating] = useState(false)
 
   // Check if order is already rated
   const hasRestaurantRating = Number.isFinite(Number(order?.ratings?.restaurant?.rating || order?.restaurantRating))
-  const hasDeliveryPartner = !!(order?.deliveryPartnerId || order?.deliveryPartnerName)
-  const hasDeliveryRating = Number.isFinite(Number(order?.ratings?.deliveryPartner?.rating || order?.deliveryPartnerRating))
-  const isOrderRated = hasRestaurantRating && (!hasDeliveryPartner || hasDeliveryRating)
+  const isOrderRated = hasRestaurantRating
 
   const handleOpenRating = () => {
     setSelectedRestaurantRating(order?.ratings?.restaurant?.rating || order?.restaurantRating || null)
-    setSelectedDeliveryRating(order?.ratings?.deliveryPartner?.rating || order?.deliveryPartnerRating || null)
     setRestaurantFeedbackText(order?.ratings?.restaurant?.comment || "")
-    setDeliveryFeedbackText(order?.ratings?.deliveryPartner?.comment || "")
     setShowRatingModal(true)
   }
 
   const handleSubmitRating = async () => {
-    const deliveryPartnerCheck = !!(order?.deliveryPartnerId || order?.deliveryPartnerName)
-    const isMissingDeliveryRating = deliveryPartnerCheck && selectedDeliveryRating === null
-    if (!order || selectedRestaurantRating === null || isMissingDeliveryRating) {
+    if (!order || selectedRestaurantRating === null) {
       toast.error("Please select all required ratings first")
       return
     }
@@ -544,9 +477,7 @@ export default function OrderTracking() {
       setSubmittingRating(true)
       const response = await orderAPI.submitOrderRatings(order.mongoId || order._id || order.id, {
         restaurantRating: selectedRestaurantRating,
-        deliveryPartnerRating: deliveryPartnerCheck ? selectedDeliveryRating : undefined,
         restaurantComment: restaurantFeedbackText || undefined,
-        deliveryPartnerComment: deliveryPartnerCheck ? (deliveryFeedbackText || undefined) : undefined,
       })
       
       const updatedOrderData = response?.data?.data?.order || response?.data?.order
@@ -596,7 +527,6 @@ export default function OrderTracking() {
   // Delivery handover OTP received via socket event.
   // Kept separately so UI still renders even if the event arrives
   // before the order API poll populates `order` state.
-  const [socketDropOtpCode, setSocketDropOtpCode] = useState(null)
 
 
   // OTP received via socket event (deliveryDropOtp)
@@ -938,38 +868,6 @@ export default function OrderTracking() {
     }
   };
 
-  const handleCallRider = (e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    
-    const rawPhone = order?.deliveryPartner?.phone || '';
-    const cleanPhone = String(rawPhone).replace(/[^\d+]/g, '');
-
-    if (!cleanPhone || cleanPhone.length < 5) {
-      toast.error('Rider phone number not available');
-      return;
-    }
-
-    debugLog('?? Attempting to call rider:', cleanPhone);
-    
-    try {
-      const link = document.createElement('a');
-      link.href = `tel:${cleanPhone}`;
-      link.setAttribute('target', '_self');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      debugError('Call failed via link click:', err);
-      window.location.assign(`tel:${cleanPhone}`);
-    }
-  };
-
-  const customerDeliveryOtp = useMemo(() => {
-    const codeFromOrder = order?.deliveryVerification?.dropOtp?.code
-    const code = codeFromOrder ?? socketDropOtpCode
-    return code ? String(code) : null
-  }, [order?.deliveryVerification?.dropOtp?.code, socketDropOtpCode])
-
   useEffect(() => {
     if (!isEditWindowOpen) return
     const interval = setInterval(() => {
@@ -1127,7 +1025,6 @@ export default function OrderTracking() {
         const next = mapOrderToTrackingUiStatus({
           status,
           orderStatus: payload.orderStatus || status,
-          deliveryState: payload.deliveryState,
         });
         setOrderStatus(next);
 

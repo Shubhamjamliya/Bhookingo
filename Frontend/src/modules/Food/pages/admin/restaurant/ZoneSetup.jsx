@@ -63,16 +63,13 @@ export default function ZoneSetup() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Zone Setup Restaurant</h1>
-              <p className="text-sm text-slate-600">Manage delivery zones for restaurants</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate("/admin/food/zone-setup/delivery-boy-view")}
               className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
               <Bike className="w-5 h-5" />
-              <span>Delivery Boy View</span>
             </button>
             <button
               onClick={() => navigate("/admin/food/zone-setup/map")}
@@ -116,7 +113,6 @@ export default function ZoneSetup() {
             <MapPin className="w-16 h-16 text-slate-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-slate-900 mb-2">No zones found</h3>
             <p className="text-slate-600 mb-6">
-              {searchQuery ? "Try adjusting your search query" : "Create your first delivery zone to get started"}
             </p>
             {!searchQuery && (
               <button

@@ -60,21 +60,17 @@ const TrackingPage = () => {
             </div>
           </div>
 
-          {/* Delivery Partner Safety Card */}
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-sm">
             <div className="flex items-center gap-3">
               <Shield className="w-6 h-6 text-gray-400" />
               <span className="flex-1 text-left font-medium text-white">
-                Learn about delivery partner safety
               </span>
               <ChevronRight className="w-5 h-5 text-gray-500" />
             </div>
           </div>
 
-          {/* Delivery Details Banner */}
           <div className="bg-yellow-900/30 rounded-xl p-4 border border-yellow-800/50">
             <p className="text-yellow-300 font-medium text-center">
-              All your delivery details in one place 👋
             </p>
           </div>
 
@@ -89,12 +85,10 @@ const TrackingPage = () => {
             </div>
           </div>
 
-          {/* Delivery Location Card */}
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-sm">
             <div className="flex items-center gap-3">
               <Home className="w-5 h-5 text-gray-400" />
               <div className="flex-1">
-                <p className="font-semibold text-white">Delivery at Location</p>
                 <p className="text-sm text-gray-400">X2RJ+QHR, Dewas, Madhya Pradesh 45...</p>
               </div>
             </div>

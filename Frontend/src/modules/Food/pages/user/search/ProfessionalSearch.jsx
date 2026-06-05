@@ -371,7 +371,6 @@ export default function ProfessionalSearch() {
                              <span className="text-gray-200">•</span>
                              <div className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                <span>{r.estimatedDeliveryTime || "30-40 mins"}</span>
                              </div>
                              <span className="text-gray-200">•</span>
                              <span className="line-clamp-1">{r.cuisines?.slice(0, 2).join(", ")}</span>
@@ -421,7 +420,6 @@ export default function ProfessionalSearch() {
                          <div className="flex items-center gap-3 text-[12px] text-gray-500 dark:text-zinc-400 font-bold uppercase tracking-tight">
                             <div className="flex items-center gap-1.5">
                                <Clock className="w-3.5 h-3.5 text-[#DC2626]" />
-                               {r.estimatedDeliveryTime || "30 mins"}
                             </div>
                             <span className="text-gray-200">•</span>
                             <div className="flex items-center gap-1.5">

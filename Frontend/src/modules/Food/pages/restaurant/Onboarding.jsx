@@ -631,7 +631,6 @@ export default function RestaurantOnboarding() {
     menuImages: [],
     profileImage: null,
     cuisines: [],
-    estimatedDeliveryTime: "",
     openingTime: "",
     closingTime: "",
     openDays: [],
@@ -938,7 +937,6 @@ export default function RestaurantOnboarding() {
             menuImages: s2.menuImageUrls || apiData.menuImages || [],
             profileImage: s2.profileImageUrl || apiData.profileImage || null,
             cuisines: s2.cuisines || apiData.cuisines || [],
-            estimatedDeliveryTime: s2.estimatedDeliveryTime || apiData.estimatedDeliveryTime || "",
             openingTime: normalizeTimeValue(s2.openingTime || apiData.openingTime),
             closingTime: normalizeTimeValue(s2.closingTime || apiData.closingTime),
             openDays: s2.openDays || apiData.openDays || [],
@@ -1246,9 +1244,6 @@ export default function RestaurantOnboarding() {
     if (!step2.openDays || step2.openDays.length === 0) {
       errors.push("Please select at least one open day")
     }
-    if (!step2.estimatedDeliveryTime?.trim()) {
-      errors.push("Estimated delivery time is required")
-    }
 
     return errors
   }
@@ -1435,7 +1430,6 @@ export default function RestaurantOnboarding() {
               longitude: step1.location?.longitude || "",
             },
             cuisines: Array.isArray(step2.cuisines) ? step2.cuisines : [],
-            estimatedDeliveryTime: (step2.estimatedDeliveryTime || "").trim(),
             openingTime: normalizeTimeValue(step2.openingTime) || "",
             closingTime: normalizeTimeValue(step2.closingTime) || "",
             openDays: Array.isArray(step2.openDays) ? step2.openDays : [],
@@ -1499,7 +1493,6 @@ export default function RestaurantOnboarding() {
 
         // Step 2
         formData.append("cuisines", (step2.cuisines || []).join(","))
-        formData.append("estimatedDeliveryTime", (step2.estimatedDeliveryTime || "").trim())
         formData.append("openingTime", normalizeTimeValue(step2.openingTime) || "")
         formData.append("closingTime", normalizeTimeValue(step2.closingTime) || "")
         formData.append("openDays", (step2.openDays || []).join(","))
@@ -1625,7 +1618,6 @@ export default function RestaurantOnboarding() {
       ...prev,
       openingTime: "09:00",
       closingTime: "23:00",
-      estimatedDeliveryTime: "25-30 mins",
       openDays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
       menuImages: [dummyFile],
       profileImage: dummyFile
@@ -1797,7 +1789,6 @@ export default function RestaurantOnboarding() {
             disabled={!isEditing}
           />
           <p className="text-[11px] text-gray-500 mt-1">
-            Customers, delivery partners and {companyName} may call on this number for order
             support.
           </p>
         </div>
@@ -2485,12 +2476,10 @@ export default function RestaurantOnboarding() {
             />
           </div>
           <div>
-            <Label className="text-xs text-gray-700">Estimated delivery time*</Label>
+            <Label className="text-xs text-gray-700">Preparation time</Label>
             <Input
-              value={step2.estimatedDeliveryTime || ""}
-              onChange={(e) =>
-                setStep2((prev) => ({ ...prev, estimatedDeliveryTime: e.target.value }))
-              }
+              value={step2.preparationTime || ""}
+              onChange={(e) => setStep2({ ...step2, preparationTime: e.target.value })}
               className="mt-1 bg-white text-sm"
               placeholder="e.g., 25-30 mins"
             />
@@ -2504,7 +2493,6 @@ export default function RestaurantOnboarding() {
             <span>Open days</span>
           </Label>
           <p className="text-[11px] text-gray-500">
-            Select the days your restaurant accepts delivery orders.
           </p>
           <div className="mt-1 grid grid-cols-7 gap-1.5 sm:gap-2">
             {daysOfWeek.map((day) => {
@@ -3099,7 +3087,6 @@ export default function RestaurantOnboarding() {
     </LocalizationProvider>
   )
 }
-
 
 
 

@@ -29,7 +29,6 @@ import { FoodRestaurantSupportTicket } from "../../modules/food/restaurant/model
 const ROLES = {
   USER: "USER",
   RESTAURANT: "RESTAURANT",
-  DELIVERY_PARTNER: "DELIVERY_PARTNER",
   ADMIN: "ADMIN",
 };
 
@@ -77,27 +76,6 @@ const sanitizeRestaurantForAuthResponse = (restaurantDoc = {}) => {
     email: restaurantDoc?.ownerEmail || "",
     status: restaurantDoc?.status || "",
     profileImage: toSafeImageUrl(restaurantDoc?.profileImage),
-  };
-};
-
-const sanitizeDeliveryForAuthResponse = (deliveryDoc = {}) => {
-  const id =
-    deliveryDoc?._id?.toString?.() ||
-    deliveryDoc?.id?.toString?.() ||
-    deliveryDoc?._id ||
-    deliveryDoc?.id ||
-    null;
-
-  return {
-    id,
-    _id: id,
-    name: deliveryDoc?.name || "",
-    phone: deliveryDoc?.phone || "",
-    email: deliveryDoc?.email || "",
-    status: deliveryDoc?.status || "",
-    profileImage: toSafeImageUrl(deliveryDoc?.profilePhoto),
-    walletAmount: Number(deliveryDoc?.walletAmount || 0),
-    refCode: deliveryDoc?.referralCode || "",
   };
 };
 
@@ -525,147 +503,6 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     needsRegistration: false,
   };
 };
-
-export const requestDeliveryOtp = async (phone) => {
-  if (!phone) {
-    throw new ValidationError("Phone is required");
-  }
-  const otp = await createOrUpdateOtp(phone);
-  // Only expose OTP in response when in default/dev mode — never in production with real SMS
-  const shouldExposeOtp =
-    config.nodeEnv !== "production" || config.useDefaultOtp;
-  return shouldExposeOtp ? { otp } : {};
-};
-
-const normalizePhoneForDelivery = (phone) => {
-  const digits = String(phone || "").replace(/\D/g, "");
-  return digits.slice(-10) || null;
-};
-
-export const verifyDeliveryOtpAndLogin = async (phone, otp, fcmToken, platform, confirmAction) => {
-  const normalized = normalizePhoneForDelivery(phone);
-  let existingPartner = null;
-  if (normalized) {
-    const matchingPartners = await FoodDeliveryPartner.find({
-      $or: [
-        { phone: normalized },
-        { phone: { $regex: new RegExp(normalized + "$") } },
-      ],
-    });
-
-    // Prioritize approved/pending over deleted
-    const statusPriority = { approved: 1, pending: 2, rejected: 3, deleted: 4 };
-    const sortedPartners = matchingPartners.sort((a, b) => {
-      const pA = statusPriority[a.status] || 99;
-      const pB = statusPriority[b.status] || 99;
-      return pA - pB;
-    });
-    existingPartner = sortedPartners[0] || null;
-  }
-
-  const isDeleted = existingPartner && existingPartner.status === "deleted";
-  const preserveOtp = isDeleted && !confirmAction;
-
-  const result = await verifyOtp(phone, otp, preserveOtp);
-  if (!result.valid) {
-    throw new AuthError(result.reason || "OTP verification failed");
-  }
-
-  let deliveryPartner = existingPartner;
-
-  // Handle soft-deleted accounts if found
-  if (deliveryPartner && deliveryPartner.status === "deleted") {
-    if (!confirmAction) {
-      return {
-        deletedAccountFound: true,
-        phone,
-        role: ROLES.DELIVERY_PARTNER,
-        name: deliveryPartner.name
-      };
-    }
-
-    if (confirmAction === "restore") {
-      deliveryPartner.status = "approved";
-      await deliveryPartner.save();
-      logger.info({ partnerId: deliveryPartner._id }, "Delivery partner account restored successfully");
-    } else if (confirmAction === "new") {
-      const suffix = `_deleted_${Date.now()}`;
-      deliveryPartner.phone = `${deliveryPartner.phone}${suffix}`;
-      await deliveryPartner.save();
-      logger.info({ partnerId: deliveryPartner._id }, "Old delivery partner account renamed for fresh start");
-      
-      // Setting deliveryPartner to null will trigger the "needsRegistration" flow below
-      deliveryPartner = null;
-    }
-  }
-
-  if (!deliveryPartner) {
-    return { needsRegistration: true, phone };
-  }
-
-  // Update FCM token if provided - CRITICAL: do this BEFORE returning pendingApproval
-  // so we can notify them when approved.
-  if (fcmToken) {
-    let isModified = false;
-    if (platform === "mobile") {
-      if (!deliveryPartner.fcmTokenMobile) deliveryPartner.fcmTokenMobile = [];
-      if (!deliveryPartner.fcmTokenMobile.includes(fcmToken)) {
-        deliveryPartner.fcmTokenMobile.push(fcmToken);
-        isModified = true;
-      }
-    } else {
-      if (!deliveryPartner.fcmTokens) deliveryPartner.fcmTokens = [];
-      if (!deliveryPartner.fcmTokens.includes(fcmToken)) {
-        deliveryPartner.fcmTokens.push(fcmToken);
-        isModified = true;
-      }
-    }
-    if (isModified) {
-      await deliveryPartner.save();
-    }
-  }
-
-  if (deliveryPartner.status && deliveryPartner.status !== "approved") {
-    const isRejected = deliveryPartner.status === "rejected";
-    return {
-      pendingApproval: true,
-      isRejected,
-      rejectionReason: isRejected ? deliveryPartner.rejectionReason : null,
-      message:
-        isRejected
-          ? (deliveryPartner.rejectionReason 
-              ? `Your account was rejected: ${deliveryPartner.rejectionReason}`
-              : "Your delivery account was not approved. Please contact support.")
-          : "Your account is pending admin verification. You will be notified once approved.",
-    };
-  }
-
-  const payload = {
-    userId: deliveryPartner._id.toString(),
-    role: ROLES.DELIVERY_PARTNER,
-  };
-  const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken(payload);
-  const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
-  const expiresAt = new Date(Date.now() + ttlMs);
-
-  await FoodRefreshToken.create({
-    userId: deliveryPartner._id,
-    token: refreshToken,
-    expiresAt,
-  });
-
-  return {
-    token: accessToken,
-    accessToken,
-    refreshToken,
-    user: sanitizeDeliveryForAuthResponse(
-      deliveryPartner?.toObject?.() || deliveryPartner,
-    ),
-    needsRegistration: false,
-  };
-};
-
 export const logout = async (refreshToken, fcmToken, platform) => {
   if (!refreshToken) {
     throw new ValidationError("Refresh token is required");
@@ -678,7 +515,7 @@ export const logout = async (refreshToken, fcmToken, platform) => {
     // We try to remove the token from all 4 possible models regardless of the user ID, 
     // ensuring no stale connections are left across any role or app the user was logged into.
     const field = platform === "mobile" ? "fcmTokenMobile" : "fcmTokens";
-    const models = [FoodUser, FoodRestaurant, FoodDeliveryPartner, FoodAdmin];
+    const models = [FoodUser, FoodRestaurant, FoodAdmin];
     
     try {
       await Promise.all(
@@ -713,7 +550,7 @@ export const logoutAllDevices = async (userId) => {
     console.log(`✅ [LogoutAllDevices] Deleted ${deleted.deletedCount} refresh tokens for user ${id}`);
 
     // 2. Remove all FCM tokens for this user from all collections
-    const models = [FoodUser, FoodRestaurant, FoodDeliveryPartner, FoodAdmin];
+    const models = [FoodUser, FoodRestaurant, FoodAdmin];
     await Promise.all(
       models.map(model => 
         model.updateOne(
@@ -803,78 +640,6 @@ export const getProfile = async (userId, role) => {
         };
       }
       break;
-    case ROLES.DELIVERY_PARTNER: {
-      const partner = await FoodDeliveryPartner.findById(id).lean();
-      if (!partner) break;
-      const deliveryId = partner._id
-        ? `DP-${partner._id.toString().slice(-8).toUpperCase()}`
-        : null;
-      profile = {
-        ...partner,
-        email: partner.email || null,
-        deliveryId,
-        status: partner.status === "rejected" ? "blocked" : partner.status,
-        profileImage: partner.profilePhoto
-          ? { url: partner.profilePhoto }
-          : null,
-        documents: {
-          aadhar:
-            partner.aadharPhoto || partner.aadharNumber
-              ? {
-                  number: partner.aadharNumber || null,
-                  document: partner.aadharPhoto || null,
-                }
-              : null,
-          pan:
-            partner.panPhoto || partner.panNumber
-              ? {
-                  number: partner.panNumber || null,
-                  document: partner.panPhoto || null,
-                }
-              : null,
-          drivingLicense: partner.drivingLicensePhoto || partner.drivingLicenseNumber
-            ? {
-                number: partner.drivingLicenseNumber || null,
-                document: partner.drivingLicensePhoto || null,
-              }
-            : null,
-          bankDetails:
-            partner.bankAccountHolderName ||
-            partner.bankAccountNumber ||
-            partner.bankIfscCode ||
-            partner.bankName ||
-            partner.upiId ||
-            partner.upiQrCode
-              ? {
-                  accountHolderName: partner.bankAccountHolderName || null,
-                  accountNumber: partner.bankAccountNumber || null,
-                  ifscCode: partner.bankIfscCode || null,
-                  bankName: partner.bankName || null,
-                  upiId: partner.upiId || null,
-                  upiQrCode: partner.upiQrCode || null,
-                }
-              : null,
-        },
-        location:
-          partner.address || partner.city || partner.state
-            ? {
-                addressLine1: partner.address,
-                city: partner.city,
-                state: partner.state,
-              }
-            : null,
-        vehicle:
-          partner.vehicleType || partner.vehicleName || partner.vehicleNumber
-            ? {
-                type: partner.vehicleType,
-                brand: partner.vehicleName,
-                model: partner.vehicleName,
-                number: partner.vehicleNumber,
-              }
-            : null,
-      };
-      break;
-    }
     default:
       throw new AuthError("Unknown role");
   }
@@ -901,10 +666,6 @@ export const deleteAccount = async (id, role) => {
       // We keep orders and transactions for admin analytics.
       await FoodRestaurant.updateOne({ _id: id }, { status: "deleted", deletedAt: new Date(), fcmTokens: [], fcmTokenMobile: [], isAcceptingOrders: false });
       await FoodRefreshToken.deleteMany({ userId: id });
-    } else if (role === ROLES.DELIVERY_PARTNER) {
-      // Soft delete delivery partner: mark as deleted.
-      await FoodDeliveryPartner.updateOne({ _id: id }, { status: "deleted", deletedAt: new Date(), fcmTokens: [], fcmTokenMobile: [], availabilityStatus: "offline" });
-      await FoodRefreshToken.deleteMany({ userId: id });
     } else {
       throw new AuthError("Invalid role for account deletion");
     }
@@ -916,7 +677,6 @@ export const deleteAccount = async (id, role) => {
   }
 };
 
-/** Get the current balance for any role (User, Restaurant, Delivery) before account deletion. */
 export const checkAccountBalance = async (userId, role) => {
   if (!userId || !role) {
     throw new AuthError("Invalid token payload for balance check");
@@ -936,12 +696,6 @@ export const checkAccountBalance = async (userId, role) => {
       const wallet = await FoodRestaurantWallet.findOne({ restaurantId: userId }).select("balance").lean();
       balance = Number(wallet?.balance || 0);
       type = "Restaurant Wallet Balance";
-      break;
-    }
-    case ROLES.DELIVERY_PARTNER: {
-      const wallet = await FoodDeliveryWallet.findOne({ deliveryPartnerId: userId }).select("balance").lean();
-      balance = Number(wallet?.balance || 0);
-      type = "Delivery Pocket Balance";
       break;
     }
     default:

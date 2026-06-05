@@ -29,17 +29,13 @@ export function haversineKm(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-export function generateFourDigitDeliveryOtp() {
   return String(Math.floor(1000 + Math.random() * 9000));
 }
 
 export function sanitizeOrderForExternal(orderDoc) {
   const o = orderDoc?.toObject ? orderDoc.toObject() : { ...(orderDoc || {}) };
-  delete o.deliveryOtp;
-  const dv = o.deliveryVerification;
   if (dv && dv.dropOtp != null) {
     const d = dv.dropOtp;
-    o.deliveryVerification = {
       ...dv,
       dropOtp: {
         required: Boolean(d.required),
@@ -53,19 +49,15 @@ export function sanitizeOrderForExternal(orderDoc) {
   return o;
 }
 
-export function emitDeliveryDropOtpToUser(order, plainOtp) {
   try {
     const io = getIO();
     if (!io || !plainOtp || !order?.userId) return;
-    io.to(rooms.user(order.userId)).emit("delivery_drop_otp", {
       orderMongoId: order._id?.toString?.(),
       orderId: order.order_id || order._id?.toString?.(),
       otp: plainOtp,
       message:
-        "Share this OTP with your delivery partner to hand over the order.",
     });
   } catch (e) {
-    logger.warn(`emitDeliveryDropOtpToUser failed: ${e?.message || e}`);
   }
 }
 
@@ -129,20 +121,14 @@ export function normalizeOrderForClient(orderDoc) {
     orderId: displayId,
     status: order?.orderStatus || order?.status || "",
     deliveredAt:
-      order?.deliveryState?.deliveredAt || order?.deliveredAt || null,
-    deliveryPartnerId:
-      order?.dispatch?.deliveryPartnerId || order?.deliveryPartnerId || null,
     rating: order?.ratings?.restaurant?.rating ?? order?.rating ?? null,
     restaurantNote: order?.restaurantNote || "",
     cancellationReason: (order?.orderStatus?.includes('cancel') || order?.status?.includes('cancel')) 
       ? (order.statusHistory?.findLast(h => h.to?.includes('cancel'))?.note || "")
       : null,
-    deliveryState: {
-      ...(order?.deliveryState || {}),
       currentLocation: order?.lastRiderLocation?.coordinates?.length >= 2 ? {
         lat: order.lastRiderLocation.coordinates[1],
         lng: order.lastRiderLocation.coordinates[0]
-      } : (order?.deliveryState?.currentLocation || null)
     }
   };
 }
@@ -164,17 +150,10 @@ export async function applyAggregateRating(model, entityId, newRating) {
   await doc.save();
 }
 
-export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
   const order = orderDoc?.toObject ? orderDoc.toObject() : orderDoc || {};
   const restaurant = restaurantDoc || order?.restaurantId || null;
   const restaurantLocation = restaurant?.location || {};
-  const deliveryAddress = order?.deliveryAddress || {};
   const customerAddressParts = [
-    deliveryAddress.street,
-    deliveryAddress.additionalDetails,
-    deliveryAddress.city,
-    deliveryAddress.state,
-    deliveryAddress.zipCode,
   ]
     .map((v) => String(v || '').trim())
     .filter(Boolean);
@@ -212,17 +191,9 @@ export function buildDeliverySocketPayload(orderDoc, restaurantDoc = null) {
       city: restaurantLocation?.city || restaurant?.city || "",
       state: restaurantLocation?.state || restaurant?.state || "",
     },
-    deliveryAddress: order?.deliveryAddress,
     customerAddress: customerAddressParts.length ? customerAddressParts.join(', ') : "",
-    customerName: order?.customerName || order?.deliveryAddress?.fullName || order?.deliveryAddress?.name || order?.userId?.name || "",
-    customerPhone: order?.customerPhone || order?.deliveryAddress?.phone || order?.userId?.phone || "",
-    userName: order?.customerName || order?.deliveryAddress?.fullName || order?.deliveryAddress?.name || order?.userId?.name || "",
-    userPhone: order?.customerPhone || order?.deliveryAddress?.phone || order?.userId?.phone || "",
     note: order?.note || "",
     riderEarning: order?.riderEarning || 0,
-    earnings: order?.riderEarning || order?.pricing?.deliveryFee || 0,
-    deliveryFee: order?.pricing?.deliveryFee || 0,
-    deliveryFleet: order?.deliveryFleet,
     dispatch: order?.dispatch,
     createdAt: order?.createdAt,
     updatedAt: order?.updatedAt,

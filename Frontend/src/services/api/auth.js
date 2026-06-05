@@ -1,5 +1,5 @@
 /**
- * Auth API – new backend (USER, ADMIN, RESTAURANT, DELIVERY).
+ * Auth API - new backend (USER, ADMIN, RESTAURANT).
  * Food-prefixed: POST /food/auth/...
  */
 
@@ -12,8 +12,6 @@ const AUTH = {
   ADMIN_LOGIN: "/food/auth/admin/login",
   RESTAURANT_REQUEST_OTP: "/food/auth/restaurant/request-otp",
   RESTAURANT_VERIFY_OTP: "/food/auth/restaurant/verify-otp",
-  DELIVERY_REQUEST_OTP: "/food/auth/delivery/request-otp",
-  DELIVERY_VERIFY_OTP: "/food/auth/delivery/verify-otp",
   REFRESH_TOKEN: "/food/auth/refresh-token",
   LOGOUT: "/food/auth/logout",
   LOGOUT_ALL: "/food/auth/logout-all",
@@ -164,7 +162,6 @@ export function logout(refreshToken, fcmToken = null, platform = "web") {
 
 /**
  * Logout from all devices (invalidates all refresh tokens and FCM tokens for the user).
- * @param {string} [module] - "user" | "admin" | "restaurant" | "delivery"
  */
 export function logoutFromAllDevices(module = "user") {
   const m = String(module || "user");
@@ -174,7 +171,6 @@ export function logoutFromAllDevices(module = "user") {
 
 /**
  * Delete account (invalidate and destroy everything).
- * @param {string} [module] - "user" | "admin" | "restaurant" | "delivery"
  */
 export function deleteAccount(module = "user") {
   const m = String(module || "user");
@@ -186,7 +182,6 @@ export function deleteAccount(module = "user") {
 
 /**
  * Check account balance before deletion.
- * @param {string} [module] - "user" | "restaurant" | "delivery"
  * @returns {Promise<{ data: { success: boolean, balance: number, type: string } }>}
  */
 export function checkAccountBalance(module = "user") {
@@ -204,7 +199,6 @@ export function clearMeCache() {
 
 /**
  * Get current profile (requires Bearer).
- * @param {string} [module] - "user" | "admin" | "restaurant" | "delivery" (which token to send; default "user")
  */
 export function getMe(module = "user") {
   const m = String(module || "user");
@@ -299,27 +293,4 @@ export function verifyRestaurantOtp(phone, otp, fcmToken = null, platform = "web
   });
 }
 
-/**
- * Delivery partner OTP auth (backend: same phone + 4-digit OTP).
- */
-export function requestDeliveryOtp(phone) {
-  const normalized = normalizePhone(phone);
-  if (normalized.length < 8) {
-    return Promise.reject(new Error("Phone must be at least 8 digits"));
-  }
-  return apiClient.post(AUTH.DELIVERY_REQUEST_OTP, { phone: normalized });
-}
 
-export function verifyDeliveryOtp(phone, otp, fcmToken = null, platform = "web", confirmAction = null) {
-  const normalized = normalizePhone(phone);
-  const otpStr = String(otp).replace(/\D/g, "").slice(0, 6);
-  if (!normalized || otpStr.length < 4) {
-    return Promise.reject(new Error("Phone and 4-digit OTP are required"));
-  }
-  return apiClient.post(AUTH.DELIVERY_VERIFY_OTP, {
-    phone: normalized,
-    otp: otpStr,
-    ...(fcmToken ? { fcmToken, platform } : {}),
-    ...(confirmAction ? { confirmAction } : {}),
-  });
-}

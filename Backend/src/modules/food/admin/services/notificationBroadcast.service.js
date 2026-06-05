@@ -13,14 +13,12 @@ const TARGET_TYPE_MAP = {
     ALL: 'ALL',
     USER: 'USER',
     RESTAURANT: 'RESTAURANT',
-    DELIVERY: 'DELIVERY',
     CUSTOM: 'CUSTOM'
 };
 
 const OWNER_LABEL_MAP = {
     USER: 'Users',
     RESTAURANT: 'Restaurants',
-    DELIVERY_PARTNER: 'Delivery Partners'
 };
 
 const toObjectId = (value, fieldName) => {
@@ -62,8 +60,6 @@ const buildRestaurantLabel = (doc) => ({
     subLabel: [doc?.ownerPhone, doc?.ownerEmail].filter(Boolean).join(' • ')
 });
 
-const buildDeliveryLabel = (doc) => ({
-    label: String(doc?.name || doc?.phone || 'Delivery Partner').trim(),
     subLabel: [doc?.phone, doc?.email].filter(Boolean).join(' • ')
 });
 
@@ -129,17 +125,13 @@ const resolveCustomTargets = async ({ targets = [], targetIds = [] } = {}) => {
 
 const resolveTargets = async ({ targetType, targetIds = [], targets = [] } = {}) => {
     if (targetType === 'ALL') {
-        const [users, restaurants, deliveryPartners] = await Promise.all([
             loadTargetsByOwnerType('USER'),
             loadTargetsByOwnerType('RESTAURANT'),
-            loadTargetsByOwnerType('DELIVERY_PARTNER')
         ]);
-        return [...users, ...restaurants, ...deliveryPartners];
     }
 
     if (targetType === 'USER') return loadTargetsByOwnerType('USER');
     if (targetType === 'RESTAURANT') return loadTargetsByOwnerType('RESTAURANT');
-    if (targetType === 'DELIVERY') return loadTargetsByOwnerType('DELIVERY_PARTNER');
     if (targetType === 'CUSTOM') return resolveCustomTargets({ targets, targetIds });
 
     throw new ValidationError('Unsupported targetType');
@@ -183,8 +175,6 @@ const emitRealtimeNotifications = (targets = [], broadcast) => {
         if (target.ownerType === 'RESTAURANT') {
             io.to(rooms.restaurant(ownerId)).emit('admin_notification', payload);
         }
-        if (target.ownerType === 'DELIVERY_PARTNER') {
-            io.to(rooms.delivery(ownerId)).emit('admin_notification', payload);
         }
     }
 };

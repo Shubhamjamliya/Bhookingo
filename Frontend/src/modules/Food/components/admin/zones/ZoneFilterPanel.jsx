@@ -96,28 +96,21 @@ export default function ZoneFilterPanel({ isOpen, onClose, filters, setFilters, 
             </div>
           </div>
 
-          {/* Deliverymen Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Min Deliverymen
               </label>
               <input
                 type="number"
-                value={filters.minDeliverymen || ""}
-                onChange={(e) => setFilters(prev => ({ ...prev, minDeliverymen: e.target.value }))}
                 placeholder="0"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Max Deliverymen
               </label>
               <input
                 type="number"
-                value={filters.maxDeliverymen || ""}
-                onChange={(e) => setFilters(prev => ({ ...prev, maxDeliverymen: e.target.value }))}
                 placeholder="100"
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import { API_BASE_URL } from '@food/api/config';
-import { writeDeliveryLocation, writeOrderTracking } from '@food/realtimeTracking';
 
 function calculateDistance(lat1, lng1, lat2, lng2) {
   const R = 6371000;
@@ -19,10 +18,6 @@ export const useLocationSharing = (orderId, enabled = false) => {
   const socketRef = useRef(null);
   const watchIdRef = useRef(null);
   const isSharingRef = useRef(false);
-  const deliveryIdRef = useRef(
-    localStorage.getItem('deliveryPartnerId') ||
-      localStorage.getItem('deliveryPartnerMongoId') ||
-      localStorage.getItem('deliveryBoyId') ||
       '',
   );
 
@@ -42,7 +37,6 @@ export const useLocationSharing = (orderId, enabled = false) => {
       });
 
       socketRef.current.on('connect', () => {
-        socketRef.current.emit('join-delivery', orderId);
       });
     }
 
@@ -83,10 +77,6 @@ export const useLocationSharing = (orderId, enabled = false) => {
           });
         }
 
-        const deliveryId = String(deliveryIdRef.current || '').trim();
-        if (deliveryId) {
-          writeDeliveryLocation({
-            deliveryId,
             lat: latitude,
             lng: longitude,
             heading: heading || 0,

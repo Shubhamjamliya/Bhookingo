@@ -15,8 +15,6 @@ const adminNotifications = [
   },
   {
     id: 2,
-    topic: "Deliveryman Self Registration",
-    description: "Choose How Admin Will Get Notified About Sent Notification On Deliveryman Self Registration.",
     pushNotification: "N/A",
     mail: true,
     sms: false
@@ -158,7 +156,6 @@ const customerNotifications = [
   {
     id: 3,
     topic: "Order Delivered",
-    description: "Choose How Customer Will Get Notified About Order Delivery.",
     pushNotification: "N/A",
     mail: true,
     sms: true
@@ -205,78 +202,12 @@ const customerNotifications = [
   }
 ]
 
-const deliverymanNotifications = [
-  {
-    id: 1,
-    topic: "New Order Assignment",
-    description: "Choose How Deliveryman Will Get Notified About New Order Assignment.",
-    pushNotification: "N/A",
-    mail: true,
-    sms: true
-  },
-  {
-    id: 2,
-    topic: "Order Pickup Request",
-    description: "Choose How Deliveryman Will Get Notified About Order Pickup Requests.",
-    pushNotification: "N/A",
-    mail: true,
-    sms: true
-  },
-  {
-    id: 3,
-    topic: "Order Delivery Status",
-    description: "Choose How Deliveryman Will Get Notified About Order Delivery Status.",
-    pushNotification: "N/A",
-    mail: true,
-    sms: false
-  },
-  {
-    id: 4,
-    topic: "Payment Received",
-    description: "Choose How Deliveryman Will Get Notified About Payment Received.",
-    pushNotification: "N/A",
-    mail: true,
-    sms: true
-  },
-  {
-    id: 5,
-    topic: "Bonus Notification",
-    description: "Choose How Deliveryman Will Get Notified About Bonus Notifications.",
-    pushNotification: "N/A",
-    mail: true,
-    sms: false
-  },
-  {
-    id: 6,
-    topic: "Incentive Update",
-    description: "Choose How Deliveryman Will Get Notified About Incentive Updates.",
-    pushNotification: "N/A",
-    mail: true,
-    sms: false
-  },
-  {
-    id: 7,
-    topic: "Shift Reminder",
-    description: "Choose How Deliveryman Will Get Notified About Shift Reminders.",
-    pushNotification: "N/A",
-    mail: true,
-    sms: true
-  },
-  {
-    id: 8,
-    topic: "Withdrawal Status",
-    description: "Choose How Deliveryman Will Get Notified About Withdrawal Status.",
-    pushNotification: "N/A",
-    mail: true,
-    sms: false
-  }
-]
+
 
 const tabs = [
   { id: "admin", label: "Admin" },
   { id: "restaurant", label: "Restaurant" },
   { id: "customers", label: "Customers" },
-  { id: "deliveryman", label: "Deliveryman" }
 ]
 
 function ToggleSwitch({ enabled, onToggle }) {
@@ -315,8 +246,6 @@ export default function NotificationChannels() {
         return restaurantNotifications
       case "customers":
         return customerNotifications
-      case "deliveryman":
-        return deliverymanNotifications
       default:
         return adminNotifications
     }

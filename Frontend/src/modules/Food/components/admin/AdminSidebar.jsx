@@ -137,15 +137,10 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
     if (l.includes("restaurant complaints")) return badges.restaurantComplaints
     if (p.includes("orders/pending")) return badges.orders
     if (p.includes("offline-payments")) return badges.offlinePayments
-    if (l.includes("support tickets")) return l.includes("delivery") ? badges.deliverySupportTickets : badges.userSupportTickets
-    if (l.includes("withdrawal")) return l.includes("delivery") ? badges.deliveryWithdrawals : badges.restaurantWithdrawals
     if (l.includes("emergency help")) return badges.emergencyHelp
     if (l.includes("earning addon history")) return badges.earningAddons
     if (l.includes("safety emergency reports")) return badges.safetyReports
-    if (l === "deliveryman" && !p.includes("join-request")) return badges.deliveryPartners // expandable parent
-    if (l.includes("join-request")) return badges.deliveryPartners
     if (l === "user feedback" || p.includes("contact-messages")) return badges.contactMessages
-    if (l.includes("support tickets")) return badges.supportTickets || (l.includes("delivery") ? badges.deliverySupportTickets : badges.userSupportTickets)
     return 0
   }
   const [logoUrl, setLogoUrl] = useState(() => getCachedSettings()?.logo?.url || null)

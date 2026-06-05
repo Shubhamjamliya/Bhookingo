@@ -8,9 +8,6 @@ const debugError = (...args) => {}
 const defaultFields = [
   "Restaurant Name", "Restaurant Logo", "Owner Last Name",
   "Vat/Tax", "Cuisine", "Phone Number",
-  "Delivery Address", "Zone", "Email",
-  "Min Delivery Time", "Latitude & Longitude", "Password",
-  "Max Delivery Time", "Map Location",
   "Restaurant Cover", "Owner First Name"
 ]
 
@@ -138,16 +135,7 @@ export default function JoinUsPageSetup() {
             >
               Restaurant Registration Form
             </button>
-            <button
-              onClick={() => setActiveTab("deliveryman")}
-              className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors border-b-2 ${
-                activeTab === "deliveryman"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              DeliveryMan Registration Form
-            </button>
+
           </div>
         </div>
 

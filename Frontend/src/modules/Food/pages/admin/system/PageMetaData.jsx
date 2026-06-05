@@ -20,7 +20,6 @@ const seoPages = [
   { id: 6, name: "Contact us page" },
   { id: 7, name: "About us page" },
   { id: 8, name: "Restaurant join page" },
-  { id: 9, name: "Deliveryman join page" },
   { id: 10, name: "Terms and conditions page" },
   { id: 11, name: "Privacy policy page" },
   { id: 12, name: "Refund policy page" },

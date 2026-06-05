@@ -169,7 +169,6 @@ export default function ExpenseReport() {
                   <option value="All Type">All Type</option>
                   <option value="Discount On Product">Discount On Product</option>
                   <option value="Cashback">Cashback</option>
-                  <option value="Free Delivery">Free Delivery</option>
                   <option value="Add Fund Bonus">Add Fund Bonus</option>
                 </select>
                 <ChevronDown className="absolute right-2 bottom-2.5 w-4 h-4 text-slate-500 pointer-events-none" />

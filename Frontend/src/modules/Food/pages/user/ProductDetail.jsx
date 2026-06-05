@@ -45,15 +45,6 @@ const productsData = {
 
 // Restaurant data
 const restaurantsData = {
-  "pizza-corner": { name: "Pizza Corner", cuisine: "Italian", rating: 4.7, deliveryTime: "15-20 min", distance: "0.5 km", priceRange: "$$", address: "321 Elm Street, New York, NY 10004", phone: "+1 (555) 456-7890" },
-  "burger-paradise": { name: "Burger Paradise", cuisine: "American", rating: 4.6, deliveryTime: "20-25 min", distance: "0.8 km", priceRange: "$", address: "456 Oak Avenue, New York, NY 10002", phone: "+1 (555) 234-5678" },
-  "sushi-master": { name: "Sushi Master", cuisine: "Japanese", rating: 4.9, deliveryTime: "30-35 min", distance: "2.1 km", priceRange: "$$$", address: "789 Cherry Lane, New York, NY 10003", phone: "+1 (555) 345-6789" },
-  "taco-fiesta": { name: "Taco Fiesta", cuisine: "Mexican", rating: 4.5, deliveryTime: "20-25 min", distance: "1.5 km", priceRange: "$", address: "654 Pine Street, New York, NY 10005", phone: "+1 (555) 567-8901" },
-  "spice-garden": { name: "Spice Garden", cuisine: "Indian", rating: 4.8, deliveryTime: "25-30 min", distance: "1.8 km", priceRange: "$$", address: "123 Spice Road, New York, NY 10001", phone: "+1 (555) 123-4567" },
-  "thai-express": { name: "Thai Express", cuisine: "Thai", rating: 4.7, deliveryTime: "22-28 min", distance: "1.3 km", priceRange: "$$", address: "456 Thai Street, New York, NY 10002", phone: "+1 (555) 234-5678" },
-  "ocean-breeze": { name: "Ocean Breeze", cuisine: "Seafood", rating: 4.9, deliveryTime: "30-35 min", distance: "2.5 km", priceRange: "$$$", address: "789 Ocean Drive, New York, NY 10003", phone: "+1 (555) 345-6789" },
-  "smokehouse": { name: "Smokehouse", cuisine: "BBQ", rating: 4.8, deliveryTime: "35-40 min", distance: "2.2 km", priceRange: "$$", address: "321 BBQ Lane, New York, NY 10004", phone: "+1 (555) 456-7890" },
-  "noodle-house": { name: "Noodle House", cuisine: "Asian", rating: 4.8, deliveryTime: "20-25 min", distance: "1.1 km", priceRange: "$$", address: "654 Noodle Street, New York, NY 10005", phone: "+1 (555) 567-8901" },
 }
 
 // Generate sample reviews
@@ -64,10 +55,8 @@ const generateReviews = (productName, totalReviews = 20) => {
     "Absolutely amazing! The flavors were incredible and the quality was top-notch. Highly recommend!",
     "Great experience overall. Food arrived hot and fresh. Will definitely order again!",
     "One of the best dishes I've tried. The quality is outstanding and prices are reasonable.",
-    "Delicious food and fast delivery. The packaging was excellent too. Very satisfied!",
     "Excellent service and amazing food quality. This has become my go-to dish.",
     "The food exceeded my expectations! Everything was perfectly cooked and seasoned.",
-    "Fast delivery and great tasting food. The portion sizes are generous too.",
     "Love this dish! The food is always fresh and the flavors are authentic.",
     "Outstanding quality and service. The food arrived on time and was still hot.",
     "Highly recommend! The food is delicious and the customer service is excellent."
@@ -85,7 +74,6 @@ const generateReviews = (productName, totalReviews = 20) => {
       date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
       helpful: Math.floor(Math.random() * 50),
       verified: Math.random() > 0.3,
-      orderType: ["Delivery", "Dine-in", "Takeout"][Math.floor(Math.random() * 3)]
     })
   }
 
@@ -182,7 +170,6 @@ export default function ProductDetail() {
       date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
       helpful: 0,
       verified: true,
-      orderType: "Delivery"
     }
 
     setReviews([newReview, ...reviews])
@@ -452,7 +439,6 @@ export default function ProductDetail() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{restaurant.deliveryTime}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <MapPin className="h-4 w-4 text-muted-foreground" />

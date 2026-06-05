@@ -720,7 +720,6 @@ export default function AddZone() {
                 {isEditMode ? "Edit Zone" : "Add New Zone"}
               </h1>
               <p className="text-sm text-slate-600">
-                {isEditMode ? "Update delivery zone for customer" : "Create a delivery zone for customer"}
               </p>
             </div>
           </div>

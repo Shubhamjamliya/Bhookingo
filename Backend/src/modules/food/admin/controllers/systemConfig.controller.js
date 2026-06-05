@@ -14,9 +14,7 @@ const CUSTOMIZATION_TOGGLES = [
         description: 'Global toggle for takeaway COD visibility'
     },
     {
-        key: 'delivery_cod_enabled',
         defaultValue: true,
-        description: 'Global toggle for delivery COD visibility'
     },
     {
         key: 'dining_cod_enabled',

@@ -97,14 +97,12 @@ export async function createInitialTransaction(order) {
             ? restaurantCommissionFromOrder
             : (commissionAmount || 0);
     const restaurantNet = (order.pricing?.subtotal || 0) + (order.pricing?.packagingFee || 0) - restaurantCommission;
-    const platformNetProfit = Math.max(0, (order.pricing?.platformFee || 0) + (order.pricing?.deliveryFee || 0) + restaurantCommission - riderShare);
 
     const transaction = new FoodTransaction({
         orderId: order._id,
 
         userId: order.userId,
         restaurantId: order.restaurantId,
-        deliveryPartnerId: order.dispatch?.deliveryPartnerId,
         paymentMethod: order.payment?.method || 'cash',
         status: order.payment?.status === 'paid' ? 'captured' : 'pending',
         payment: {
@@ -129,7 +127,6 @@ export async function createInitialTransaction(order) {
             subtotal: Number(order.pricing?.subtotal || 0) || 0,
             tax: Number(order.pricing?.tax || 0) || 0,
             packagingFee: Number(order.pricing?.packagingFee || 0) || 0,
-            deliveryFee: Number(order.pricing?.deliveryFee || 0) || 0,
             platformFee: Number(order.pricing?.platformFee || 0) || 0,
             restaurantCommission,
             discount: Number(order.pricing?.discount || 0) || 0,
@@ -224,7 +221,6 @@ export async function updateTransactionRider(orderId, riderId) {
     const query = { orderId };
     return await FoodTransaction.findOneAndUpdate(
         query,
-        { $set: { deliveryPartnerId: riderId } },
         { new: true }
     );
 }

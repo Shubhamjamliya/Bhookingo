@@ -1,5 +1,4 @@
 // Export utility functions for commission rules
-export const exportCommissionToCSV = (commissions, filename = "delivery-boy-commission") => {
   const headers = ["SI", "Name", "Min Distance (km)", "Max Distance (km)", "Commission Per Km (₹)", "Base Payout (₹)", "Status"]
   const rows = commissions.map((commission) => [
     commission.sl,
@@ -27,7 +26,6 @@ export const exportCommissionToCSV = (commissions, filename = "delivery-boy-comm
   document.body.removeChild(link)
 }
 
-export const exportCommissionToExcel = (commissions, filename = "delivery-boy-commission") => {
   const headers = ["SI", "Name", "Min Distance (km)", "Max Distance (km)", "Commission Per Km (₹)", "Base Payout (₹)", "Status"]
   const rows = commissions.map((commission) => [
     commission.sl,
@@ -55,14 +53,12 @@ export const exportCommissionToExcel = (commissions, filename = "delivery-boy-co
   document.body.removeChild(link)
 }
 
-export const exportCommissionToPDF = (commissions, filename = "delivery-boy-commission") => {
   const headers = ["SI", "Name", "Min Distance (km)", "Max Distance (km)", "Commission Per Km (₹)", "Base Payout (₹)", "Status"]
   
   let htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Delivery Boy Commission Report</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -73,7 +69,6 @@ export const exportCommissionToPDF = (commissions, filename = "delivery-boy-comm
       </style>
     </head>
     <body>
-      <h1>Delivery Boy Commission Report</h1>
       <p>Generated on: ${new Date().toLocaleString()}</p>
       <table>
         <thead>
@@ -109,7 +104,6 @@ export const exportCommissionToPDF = (commissions, filename = "delivery-boy-comm
   }, 250)
 }
 
-export const exportCommissionToJSON = (commissions, filename = "delivery-boy-commission") => {
   const jsonContent = JSON.stringify(commissions, null, 2)
   const blob = new Blob([jsonContent], { type: "application/json" })
   const link = document.createElement("a")

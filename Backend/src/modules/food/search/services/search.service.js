@@ -16,7 +16,6 @@ export const searchUnified = async (query = {}, options = {}) => {
         radiusKm = 20, 
         categoryId, 
         minRating, 
-        maxDeliveryTime, 
         isVeg,
         page = 1,
         limit = 20,
@@ -44,8 +43,6 @@ export const searchUnified = async (query = {}, options = {}) => {
         restaurantFilter.rating = { $gte: parseFloat(minRating) };
     }
 
-    if (maxDeliveryTime) {
-        restaurantFilter.estimatedDeliveryTimeMinutes = { $lte: parseInt(maxDeliveryTime) };
     }
     
     console.log(`[Search-Service] Final Restaurant Filter:`, JSON.stringify(restaurantFilter));

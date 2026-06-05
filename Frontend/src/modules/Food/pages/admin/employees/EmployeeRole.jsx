@@ -11,7 +11,6 @@ const modulePermissions = [
   // Column 1
   { id: "collectCash", label: "Collect cash" },
   { id: "category", label: "Category" },
-  { id: "deliveryman", label: "Deliveryman" },
   { id: "pushNotification", label: "Push notification" },
   { id: "businessSettings", label: "Business settings" },
   { id: "contactMessages", label: "Contact messages" },
@@ -19,7 +18,6 @@ const modulePermissions = [
   // Column 2
   { id: "addon", label: "Addon" },
   { id: "coupon", label: "Coupon" },
-  { id: "deliverymenEarning", label: "Deliverymen earning provide" },
   { id: "order", label: "Order" },
   { id: "restaurantWithdraws", label: "Restaurant withdraws" },
   { id: "disbursement", label: "Disbursement" },
@@ -43,13 +41,11 @@ const initialEmployeeRoles = [
   {
     id: 1,
     roleName: "Manager",
-    modules: ["Addon", "Banner", "Campaign", "Category", "Coupon", "Custom Role", "CustomerList", "Deliveryman", "Employee", "Food", "Notification", "Order", "Report", "Settings", "Pos", "Contact Message"],
     createdAt: "07 Feb 2023",
   },
   {
     id: 2,
     roleName: "Customer Care Executive",
-    modules: ["CustomerList", "Deliveryman", "Order", "Restaurant"],
     createdAt: "22 Aug 2021",
   },
 ]
@@ -74,7 +70,7 @@ export default function EmployeeRole() {
     { key: "en", label: "English(EN)" },
     { key: "bn", label: "Bengali - বাংলা(BN)" },
     { key: "ar", label: "Arabic - العربية(AR)" },
-    { key: "es", label: "Spanish - espa�ol(ES)" },
+    { key: "es", label: "Spanish - espa�ol(ES)" },
   ]
 
   const handlePermissionChange = (permissionId, checked) => {

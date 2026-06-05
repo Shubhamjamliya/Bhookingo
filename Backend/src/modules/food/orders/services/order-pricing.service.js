@@ -25,10 +25,10 @@ export async function calculateOrderPricing(userId, dto) {
     .sort({ createdAt: -1 })
     .lean();
   const feeSettings = feeDoc || {
-    deliveryFee: 25,
-    deliveryFeeRanges: [],
-    freeDeliveryUpTo: 0,
-    freeDeliveryThreshold: 149,
+    
+    
+    
+    
     platformFee: 5,
     packagingFee: 0,
     gstRate: 5,
@@ -38,38 +38,34 @@ export async function calculateOrderPricing(userId, dto) {
   const packagingFee = dto.orderType === "takeaway" ? 0 : basePackagingFee;
   const platformFee = feeSettings.platformFee != null ? Number(feeSettings.platformFee) : 0;
 
-  const freeUpTo = Number(feeSettings.freeDeliveryUpTo || 0);
-  const freeThreshold = Number(feeSettings.freeDeliveryThreshold || 0);
+  
+  
   let distanceKm = null;
   if (
     restaurant?.location?.coordinates?.length === 2 &&
-    dto?.deliveryAddress?.location?.coordinates?.length === 2
   ) {
     const [rLng, rLat] = restaurant.location.coordinates;
-    const [dLng, dLat] = dto.deliveryAddress.location.coordinates;
     const d = haversineKm(rLat, rLng, dLat, dLng);
     distanceKm = Number.isFinite(d) ? d : null;
   }
-  let deliveryFee = 0;
-  let deliveryFeeBreakdown = null;
+  
+  
   if (dto.orderType === "takeaway") {
-    deliveryFee = 0;
+    
   } else if (
     Number.isFinite(freeUpTo) &&
     freeUpTo > 0 &&
     subtotal >= freeUpTo
   ) {
-    deliveryFee = 0;
+    
   } else if (
     Number.isFinite(freeThreshold) &&
     freeThreshold > 0 &&
     subtotal >= freeThreshold
   ) {
-    deliveryFee = 0;
+    
   } else {
-    const ranges = Array.isArray(feeSettings.deliveryFeeRanges)
-      ? [...feeSettings.deliveryFeeRanges]
-      : [];
+    const ranges = [];
     if (ranges.length > 0) {
       ranges.sort((a, b) => Number(a.min) - Number(b.min));
       let matched = null;
@@ -95,22 +91,14 @@ export async function calculateOrderPricing(userId, dto) {
         if (inRange) {
           matched = fee;
           if (Number.isFinite(distanceKm)) {
-            deliveryFeeBreakdown = {
-              source: "distance",
-              distanceKm,
-              minKm: min,
-              maxKm: max,
-              fee,
-            };
+            
           }
           break;
         }
       }
-      deliveryFee = Number.isFinite(matched)
-        ? matched
-        : Number(feeSettings.deliveryFee || 0);
+      
     } else {
-      deliveryFee = Number(feeSettings.deliveryFee || 0);
+      
     }
   }
 
@@ -200,7 +188,7 @@ export async function calculateOrderPricing(userId, dto) {
 
   const total = Math.max(
     0,
-    subtotal + packagingFee + deliveryFee + platformFee + tax - discount,
+    subtotal + packagingFee + 0 + platformFee + tax - discount,
   );
 
   return {
@@ -208,9 +196,9 @@ export async function calculateOrderPricing(userId, dto) {
       subtotal,
       tax,
       packagingFee,
-      deliveryFee,
-      deliveryFeeBreakdown: deliveryFeeBreakdown || undefined,
-      freeDeliveryUpTo: Number.isFinite(freeUpTo) ? freeUpTo : undefined,
+      
+      
+      
       platformFee,
       discount,
       total,

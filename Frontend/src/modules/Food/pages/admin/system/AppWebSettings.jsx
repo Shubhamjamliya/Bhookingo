@@ -45,15 +45,7 @@ export default function AppWebSettings() {
     downloadUrl: ""
   })
 
-  const [deliverymanAppAndroid, setDeliverymanAppAndroid] = useState({
-    minVersion: "",
-    downloadUrl: ""
-  })
 
-  const [deliverymanAppIOS, setDeliverymanAppIOS] = useState({
-    minVersion: "",
-    downloadUrl: ""
-  })
 
   const handleGeneralToggle = (key) => {
     setGeneralSettings(prev => ({
@@ -78,13 +70,7 @@ export default function AppWebSettings() {
     setRestaurantAppIOS({ minVersion: "", downloadUrl: "" })
   }
 
-  const handleDeliverymanAppAndroidReset = () => {
-    setDeliverymanAppAndroid({ minVersion: "", downloadUrl: "" })
-  }
 
-  const handleDeliverymanAppIOSReset = () => {
-    setDeliverymanAppIOS({ minVersion: "", downloadUrl: "" })
-  }
 
   return (
     <div className="p-2 lg:p-3 bg-slate-50 min-h-screen">
@@ -342,103 +328,7 @@ export default function AppWebSettings() {
           </div>
         </div>
 
-        {/* Deliveryman App Version Control */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Settings className="w-4 h-4 text-slate-600" />
-            <h2 className="text-sm font-semibold text-slate-900">Deliveryman App Version Control</h2>
-          </div>
 
-          <div className="space-y-4">
-            {/* For Android */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Smartphone className="w-4 h-4 text-green-600" />
-                <span className="text-xs font-semibold text-slate-700">For Android</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
-                    Minimum Deliveryman App Version for Force Update (Android)
-                    <Info className="w-3 h-3 text-slate-400" />
-                  </label>
-                  <input
-                    type="text"
-                    value={deliverymanAppAndroid.minVersion}
-                    onChange={(e) => setDeliverymanAppAndroid(prev => ({ ...prev, minVersion: e.target.value }))}
-                    placeholder="App minimum version"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
-                    Download URL for Deliveryman App (Android)
-                    <Info className="w-3 h-3 text-slate-400" />
-                  </label>
-                  <input
-                    type="text"
-                    value={deliverymanAppAndroid.downloadUrl}
-                    onChange={(e) => setDeliverymanAppAndroid(prev => ({ ...prev, downloadUrl: e.target.value }))}
-                    placeholder="Download Url"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* For IOS */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Apple className="w-4 h-4 text-slate-700" />
-                <span className="text-xs font-semibold text-slate-700">For IOS</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
-                    Minimum Deliveryman App Version for Force Update (Ios)
-                    <Info className="w-3 h-3 text-slate-400" />
-                  </label>
-                  <input
-                    type="text"
-                    value={deliverymanAppIOS.minVersion}
-                    onChange={(e) => setDeliverymanAppIOS(prev => ({ ...prev, minVersion: e.target.value }))}
-                    placeholder="App minimum version"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
-                    Download URL for Deliveryman App (Ios)
-                    <Info className="w-3 h-3 text-slate-400" />
-                  </label>
-                  <input
-                    type="text"
-                    value={deliverymanAppIOS.downloadUrl}
-                    onChange={(e) => setDeliverymanAppIOS(prev => ({ ...prev, downloadUrl: e.target.value }))}
-                    placeholder="Download Url"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 mt-4">
-            <button
-              type="button"
-              onClick={handleDeliverymanAppAndroidReset}
-              className="px-4 py-2 text-xs font-medium bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              Reset
-            </button>
-            <button
-              type="button"
-              className="px-4 py-2 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Submit
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   )

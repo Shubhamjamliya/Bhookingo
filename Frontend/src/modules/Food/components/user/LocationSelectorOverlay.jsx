@@ -941,11 +941,8 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         }
       }
 
-      // Requirement: when user taps "Use current location" from delivery-location selector,
       // don't open the "Add address" form. Just close and return to homepage.
-      // Store selection mode so Cart can prefer this current location for delivery address.
       try {
-        localStorage.setItem("deliveryAddressMode", "current");
       } catch {}
       setShowAddressForm(false)
       setAddressFormData((prev) => ({
@@ -2001,9 +1998,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       const savedAddressId = getAddressId(savedAddress) || existingAddressId
       if (savedAddressId) {
         setDefaultAddress(savedAddressId)
-        // User saved an address; prefer saved delivery address in Cart.
         try {
-          localStorage.setItem("deliveryAddressMode", "saved")
         } catch {}
       }
 
@@ -2169,7 +2164,6 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
       }
       // User picked a saved address; Cart should prefer saved address over current location.
       try {
-        localStorage.setItem("deliveryAddressMode", "saved");
       } catch {}
       onClose()
     } catch (error) {
@@ -2221,7 +2215,6 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             >
               <ChevronLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
             </Button>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Select delivery location</h1>
           </div>
         </div>
 

@@ -14,7 +14,6 @@ const COMPLAINT_TYPES = [
   { value: 'Wrong Item', label: 'Wrong Item Received' },
   { value: 'Missing Item', label: 'Missing Item' },
   { value: 'Packaging Issue', label: 'Packaging Issue' },
-  { value: 'Late Delivery', label: 'Late Delivery' },
   { value: 'Other', label: 'Other' },
 ]
 

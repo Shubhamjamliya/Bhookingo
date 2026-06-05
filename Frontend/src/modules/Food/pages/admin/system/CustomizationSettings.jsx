@@ -10,29 +10,20 @@ const CUSTOMIZATION_TOGGLES = [
   {
     key: "cod_enabled",
     label: "Global COD",
-    description:
-      "Global toggle for COD visibility (Applies to Delivery/Dining, NOT Takeaway).",
+    description: "Global COD Settings",
     defaultValue: true,
   },
   {
     key: "takeaway_cod_enabled",
     label: "Takeaway COD",
-    description:
-      "Controls Cash on Delivery (COD) visibility for takeaway orders.",
+    description: "Takeaway COD Settings",
     defaultValue: true,
   },
-  {
-    key: "delivery_cod_enabled",
-    label: "Delivery COD",
-    description:
-      "Controls Cash on Delivery (COD) visibility for delivery orders.",
-    defaultValue: true,
-  },
+
   {
     key: "dining_cod_enabled",
     label: "Dining COD",
-    description:
-      "Controls Cash on Delivery (COD) visibility for dining orders.",
+    description: "Dining COD Settings",
     defaultValue: true,
   },
   {

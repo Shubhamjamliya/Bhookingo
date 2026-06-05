@@ -7,10 +7,8 @@ import { exportTransactionsToCSV, exportTransactionsToExcel, exportTransactionsT
 
 export default function CollectCash() {
   const [formData, setFormData] = useState({
-    type: "Deliveryman",
     method: "",
     restaurant: "",
-    deliveryman: "",
     amount: "",
     reference: "",
   })
@@ -58,7 +56,6 @@ export default function CollectCash() {
     if (!formData.method) errors.method = "Payment method is required."
     if (!formData.amount || parseFloat(formData.amount) <= 0) errors.amount = "Amount is required and must be greater than 0."
     if (formData.type === "Restaurant" && !formData.restaurant) errors.restaurant = "Restaurant is required."
-    if (formData.type === "Deliveryman" && !formData.deliveryman) errors.deliveryman = "Deliveryman is required."
     return errors
   }
 
@@ -75,7 +72,6 @@ export default function CollectCash() {
     setTimeout(() => {
       const newTransaction = {
         sl: transactions.length + 1,
-        collectedFrom: formData.type === "Restaurant" ? "Hungry Puppets" : formData.deliveryman === "jhon-doe" ? "Jhon Doe" : "Leslie Alexander",
         userType: formData.type,
         collectedAt: new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }),
         collectedAmount: parseFloat(formData.amount),
@@ -91,10 +87,8 @@ export default function CollectCash() {
 
   const handleReset = () => {
     setFormData({
-      type: "Deliveryman",
       method: "",
       restaurant: "",
-      deliveryman: "",
       amount: "",
       reference: "",
     })
@@ -167,7 +161,6 @@ export default function CollectCash() {
                   onChange={(e) => handleInputChange("type", e.target.value)}
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 >
-                  <option value="Deliveryman">Deliveryman</option>
                   <option value="Restaurant">Restaurant</option>
                 </select>
               </div>
@@ -207,23 +200,16 @@ export default function CollectCash() {
                 </div>
               )}
 
-              {formData.type === "Deliveryman" && (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Deliveryman <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={formData.deliveryman}
-                    onChange={(e) => handleInputChange("deliveryman", e.target.value)}
                     className={`w-full px-4 py-2.5 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${
-                      formErrors.deliveryman ? "border-red-500" : "border-slate-300"
                     }`}
                   >
-                    <option value="">Select Deliveryman</option>
                     <option value="jhon-doe">Jhon Doe</option>
                     <option value="leslie-alexander">Leslie Alexander</option>
                   </select>
-                  {formErrors.deliveryman && <p className="text-red-500 text-xs mt-1">{formErrors.deliveryman}</p>}
                 </div>
               )}
 

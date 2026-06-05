@@ -76,7 +76,6 @@ const resolveRestaurantBackPath = ({ pathname, state }) => {
 
   if (
     normalizedPath === "/settings" ||
-    normalizedPath === "/delivery-settings" ||
     normalizedPath === "/rush-hour" ||
     normalizedPath === "/status" ||
     normalizedPath === "/business-plan" ||

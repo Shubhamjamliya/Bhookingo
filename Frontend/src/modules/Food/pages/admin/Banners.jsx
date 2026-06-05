@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from "react"
+﻿import { useState, useMemo, useEffect } from "react"
 import { Search, Download, ChevronDown, Plus, Edit, Trash2, Upload, Image as ImageIcon, Info, Loader2 } from "lucide-react"
 import api from "@food/api"
-import { emptyBanners } from "@food/utils/adminFallbackData"
+
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -40,9 +40,9 @@ export default function Banners() {
   const languageTabs = [
     { key: "default", label: "Default" },
     { key: "en", label: "English(EN)" },
-    { key: "bn", label: "Bengali - বাংলা(BN)" },
-    { key: "ar", label: "Arabic - العربية (AR)" },
-    { key: "es", label: "Spanish - espa�ol(ES)" },
+    { key: "bn", label: "Bengali - à¦¬à¦¾à¦‚à¦²à¦¾(BN)" },
+    { key: "ar", label: "Arabic - Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© (AR)" },
+    { key: "es", label: "Spanish - español(ES)" },
   ]
 
   const filteredBanners = useMemo(() => {
@@ -177,7 +177,7 @@ export default function Banners() {
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-blue-500 text-sm"
                 >
                   <option value="">Select</option>
-                  <option value="cafe-monarch">Caf� Monarch</option>
+                  <option value="cafe-monarch">Café Monarch</option>
                   <option value="hungry-puppets">Hungry Puppets</option>
                 </select>
               </div>

@@ -201,7 +201,6 @@ export default function EditOwner() {
     openingTime: "",
     closingTime: "",
     openDays: [],
-    estimatedDeliveryTime: "",
 
     // Bank & KYC
     panNumber: "",
@@ -326,7 +325,6 @@ export default function EditOwner() {
             openDays: Array.isArray(apiData.openDays) 
               ? apiData.openDays.flatMap(d => typeof d === "string" ? d.split(",").map(s => s.trim()) : d).map(d => daysOfWeek.find(dw => dw.toLowerCase() === String(d).toLowerCase()) || d) 
               : [],
-            estimatedDeliveryTime: apiData.estimatedDeliveryTime || "",
 
             panNumber: apiData.panNumber || "",
             nameOnPan: apiData.nameOnPan || "",
@@ -550,9 +548,6 @@ export default function EditOwner() {
       errors.push({ tab: "restaurant", field: "openDays", message: "Select at least one open day" })
     }
 
-    if (!formData.estimatedDeliveryTime?.trim()) {
-      errors.push({ tab: "restaurant", field: "estimatedDeliveryTime", message: "Estimated delivery time is required" })
-    }
 
     // 3. Bank & KYC validation
     if (!formData.panNumber?.trim()) {
@@ -713,7 +708,6 @@ export default function EditOwner() {
         openingTime: formData.openingTime,
         closingTime: formData.closingTime,
         openDays: formData.openDays,
-        estimatedDeliveryTime: formData.estimatedDeliveryTime.trim(),
 
         panNumber: formData.panNumber.trim().toUpperCase(),
         nameOnPan: formData.nameOnPan.trim(),
@@ -1231,12 +1225,9 @@ export default function EditOwner() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
-                    Estimated Delivery Time
                   </label>
                   <Input
                     type="text"
-                    value={formData.estimatedDeliveryTime}
-                    onChange={(e) => handleInputChange("estimatedDeliveryTime", e.target.value)}
                     placeholder="e.g., 30-40 mins"
                     className="w-full text-sm h-11"
                   />
@@ -1693,4 +1684,3 @@ export default function EditOwner() {
     </>
   )
 }
-

@@ -77,7 +77,6 @@ export default function DesktopNavbar({ showLogo = true }) {
     const isDining = location.pathname === "/food/user/dining" || location.pathname === "/food/dining"
     const isUnder250 = location.pathname === "/food/user/under-250" || location.pathname === "/food/under-250"
     const isProfile = location.pathname.startsWith("/food/user/profile") || location.pathname.startsWith("/food/profile")
-    const isDelivery = !isDining && !isUnder250 && !isProfile && (location.pathname === "/food/user" || location.pathname === "/food" || (location.pathname.startsWith("/food/user") && !location.pathname.includes("/dining") && !location.pathname.includes("/under-250") && !location.pathname.includes("/profile")))
     const isBannerRoute =
         location.pathname === "/food/user" ||
         location.pathname === "/food" ||
@@ -350,16 +349,15 @@ export default function DesktopNavbar({ showLogo = true }) {
                     <div className="flex items-center justify-center h-12">
                         {/* Navigation Tabs - Centered with spacing */}
                         <div className="flex items-center space-x-24">
-                            {/* Delivery Tab */}
                             <Link
                                 to="/"
-                                className={`flex flex-col items-center gap-1 px-2 py-1 transition-colors relative group ${isDelivery
+                                className={`flex flex-col items-center gap-1 px-2 py-1 transition-colors relative group ${(location.pathname === '/' || location.pathname === '/food/user' || location.pathname === '/food')
                                     ? "text-[#DC2626]"
                                     : "text-gray-600 dark:text-gray-400 hover:text-[#DC2626]"
                                     }`}
                             >
                                 <span className="text-sm font-bold tracking-wide uppercase">Delivery</span>
-                                {isDelivery && (
+                                {(location.pathname === '/' || location.pathname === '/food/user' || location.pathname === '/food') && (
                                     <motion.div
                                         layoutId="navIndicator"
                                         className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[#DC2626]"

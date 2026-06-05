@@ -63,14 +63,12 @@ export function getUserIdFromToken(token) {
 /**
  * Check if user has access to a module based on role
  * @param {string} role - User role
- * @param {string} module - Module name (admin, restaurant, delivery, user)
  * @returns {boolean} - True if user has access
  */
 export function hasModuleAccess(role, module) {
   const roleModuleMap = {
     'admin': 'admin',
     'restaurant': 'restaurant',
-    'delivery': 'delivery',
     'user': 'user'
   };
 
@@ -79,7 +77,6 @@ export function hasModuleAccess(role, module) {
 
 /**
  * Get module-specific access token
- * @param {string} module - Module name (admin, restaurant, delivery, user)
  * @returns {string|null} - Access token or null
  */
 export function getModuleToken(module) {
@@ -88,7 +85,6 @@ export function getModuleToken(module) {
 
 /**
  * Get module-specific refresh token (fallback for WebView environments where cookies may be unreliable)
- * @param {string} module - Module name (admin, restaurant, delivery, user)
  * @returns {string|null} - Refresh token or null
  */
 export function getModuleRefreshToken(module) {
@@ -97,7 +93,6 @@ export function getModuleRefreshToken(module) {
 
 /**
  * Get current user's role from a specific module's token
- * @param {string} module - Module name (admin, restaurant, delivery, user)
  * @returns {string|null} - Current user role or null
  */
 export function getCurrentUserRole(module = null) {
@@ -117,7 +112,6 @@ export function getCurrentUserRole(module = null) {
   
   // Legacy: check all modules and return the first valid role found
   // This is for backward compatibility but should be avoided
-  const modules = ['user', 'restaurant', 'delivery', 'admin'];
   for (const mod of modules) {
     const token = getModuleToken(mod);
     if (token && !isTokenExpired(token)) {
@@ -130,7 +124,6 @@ export function getCurrentUserRole(module = null) {
 
 /**
  * Check if user is authenticated for a specific module
- * @param {string} module - Module name (admin, restaurant, delivery, user)
  * @returns {boolean} - True if authenticated
  */
 export function isModuleAuthenticated(module) {
@@ -147,7 +140,6 @@ export function isModuleAuthenticated(module) {
 
 /**
  * Clear authentication data for a specific module
- * @param {string} module - Module name (admin, restaurant, delivery, user)
  */
 export function clearModuleAuth(module) {
   localStorage.removeItem(`${module}_accessToken`);
@@ -205,7 +197,6 @@ export function clearRestaurantPendingPhone() {
  * Clear all authentication data for all modules
  */
 export function clearAuthData() {
-  const modules = ['admin', 'restaurant', 'delivery', 'user'];
   modules.forEach(module => {
     clearModuleAuth(module);
   });
@@ -216,7 +207,6 @@ export function clearAuthData() {
 
 /**
  * Set authentication data for a specific module
- * @param {string} module - Module name (admin, restaurant, delivery, user)
  * @param {string} token - Access token
  * @param {Object} user - User data
  * @param {string|null} refreshToken - Optional refresh token

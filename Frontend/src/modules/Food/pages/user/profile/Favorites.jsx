@@ -170,7 +170,6 @@ export default function Favorites() {
                     <div className="flex items-center justify-between text-xs pt-2 border-t">
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        <span className="font-medium">{restaurant.deliveryTime}</span>
                       </div>
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <MapPin className="h-3 w-3" />

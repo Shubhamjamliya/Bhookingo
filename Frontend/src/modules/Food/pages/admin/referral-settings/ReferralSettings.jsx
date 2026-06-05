@@ -11,9 +11,7 @@ export default function ReferralSettings() {
   const [saving, setSaving] = useState(false)
   const [settings, setSettings] = useState({
     referralRewardUser: "",
-    referralRewardDelivery: "",
     referralLimitUser: "",
-    referralLimitDelivery: "",
   })
 
   const fetchSettings = async () => {
@@ -24,16 +22,12 @@ export default function ReferralSettings() {
       if (res?.data?.success && s) {
         setSettings({
           referralRewardUser: s.referralRewardUser ?? "",
-          referralRewardDelivery: s.referralRewardDelivery ?? "",
           referralLimitUser: s.referralLimitUser ?? "",
-          referralLimitDelivery: s.referralLimitDelivery ?? "",
         })
       } else {
         setSettings({
           referralRewardUser: "",
-          referralRewardDelivery: "",
           referralLimitUser: "",
-          referralLimitDelivery: "",
         })
       }
     } catch (e) {
@@ -53,9 +47,7 @@ export default function ReferralSettings() {
       setSaving(true)
       const body = {
         referralRewardUser: settings.referralRewardUser === "" ? 0 : Number(settings.referralRewardUser),
-        referralRewardDelivery: settings.referralRewardDelivery === "" ? 0 : Number(settings.referralRewardDelivery),
         referralLimitUser: settings.referralLimitUser === "" ? 0 : Number(settings.referralLimitUser),
-        referralLimitDelivery: settings.referralLimitDelivery === "" ? 0 : Number(settings.referralLimitDelivery),
         isActive: true,
       }
       const res = await adminAPI.createOrUpdateReferralSettings(body)
@@ -65,9 +57,7 @@ export default function ReferralSettings() {
         if (saved) {
           setSettings({
             referralRewardUser: saved.referralRewardUser ?? "",
-            referralRewardDelivery: saved.referralRewardDelivery ?? "",
             referralLimitUser: saved.referralLimitUser ?? "",
-            referralLimitDelivery: saved.referralLimitDelivery ?? "",
           })
         }
       } else {
@@ -157,19 +147,14 @@ export default function ReferralSettings() {
               </div>
 
               <div className="border border-slate-200 rounded-xl p-4">
-                <h3 className="font-semibold text-slate-900 mb-3">Delivery Partner Referral</h3>
                 <label className="block text-sm text-slate-600 mb-1">Reward amount (₹)</label>
                 <input
-                  value={settings.referralRewardDelivery}
-                  onChange={onChange("referralRewardDelivery")}
                   inputMode="numeric"
                   className="w-full border border-slate-200 rounded-lg px-3 py-2"
                   placeholder="e.g. 2000"
                 />
                 <label className="block text-sm text-slate-600 mb-1 mt-3">Max credits per referrer</label>
                 <input
-                  value={settings.referralLimitDelivery}
-                  onChange={onChange("referralLimitDelivery")}
                   inputMode="numeric"
                   className="w-full border border-slate-200 rounded-lg px-3 py-2"
                   placeholder="e.g. 5"

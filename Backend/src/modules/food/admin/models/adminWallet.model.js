@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 
 /**
  * AdminWallet — tracks the platform's overall financial balance.
- * Credited with platform fees + delivery fee margins on every order.
  * This represents the platform's revenue.
  */
 const adminWalletSchema = new mongoose.Schema(
@@ -12,7 +11,6 @@ const adminWalletSchema = new mongoose.Schema(
         balance: { type: Number, default: 0 },
         /** Lifetime total platform revenue */
         totalRevenue: { type: Number, default: 0, min: 0 },
-        /** Total paid out to restaurants + delivery partners */
         totalPayouts: { type: Number, default: 0, min: 0 },
         /** Total refunds issued */
         totalRefunds: { type: Number, default: 0, min: 0 }

@@ -89,8 +89,7 @@ export function ProfileProvider({ children }) {
 
   // orderType state - stored in localStorage for persistence
   const [orderType, _setOrderType] = useState(() => {
-    const saved = localStorage.getItem("userOrderType")
-    return (saved && ["delivery", "dining", "takeaway"].includes(saved)) ? saved : "delivery"
+    return "takeaway"
   })
 
   // Helper to check if authenticated
@@ -137,10 +136,8 @@ export function ProfileProvider({ children }) {
 
   // Wrap setOrderType to SYNCHRONOUSLY save to localStorage before React re-render
   const setOrderType = (newType) => {
-    if (["delivery", "dining", "takeaway"].includes(newType)) {
-      localStorage.setItem("userOrderType", newType)
-      _setOrderType(newType)
-    }
+    localStorage.setItem("userOrderType", newType)
+    _setOrderType(newType)
   }
 
   // Fetch user profile and addresses from API on mount and when authentication changes
@@ -391,8 +388,6 @@ export function ProfileProvider({ children }) {
       // Defer side effects to avoid "updating component while rendering another" error
       setTimeout(() => {
         localStorage.setItem("userAddresses", JSON.stringify(updatedAddresses))
-        localStorage.setItem("deliveryAddressMode", "saved")
-        window.dispatchEvent(new CustomEvent("deliveryAddressModeUpdated"))
 
         if (syncedLocation) {
           localStorage.setItem("userLocation", JSON.stringify(syncedLocation))
@@ -634,7 +629,6 @@ export function useProfile() {
       getDishFavorites: () => [],
       vegMode: false,
       setVegMode: () => debugWarn("ProfileProvider not available"),
-      orderType: "delivery",
       setOrderType: () => debugWarn("ProfileProvider not available"),
       isAuthenticated: false
     }

@@ -47,7 +47,6 @@ export default function LandingPageSettings({ type = "admin" }) {
   const [reactBusinessStats, setReactBusinessStats] = useState({
     restaurant: "200",
     happyCustomer: "10000",
-    averageDelivery: "30",
   });
 
   const adminTabs = [
@@ -82,7 +81,7 @@ export default function LandingPageSettings({ type = "admin" }) {
     { id: "en", label: "English(EN)" },
     { id: "bn", label: "Bengali - বাংলা(BN)" },
     { id: "ar", label: "Arabic - العربية (AR)" },
-    { id: "es", label: "Spanish - espa�ol(ES)" },
+    { id: "es", label: "Spanish - espa�ol(ES)" },
   ];
 
   const handleImageUpload = (e, setter, field) => {
@@ -134,7 +133,6 @@ export default function LandingPageSettings({ type = "admin" }) {
       setReactBusinessStats({
         restaurant: "200",
         happyCustomer: "10000",
-        averageDelivery: "30",
       });
     }
   };
@@ -1286,7 +1284,6 @@ export default function LandingPageSettings({ type = "admin" }) {
                 Business Statistics Section
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 mb-3">
-                Display key business statistics like total restaurants, happy customers, and average delivery time.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1318,19 +1315,6 @@ export default function LandingPageSettings({ type = "admin" }) {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-1.5">
-                    Average Delivery (Minutes)*
-                  </label>
-                  <input
-                    type="number"
-                    value={reactBusinessStats.averageDelivery}
-                    onChange={(e) =>
-                      setReactBusinessStats((prev) => ({ ...prev, averageDelivery: e.target.value }))
-                    }
-                    className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
               </div>
 
               <div className="flex justify-end gap-2 mt-4">
@@ -1701,7 +1685,6 @@ export default function LandingPageSettings({ type = "admin" }) {
               Available Zone Section
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 mb-4">
-              Configure available delivery zones display.
             </p>
             <div className="space-y-3">
               <div>

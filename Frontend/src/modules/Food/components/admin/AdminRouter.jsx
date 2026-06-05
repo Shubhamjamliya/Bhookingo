@@ -185,7 +185,6 @@ export default function AdminRouter() {
             <Route path="food/list" element={<FoodsList />} />
             <Route path="addons" element={<AddonsList />} />
 
-            {/* PROMOTIONS, CUSTOMERS, DELIVERYMEN, etc. */}
             <Route path="campaigns/basic" element={<BasicCampaign />} />
             <Route path="campaigns/food" element={<FoodCampaign />} />
             <Route path="coupons" element={<Coupons />} />

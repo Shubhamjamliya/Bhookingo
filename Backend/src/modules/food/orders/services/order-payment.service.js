@@ -65,7 +65,6 @@ async function syncRazorpayQrPayment(orderDoc) {
 
 export async function createCollectQr(
   orderId,
-  deliveryPartnerId,
   customerInfo = {},
 ) {
   const query = mongoose.Types.ObjectId.isValid(orderId)
@@ -78,7 +77,6 @@ export async function createCollectQr(
 
   if (!order) throw new NotFoundError('Order not found');
   if (
-    order.dispatch.deliveryPartnerId?.toString() !== deliveryPartnerId.toString()
   ) {
     throw new ForbiddenError('Not your order');
   }
@@ -131,8 +129,6 @@ export async function createCollectQr(
       order._id,
       'cod_collect_qr_created',
       {
-        recordedByRole: 'DELIVERY_PARTNER',
-        recordedById: deliveryPartnerId,
         note: 'COD collection QR created',
       },
     );
@@ -141,7 +137,6 @@ export async function createCollectQr(
   enqueueOrderEvent('collect_qr_created', {
     orderMongoId: String(orderId),
     orderId: order?.orderId || null,
-    deliveryPartnerId,
     paymentLinkId: link.id,
     shortUrl: link.short_url,
     amountDue,
@@ -165,7 +160,6 @@ export async function createCollectQr(
   };
 }
 
-export async function getPaymentStatus(orderId, deliveryPartnerId) {
   const identity = buildOrderIdentityFilter(orderId);
   if (!identity) throw new ValidationError('Order id required');
 
@@ -174,7 +168,6 @@ export async function getPaymentStatus(orderId, deliveryPartnerId) {
   );
   if (!order) throw new NotFoundError('Order not found');
   if (
-    order.dispatch?.deliveryPartnerId?.toString() !== deliveryPartnerId.toString()
   ) {
     throw new ForbiddenError('Not your order');
   }

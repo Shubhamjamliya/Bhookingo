@@ -5,7 +5,6 @@ export const emptyBasicCampaigns = [];
 export const emptyCashbacks = [];
 export const emptyCollectCashTransactions = [];
 export const emptyConversations = [];
-export const emptyDeliveryManPayments = [];
 export const emptyExpenseReports = [];
 export const emptyFoodCampaigns = [];
 export const emptyFoodReports = [];
@@ -51,8 +50,6 @@ export const emptyYearlySalesData = {
 };
 
 export const emptyDisbursementReportRestaurants = [];
-export const emptyDisbursementReportDeliverymen = [];
-
 export const emptyDisbursementStats = {
   pending: 0,
   completed: 0,

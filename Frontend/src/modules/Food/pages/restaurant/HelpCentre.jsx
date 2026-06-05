@@ -21,13 +21,11 @@ const helpTopics = [
     icon: Power,
     title: "Outlet online / offline status",
     subtitle: "Current status & details",
-    path: "/food/restaurant/delivery-settings"
   },
   {
     id: 2,
     icon: Utensils,
     title: "Order related issues",
-    subtitle: "Cancellations & delivery related concerns",
     path: "/food/restaurant/orders/all"
   },
   {

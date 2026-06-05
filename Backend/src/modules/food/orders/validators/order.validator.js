@@ -36,7 +36,6 @@ const pricingSchema = z.object({
     subtotal: z.number().min(0),
     tax: z.number().min(0).optional(),
     packagingFee: z.number().min(0).optional(),
-    deliveryFee: z.number().min(0).optional(),
     platformFee: z.number().min(0).optional(),
     discount: z.number().min(0).optional(),
     total: z.number().min(0),
@@ -47,7 +46,6 @@ export function validateCalculateOrderDto(body) {
     const schema = z.object({
         items: z.array(orderItemSchema).min(1, 'At least one item required'),
         restaurantId: z.string().min(1, 'Restaurant id required'),
-        deliveryAddress: z
             .object({
                 location: z
                     .object({
@@ -57,11 +55,8 @@ export function validateCalculateOrderDto(body) {
                     .optional()
             })
             .optional(),
-        deliveryAddressId: z.string().optional(),
         zoneId: z.string().optional(),
         couponCode: z.string().optional(),
-        deliveryFleet: z.string().optional(),
-        orderType: z.enum(['delivery', 'dining', 'takeaway']).optional().default('delivery')
     });
     const result = schema.safeParse(body);
     if (!result.success) {
@@ -77,17 +72,14 @@ export function validateCreateOrderDto(body) {
     const schema = z.object({
         items: z.array(orderItemSchema).min(1, 'At least one item required'),
         address: addressSchema.optional(),
-        orderType: z.enum(['delivery', 'dining', 'takeaway']).optional().default('delivery'),
         restaurantId: z.string().min(1, 'Restaurant id required'),
         restaurantName: z.string().optional(),
         customerName: z.string().optional(),
         customerPhone: z.string().optional(),
         pricing: pricingSchema,
-        deliveryFleet: z.string().optional(),
         note: z.string().optional(),
         restaurantNote: z.string().optional(),
         sendCutlery: z.boolean().optional(),
-        // 'razorpay_qr' means COD-style flow, but payment is collected via Razorpay QR at delivery.
         paymentMethod: z.enum(['cash', 'razorpay', 'razorpay_qr', 'card', 'wallet']),
         zoneId: z.string().nullable().optional(),
         scheduledAt: z.string().datetime({ offset: true }).nullable().optional()
@@ -146,9 +138,7 @@ export function validateOrderStatusDto(body) {
     return result.data;
 }
 
-export function validateAssignDeliveryDto(body) {
     const schema = z.object({
-        deliveryPartnerId: z.string().min(1, 'Delivery partner id required')
     });
     const result = schema.safeParse(body);
     if (!result.success) {
@@ -171,9 +161,7 @@ export function validateDispatchSettingsDto(body) {
 export function validateOrderRatingsDto(body) {
     const schema = z.object({
         restaurantRating: z.number().min(1).max(5),
-        deliveryPartnerRating: z.number().min(1).max(5).optional(),
         restaurantComment: z.string().max(500).optional(),
-        deliveryPartnerComment: z.string().max(500).optional()
     });
     const result = schema.safeParse(body || {});
     if (!result.success) {

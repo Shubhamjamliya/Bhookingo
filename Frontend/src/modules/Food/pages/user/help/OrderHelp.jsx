@@ -25,13 +25,11 @@ import { useOrders } from "@food/context/OrdersContext"
 
 const commonIssues = [
   {
-    id: "late-delivery",
     title: "Order is Late",
     icon: Clock,
     description: "Your order hasn't arrived within the estimated time",
     solutions: [
       "Check the order tracking page for real-time updates",
-      "Contact the delivery driver if contact information is available",
       "Wait an additional 15-20 minutes as delays can occur",
       "Contact support if the order is more than 30 minutes late"
     ],
@@ -78,7 +76,6 @@ const commonIssues = [
     icon: AlertCircle,
     description: "Food quality doesn't meet expectations",
     solutions: [
-      "Contact support within 24 hours of delivery",
       "Describe the issue in detail",
       "Take photos if possible",
       "We'll process a full refund or replacement"
@@ -146,7 +143,6 @@ export default function OrderHelp() {
         return "bg-[#DC2626]"
       case "preparing":
         return "bg-[#DC2626]"
-      case "outForDelivery":
         return "bg-[#DC2626]"
       case "delivered":
         return "bg-[#DC2626]"
@@ -161,8 +157,6 @@ export default function OrderHelp() {
         return "Confirmed"
       case "preparing":
         return "Preparing"
-      case "outForDelivery":
-        return "Out for Delivery"
       case "delivered":
         return "Delivered"
       default:
@@ -272,7 +266,6 @@ export default function OrderHelp() {
                   <div className="flex items-start gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Delivery Address</p>
                       <p className="text-sm">
                         {order.address.street}
                         {order.address.additionalDetails && `, ${order.address.additionalDetails}`}

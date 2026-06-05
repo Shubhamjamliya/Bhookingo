@@ -46,7 +46,6 @@ function resolveNativeInitialRoute() {
 
   if (pathname.startsWith('/food/')) return pathname
   if (pathname.startsWith('/restaurant')) return `/food${pathname}`
-  if (pathname.startsWith('/delivery')) return `/food${pathname}`
   if (pathname.startsWith('/user')) return `/food${pathname}`
   if (pathname.startsWith('/admin')) return pathname
   if (storedRoute.startsWith('/food/') || storedRoute.startsWith('/admin')) {
@@ -54,7 +53,6 @@ function resolveNativeInitialRoute() {
   }
 
   if (isModuleAuthenticated('restaurant')) return '/food/restaurant'
-  if (isModuleAuthenticated('delivery')) return '/food/delivery'
   if (isModuleAuthenticated('admin')) return '/admin'
   if (isModuleAuthenticated('user')) return '/food/user'
 
@@ -78,9 +76,8 @@ bootstrapNativeHashRoute()
 if (typeof window !== 'undefined') {
   const rawPath = window.location.pathname
   const isRestaurant = rawPath === '/restaurant' || rawPath.startsWith('/restaurant/')
-  const isDelivery = rawPath === '/delivery' || rawPath.startsWith('/delivery/')
 
-  if ((isRestaurant || isDelivery) && !isNativeLikeShell()) {
+  if (isRestaurant) {
     window.location.replace(`/food${rawPath}${window.location.search}`)
   }
 }

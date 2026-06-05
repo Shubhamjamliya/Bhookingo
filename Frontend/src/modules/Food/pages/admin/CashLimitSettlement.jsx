@@ -13,7 +13,7 @@ const formatCurrency = (amount) => {
 }
 
 const formatDate = (d) => {
-  if (!d) return "—"
+  if (!d) return "ï¿½"
   try {
     return new Date(d).toLocaleString("en-IN", {
       day: "2-digit",
@@ -85,7 +85,6 @@ export default function CashLimitSettlement() {
             <h1 className="text-2xl font-bold text-slate-900">Cash limit settlement</h1>
           </div>
           <p className="text-sm text-slate-600 mt-1">
-            Deposit (cash limit settlement) transactions from delivery boys. Amount is added to available limit and deducted from cash in hand.
           </p>
         </div>
 
@@ -112,7 +111,7 @@ export default function CashLimitSettlement() {
           {loading ? (
             <div className="py-20 text-center">
               <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mx-auto mb-4" />
-              <p className="text-slate-600">Loading…</p>
+              <p className="text-slate-600">Loadingï¿½</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -121,7 +120,6 @@ export default function CashLimitSettlement() {
                   <tr>
                     <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">#</th>
                     <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Delivery</th>
                     <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">ID</th>
                     <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Status</th>
@@ -149,10 +147,8 @@ export default function CashLimitSettlement() {
                           {formatDate(tx.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">
-                          {tx.deliveryName || "—"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
-                          {tx.deliveryIdString || "—"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700">
                           {formatCurrency(tx.amount)}
@@ -165,11 +161,11 @@ export default function CashLimitSettlement() {
                                 : "bg-slate-100 text-slate-700"
                             }`}
                           >
-                            {tx.status || "—"}
+                            {tx.status || "ï¿½"}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 font-mono">
-                          {tx.razorpayPaymentId ? tx.razorpayPaymentId.slice(0, 12) + "…" : "—"}
+                          {tx.razorpayPaymentId ? tx.razorpayPaymentId.slice(0, 12) + "ï¿½" : "ï¿½"}
                         </td>
                       </tr>
                     ))
@@ -182,7 +178,7 @@ export default function CashLimitSettlement() {
           {pages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
               <p className="text-sm text-slate-600">
-                Page {page} of {pages} · {total} total
+                Page {page} of {pages} ï¿½ {total} total
               </p>
               <div className="flex gap-2">
                 <button

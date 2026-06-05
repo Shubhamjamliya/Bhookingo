@@ -1496,7 +1496,6 @@ export default function Home() {
           params.sortBy = filters.sortBy || sortBy;
         }
 
-        // Order Type (Takeaway/Delivery)
         if (orderType) {
           params.orderType = orderType;
         }
@@ -1513,13 +1512,6 @@ export default function Home() {
           params.minRating = 4.0;
         } else if (filters.activeFilters?.has("rating-35-plus")) {
           params.minRating = 3.5;
-        }
-
-        // Delivery time filters
-        if (filters.activeFilters?.has("delivery-under-30")) {
-          params.maxDeliveryTime = 30;
-        } else if (filters.activeFilters?.has("delivery-under-45")) {
-          params.maxDeliveryTime = 45;
         }
 
         // Distance filters
@@ -1633,8 +1625,6 @@ export default function Home() {
             })
             .map((restaurant, index) => {
               // Use restaurant data if available, otherwise use defaults
-              const deliveryTime =
-                restaurant.estimatedDeliveryTime || "25-30 mins";
 
               // Use pre-calculated distance from backend
               const distance = restaurant.distance || "0 m";
@@ -1684,14 +1674,7 @@ export default function Home() {
                   ? restaurant.cuisines
                   : [],
                 rating: Number(restaurant.rating) || 0,
-                deliveryTime:
-                  (orderType === "takeaway" || isTakeawayPage)
-                    ? (restaurant.preparationTime || "20-25 mins")
-                    : (restaurant.deliveryTime ||
-                      restaurant.estimatedDeliveryTime ||
-                      (restaurant.estimatedDeliveryTimeMinutes
-                        ? `${restaurant.estimatedDeliveryTimeMinutes} mins`
-                        : deliveryTime)),
+                time: restaurant.preparationTime || "20-25 mins",
                 takeawaySettings: restaurant.takeawaySettings || null,
                 distance: distance,
                 distanceInKm: distanceInKm, // Store numeric distance for sorting
@@ -1719,10 +1702,7 @@ export default function Home() {
                 openDays: Array.isArray(restaurant.openDays)
                   ? restaurant.openDays
                   : [],
-                deliveryTimings: restaurant.deliveryTimings || null,
                 outletTimings: restaurant.outletTimings || null,
-                openingTime: restaurant.openingTime || restaurant?.deliveryTimings?.openingTime || null,
-                closingTime: restaurant.closingTime || restaurant?.deliveryTimings?.closingTime || null,
                 recommendedDishes: Array.isArray(restaurant.recommendedDishes) ? restaurant.recommendedDishes : [],
               };
             });
@@ -2072,7 +2052,6 @@ export default function Home() {
         cuisine,
         rating: Number(restaurant?.rating) || 0,
         distance: "",
-        deliveryTime: "",
         image: normalizeImageUrl(image) || foodImages[0],
         images: imageCandidates.length > 0 ? imageCandidates : [foodImages[0]],
         slug: restaurant?.slug || restaurant?.restaurantId || restaurantId,
@@ -2688,8 +2667,6 @@ export default function Home() {
                       </button>
 
                       {[
-                        { id: "delivery-under-30", label: "Under 30 mins" },
-                        { id: "delivery-under-45", label: "Under 45 mins" },
                         { id: "distance-under-1km", label: "Under 1km", icon: MapPin },
                         { id: "distance-under-2km", label: "Under 2km", icon: MapPin },
                       ].map((filter) => {
@@ -2942,7 +2919,6 @@ export default function Home() {
                       name: restaurant.name,
                       cuisine: restaurant.cuisine,
                       rating: restaurant.rating,
-                      deliveryTime: restaurant.deliveryTime,
                       distance: restaurant.distance,
                       priceRange: restaurant.priceRange,
                       image: restaurant.image,
@@ -3022,14 +2998,12 @@ export default function Home() {
                                     {restaurant.name}
                                   </h3>
                                   <div className="flex flex-wrap items-center gap-2 mt-2">
-                                    {/* Delivery Time & Distance moved here - Green Theme with Zap icon */}
                                     <div className="flex items-center gap-1.5 text-sm font-semibold text-[#257d3c] transition-all duration-300">
                                       <Zap
                                         className="h-4 w-4 fill-[#257d3c]"
                                         strokeWidth={2.5}
                                       />
                                       <span>
-                                        {restaurant.deliveryTime}
                                       </span>
                                       <span className="text-[#257d3c] mx-1 font-bold">|</span>
                                       <span>
@@ -3255,32 +3229,30 @@ export default function Home() {
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
-                        onClick={() => toggleFilter("delivery-under-30")}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("delivery-under-30")
+                        onClick={() => toggleFilter("under-30-mins")}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("under-30-mins")
                           ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
                           : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
                           }`}>
                         <Timer
-                          className={`h-6 w-6 ${activeFilters.has("delivery-under-30") ? "text-[#DC2626]" : "text-gray-600 dark:text-gray-400"}`}
                           strokeWidth={1.5}
+                          className={`w-6 h-6 ${activeFilters.has("under-30-mins") ? "text-[#DC2626]" : "text-gray-500"}`}
                         />
-                        <span
-                          className={`text-sm font-medium ${activeFilters.has("delivery-under-30") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                        <span className={`text-sm font-medium ${activeFilters.has("under-30-mins") ? "text-[#DC2626]" : "text-gray-700"}`}>
                           {(orderType === "takeaway" || isTakeawayPage) ? "Within 30 mins" : "Under 30 mins"}
                         </span>
                       </button>
                       <button
-                        onClick={() => toggleFilter("delivery-under-45")}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("delivery-under-45")
+                        onClick={() => toggleFilter("under-45-mins")}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("under-45-mins")
                           ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
                           : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
                           }`}>
                         <Timer
-                          className={`h-6 w-6 ${activeFilters.has("delivery-under-45") ? "text-[#DC2626]" : "text-gray-600 dark:text-gray-400"}`}
                           strokeWidth={1.5}
+                          className={`w-6 h-6 ${activeFilters.has("under-45-mins") ? "text-[#DC2626]" : "text-gray-500"}`}
                         />
-                        <span
-                          className={`text-sm font-medium ${activeFilters.has("delivery-under-45") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                        <span className={`text-sm font-medium ${activeFilters.has("under-45-mins") ? "text-[#DC2626]" : "text-gray-700"}`}>
                           {(orderType === "takeaway" || isTakeawayPage) ? "Within 45 mins" : "Under 45 mins"}
                         </span>
                       </button>

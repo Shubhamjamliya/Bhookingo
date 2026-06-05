@@ -4,12 +4,9 @@ import { createPayment, markPaymentSuccess } from '../../core/payments/payment.s
 import { initiateRefund } from '../../core/payments/refund.service.js';
 
 /**
- * Post-delivery financial settlement processor.
- * Called by BullMQ when a delivery_completed event fires.
  *
  * Splits the order total into:
  * 1. Restaurant commission credit
- * 2. Delivery partner earning credit
  * 3. Platform profit credit (admin wallet)
  *
  * Also handles refunds on order cancellation.
@@ -22,8 +19,6 @@ export const processPaymentJob = async (job) => {
 
     try {
         switch (action) {
-            case 'delivery_completed':
-                await handleDeliveryCompleted(job.data);
                 break;
 
             case 'order_cancelled':
@@ -46,13 +41,10 @@ export const processPaymentJob = async (job) => {
 };
 
 /**
- * After delivery is completed and payment is confirmed:
  * Split money to all parties.
  */
-async function handleDeliveryCompleted(data) {
     const {
         orderMongoId, orderId,
-        restaurantId, deliveryPartnerId,
         riderEarning = 0, platformProfit = 0,
         commissionAmount = 0,
         total = 0, paymentMethod

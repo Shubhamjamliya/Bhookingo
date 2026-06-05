@@ -214,9 +214,6 @@ const restaurantSchema = new mongoose.Schema(
     fssaiImage: {
       type: String,
     },
-    estimatedDeliveryTime: { type: String },
-    /** Numeric delivery time in minutes for filtering/sorting. */
-    estimatedDeliveryTimeMinutes: { type: Number, index: true },
     featuredDish: { type: String },
     featuredPrice: { type: Number },
     offer: { type: String },
@@ -364,21 +361,15 @@ restaurantSchema.pre("validate", function normalizeDerivedFields(next) {
     }
   }
 
-  // Derive estimatedDeliveryTimeMinutes from the human string if not explicitly set.
   // Accepts formats like "25-30 mins", "30 mins", "45".
   if (
-    this.estimatedDeliveryTimeMinutes === undefined ||
-    this.estimatedDeliveryTimeMinutes === null
   ) {
     const raw =
-      typeof this.estimatedDeliveryTime === "string"
-        ? this.estimatedDeliveryTime
         : "";
     const match = raw.match(/(\d{1,3})/);
     if (match) {
       const minutes = parseInt(match[1], 10);
       if (Number.isFinite(minutes)) {
-        this.estimatedDeliveryTimeMinutes = minutes;
       }
     }
   }

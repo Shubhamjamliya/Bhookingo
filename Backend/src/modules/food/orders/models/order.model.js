@@ -16,7 +16,6 @@ const orderItemSchema = new mongoose.Schema(
     { _id: false }
 );
 
-const deliveryAddressSchema = new mongoose.Schema(
     {
         label: { type: String, enum: ['Home', 'Office', 'Other'], default: 'Home' },
         name: { type: String, default: '', trim: true },
@@ -40,7 +39,7 @@ const pricingSchema = new mongoose.Schema(
         subtotal: { type: Number, required: true, min: 0 },
         tax: { type: Number, default: 0, min: 0 },
         packagingFee: { type: Number, default: 0, min: 0 },
-        deliveryFee: { type: Number, default: 0, min: 0 },
+        
         platformFee: { type: Number, default: 0, min: 0 },
         restaurantCommission: { type: Number, default: 0, min: 0 },
         discount: { type: Number, default: 0, min: 0 },
@@ -112,12 +111,11 @@ const dispatchSchema = new mongoose.Schema(
             enum: ['unassigned', 'assigned', 'accepted', 'rejected', 'cancelled'],
             default: 'unassigned'
         },
-        deliveryPartnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodDeliveryPartner', default: null },
+        
         assignedAt: { type: Date },
         acceptedAt: { type: Date },
         /** List of partners who were offered this order (to avoid repeats and track timeouts) */
         offeredTo: [{
-            partnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodDeliveryPartner' },
             at: { type: Date, default: Date.now },
             action: { type: String, enum: ['offered', 'rejected', 'timeout'], default: 'offered' },
             allowOverLimit: { type: Boolean, default: false },
@@ -128,14 +126,12 @@ const dispatchSchema = new mongoose.Schema(
     { _id: false }
 );
 
-const deliveryStateSchema = new mongoose.Schema(
     {
         currentPhase: {
             type: String,
             enum: [
                 'en_route_to_pickup',
                 'at_pickup',
-                'en_route_to_delivery',
                 'at_drop',
                 'delivered',
                 'completed'
@@ -154,7 +150,6 @@ const deliveryStateSchema = new mongoose.Schema(
 const statusHistorySchema = new mongoose.Schema(
     {
         at: { type: Date, default: Date.now },
-        byRole: { type: String, enum: ['USER', 'RESTAURANT', 'DELIVERY_PARTNER', 'ADMIN', 'SYSTEM'] },
         byId: { type: mongoose.Schema.Types.ObjectId },
         from: { type: String },
         to: { type: String },
@@ -175,12 +170,10 @@ const orderEntityRatingSchema = new mongoose.Schema(
 const orderRatingsSchema = new mongoose.Schema(
     {
         restaurant: { type: orderEntityRatingSchema, default: undefined },
-        deliveryPartner: { type: orderEntityRatingSchema, default: undefined }
     },
     { _id: false }
 );
 
-const deliveryVerificationSchema = new mongoose.Schema(
     {
         dropOtp: {
             required: { type: Boolean, default: false },
@@ -207,8 +200,6 @@ const orderSchema = new mongoose.Schema(
         },
         orderType: {
             type: String,
-            enum: ['delivery', 'dining', 'takeaway'],
-            default: 'delivery',
             index: true
         },
         userId: {
@@ -236,10 +227,7 @@ const orderSchema = new mongoose.Schema(
             required: true,
             validate: (v) => Array.isArray(v) && v.length > 0
         },
-        deliveryAddress: {
-            type: deliveryAddressSchema,
-            required: false
-        },
+        
         customerName: { type: String, default: '', trim: true },
         customerPhone: { type: String, default: '', trim: true },
         pricing: {
@@ -275,10 +263,7 @@ const orderSchema = new mongoose.Schema(
             type: dispatchSchema,
             default: () => ({})
         },
-        deliveryState: {
-            type: deliveryStateSchema,
-            default: () => ({})
-        },
+        
         statusHistory: {
             type: [statusHistorySchema],
             default: []
@@ -290,16 +275,11 @@ const orderSchema = new mongoose.Schema(
         restaurantNote: { type: String, default: '', trim: true },
         note: { type: String, default: '', trim: true },
         sendCutlery: { type: Boolean, default: true },
-        deliveryFleet: { type: String, default: 'standard', trim: true },
         scheduledAt: { type: Date, default: null },
         riderEarning: { type: Number, default: 0, min: 0 },
         platformProfit: { type: Number, default: 0, min: 0 },
         /** Plain 4-digit OTP for handover; cleared after successful verify (never expose to partner in API responses). */
-        deliveryOtp: { type: String, default: '', select: false },
-        deliveryVerification: {
-            type: deliveryVerificationSchema,
-            default: () => ({})
-        },
+        
         /** Latest rider location for this specific order (GeoJSON Point) */
         lastRiderLocation: {
             type: { type: String, enum: ['Point'] },
@@ -312,14 +292,11 @@ const orderSchema = new mongoose.Schema(
     }
 );
 
-orderSchema.index({ 'deliveryAddress.location': '2dsphere' });
 orderSchema.index({ lastRiderLocation: '2dsphere' });
 orderSchema.index({ userId: 1, createdAt: -1 });
 orderSchema.index({ restaurantId: 1, orderStatus: 1, createdAt: -1 });
-orderSchema.index({ 'dispatch.deliveryPartnerId': 1, orderStatus: 1 });
 orderSchema.index({ 'dispatch.status': 1, orderStatus: 1 });
 orderSchema.index({ 'dispatch.status': 1, orderStatus: 1, updatedAt: -1 });
-orderSchema.index({ 'dispatch.deliveryPartnerId': 1, 'dispatch.status': 1, updatedAt: -1 });
 orderSchema.index({ 'payment.status': 1, createdAt: -1 });
 orderSchema.index({ 'payment.method': 1, createdAt: -1 });
 

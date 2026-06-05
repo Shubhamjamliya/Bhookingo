@@ -472,15 +472,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         displayStatus = "Canceled"
       }
 
-      const dp = order.dispatch?.deliveryPartnerId
-      const deliveryPartnerName =
-        order.deliveryPartnerName ||
-        dp?.name ||
-        ""
-      const deliveryPartnerPhone =
-        order.deliveryPartnerPhone ||
-        dp?.phone ||
-        ""
+
 
       const items = Array.isArray(order.items)
         ? order.items.map((item) => ({
@@ -520,9 +512,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         paymentStatus,
         paymentMethodDetail,
         orderStatus: displayStatus,
-        deliveryPartnerName,
-        deliveryPartnerPhone,
-        deliveryType: order.deliveryType || "Home Delivery",
+
         orderOtp: order.deliveryOtp,
         address: order.address || order.customerAddress || order.deliveryAddress,
         refundStatus: order.payment?.refund?.status || (order.payment?.status === 'refunded' ? 'processed' : null)

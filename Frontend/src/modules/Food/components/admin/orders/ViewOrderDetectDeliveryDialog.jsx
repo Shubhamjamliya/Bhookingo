@@ -6,8 +6,6 @@ const getStatusColor = (status) => {
     "Restaurant Accepted": "bg-green-100 text-green-700 border-green-200",
     "Accepted": "bg-green-100 text-green-700 border-green-200", // Keep for backward compatibility
     "Rejected": "bg-red-100 text-red-700 border-red-200",
-    "Delivery Boy Assigned": "bg-purple-100 text-purple-700 border-purple-200",
-    "Delivery Boy Reached Pickup": "bg-orange-100 text-orange-700 border-orange-200",
     "Reached Pickup": "bg-orange-100 text-orange-700 border-orange-200", // Keep for backward compatibility
     "Order ID Accepted": "bg-indigo-100 text-indigo-700 border-indigo-200",
     "Reached Drop": "bg-amber-100 text-amber-700 border-amber-200",
@@ -22,7 +20,6 @@ const getStatusIcon = (status) => {
   return Clock
 }
 
-export default function ViewOrderDetectDeliveryDialog({ isOpen, onOpenChange, order }) {
   if (!isOpen || !order) return null
 
   const StatusIcon = getStatusIcon(order.status)
@@ -88,26 +85,21 @@ export default function ViewOrderDetectDeliveryDialog({ isOpen, onOpenChange, or
               </div>
             </div>
 
-            {/* Delivery Boy Information */}
-            {order.deliveryBoyName && (
               <div className="bg-slate-50 rounded-lg p-4 md:col-span-2">
                 <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
                   <Package className="w-4 h-4" />
-                  Delivery Boy Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-slate-500">Name</p>
                     <p className="text-sm font-medium text-slate-900 flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5" />
-                      {order.deliveryBoyName}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500">Phone Number</p>
                     <p className="text-sm font-medium text-slate-900 flex items-center gap-1.5">
                       <Phone className="w-3.5 h-3.5" />
-                      {order.deliveryBoyNumber}
                     </p>
                   </div>
                 </div>
@@ -152,11 +144,7 @@ export default function ViewOrderDetectDeliveryDialog({ isOpen, onOpenChange, or
                           </span>
                           <span className="text-xs text-slate-500">{historyItem.timestamp}</span>
                         </div>
-                        {historyItem.deliveryBoy && (
                           <div className="mt-2 text-xs text-slate-600 bg-slate-50 rounded p-2">
-                            <p><span className="font-medium">Delivery Boy:</span> {historyItem.deliveryBoy}</p>
-                            {historyItem.deliveryBoyNumber && (
-                              <p><span className="font-medium">Phone:</span> {historyItem.deliveryBoyNumber}</p>
                             )}
                           </div>
                         )}

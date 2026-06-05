@@ -22,7 +22,6 @@ export default function ManageOutlets() {
     "Profile picture",
     "Name, address, location",
     "Ratings, reviews",
-    "Delivery area changes",
   ]
 
   const handleOptionClick = (option) => {
@@ -46,7 +45,6 @@ export default function ManageOutlets() {
       case "Ratings, reviews":
         navigate("/food/restaurant/ratings-reviews", { state: { from: location.pathname } })
         break
-      case "Delivery area changes":
         setShowToast(true)
         setTimeout(() => setShowToast(false), 5000)
         break
@@ -119,10 +117,8 @@ export default function ManageOutlets() {
                 <Info className="w-5 h-5 text-[#B80B3D] shrink-0 mt-0.5" />
                 <div className="flex-1 space-y-2">
                   <p className="text-sm font-semibold text-gray-900">
-                    You can not modify the delivery areas of your restaurant
                   </p>
                   <p className="text-xs text-gray-600 leading-relaxed">
-                    Delivery area is defined by the appropriate distance our delivery partners can travel to deliver your orders in time. This can vary basis the time of the day or external conditions like rain etc.
                   </p>
                 </div>
               </div>

@@ -79,7 +79,6 @@ const FilterSidebar = ({
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Sort By</h3>
                     {[
                       { id: 'rating', label: 'Customer Rating' },
-                      { id: 'deliveryTime', label: 'Delivery Time' },
                       { id: 'costLowHigh', label: 'Cost: Low to High' },
                       { id: 'costHighLow', label: 'Cost: High to Low' },
                     ].map((opt) => (

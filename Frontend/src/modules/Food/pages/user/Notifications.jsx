@@ -81,28 +81,11 @@ export default function Notifications() {
       setNotificationsList(prev => [newNotification, ...prev])
     }
 
-    const handleDeliveryOtp = (event) => {
-      const { orderId, otp, message } = event.detail
-      const newNotification = {
-        id: `otp-${Date.now()}`,
-        type: "alert",
-        title: "Delivery OTP Received",
-        message: message || `Your OTP for order #${orderId} is ${otp}`,
-        time: "Just now",
-        timestamp: Date.now(),
-        read: false,
-        icon: "AlertCircle",
-        iconColor: "text-#991B1B"
-      }
-      setNotificationsList(prev => [newNotification, ...prev])
-    }
 
     window.addEventListener('orderStatusNotification', handleOrderUpdate)
-    window.addEventListener('deliveryDropOtp', handleDeliveryOtp)
 
     return () => {
       window.removeEventListener('orderStatusNotification', handleOrderUpdate)
-      window.removeEventListener('deliveryDropOtp', handleDeliveryOtp)
     }
   }, [])
   

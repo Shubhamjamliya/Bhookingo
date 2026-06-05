@@ -565,7 +565,6 @@ function RestaurantDetailsContent() {
             topCategory: resolvedTopCategory,
             rating: actualRestaurant?.rating || apiRestaurant?.rating || actualRestaurant?.averageRating || apiRestaurant?.averageRating || 0,
             reviews: actualRestaurant?.totalRatings || apiRestaurant?.totalRatings || actualRestaurant?.reviewCount || apiRestaurant?.reviewCount || actualRestaurant?.reviews?.length || apiRestaurant?.reviews?.length || 0,
-            deliveryTime: actualRestaurant?.estimatedDeliveryTime || apiRestaurant?.estimatedDeliveryTime || actualRestaurant?.deliveryTime || apiRestaurant?.deliveryTime || actualRestaurant?.avgDeliveryTime || apiRestaurant?.avgDeliveryTime || "25-30 mins",
             distance: calculatedDistance || actualRestaurant?.distance || apiRestaurant?.distance || actualRestaurant?.distanceFromUser || apiRestaurant?.distanceFromUser || "1.2 km",
             location: formattedAddress,
             locationObject: locationObj, // Store full location object for reference
@@ -586,7 +585,6 @@ function RestaurantDetailsContent() {
             restaurantOffers: {
               goldOffer: {
                 title: normalizedRestaurantOffers?.goldOffer?.title || "Gold exclusive offer",
-                description: apiRestaurant?.restaurantOffers?.goldOffer?.description || "Free delivery above ₹99",
                 unlockText: normalizedRestaurantOffers?.goldOffer?.unlockText || "join Gold to unlock",
                 buttonText: apiRestaurant?.restaurantOffers?.goldOffer?.buttonText || "Add Gold - ₹1",
               },
@@ -606,10 +604,7 @@ function RestaurantDetailsContent() {
             openDays: Array.isArray(actualRestaurant?.openDays)
               ? actualRestaurant.openDays
               : (Array.isArray(apiRestaurant?.openDays) ? apiRestaurant.openDays : (Array.isArray(onboardingStep2?.openDays) ? onboardingStep2.openDays : [])),
-            deliveryTimings: actualRestaurant?.deliveryTimings || apiRestaurant?.deliveryTimings || {
-              openingTime: actualRestaurant?.openingTime || apiRestaurant?.openingTime || onboardingStep2?.deliveryTimings?.openingTime || "09:00",
-              closingTime: actualRestaurant?.closingTime || apiRestaurant?.closingTime || onboardingStep2?.deliveryTimings?.closingTime || "22:00",
-            },
+
             outletTimings: actualRestaurant?.outletTimings || apiRestaurant?.outletTimings || null,
             cuisines: Array.isArray(actualRestaurant?.cuisines) ? actualRestaurant.cuisines : (Array.isArray(apiRestaurant?.cuisines) ? apiRestaurant.cuisines : (Array.isArray(onboardingStep2?.cuisines) ? onboardingStep2.cuisines : [])),
             profileImage: normalizedProfileImage,
@@ -646,7 +641,6 @@ function RestaurantDetailsContent() {
               }
             }
           } catch (outletError) {
-            debugWarn("Outlet timings fetch failed, falling back to delivery timings:", outletError?.message)
           }
 
           // Fetch menu and inventory for this restaurant
@@ -1404,7 +1398,6 @@ function RestaurantDetailsContent() {
         name: restaurant.name || "",
         cuisine: restaurant.cuisine || "",
         rating: restaurant.rating || 0,
-        deliveryTime: restaurant.deliveryTime || restaurant.estimatedDeliveryTime || "",
         distance: restaurant.distance || "",
         priceRange: restaurant.priceRange || "",
         image: restaurant.profileImageUrl?.url || restaurant.image || ""
@@ -2095,7 +2088,6 @@ function RestaurantDetailsContent() {
 
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <Clock className="h-4 w-4" />
-              <span>{restaurant?.deliveryTime || "25-30 mins"}</span>
             </div>
             </div>
           </div>
@@ -3117,7 +3109,6 @@ function RestaurantDetailsContent() {
                 >
                   {/* Header */}
                   <div className="px-4 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">All delivery outlets for</p>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-red-600 dark:bg-red-500 rounded-lg flex items-center justify-center">
                         <span className="text-white font-bold text-base">{(restaurant.name || "R").charAt(0).toUpperCase()}</span>
@@ -3150,7 +3141,6 @@ function RestaurantDetailsContent() {
                               <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-3.5 w-3.5" />
-                                  <span>{outlet?.deliveryTime || "25-30 mins"}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <MapPin className="h-3.5 w-3.5" />
@@ -3520,7 +3510,6 @@ function RestaurantDetailsContent() {
           </AnimatePresence>,
           document.body
         )}
-      {/* Schedule Delivery Time Modal */}
       {typeof window !== "undefined" &&
         createPortal(
           <AnimatePresence>
@@ -3559,7 +3548,6 @@ function RestaurantDetailsContent() {
                   <div className="flex-1 overflow-y-auto px-4 pt-10 pb-4">
                     {/* Title */}
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 text-center">
-                      Select your delivery time
                     </h2>
 
                     {/* Date Selection */}

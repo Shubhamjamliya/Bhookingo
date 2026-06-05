@@ -71,9 +71,7 @@ export default function ZonesTable({
                   Restaurants
                 </th>
               )}
-              {visibleColumns.deliverymen && (
                 <th className="px-3 py-2 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">
-                  Deliverymen
                 </th>
               )}
               {visibleColumns.defaultStatus && (
@@ -130,9 +128,7 @@ export default function ZonesTable({
                         <span className="text-xs text-slate-700">{zone.restaurants}</span>
                       </td>
                     )}
-                    {visibleColumns.deliverymen && (
                       <td className="px-3 py-2.5">
-                        <span className="text-xs text-slate-700">{zone.deliverymen}</span>
                       </td>
                     )}
                     {visibleColumns.defaultStatus && (

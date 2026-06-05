@@ -652,7 +652,6 @@ export default function ExploreMore() {
         debugWarn("Firebase logout failed, continuing with local cleanup:", firebaseError)
       }
 
-      // Clear auth for all modules (admin, restaurant, delivery, user)
       clearAuthData()
 
       // Clear any onboarding data from localStorage
@@ -661,13 +660,11 @@ export default function ExploreMore() {
       // Clear sessionStorage for all modules
       sessionStorage.removeItem("restaurantAuthData")
       sessionStorage.removeItem("adminAuthData")
-      sessionStorage.removeItem("deliveryAuthData")
       sessionStorage.removeItem("userAuthData")
 
       // Dispatch auth change events to notify other components
       window.dispatchEvent(new Event("restaurantAuthChanged"))
       window.dispatchEvent(new Event("adminAuthChanged"))
-      window.dispatchEvent(new Event("deliveryAuthChanged"))
       window.dispatchEvent(new Event("userAuthChanged"))
 
       // Small delay for UX, then navigate to welcome page
@@ -681,7 +678,6 @@ export default function ExploreMore() {
       localStorage.removeItem("restaurant_onboarding")
       sessionStorage.removeItem("restaurantAuthData")
       sessionStorage.removeItem("adminAuthData")
-      sessionStorage.removeItem("deliveryAuthData")
       sessionStorage.removeItem("userAuthData")
       window.dispatchEvent(new Event("restaurantAuthChanged"))
       navigate("/food/restaurant/login", { replace: true })
@@ -810,7 +806,6 @@ export default function ExploreMore() {
   ]
 
   const settingsItems = [
-    { id: 3, label: "Delivery settings", icon: Truck, route: "/food/restaurant/delivery-settings" },
     { id: 4, label: "Zone Setup", icon: MapPin, route: "/food/restaurant/zone-setup" },
   ]
 

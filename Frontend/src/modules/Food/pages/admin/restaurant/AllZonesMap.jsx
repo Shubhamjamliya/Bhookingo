@@ -385,7 +385,6 @@ export default function AllZonesMap() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">All Zones Map</h1>
-              <p className="text-sm text-slate-600">View all restaurant delivery zones on map</p>
             </div>
           </div>
         </div>

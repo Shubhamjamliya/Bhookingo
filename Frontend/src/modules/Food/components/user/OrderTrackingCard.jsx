@@ -46,13 +46,10 @@ const normalizeOrderToken = (value) =>
     .replace(/-/g, "_");
 
 const getOrderStatus = (order) =>
-  normalizeOrderToken(
-    order?.orderStatus || order?.status || order?.deliveryState?.status || order?.deliveryStatus || "",
-  );
+  normalizeOrderToken(order?.status || order?.orderStatus || "");
 
 const getOrderPhase = (order) =>
-  normalizeOrderToken(order?.deliveryState?.currentPhase || order?.currentPhase || "");
-
+  normalizeOrderToken(order?.phase || order?.deliveryPhase || "");
 const ACTIVE_PHASES = new Set([
   "created",
   "confirmed",
@@ -62,8 +59,6 @@ const ACTIVE_PHASES = new Set([
   "ready_for_pickup",
   "reached_pickup",
   "picked_up",
-  "out_for_delivery",
-  "en_route_to_delivery",
   "at_pickup",
   "at_drop",
 ]);
@@ -110,15 +105,17 @@ const getTimeRemaining = (order) => {
     order.scheduledAt || order.createdAt || order.orderDate || order.created_at || order.date || Date.now(),
   );
 
-  // For non-scheduled orders, we add the estimated delivery time to the creation time.
   // For scheduled orders, scheduledAt is already the target time.
   const isScheduled = !!order.scheduledAt;
-  const estimatedMinutes = isScheduled 
-    ? 0 
-    : (order.estimatedDeliveryTime || order.estimatedTime || order.estimated_delivery_time || 35);
-
-  const deliveryTime = new Date(orderTime.getTime() + estimatedMinutes * 60000);
-  return Math.max(0, Math.floor((deliveryTime - new Date()) / 60000));
+  const estimatedMinutes = isScheduled ? 0 : 45;
+  
+  const estimatedDeliveryTime = new Date(orderTime.getTime() + estimatedMinutes * 60000);
+  const now = new Date();
+  
+  const diffMs = estimatedDeliveryTime - now;
+  if (diffMs <= 0) return 0;
+  
+  return Math.ceil(diffMs / 60000);
 };
 
 /** Cheap fingerprint so we skip setState when list content is unchanged (fewer re-renders). */
@@ -246,9 +243,6 @@ function OrderTrackingCardInner({ hasBottomNav = true }) {
       setActiveOrderOverride((prev) => ({
         ...(prev || snap || {}),
         orderStatus: detail?.orderStatus || prev?.orderStatus || snap?.orderStatus,
-        deliveryState: detail?.deliveryState
-          ? { ...(prev?.deliveryState || snap?.deliveryState || {}), ...detail.deliveryState }
-          : prev?.deliveryState || snap?.deliveryState,
         status: detail?.status || prev?.status || snap?.status,
       }));
 
@@ -354,8 +348,6 @@ function OrderTrackingCardInner({ hasBottomNav = true }) {
     if (s === "preparing" || s === "created" || s === "pending") return "Preparing your order";
     if (s === "ready_for_pickup") return "Ready for pickup";
 
-    if (s === "reached_pickup" || p === "at_pickup") return "Delivery partner reached restaurant";
-    if (s === "picked_up" || p === "en_route_to_delivery") return "On the way";
     if (s === "reached_drop" || p === "at_drop") return "Arrived near you";
 
     if (s === "delivered" || p === "delivered" || p === "completed") return "Delivered";

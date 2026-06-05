@@ -183,7 +183,6 @@ const RestaurantCard = ({
         <div className="flex items-center justify-between pt-2.5 border-t border-gray-100/80">
           <div className="flex items-center gap-1.5 text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
             <Clock className="w-3.5 h-3.5 text-[#DC2626]" />
-            <span className="text-[10px] sm:text-xs font-semibold">{restaurant.deliveryTime || "25-30 min"}</span>
           </div>
           <div className="flex items-center gap-1 text-gray-600 bg-gray-50 px-2 py-1 rounded-md">
             <IndianRupee className="w-3 h-3 text-[#DC2626]" />

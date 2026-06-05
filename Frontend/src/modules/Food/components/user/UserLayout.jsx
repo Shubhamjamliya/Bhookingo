@@ -55,7 +55,6 @@ function RouteSyncHandler() {
     } else if (normalizedPath === "/dining" || normalizedPath.startsWith("/dining/") || normalizedPath.startsWith("/user/dining")) {
       newMode = "dining"
     } else if (normalizedPath === "/" || normalizedPath === "/user" || normalizedPath === "/user/") {
-      newMode = orderType === "takeaway" ? "takeaway" : "delivery"
     }
 
     if (newMode && orderType !== newMode) {

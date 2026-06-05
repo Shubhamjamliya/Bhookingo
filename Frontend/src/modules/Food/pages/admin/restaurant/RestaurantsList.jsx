@@ -126,7 +126,6 @@ export default function RestaurantsList() {
     ownerPhone: "",
     primaryContactNumber: "",
     email: "",
-    estimatedDeliveryTime: "",
     openingTime: "",
     closingTime: "",
     isActive: true,
@@ -728,7 +727,6 @@ export default function RestaurantsList() {
         ownerPhone: "",
         primaryContactNumber: "",
         email: "",
-        estimatedDeliveryTime: "",
         openingTime: "",
         closingTime: "",
         isActive: true,
@@ -737,17 +735,10 @@ export default function RestaurantsList() {
 
     const openingTimeValue =
       restaurant.openingTime ||
-      restaurant.deliveryTimings?.openingTime ||
-      restaurant.onboarding?.step2?.deliveryTimings?.openingTime ||
       ""
     const closingTimeValue =
       restaurant.closingTime ||
-      restaurant.deliveryTimings?.closingTime ||
-      restaurant.onboarding?.step2?.deliveryTimings?.closingTime ||
       ""
-    const estimatedDeliveryTimeValue =
-      restaurant.estimatedDeliveryTime ||
-      restaurant.onboarding?.step4?.estimatedDeliveryTime ||
       ""
 
     return {
@@ -761,7 +752,6 @@ export default function RestaurantsList() {
       ownerPhone: restaurant.ownerPhone || restaurant.phone || "",
       primaryContactNumber: restaurant.primaryContactNumber || restaurant.ownerPhone || "",
       email: restaurant.email || restaurant.ownerEmail || "",
-      estimatedDeliveryTime: estimatedDeliveryTimeValue,
       openingTime: openingTimeValue,
       closingTime: closingTimeValue,
       isActive: restaurant.isActive !== false,
@@ -824,7 +814,6 @@ export default function RestaurantsList() {
         ownerPhone: detailsForm.ownerPhone.trim(),
         primaryContactNumber: detailsForm.primaryContactNumber.trim(),
         email: detailsForm.email.trim(),
-        estimatedDeliveryTime: detailsForm.estimatedDeliveryTime.trim(),
         openingTime: normalizedOpeningTime,
         closingTime: normalizedClosingTime,
         isActive: detailsForm.isActive,
@@ -1446,8 +1435,6 @@ export default function RestaurantsList() {
                       <input type="text" value={detailsForm.closingTime} onChange={(e) => setDetailsForm((prev) => ({ ...prev, closingTime: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-500 mb-1">Estimated Delivery Time</label>
-                      <input type="text" value={detailsForm.estimatedDeliveryTime} onChange={(e) => setDetailsForm((prev) => ({ ...prev, estimatedDeliveryTime: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
                     </div>
                     <div className="md:col-span-2 flex items-center gap-3">
                       <input
@@ -1476,14 +1463,11 @@ export default function RestaurantsList() {
                   (Array.isArray(r?.cuisines) && r.cuisines.length ? r.cuisines : null) ||
                   (Array.isArray(r?.onboarding?.step2?.cuisines) && r.onboarding.step2.cuisines.length ? r.onboarding.step2.cuisines : null) ||
                   null
-                const openingTimeVal = r?.openingTime || r?.deliveryTimings?.openingTime || r?.onboarding?.step2?.deliveryTimings?.openingTime || ""
-                const closingTimeVal = r?.closingTime || r?.deliveryTimings?.closingTime || r?.onboarding?.step2?.deliveryTimings?.closingTime || ""
                 const openDaysVal =
                   (Array.isArray(r?.openDays) && r.openDays.length ? r.openDays : null) ||
                   (Array.isArray(r?.onboarding?.step2?.openDays) && r.onboarding.step2.openDays.length ? r.onboarding.step2.openDays : null) ||
                   null
                 const offerVal = r?.offer || r?.onboarding?.step4?.offer || ""
-                const estimatedDeliveryTimeVal = r?.estimatedDeliveryTime || r?.onboarding?.step4?.estimatedDeliveryTime || ""
                 const featuredDishVal = r?.featuredDish || r?.onboarding?.step4?.featuredDish || ""
                 const featuredPriceVal = r?.featuredPrice ?? r?.onboarding?.step4?.featuredPrice
                 const diningSettingsVal = r?.diningSettings || r?.onboarding?.step4?.diningSettings || null
@@ -1674,12 +1658,7 @@ export default function RestaurantsList() {
                             </div>
                           </div>
                         )}
-                        {estimatedDeliveryTimeVal && (
-                          <div>
-                            <p className="text-xs text-slate-500 mb-1">Estimated Delivery Time</p>
-                            <p className="text-sm font-medium text-slate-900">{estimatedDeliveryTimeVal}</p>
-                          </div>
-                        )}
+
                         {openDaysVal && (
                           <div>
                             <p className="text-xs text-slate-500 mb-1">Open Days</p>
@@ -2086,18 +2065,7 @@ export default function RestaurantsList() {
                             </div>
                           </div>
                         )}
-                        {r.onboarding.step2.deliveryTimings && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <p className="text-xs text-slate-500 mb-1">Opening Time (at registration)</p>
-                              <p className="font-medium text-slate-900">{formatTime12Hour(r.onboarding.step2.deliveryTimings.openingTime)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-slate-500 mb-1">Closing Time (at registration)</p>
-                              <p className="font-medium text-slate-900">{formatTime12Hour(r.onboarding.step2.deliveryTimings.closingTime)}</p>
-                            </div>
-                          </div>
-                        )}
+
                         {r.onboarding.step2.openDays && Array.isArray(r.onboarding.step2.openDays) && r.onboarding.step2.openDays.length > 0 && (
                           <div>
                             <p className="text-xs text-slate-500 mb-2">Open Days (at registration)</p>
@@ -2139,12 +2107,7 @@ export default function RestaurantsList() {
                     <div className="pt-6 border-t border-slate-200">
                       <h4 className="text-lg font-semibold text-slate-900 mb-4">Registration Step 4 Details</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        {r.onboarding.step4.estimatedDeliveryTime && (
-                          <div>
-                            <p className="text-xs text-slate-500 mb-1">Estimated Delivery Time (at registration)</p>
-                            <p className="font-medium text-slate-900">{r.onboarding.step4.estimatedDeliveryTime}</p>
-                          </div>
-                        )}
+
                         {r.onboarding.step4.distance && (
                           <div>
                             <p className="text-xs text-slate-500 mb-1">Distance (at registration)</p>

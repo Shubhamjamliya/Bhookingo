@@ -753,8 +753,6 @@ export default function JoiningRequest() {
                   r?.onboarding?.step1?.location?.city
                 ].filter(Boolean)
                 const hasAddress = addressParts.length > 0 || r?.location || r?.onboarding?.step1?.location
-                const openingTime = r?.openingTime || r?.deliveryTimings?.openingTime || r?.onboarding?.step2?.deliveryTimings?.openingTime
-                const closingTime = r?.closingTime || r?.deliveryTimings?.closingTime || r?.onboarding?.step2?.deliveryTimings?.closingTime
                 const approvalStatus = r?.status || (r?.isActive !== false ? "approved" : "pending")
                 const hasFlatDocs = r?.panNumber || r?.panImage || r?.fssaiNumber || r?.accountNumber
                 const menuImgList = Array.isArray(r?.menuImages) ? r.menuImages : (r?.onboarding?.step2?.menuImageUrls || [])
@@ -889,12 +887,7 @@ export default function JoiningRequest() {
                             </div>
                           </div>
                         )}
-                        {r?.estimatedDeliveryTime && (
-                          <div>
-                            <p className="text-xs text-slate-500 mb-1">Estimated Delivery Time</p>
-                            <p className="text-sm font-medium text-slate-900">{r.estimatedDeliveryTime}</p>
-                          </div>
-                        )}
+
                         {r?.openDays && Array.isArray(r.openDays) && r.openDays.length > 0 && (
                           <div>
                             <p className="text-xs text-slate-500 mb-1">Open Days</p>

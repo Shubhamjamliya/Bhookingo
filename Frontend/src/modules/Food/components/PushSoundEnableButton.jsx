@@ -43,8 +43,7 @@ export default function PushSoundEnableButton() {
   const isAuthenticated = useMemo(() => {
     return (
       isModuleAuthenticated("user") ||
-      isModuleAuthenticated("restaurant") ||
-      isModuleAuthenticated("delivery")
+      isModuleAuthenticated("restaurant")
     );
   }, [pathname]);
 

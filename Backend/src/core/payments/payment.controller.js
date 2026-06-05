@@ -64,19 +64,8 @@ export const getRestaurantWalletController = async (req, res, next) => {
     }
 };
 
-// ─── Delivery Partner Endpoints ───
 
-export const getDeliveryWalletController = async (req, res, next) => {
-    try {
-        const deliveryPartnerId = req.user?.deliveryPartnerId || req.params.deliveryPartnerId;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
-        const data = await getWalletWithTransactions('deliveryBoy', deliveryPartnerId, { page, limit });
-        return sendResponse(res, 200, 'Delivery wallet fetched', data);
-    } catch (err) {
-        next(err);
-    }
-};
+
 
 // ─── Admin Endpoints ───
 

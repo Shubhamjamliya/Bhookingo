@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 
 /**
  * Transaction — universal financial ledger.
- * Every credit/debit across all entity types (user, restaurant, deliveryBoy, admin)
  * gets a row here. This is the single source of truth for money movement.
  *
  * RULE: Never update Wallet.balance directly — always go through
@@ -28,11 +27,9 @@ const transactionSchema = new mongoose.Schema(
         /** Which type of entity this transaction belongs to */
         entityType: {
             type: String,
-            enum: ['user', 'restaurant', 'deliveryBoy', 'admin'],
             required: true,
             index: true
         },
-        /** ObjectId of the entity (userId, restaurantId, deliveryPartnerId, or admin id) */
         entityId: {
             type: mongoose.Schema.Types.ObjectId,
             required: true,
@@ -70,7 +67,6 @@ const transactionSchema = new mongoose.Schema(
                 'wallet_topup',
                 'wallet_debit',
                 'commission',
-                'delivery_earning',
                 'platform_fee',
                 'settlement_payout',
                 'referral_reward',

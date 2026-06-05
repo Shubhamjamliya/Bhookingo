@@ -15,8 +15,6 @@ const addons = [
   },
   {
     id: 2,
-    title: "Deliveryman app",
-    description: "With this app your all your deliveryman will mange their orders through mobile app",
     enabled: false,
     hasSettings: false
   },

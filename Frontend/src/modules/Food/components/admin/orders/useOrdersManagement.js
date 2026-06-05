@@ -96,7 +96,7 @@ export function useOrdersManagement(orders, statusKey, title) {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [filters, setFilters] = useState({
     paymentStatus: "",
-    deliveryType: "",
+    
     minAmount: "",
     maxAmount: "",
     fromDate: "",
@@ -112,7 +112,7 @@ export function useOrdersManagement(orders, statusKey, title) {
     restaurant: true,
     foodItems: true,
     itemPrice: true,
-    deliveryCharge: true,
+    
     totalAmount: true,
     paymentType: true,
     paymentCollectionStatus: true,
@@ -164,76 +164,7 @@ export function useOrdersManagement(orders, statusKey, title) {
         const collectionStatus = String(order.paymentCollectionStatus || "").toLowerCase()
         return paymentStatus === wanted || collectionStatus === wanted
       })
-    }
-
-    if (filters.deliveryType) {
-      result = result.filter(
-        (order) => String(order.deliveryType || "").toLowerCase() === filters.deliveryType.toLowerCase(),
-      )
-    }
-
-    if (filters.minAmount) {
-      const min = parseFloat(filters.minAmount)
-      result = result.filter(order => {
-        const amount =
-          order.totalAmount ??
-          order.total ??
-          order.pricing?.total ??
-          0
-        return Number(amount) >= min
-      })
-    }
-
-    if (filters.maxAmount) {
-      const max = parseFloat(filters.maxAmount)
-      result = result.filter(order => {
-        const amount =
-          order.totalAmount ??
-          order.total ??
-          order.pricing?.total ??
-          0
-        return Number(amount) <= max
-      })
-    }
-
-    if (filters.restaurant) {
-      result = result.filter(order => order.restaurant === filters.restaurant)
-    }
-
-    // Helper function to parse date format "16 JUL 2025"
-    const parseOrderDate = (dateStr) => {
-      const months = {
-        "JAN": "01", "FEB": "02", "MAR": "03", "APR": "04", "MAY": "05", "JUN": "06",
-        "JUL": "07", "AUG": "08", "SEP": "09", "OCT": "10", "NOV": "11", "DEC": "12"
-      }
-      const parts = dateStr.split(" ")
-      if (parts.length === 3) {
-        const day = parts[0].padStart(2, "0")
-        const month = months[parts[1].toUpperCase()] || "01"
-        const year = parts[2]
-        return new Date(`${year}-${month}-${day}`)
-      }
-      return new Date(dateStr)
-    }
-
-    if (filters.fromDate) {
-      result = result.filter(order => {
-        const orderDate = parseOrderDate(order.date)
-        const fromDate = new Date(filters.fromDate)
-        return orderDate >= fromDate
-      })
-    }
-
-    if (filters.toDate) {
-      result = result.filter(order => {
-        const orderDate = parseOrderDate(order.date)
-        const toDate = new Date(filters.toDate)
-        toDate.setHours(23, 59, 59, 999) // Include entire day
-        return orderDate <= toDate
-      })
-    }
-
-    return result
+    }    return result
   }, [orders, searchQuery, filters])
 
   const count = filteredOrders.length
@@ -250,7 +181,7 @@ export function useOrdersManagement(orders, statusKey, title) {
   const handleResetFilters = () => {
     setFilters({
       paymentStatus: "",
-      deliveryType: "",
+      
       minAmount: "",
       maxAmount: "",
       fromDate: "",
@@ -320,12 +251,6 @@ export function useOrdersManagement(orders, statusKey, title) {
             order.pricing?.subtotal ??
             order.totalAmount
           )
-      const deliveryFee = toNumber(
-        order.deliveryCharge ??
-        order.deliveryFee ??
-        order.pricing?.deliveryFee ??
-        order.delivery?.fee
-      )
       const taxAmount = toNumber(
         order.vatTax ??
         order.taxAmount ??
@@ -338,36 +263,20 @@ export function useOrdersManagement(orders, statusKey, title) {
         order.discountAmount ??
         order.pricing?.discount
       )
-      const computedTotal = subtotal + deliveryFee + taxAmount - discountAmount
       const totalAmount = toNumber(
         order.totalAmount ??
         order.pricing?.total ??
-        computedTotal
+        (subtotal + taxAmount - discountAmount)
       )
       const paymentType = order.paymentType || order.payment?.method || order.paymentMethod || "N/A"
-      const deliveryPartnerName = formatDisplayText(
-        order.deliveryPartnerName ||
-        order.deliveryBoyName ||
-        order.deliveryPartnerId?.name ||
-        order.dispatch?.deliveryPartnerId?.name,
-      )
-      const deliveryPartnerPhone = formatDisplayText(
-        order.deliveryPartnerPhone ||
-        order.deliveryBoyNumber ||
-        order.deliveryPartnerId?.phone ||
-        order.dispatch?.deliveryPartnerId?.phone,
-      )
       const orderStatus = formatDisplayText(order.orderStatus || order.status)
       const paymentStatus = formatDisplayText(
         order.paymentStatus
           || order.paymentCollectionStatus
-          || (paymentType === "Cash on Delivery" ? "Not Collected" : null),
       )
       const customerName = formatDisplayText(order.customerName)
       const customerPhone = formatDisplayText(order.customerPhone)
       const restaurantName = formatDisplayText(order.restaurant)
-      const deliveryType = formatDisplayText(order.deliveryType)
-      const deliveryAddress = formatOrderAddress(order.address || order.customerAddress || order.deliveryAddress)
       const itemCount = items.reduce((sum, item) => sum + toNumber(item?.quantity || 1), 0) || items.length
 
       doc.setFillColor(15, 118, 110)
@@ -395,7 +304,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       doc.setFont(undefined, "normal")
       doc.text("Order Invoice", logoDataUrl ? 42 : 14, 24)
       doc.setFontSize(8.5)
-      doc.text("Admin order summary with billing and delivery details", logoDataUrl ? 42 : 14, 30)
+      doc.text("Admin order summary with billing details", logoDataUrl ? 42 : 14, 30)
 
       doc.setFontSize(9)
       doc.text(`Invoice #: ${orderId}`, pageWidth - 14, 14, { align: "right" })
@@ -452,20 +361,13 @@ export function useOrdersManagement(orders, statusKey, title) {
       const customerCardHeight = drawInfoCard("Customer", 14, 53, 58, [
         { label: "Name", value: customerName },
         { label: "Phone", value: customerPhone },
-        { label: "Address", value: deliveryAddress },
       ])
       const restaurantCardHeight = drawInfoCard("Restaurant", 76, 53, 58, [
         { label: "Name", value: restaurantName },
-        { label: "Delivery", value: deliveryType },
+        
         { label: "Items", value: `${itemCount} item${itemCount === 1 ? "" : "s"}` },
       ], [37, 99, 235])
-      const deliveryCardHeight = drawInfoCard("Delivery Partner", 138, 53, 58, [
-        { label: "Name", value: deliveryPartnerName },
-        { label: "Phone", value: deliveryPartnerPhone },
-        { label: "Payment", value: paymentType },
-      ], [249, 115, 22])
 
-      const infoCardsBottomY = 53 + Math.max(customerCardHeight, restaurantCardHeight, deliveryCardHeight)
 
       autoTable(doc, {
         startY: infoCardsBottomY + 8,
@@ -544,7 +446,7 @@ export function useOrdersManagement(orders, statusKey, title) {
         startY: summaryStartY,
         body: [
           ["Subtotal", formatMoney(subtotal)],
-          ["Delivery Fee", formatMoney(deliveryFee)],
+          
           ["Tax", formatMoney(taxAmount)],
           ["Discount", `- ${formatMoney(discountAmount)}`],
           ["Grand Total", formatMoney(totalAmount)],
@@ -575,7 +477,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       doc.setFontSize(9)
       doc.setTextColor(100, 116, 139)
       doc.text(`Generated on ${new Date().toLocaleString()}`, 14, footerY)
-      doc.text("Includes customer, restaurant, and delivery partner details.", pageWidth - 14, footerY, { align: "right" })
+      doc.text("Includes customer and restaurant details.", pageWidth - 14, footerY, { align: "right" })
 
       const filename = `Invoice_${orderId}_${new Date().toISOString().split("T")[0]}.pdf`
       doc.save(filename)
@@ -602,7 +504,7 @@ export function useOrdersManagement(orders, statusKey, title) {
       restaurant: true,
       foodItems: true,
       itemPrice: true,
-      deliveryCharge: true,
+      
       totalAmount: true,
       paymentType: true,
       paymentCollectionStatus: true,

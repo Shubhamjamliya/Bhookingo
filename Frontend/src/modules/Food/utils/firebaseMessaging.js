@@ -1,5 +1,4 @@
 import { toast } from "sonner";
-import { userAPI, restaurantAPI, deliveryAPI, adminAPI } from "@food/api";
 import { initializeApp, getApp, getApps } from "firebase/app";
 const fallbackNotificationSound = "/alert.mp3";
 
@@ -40,7 +39,6 @@ const pushDebugWarn = (prefix, message, data = {}) => {
 
 function normalizeModuleFromPath(pathname = window.location.pathname) {
   if (pathname.includes("/restaurant") && !pathname.includes("/restaurants")) return "restaurant";
-  if (pathname.includes("/delivery")) return "delivery";
   if (pathname.includes("/admin")) return "admin";
   return "user";
 }
@@ -52,9 +50,6 @@ function isRecord(value) {
 function getPushSoundSources(moduleName = normalizeModuleFromPath()) {
   if (moduleName === "restaurant") {
     return [restaurantAlertSoundPath];
-  }
-  if (moduleName === "delivery") {
-    return [fallbackNotificationSound];
   }
   return [pushNotificationSoundPath, fallbackNotificationSound];
 }
@@ -464,10 +459,6 @@ async function saveTokenByModule(moduleName, token, platform = "web") {
     await restaurantAPI.saveFcmToken(token, platform);
     return;
   }
-  if (moduleName === "delivery") {
-    await deliveryAPI.saveFcmToken(token, platform);
-    return;
-  }
   if (moduleName === "user") {
     await userAPI.saveFcmToken(token, { platform });
   }
@@ -776,7 +767,6 @@ export async function registerWebPushForCurrentModule(pathname = window.location
   }
 
   // Flutter WebView fallback: register native token when browser web push isn't available.
-  // This keeps restaurant/delivery FCM alerts working even when Web Push APIs are limited.
   await registerNativeWebViewFcmToken(moduleName);
   return null;
 }

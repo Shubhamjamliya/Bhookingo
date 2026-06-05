@@ -252,23 +252,9 @@ export const adminAPI = {
       { reason },
       { contextModule: "admin" },
     ),
-  /** Delivery partner join requests - uses /food/admin/delivery/* (new backend API) */
-  getDeliveryPartnerJoinRequests: (params) =>
-    apiClient.get("/food/admin/delivery/join-requests", {
-      params,
-      contextModule: "admin",
-    }),
-  /** List approved delivery partners (Deliveryman List page) */
-  getDeliveryPartners: (params) =>
-    apiClient.get("/food/admin/delivery/partners", {
-      params,
-      contextModule: "admin",
-    }),
-  getDeliverymanReviews: (params = {}) =>
-    apiClient.get("/food/admin/delivery/reviews", {
-      params,
-      contextModule: "admin",
-    }),
+  
+  
+  
   getContactMessages: (params = {}) =>
     apiClient.get("/food/admin/contact-messages", {
       params,
@@ -295,55 +281,9 @@ export const adminAPI = {
     apiClient.patch(`/food/admin/withdrawals/${id}`, body, {
       contextModule: "admin",
     }),
-  /** List delivery withdrawal requests (admin). */
-  getDeliveryWithdrawals: (params = {}) =>
-    apiClient.get("/food/admin/delivery/withdrawals", {
-      params,
-      contextModule: "admin",
-    }),
-  /** Update status of a delivery withdrawal request. */
-  updateDeliveryWithdrawalStatus: (id, body) =>
-    apiClient.patch(`/food/admin/delivery/withdrawals/${id}`, body, {
-      contextModule: "admin",
-    }),
-  /** Delivery withdrawal aliases */
-  getDeliveryWithdrawalRequests: (params) => adminAPI.getDeliveryWithdrawals(params),
-  approveDeliveryWithdrawal: (id) => adminAPI.updateDeliveryWithdrawalStatus(id, { status: "approved" }),
-  rejectDeliveryWithdrawal: (id, reason) => adminAPI.updateDeliveryWithdrawalStatus(id, { status: "rejected", rejectionReason: reason }),
-  // Aliases for RestaurantWithdraws page
-  getWithdrawalRequests: (params) => adminAPI.getWithdrawals(params),
-  approveWithdrawalRequest: (id) => adminAPI.updateWithdrawalStatus(id, { status: "approved" }),
-  rejectWithdrawalRequest: (id, reason) => adminAPI.updateWithdrawalStatus(id, { status: "rejected", rejectionReason: reason }),
-  /** Delivery boy wallets (stub until backend implements - returns empty so list still loads) */
-  getDeliveryBoyWallets: (params) =>
-    apiClient.get("/food/admin/delivery/wallets", {
-      params,
-      contextModule: "admin",
-    }),
-  getDeliveryPartnerById: (id) =>
-    apiClient.get(`/food/admin/delivery/${id}`, { contextModule: "admin" }),
-  approveDeliveryPartner: (id) =>
-    apiClient.patch(
-      `/food/admin/delivery/${String(id)}/approve`,
-      {},
-      {
-        contextModule: "admin",
-      },
-    ),
-  rejectDeliveryPartner: (id, reason) =>
-    apiClient.patch(
-      `/food/admin/delivery/${String(id)}/reject`,
-      { reason: String(reason || "").trim() },
-      {
-        contextModule: "admin",
-      },
-    ),
-  /** GET /food/admin/delivery/support-tickets - list all delivery support tickets (query: status, priority, search, page, limit). */
-  getDeliverySupportTickets: (params) =>
-    apiClient.get("/food/admin/delivery/support-tickets", {
-      params,
-      contextModule: "admin",
-    }),
+  
+  
+
   getExpiredFssaiNotifications: (params = {}) =>
     apiClient.get("/food/admin/notifications/fssai-expired", {
       params,
@@ -728,11 +668,7 @@ export const adminAPI = {
       { deliveryPartnerId: String(deliveryPartnerId), force: Boolean(force) },
       { contextModule: "admin" },
     ),
-  getDeliveryWallets: (params = {}) =>
-    apiClient.get("/food/admin/delivery/wallets", {
-      params,
-      contextModule: "admin",
-    }),
+  
   getDeliveryWithdrawals: (params = {}) =>
     apiClient.get("/food/admin/delivery/withdrawals", {
       params,
@@ -742,11 +678,7 @@ export const adminAPI = {
     apiClient.patch(`/food/admin/delivery/withdrawals/${String(id)}`, body, {
       contextModule: "admin",
     }),
-  getCashLimitSettlements: (params = {}) =>
-    apiClient.get("/food/admin/delivery/cash-limit-settlements", {
-      params,
-      contextModule: "admin",
-    }),
+  
 
   /** Restaurant Commission (admin) */
   getRestaurantCommissionBootstrap: () =>
@@ -855,14 +787,8 @@ export const adminAPI = {
     }),
 
   /** Delivery Cash Limit (admin) */
-  getDeliveryCashLimit: () =>
-    apiClient.get("/food/admin/delivery-cash-limit", {
-      contextModule: "admin",
-    }),
-  updateDeliveryCashLimit: (body) =>
-    apiClient.patch("/food/admin/delivery-cash-limit", body ?? {}, {
-      contextModule: "admin",
-    }),
+  
+  
 
   /** Delivery Emergency Help (admin) */
   getEmergencyHelp: () =>
@@ -1652,13 +1578,10 @@ const getDeliveryMeOnce = () => {
 /** Delivery API - OTP login + registration via new backend. */
 export const deliveryAPI = {
   sendOTP: (phone, _purpose = "login") => {
-    if (!phone) return Promise.reject(new Error("Phone is required"));
-    return authService.requestDeliveryOtp(phone);
+    return Promise.reject(new Error("Not implemented"));
   },
   verifyOTP: (phone, otp, _purpose, _name, fcmToken = null, platform = "web", confirmAction = null) => {
-    if (!phone || !otp)
-      return Promise.reject(new Error("Phone and OTP are required"));
-    return authService.verifyDeliveryOtp(phone, otp, fcmToken, platform, confirmAction);
+    return Promise.reject(new Error("Not implemented"));
   },
   getMe: () => getDeliveryMeOnce(),
   /** Get delivery profile (same as getMe under the hood; maps response to profile shape). */

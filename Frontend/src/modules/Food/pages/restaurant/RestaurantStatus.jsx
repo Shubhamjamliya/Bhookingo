@@ -34,7 +34,6 @@ export default function RestaurantStatus() {
   const navigate = useNavigate()
   const location = useLocation()
   const goBack = useRestaurantBackNavigation()
-  const [deliveryStatus, setDeliveryStatus] = useState(false)
   const [takeawayStatus, setTakeawayStatus] = useState(false)
   const [restaurantData, setRestaurantData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -170,99 +169,10 @@ export default function RestaurantStatus() {
     }
   }, [currentDateTime, outletTimings])
 
-  // Note: Delivery status is now manually controlled by user via toggle
   // We don't automatically set it based on timings anymore
   // The isWithinTimings is only used to show warning messages
 
-  // Load delivery status from backend
-  useEffect(() => {
-    const loadDeliveryStatus = async () => {
-      try {
-        const response = await restaurantAPI.getCurrentRestaurant()
-        const restaurant = response?.data?.data?.restaurant || response?.data?.restaurant
-        if (restaurant?.isAcceptingOrders !== undefined) {
-          setDeliveryStatus(restaurant.isAcceptingOrders)
-          if (restaurant.takeawaySettings) {
-            setTakeawayStatus(restaurant.takeawaySettings.isEnabled)
-          }
-          try {
-            localStorage.setItem('restaurant_online_status', JSON.stringify(Boolean(restaurant.isAcceptingOrders)))
-          } catch {}
-          persistRestaurantOnlineStatus(restaurant.isAcceptingOrders)
-          // Dispatch event to update navbar
-          window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
-            detail: { isOnline: restaurant.isAcceptingOrders } 
-          }))
-        } else {
-          setDeliveryStatus(false)
-          try {
-            localStorage.setItem('restaurant_online_status', JSON.stringify(false))
-          } catch {}
-          persistRestaurantOnlineStatus(false)
-          window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
-            detail: { isOnline: false } 
-          }))
-        }
-      } catch (error) {
-        // Only log error if it's not a network/timeout error (backend might be down/slow)
-        if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNABORTED' && !error.message?.includes('timeout')) {
-          debugError("Error loading delivery status:", error)
-        }
-        setDeliveryStatus(false)
-        try {
-          localStorage.setItem('restaurant_online_status', JSON.stringify(false))
-        } catch {}
-        persistRestaurantOnlineStatus(false)
-        window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
-          detail: { isOnline: false } 
-        }))
-      }
-    }
 
-    loadDeliveryStatus()
-  }, [])
-
-  // Handle delivery status change
-  const handleDeliveryStatusChange = async (checked) => {
-    // If day is closed in outlet timings, don't allow turning on
-    if (checked && isDayClosed) {
-      setShowOutletClosedDialog(true)
-      return
-    }
-    
-    // If outside scheduled delivery timings, show popup
-    if (checked && isWithinTimings === false && !isDayClosed) {
-      setShowOutsideTimingsDialog(true)
-      return
-    }
-    
-    setDeliveryStatus(checked)
-    try {
-      // Update backend
-      try {
-        await restaurantAPI.updateAcceptingOrders(checked)
-        debugLog('? Delivery status updated in backend:', checked)
-        persistRestaurantOnlineStatus(checked)
-      } catch (apiError) {
-        debugError('Error updating delivery status in backend:', apiError)
-        // Revert local toggle if backend fails.
-        setDeliveryStatus((prev) => !prev)
-        persistRestaurantOnlineStatus(!checked)
-        return
-      }
-      
-      try {
-        localStorage.setItem('restaurant_online_status', JSON.stringify(Boolean(checked)))
-      } catch {}
-
-      // Dispatch custom event for navbar to listen
-      window.dispatchEvent(new CustomEvent('restaurantStatusChanged', { 
-        detail: { isOnline: checked } 
-      }))
-    } catch (error) {
-      debugError("Error saving delivery status:", error)
-    }
-  }
 
   // Handle takeaway status change
   const handleTakeawayStatusChange = async (checked) => {
@@ -304,7 +214,6 @@ export default function RestaurantStatus() {
     return `${dateStr}, ${timeStr}`
   }
 
-  // Get delivery timings for current day (outlet timings only)
   const getCurrentDayTimings = () => {
     const now = new Date()
     const currentDayFull = now.toLocaleDateString('en-US', { weekday: 'long' }) // "Monday", "Tuesday", etc.
@@ -404,22 +313,7 @@ export default function RestaurantStatus() {
               </button>
             </div>
 
-            <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-base font-bold text-gray-900 mb-1.5">Delivery status</p>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${deliveryStatus ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-                <p className="text-sm text-gray-500">
-                  {deliveryStatus ? 'Receiving orders' : 'Not receiving orders'}
-                </p>
-              </div>
-            </div>
-            <Switch
-              checked={deliveryStatus}
-              onCheckedChange={handleDeliveryStatusChange}
-              className="ml-4 data-[state=unchecked]:bg-gray-300 data-[state=checked]:bg-green-600"
-            />
-          </div>
+
 
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -438,7 +332,6 @@ export default function RestaurantStatus() {
             />
           </div>
 
-          <p className="text-sm text-gray-700 mb-2">Current delivery slot</p>
           <div className="flex items-center justify-between">
             <p className="text-base font-bold text-gray-900">
               {loading ? "Loading..." : (
@@ -479,7 +372,6 @@ export default function RestaurantStatus() {
             <span className="text-white text-xs font-bold">!</span>
           </div>
           <p className="text-sm text-gray-700 flex-1">
-            You are currently outside your scheduled delivery timings.
           </p>
         </div>
       )}
@@ -521,10 +413,8 @@ export default function RestaurantStatus() {
               <span className="text-[#B80B3D]xl">??</span>
             </div>
             <DialogTitle className="text-lg font-semibold text-gray-900 text-center">
-              Outside Delivery Timings
             </DialogTitle>
             <DialogDescription className="mt-2 text-sm text-gray-600">
-              You are currently outside your scheduled delivery timings. Please change outlet timings to enable delivery status.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col gap-2 sm:flex-row">

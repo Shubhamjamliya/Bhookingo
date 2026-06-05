@@ -259,7 +259,6 @@ export default function AddRestaurant() {
     menuImages: [],
     profileImage: null,
     cuisines: [],
-    estimatedDeliveryTime: "",
     openingTime: "",
     closingTime: "",
     openDays: [],
@@ -504,7 +503,6 @@ export default function AddRestaurant() {
     if (!step2.menuImages || step2.menuImages.length === 0) errors.push("At least one menu image is required")
     if (!step2.profileImage) errors.push("Restaurant profile image is required")
     if (!step2.cuisines || step2.cuisines.length === 0) errors.push("Please select at least one cuisine")
-    if (!step2.estimatedDeliveryTime?.trim()) errors.push("Estimated delivery time is required")
     if (!step2.openingTime?.trim()) errors.push("Opening time is required")
     if (!step2.closingTime?.trim()) errors.push("Closing time is required")
     const openingMinutes = timeStringToMinutes(step2.openingTime)
@@ -648,7 +646,6 @@ export default function AddRestaurant() {
         menuImages: menuImagesData,
         profileImage: profileImageData,
         cuisines: step2.cuisines,
-        estimatedDeliveryTime: step2.estimatedDeliveryTime,
         openingTime: step2.openingTime,
         closingTime: step2.closingTime,
         openDays: step2.openDays,
@@ -1379,10 +1376,7 @@ export default function AddRestaurant() {
         </div>
 
         <div>
-          <Label className="text-xs text-gray-700">Estimated delivery time*</Label>
           <Input
-            value={step2.estimatedDeliveryTime || ""}
-            onChange={(e) => setStep2({ ...step2, estimatedDeliveryTime: e.target.value })}
             autoComplete="off"
             className="mt-1 bg-white text-sm"
             placeholder="e.g., 25-30 mins"

@@ -177,7 +177,6 @@ export default function ReportSafetyEmergency() {
                       Safety is our priority
                     </h3>
                     <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
-                      Report any safety concerns, incidents, or emergencies related to your order or delivery experience.
                     </p>
                   </div>
                 </div>

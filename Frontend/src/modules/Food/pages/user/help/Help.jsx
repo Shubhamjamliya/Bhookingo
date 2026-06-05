@@ -36,7 +36,6 @@ const helpCategories = [
     topics: [
       {
         question: "How do I place an order?",
-        answer: "To place an order, browse restaurants, add items to your cart, and proceed to checkout. Select your delivery address and payment method, then confirm your order."
       },
       {
         question: "Can I modify or cancel my order?",
@@ -62,7 +61,6 @@ const helpCategories = [
     topics: [
       {
         question: "What payment methods do you accept?",
-        answer: "We accept all major credit cards, debit cards, digital wallets (Apple Pay, Google Pay), and cash on delivery in select areas."
       },
       {
         question: "Is my payment information secure?",
@@ -70,7 +68,6 @@ const helpCategories = [
       },
       {
         question: "Can I get a refund?",
-        answer: "Refunds are processed for cancelled orders, incorrect items, or quality issues. Contact support within 24 hours of delivery for assistance."
       },
       {
         question: "Why was my payment declined?",
@@ -79,24 +76,15 @@ const helpCategories = [
     ]
   },
   {
-    id: "delivery",
-    title: "Delivery",
     icon: Truck,
     color: "text-#991B1B",
     bgColor: "bg-orange-50",
-    description: "Delivery times, fees, and tracking",
     topics: [
       {
-        question: "What are your delivery times?",
-        answer: "Delivery times typically range from 30-60 minutes, depending on the restaurant and your location. Estimated time is shown before checkout."
       },
       {
-        question: "How much is the delivery fee?",
-        answer: "Delivery fees vary by restaurant and distance, typically ranging from $2.99 to $5.99. The exact fee is shown before you place your order."
       },
       {
-        question: "Can I schedule a delivery for later?",
-        answer: "Yes, you can schedule orders for up to 7 days in advance during checkout. Select your preferred delivery time."
       },
       {
         question: "What if my order is late?",
@@ -122,7 +110,6 @@ const helpCategories = [
       },
       {
         question: "How do I manage my addresses?",
-        answer: "Navigate to Profile > Addresses to view, add, edit, or delete delivery addresses. Set a default address for faster checkout."
       },
       {
         question: "How do I save my favorite restaurants?",
@@ -140,7 +127,6 @@ const helpCategories = [
     topics: [
       {
         question: "What is your refund policy?",
-        answer: "We offer full refunds for cancelled orders, incorrect items, or quality issues reported within 24 hours of delivery."
       },
       {
         question: "How long do refunds take?",
@@ -178,7 +164,6 @@ const helpCategories = [
       },
       {
         question: "Do you deliver to my area?",
-        answer: "Enter your delivery address to see available restaurants in your area. We're constantly expanding our delivery zones."
       }
     ]
   }

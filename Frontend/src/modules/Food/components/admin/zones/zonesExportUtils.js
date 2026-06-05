@@ -1,13 +1,11 @@
 // Export utility functions for zones
 export const exportZonesToCSV = (zones, filename = "zones") => {
-  const headers = ["SI", "Zone ID", "Name", "Display Name", "Restaurants", "Deliverymen", "Default Status", "Status"]
   const rows = zones.map((zone, index) => [
     index + 1,
     zone.zoneId,
     zone.name,
     zone.displayName,
     zone.restaurants,
-    zone.deliverymen,
     zone.isDefault ? "Yes" : "No",
     zone.status ? "Active" : "Inactive"
   ])
@@ -29,14 +27,12 @@ export const exportZonesToCSV = (zones, filename = "zones") => {
 }
 
 export const exportZonesToExcel = (zones, filename = "zones") => {
-  const headers = ["SI", "Zone ID", "Name", "Display Name", "Restaurants", "Deliverymen", "Default Status", "Status"]
   const rows = zones.map((zone, index) => [
     index + 1,
     zone.zoneId,
     zone.name,
     zone.displayName,
     zone.restaurants,
-    zone.deliverymen,
     zone.isDefault ? "Yes" : "No",
     zone.status ? "Active" : "Inactive"
   ])
@@ -58,14 +54,12 @@ export const exportZonesToExcel = (zones, filename = "zones") => {
 }
 
 export const exportZonesToPDF = (zones, filename = "zones") => {
-  const headers = ["SI", "Zone ID", "Name", "Display Name", "Restaurants", "Deliverymen", "Default Status", "Status"]
   const rows = zones.map((zone, index) => [
     index + 1,
     zone.zoneId,
     zone.name,
     zone.displayName,
     zone.restaurants,
-    zone.deliverymen,
     zone.isDefault ? "Yes" : "No",
     zone.status ? "Active" : "Inactive"
   ])

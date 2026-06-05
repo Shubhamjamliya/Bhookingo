@@ -5,12 +5,9 @@ import { debitWallet, unlockWalletAmount } from './wallet.service.js';
 import { logger } from '../../utils/logger.js';
 
 /**
- * Create a settlement (payout request) for a restaurant or delivery partner.
  * Locks the settlement amount in their wallet until processed.
  */
 export async function createSettlement({ entityType, entityId, amount, notes = '', periodStart, periodEnd }) {
-    if (!['restaurant', 'deliveryBoy'].includes(entityType)) {
-        throw new Error('Settlements only for restaurant or deliveryBoy');
     }
 
     const settlement = await Settlement.create({
@@ -80,10 +77,7 @@ function resolveWalletForSettlement(entityType, entityId) {
             filter: { restaurantId: id }
         };
     }
-    if (entityType === 'deliveryBoy') {
         return {
-            Model: mongoose.model('FoodDeliveryWallet'),
-            filter: { deliveryPartnerId: id }
         };
     }
     throw new Error(`Unsupported settlement entity: ${entityType}`);

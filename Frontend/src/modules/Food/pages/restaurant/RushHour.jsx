@@ -83,7 +83,6 @@ export default function RushHour() {
           <div className="space-y-3">
             {[
               "Get more time to prepare food",
-              "Show correct delivery time to customers",
               "Avoid crowding of riders at your restaurant"
             ].map((benefit, index) => (
               <div key={index} className="flex items-center gap-3">

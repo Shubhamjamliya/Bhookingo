@@ -12,7 +12,7 @@ import { buildPaginationOptions, buildPaginatedResult } from '../../../../utils/
 import { FoodOffer } from '../../admin/models/offer.model.js';
 import { FoodOfferUsage } from '../../admin/models/offerUsage.model.js';
 import { FoodSystemConfig } from '../../admin/models/systemConfig.model.js';
-import { FoodDeliveryCommissionRule } from '../../admin/models/deliveryCommissionRule.model.js';
+
 import { FoodRestaurantCommission } from '../../admin/models/restaurantCommission.model.js';
 import { FoodTransaction } from '../models/foodTransaction.model.js';
 import { FoodSupportTicket } from '../../user/models/supportTicket.model.js';
@@ -37,9 +37,7 @@ import * as paymentService from './order-payment.service.js';
 import {
   enqueueOrderEvent,
   haversineKm,
-  generateFourDigitDeliveryOtp,
   sanitizeOrderForExternal,
-  emitDeliveryDropOtpToUser,
   notifyOwnersSafely,
   notifyOwnerSafely,
   buildOrderIdentityFilter,
@@ -47,7 +45,6 @@ import {
   pushStatusHistory,
   normalizeOrderForClient,
   applyAggregateRating,
-  buildDeliverySocketPayload,
   notifyRestaurantNewOrder,
   isStatusAdvance,
 } from './order.helpers.js';
@@ -67,7 +64,6 @@ async function getActiveCommissionRules() {
   ) {
     return commissionRulesCache;
   }
-  const list = await FoodDeliveryCommissionRule.find({
     status: { $ne: false },
   }).lean();
   commissionRulesCache = list || [];
@@ -137,7 +133,6 @@ export async function createOrder(userId, dto) {
   if (restaurant.isAcceptingOrders === false)
     throw new ValidationError("Restaurant not accepting orders");
 
-  const orderType = dto.orderType || "delivery";
   if (orderType === "takeaway") {
     if (restaurant.takeawaySettings?.isEnabled === false) {
       throw new ValidationError("Takeaway is not available for this restaurant");
@@ -148,7 +143,6 @@ export async function createOrder(userId, dto) {
   const settings = await getDispatchSettings();
   const dispatchMode = settings.dispatchMode;
 
-  const deliveryAddress = {
     label: dto.address?.label || "Home",
     name: dto.address?.name || dto.address?.fullName || dto.customerName || "",
     fullName: dto.address?.fullName || dto.address?.name || dto.customerName || "",
@@ -174,20 +168,17 @@ export async function createOrder(userId, dto) {
     if (orderType !== "takeaway") {
       const globalCodConfig = await FoodSystemConfig.findOne({ key: "cod_enabled" }).select("value").lean();
       if (globalCodConfig && globalCodConfig.value === false) {
-        throw new ValidationError("Cash on Delivery is currently disabled globally");
       }
     }
 
     // 2. Mode-specific COD Toggles
     let codEnabledKey = "";
     if (orderType === "takeaway") codEnabledKey = "takeaway_cod_enabled";
-    else if (orderType === "delivery") codEnabledKey = "delivery_cod_enabled";
     else if (orderType === "dining") codEnabledKey = "dining_cod_enabled";
 
     if (codEnabledKey) {
       const codConfig = await FoodSystemConfig.findOne({ key: codEnabledKey }).select("value").lean();
       if (codConfig && codConfig.value === false) {
-        throw new ValidationError(`Cash on Delivery is currently disabled for ${orderType} orders`);
       }
     }
   }
@@ -217,7 +208,6 @@ export async function createOrder(userId, dto) {
     subtotal: Number(dto.pricing?.subtotal ?? computedSubtotal),
     tax: Number(dto.pricing?.tax ?? 0),
     packagingFee: Number(dto.pricing?.packagingFee ?? 0),
-    deliveryFee: orderType === "takeaway" ? 0 : Number(dto.pricing?.deliveryFee ?? 0),
     platformFee: Number(dto.pricing?.platformFee ?? 0),
     discount: Number(dto.pricing?.discount ?? 0),
     total: Number(dto.pricing?.total ?? 0),
@@ -232,8 +222,6 @@ export async function createOrder(userId, dto) {
       (Number.isFinite(normalizedPricing.packagingFee)
         ? normalizedPricing.packagingFee
         : 0) +
-      (Number.isFinite(normalizedPricing.deliveryFee)
-        ? normalizedPricing.deliveryFee
         : 0) +
       (Number.isFinite(normalizedPricing.platformFee)
         ? normalizedPricing.platformFee
@@ -284,7 +272,6 @@ export async function createOrder(userId, dto) {
 
   const platformProfit = Math.max(
     0,
-    (Number.isFinite(normalizedPricing.deliveryFee) ? normalizedPricing.deliveryFee : 0) +
       (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) +
       restaurantCommission -
       riderEarning,
@@ -297,10 +284,7 @@ export async function createOrder(userId, dto) {
       ? new mongoose.Types.ObjectId(dto.zoneId)
       : restaurant.zoneId,
     items: dto.items,
-    deliveryAddress: orderType === "takeaway" ? undefined : deliveryAddress,
     orderType,
-    customerName: dto.customerName || deliveryAddress.fullName || "",
-    customerPhone: dto.customerPhone || deliveryAddress.phone || "",
     pricing: normalizedPricing,
     payment,
     orderStatus: (isCash || isWallet) ? "confirmed" : "created",
@@ -317,7 +301,6 @@ export async function createOrder(userId, dto) {
     note: dto.note || "",
     restaurantNote: dto.restaurantNote || "",
     sendCutlery: dto.sendCutlery !== false,
-    deliveryFleet: dto.deliveryFleet || "standard",
     scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
     riderEarning,
     platformProfit,
@@ -543,7 +526,6 @@ export async function listOrdersUser(userId, query) {
         "restaurantId",
         "restaurantName profileImage area city location rating totalRatings",
       )
-      .populate("dispatch.deliveryPartnerId", "name phone rating totalRatings")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -560,7 +542,6 @@ export async function listOrdersUser(userId, query) {
 
 export async function getOrderById(
   orderId,
-  { userId, restaurantId, deliveryPartnerId, admin } = {},
 ) {
   const identity = buildOrderIdentityFilter(orderId);
   if (!identity) throw new ValidationError("Order id required");
@@ -569,9 +550,7 @@ export async function getOrderById(
       "restaurantId",
       "restaurantName ownerPhone profileImage area city location rating totalRatings primaryContactNumber",
     )
-    .populate("dispatch.deliveryPartnerId", "name fullName phone phoneNumber rating totalRatings profileImage avatar")
     .populate("userId", "name fullName phone email")
-    .select("+deliveryOtp")
     .lean();
   if (!order) throw new NotFoundError("Order not found");
 
@@ -579,26 +558,18 @@ export async function getOrderById(
 
   const orderUserId = order.userId?._id?.toString() || order.userId?.toString();
   const orderRestaurantId = order.restaurantId?._id?.toString() || order.restaurantId?.toString();
-  const orderPartnerId = order.dispatch?.deliveryPartnerId?._id?.toString() || order.dispatch?.deliveryPartnerId?.toString();
 
   if (userId && orderUserId !== userId.toString())
     throw new ForbiddenError("Not your order");
   if (restaurantId && orderRestaurantId !== restaurantId.toString())
     throw new ForbiddenError("Not your restaurant order");
-  if (deliveryPartnerId && orderPartnerId !== deliveryPartnerId.toString())
     throw new ForbiddenError("Not assigned to you");
 
-  if (deliveryPartnerId || restaurantId) {
     return sanitizeOrderForExternal(order);
   }
 
   if (userId) {
-    const drop = order.deliveryVerification?.dropOtp || {};
-    const secret = String(order.deliveryOtp || "").trim();
     const out = normalizeOrderForClient(order);
-    delete out.deliveryOtp;
-    out.deliveryVerification = {
-      ...(order.deliveryVerification || {}),
       dropOtp: {
         required: Boolean(drop.required),
         verified: Boolean(drop.verified),
@@ -619,25 +590,19 @@ export async function getDropOtpUser(orderId, userId) {
   const order = await FoodOrder.findOne({
     ...identity,
     userId: new mongoose.Types.ObjectId(userId),
-  }).select("+deliveryOtp");
   if (!order) throw new NotFoundError("Order not found");
 
-  const phase = order.deliveryState?.currentPhase;
   const isEligible = phase === "at_drop";
 
   if (!isEligible) {
     throw new ValidationError(
-      "OTP will appear once the delivery partner requests it at your location."
     );
   }
 
-  if (!String(order.deliveryOtp || "").trim()) {
     throw new ValidationError(
-      "OTP is not available yet. Ask the delivery partner to request OTP again."
     );
   }
 
-  return { otp: order.deliveryOtp };
 }
 
 /**
@@ -663,7 +628,6 @@ export async function recoverStuckOrders() {
       for (const order of stuckAssigned) {
         // Reset status to unassigned and re-trigger auto-assign
         order.dispatch.status = 'unassigned';
-        order.dispatch.deliveryPartnerId = null;
         await order.save();
         await tryAutoAssign(order._id);
       }
@@ -693,7 +657,6 @@ export async function resyncState(userId, role) {
         ],
       },
     })
-      .select("+deliveryOtp")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -701,20 +664,14 @@ export async function resyncState(userId, role) {
       const out = normalizeOrderForClient(order);
       // Re-add handover OTP if order is picked up
       if (
-        (order.deliveryState?.currentPhase === "at_drop" || order.orderStatus === "picked_up") &&
-        !order.deliveryVerification?.dropOtp?.verified &&
-        order.deliveryOtp
       ) {
-        out.handoverOtp = order.deliveryOtp;
       }
       return { activeOrder: out };
     }
     return { activeOrder: null };
   }
 
-  if (role === "DELIVERY_PARTNER") {
     const order = await FoodOrder.findOne({
-      "dispatch.deliveryPartnerId": new mongoose.Types.ObjectId(userId),
       "dispatch.status": { $in: ["assigned", "accepted"] },
       orderStatus: {
         $nin: ["delivered", "cancelled_by_user", "cancelled_by_restaurant"],
@@ -928,18 +885,12 @@ export async function submitOrderRatings(orderId, userId, dto) {
     throw new ValidationError("You can rate only delivered orders");
   }
 
-  const hasDeliveryPartner = !!order.dispatch?.deliveryPartnerId;
-  if (hasDeliveryPartner && !dto.deliveryPartnerRating) {
-    throw new ValidationError("Delivery partner rating is required");
   }
 
   const restaurantAlreadyRated = Number.isFinite(
     Number(order?.ratings?.restaurant?.rating),
   );
-  const deliveryAlreadyRated = Number.isFinite(
-    Number(order?.ratings?.deliveryPartner?.rating),
   );
-  if (restaurantAlreadyRated || (hasDeliveryPartner && deliveryAlreadyRated)) {
     throw new ValidationError("Ratings already submitted for this order");
   }
 
@@ -951,12 +902,7 @@ export async function submitOrderRatings(orderId, userId, dto) {
     ratedAt: now,
   };
 
-  if (hasDeliveryPartner) {
-    order.ratings.deliveryPartner = {
-      rating: dto.deliveryPartnerRating,
-      comment: dto.deliveryPartnerComment || "",
-      ratedAt: now,
-    };
+  ;
   }
 
   await Promise.all([
@@ -974,7 +920,6 @@ export async function submitOrderRatings(orderId, userId, dto) {
         orderId: order._id.toString(),
         userId,
         restaurantRating: dto.restaurantRating,
-        deliveryPartnerRating: hasDeliveryPartner ? dto.deliveryPartnerRating : null
     });
 }
 
@@ -1090,9 +1035,7 @@ export async function updateOrderStatusRestaurant(
       io.to(userRoom).emit("order_status_update", payload);
       
       // Notify assigned rider via socket if they exist
-      const assignedRiderId = order.dispatch?.deliveryPartnerId;
       if (assignedRiderId) {
-          const riderRoom = rooms.delivery(assignedRiderId);
           console.log(`[DEBUG] Emitting order_status_update to rider room: ${riderRoom}`);
           io.to(riderRoom).emit("order_status_update", payload);
       }
@@ -1103,9 +1046,7 @@ export async function updateOrderStatusRestaurant(
       { ownerType: "RESTAURANT", ownerId: restaurantId },
     ];
 
-    const assignedRiderId = order.dispatch?.deliveryPartnerId;
     if (assignedRiderId) {
-      notifyList.push({ ownerType: "DELIVERY_PARTNER", ownerId: assignedRiderId });
     }
 
     let riderTitle = `Order #${order.order_id || order._id} updated`;
@@ -1148,17 +1089,14 @@ export async function updateOrderStatusRestaurant(
     console.error("[DEBUG] Error emitting status update to restaurant:", err);
   }
 
-  // Real-time: delivery request / ready notifications.
   try {
     const io = getIO();
     if (io) {
-      // On accept (confirmed or preparing) -> request delivery partners via central logic
       if (
         (String(orderStatus) === "preparing" || String(orderStatus) === "confirmed") && 
         (String(from) !== "preparing" && String(from) !== "confirmed")
       ) {
         console.log(
-          `[DEBUG] Order ${order._id.toString()} status changed to '${orderStatus}'. Triggering central delivery dispatch.`,
         );
         
         try {
@@ -1170,25 +1108,19 @@ export async function updateOrderStatusRestaurant(
         }
       }
 
-            // When ready for pickup -> ping assigned delivery partner.
             if (String(orderStatus) === 'ready_for_pickup' && String(from) !== 'ready_for_pickup') {
                 console.log(`[DEBUG] Order ${order._id.toString()} changed to 'ready_for_pickup'.`);
-                const assignedId = order.dispatch?.deliveryPartnerId?.toString?.() || order.dispatch?.deliveryPartnerId;
                 if (assignedId) {
                     console.log(`[DEBUG] Notifying assigned partner ${assignedId} that order is ready.`);
                     const restaurant = await FoodRestaurant.findById(order.restaurantId).select('restaurantName location addressLine1 area city state').lean();
-                    const payload = buildDeliverySocketPayload(order, restaurant);
                     logger.info(
-                      `[DeliveryDispatch] Emitting order_ready to ${rooms.delivery(assignedId)} for order ${order._id.toString()}`,
                     );
-                    io.to(rooms.delivery(assignedId)).emit('order_ready', payload);
                 } else {
                     console.log(`[DEBUG] Order ${order._id.toString()} is ready but no partner assigned.`);
                 }
             }
         }
     } catch (err) {
-        console.error('[DEBUG] Error in delivery notification logic:', err);
     }
 
     enqueueOrderEvent('restaurant_order_status_updated', {
@@ -1261,110 +1193,13 @@ export async function updateOrderStatusRestaurant(
 }
 
 /**
- * Manually re-trigger delivery partner search for a restaurant order.
  * Only allowed if status is preparing/ready and no partner has accepted yet.
  */
-export async function resendDeliveryNotificationRestaurant(orderId, restaurantId) {
-    return dispatchService.resendDeliveryNotificationRestaurant(orderId, restaurantId);
-    const order = await FoodOrder.findOne({
-        _id: new mongoose.Types.ObjectId(orderId),
-        restaurantId: new mongoose.Types.ObjectId(restaurantId)
-    });
-
-    if (!order) throw new NotFoundError('Order not found');
-
-    // Allow resend for fresh confirmed orders too, because this route is often
-    // used right after restaurant confirmation when the first rider alert was missed.
-    const activeStatuses = ['confirmed', 'preparing', 'ready_for_pickup', 'ready'];
-    if (!activeStatuses.includes(order.orderStatus)) {
-        throw new ValidationError(`Cannot resend notification for order in status: ${order.orderStatus}`);
-    }
-
-    // Guard: don't disrupt an active assignment that was already accepted
-    if (order.dispatch?.status === 'accepted') {
-        throw new ValidationError('A delivery partner has already accepted this order.');
-    }
-
-    // Reset dispatch state to unassigned to allow tryAutoAssign to start fresh
-    order.dispatch.status = 'unassigned';
-    order.dispatch.deliveryPartnerId = null;
-    // Clear previously offered partners to give everyone a fresh chance when resending manually.
-    order.dispatch.offeredTo = [];
-    
-    await order.save();
-
-    // Trigger smart dispatch logic immediately
-    await tryAutoAssign(order._id);
-
-    return { success: true };
-}
-
-export async function getCurrentTripDelivery(deliveryPartnerId) {
-  return deliveryService.getCurrentTripDelivery(deliveryPartnerId);
-}
-
-// ----- Delivery: available, accept, reject, status -----
-export async function listOrdersAvailableDelivery(deliveryPartnerId, query) {
-  return deliveryService.listOrdersAvailableDelivery(deliveryPartnerId, query);
-}
-
-export async function acceptOrderDelivery(orderId, deliveryPartnerId) {
-  return deliveryService.acceptOrderDelivery(orderId, deliveryPartnerId);
-}
-
-export async function rejectOrderDelivery(orderId, deliveryPartnerId) {
-  return deliveryService.rejectOrderDelivery(orderId, deliveryPartnerId);
-}
-
-export async function confirmReachedPickupDelivery(orderId, deliveryPartnerId) {
-  return deliveryService.confirmReachedPickupDelivery(orderId, deliveryPartnerId);
-}
-
-/**
- * Slide to confirm pickup (Bill uploaded)
- */
-export async function confirmPickupDelivery(
-  orderId,
-  deliveryPartnerId,
-  billImageUrl,
-) {
-  return deliveryService.confirmPickupDelivery(
-    orderId,
-    deliveryPartnerId,
-    billImageUrl,
-  );
-}
-
-export async function confirmReachedDropDelivery(orderId, deliveryPartnerId) {
-  return deliveryService.confirmReachedDropDelivery(orderId, deliveryPartnerId);
-}
-
-export async function verifyDropOtpDelivery(orderId, deliveryPartnerId, otp) {
-  return deliveryService.verifyDropOtpDelivery(orderId, deliveryPartnerId, otp);
-}
-
-export async function completeDelivery(orderId, deliveryPartnerId, body = {}) {
-  return deliveryService.completeDelivery(orderId, deliveryPartnerId, body);
-}
 
 
 
-export async function updateOrderStatusDelivery(orderId, deliveryPartnerId, orderStatus) {
-  return deliveryService.updateOrderStatusDelivery(orderId, deliveryPartnerId, orderStatus);
-}
 
-// ----- COD QR collection -----
-export async function createCollectQr(
-  orderId,
-  deliveryPartnerId,
-  customerInfo = {},
-) {
-  return paymentService.createCollectQr(orderId, deliveryPartnerId, customerInfo);
-}
 
-export async function getPaymentStatus(orderId, deliveryPartnerId) {
-  return paymentService.getPaymentStatus(orderId, deliveryPartnerId);
-}
 
 // ----- Admin -----
 export async function listOrdersAdmin(query) {
@@ -1463,10 +1298,8 @@ export async function listOrdersAdmin(query) {
 
   const [docs, total] = await Promise.all([
     FoodOrder.find(filter)
-      .select("+deliveryOtp")
       .populate("userId", "name phone email")
       .populate("restaurantId", "restaurantName area city ownerPhone")
-      .populate("dispatch.deliveryPartnerId", "name phone")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -1521,8 +1354,6 @@ export async function deleteOrderAdmin(orderId, adminId) {
 
       if (order.userId) io.to(rooms.user(order.userId)).emit("order_deleted", payload);
       if (order.restaurantId) io.to(rooms.restaurant(order.restaurantId)).emit("order_deleted", payload);
-      if (order.dispatch?.deliveryPartnerId) {
-        io.to(rooms.delivery(order.dispatch.deliveryPartnerId)).emit("order_deleted", payload);
       }
     }
   } catch (err) {

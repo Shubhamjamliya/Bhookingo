@@ -24,7 +24,6 @@ const popularRestaurants = [
     price: "₹1500 for two",
     image: "",
     offer: "Flat 30% OFF + 3 more",
-    deliveryTime: "30-35 mins",
     featuredDish: "Pasta",
     featuredPrice: 450,
   },
@@ -38,7 +37,6 @@ const popularRestaurants = [
     price: "₹2000 for two",
     image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop",
     offer: "Flat 25% OFF + 2 more",
-    deliveryTime: "35-40 mins",
     featuredDish: "Grilled Chicken",
     featuredPrice: 550,
   },
@@ -52,7 +50,6 @@ const popularRestaurants = [
     price: "₹1800 for two",
     image: "https://images.unsplash.com/photo-1551218808-94e220e084d2?w=800&h=600&fit=crop",
     offer: "Flat 35% OFF + 4 more",
-    deliveryTime: "25-30 mins",
     featuredDish: "Risotto",
     featuredPrice: 650,
   },
@@ -66,7 +63,6 @@ const popularRestaurants = [
     price: "₹1600 for two",
     image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop",
     offer: "Flat 20% OFF + 2 more",
-    deliveryTime: "28-33 mins",
     featuredDish: "Fish Curry",
     featuredPrice: 480,
   },
@@ -80,7 +76,6 @@ const popularRestaurants = [
     price: "₹1200 for two",
     image: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800&h=600&fit=crop",
     offer: "Flat 30% OFF + 3 more",
-    deliveryTime: "40-45 mins",
     featuredDish: "Butter Chicken",
     featuredPrice: 380,
   },
@@ -94,7 +89,6 @@ const popularRestaurants = [
     price: "₹2200 for two",
     image: "",
     offer: "Flat 25% OFF + 2 more",
-    deliveryTime: "35-40 mins",
     featuredDish: "Steak",
     featuredPrice: 750,
   },
@@ -133,18 +127,7 @@ export default function DiningExploreNear() {
   const filteredRestaurants = useMemo(() => {
     let filtered = [...popularRestaurants]
 
-    if (activeFilters.has('delivery-under-30')) {
-      filtered = filtered.filter(r => {
-        const timeMatch = r.deliveryTime.match(/(\d+)/)
-        return timeMatch && parseInt(timeMatch[1]) <= 30
-      })
-    }
-    if (activeFilters.has('delivery-under-45')) {
-      filtered = filtered.filter(r => {
-        const timeMatch = r.deliveryTime.match(/(\d+)/)
-        return timeMatch && parseInt(timeMatch[1]) <= 45
-      })
-    }
+
     if (activeFilters.has('distance-under-1km')) {
       filtered = filtered.filter(r => {
         const distMatch = r.distance.match(/(\d+\.?\d*)/)
@@ -301,8 +284,6 @@ export default function DiningExploreNear() {
 
                 {/* Filter Buttons */}
                 {[
-                  { id: 'delivery-under-30', label: 'Under 30 mins' },
-                  { id: 'delivery-under-45', label: 'Under 45 mins' },
                   { id: 'distance-under-1km', label: 'Under 1km', icon: MapPin },
                   { id: 'distance-under-2km', label: 'Under 2km', icon: MapPin },
                   { id: 'rating-35-plus', label: '3.5+ Rating' },
@@ -346,7 +327,6 @@ export default function DiningExploreNear() {
                       name: restaurant.name,
                       cuisine: restaurant.cuisine,
                       rating: restaurant.rating,
-                      deliveryTime: restaurant.deliveryTime,
                       distance: restaurant.distance,
                       image: restaurant.image
                     })
@@ -416,10 +396,8 @@ export default function DiningExploreNear() {
                           </div>
                         </div>
 
-                        {/* Delivery Time & Distance */}
                         <div className="flex items-center gap-1 text-sm text-gray-500 mb-2">
                           <Clock className="h-4 w-4" strokeWidth={1.5} />
-                          <span className="font-medium">{restaurant.deliveryTime}</span>
                           <span className="mx-1">|</span>
                           <span className="font-medium">{restaurant.distance}</span>
                         </div>
@@ -527,34 +505,7 @@ export default function DiningExploreNear() {
                   </div>
                 )}
 
-                {/* Time Tab */}
-                {activeFilterTab === 'time' && (
-                  <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Estimated Time</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => toggleFilter('delivery-under-30')}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('delivery-under-30')
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-500'
-                          }`}
-                      >
-                        <Timer className={`h-6 w-6 ${activeFilters.has('delivery-under-30') ? 'text-green-600' : 'text-gray-600'}`} strokeWidth={1.5} />
-                        <span className={`text-sm font-medium ${activeFilters.has('delivery-under-30') ? 'text-green-600' : 'text-gray-700'}`}>Under 30 mins</span>
-                      </button>
-                      <button
-                        onClick={() => toggleFilter('delivery-under-45')}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('delivery-under-45')
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-500'
-                          }`}
-                      >
-                        <Timer className={`h-6 w-6 ${activeFilters.has('delivery-under-45') ? 'text-green-600' : 'text-gray-600'}`} strokeWidth={1.5} />
-                        <span className={`text-sm font-medium ${activeFilters.has('delivery-under-45') ? 'text-green-600' : 'text-gray-700'}`}>Under 45 mins</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+
 
                 {/* Rating Tab */}
                 {activeFilterTab === 'rating' && (

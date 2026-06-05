@@ -87,7 +87,7 @@ const AnimatedCheckmark = ({ delay = 0 }) => (
   </motion.svg>
 )
 
-// Real Delivery Map Component with User Live Location
+// Map Component for Restaurant Location
 
 
 // Section item component
@@ -190,7 +190,7 @@ const getRestaurantAddressFromOrder = (apiOrder, previousOrder = null, explicitR
 }
 
 const getCustomerCoordsFromApiOrder = (apiOrder, previousOrder = null) => {
-  const addr = apiOrder?.address || apiOrder?.deliveryAddress || {}
+  const addr = apiOrder?.address || apiOrder?.address || {}
   const fromLoc = addr?.location?.coordinates
   if (Array.isArray(fromLoc) && fromLoc.length >= 2) return fromLoc
   const flat = addr?.coordinates
@@ -210,8 +210,8 @@ const getCustomerCoordsFromApiOrder = (apiOrder, previousOrder = null) => {
 const transformOrderForTracking = (apiOrder, previousOrder = null, explicitRestaurantCoords = null, explicitRestaurantAddress = null) => {
   const restaurantCoords = explicitRestaurantCoords || getRestaurantCoordsFromOrder(apiOrder, previousOrder?.restaurantLocation?.coordinates)
   const restaurantAddress = getRestaurantAddressFromOrder(apiOrder, previousOrder, explicitRestaurantAddress)
-  // API returns `deliveryAddress`; some paths use `address`
-  const addr = apiOrder?.address || apiOrder?.deliveryAddress || {}
+  // API returns `address`; some paths use `address`
+  const addr = apiOrder?.address || apiOrder?.address || {}
   const customerCoordsResolved = getCustomerCoordsFromApiOrder(apiOrder, previousOrder)
 
   return {
@@ -284,8 +284,8 @@ function mapBackendOrderStatusToUi(raw) {
   if (s === "confirmed" || s === "accepted") return "confirmed"
   if (s === "preparing" || s === "processed") return "preparing"
   if (s === "ready" || s === "ready_for_pickup" || s === "reached_pickup" || s === "order_confirmed") return "ready"
-  if (s === "picked_up" || s === "out_for_delivery" || s === "en_route_to_delivery") return "on_way"
-  if (s === "reached_drop" || s === "at_drop" || s === "at_delivery") return "at_drop"
+  if (s === "picked_up" || s === "ready_for_pickup") return "on_way"
+  if (s === "picked_up") return "at_drop"
   if (s === "delivered" || s === "completed") return "delivered"
   if (s.includes("cancelled") || s === "cancelled") return "cancelled"
   return "placed"
@@ -343,7 +343,7 @@ export default function OrderTracking() {
   const [refundDestination, setRefundDestination] = useState("source")
   const [isCancelling, setIsCancelling] = useState(false)
   const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false)
-  const [deliveryInstructions, setDeliveryInstructions] = useState("")
+  const [orderNote, setorderNote] = useState("")
   const [isUpdatingInstructions, setIsUpdatingInstructions] = useState(false)
   const [resolvedLookupId, setResolvedLookupId] = useState("")
   const [timerNow, setTimerNow] = useState(Date.now())
@@ -487,15 +487,15 @@ export default function OrderTracking() {
       orderData.scheduledAt || orderData.createdAt || orderData.orderDate || orderData.created_at || orderData.date || Date.now(),
     );
 
-    // For non-scheduled orders, we add the estimated delivery time to the creation time.
+    // For non-scheduled orders, we add the estimated time to the creation time.
     // For scheduled orders, scheduledAt is already the target time.
     const isScheduled = !!orderData.scheduledAt;
     const estimatedMinutes = isScheduled 
       ? 0 
       : (orderData.estimatedTime || 35);
 
-    const deliveryTime = new Date(orderTime.getTime() + estimatedMinutes * 60000);
-    return Math.max(0, Math.floor((deliveryTime - new Date()) / 60000));
+    const pickupTime = new Date(orderTime.getTime() + estimatedMinutes * 60000);
+    return Math.max(0, Math.floor((pickupTime - new Date()) / 60000));
   }, []);
 
   // Sync estimatedTime state with order data and periodic updates
@@ -1054,15 +1054,15 @@ export default function OrderTracking() {
   const handleUpdateInstructions = async () => {
     try {
       setIsUpdatingInstructions(true);
-      const response = await orderAPI.updateOrderInstructions(resolvedLookupId || orderId, deliveryInstructions);
+      const response = await orderAPI.updateOrderInstructions(resolvedLookupId || orderId, orderNote);
       if (response.data?.success) {
-        toast.success("Delivery instructions updated");
+        toast.success("Order instructions updated");
         setIsInstructionsModalOpen(false);
         const updatedOrder = response.data.data?.order;
         if (updatedOrder) {
           setOrder(prev => transformOrderForTracking(updatedOrder, prev));
         } else {
-          setOrder(prev => ({ ...prev, note: deliveryInstructions }));
+          setOrder(prev => ({ ...prev, note: orderNote }));
         }
       } else {
         toast.error(response.data?.message || "Failed to update instructions");
@@ -1202,7 +1202,7 @@ export default function OrderTracking() {
     },
     assigned: {
       title: "Rider is arriving",
-      subtitle: "A delivery partner is arriving at the restaurant",
+      subtitle: "Your order is being processed",
       color: "bg-green-600",
       iconType: 'rider'
     },
@@ -1219,8 +1219,8 @@ export default function OrderTracking() {
       iconType: 'rider'
     },
     on_way: {
-      title: "Out for delivery",
-      subtitle: typeof estimatedTime === 'number' ? `Arriving in ${estimatedTime} mins` : "Rider is out for delivery",
+      title: "Ready for pickup",
+      subtitle: typeof estimatedTime === 'number' ? `Arriving in ${estimatedTime} mins` : "Ready for pickup",
       color: "bg-green-600",
       iconType: 'rider'
     },
@@ -1314,7 +1314,7 @@ export default function OrderTracking() {
               >
                 <div className="flex items-center justify-center gap-2 text-[#DC2626] dark:text-orange-400 font-medium cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/user/profile/report-safety-emergency', { state: { returnTo: location.pathname } })}>
                   <Shield className="w-4 h-4" />
-                  <span className="text-sm">Learn about delivery partner safety</span>
+                  
                 </div>
               </motion.div>
             </motion.div>
@@ -1442,16 +1442,16 @@ export default function OrderTracking() {
       <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-4 md:space-y-6 pb-24 md:pb-32">
         {/* Cancellation window removed as per user request to hide immediately after acceptance */}
 
-        {customerDeliveryOtp && orderStatus !== 'delivered' && orderStatus !== 'cancelled' && (
+        {customerOtp && orderStatus !== 'delivered' && orderStatus !== 'cancelled' && (
           <motion.div
             className="bg-blue-50 dark:bg-blue-900/10 rounded-xl p-4 shadow-sm border border-blue-100 dark:border-blue-900/30"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.28 }}
           >
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wide">Delivery OTP</p>
-            <p className="text-2xl font-extrabold text-blue-900 dark:text-blue-200 mt-1 tracking-widest">{customerDeliveryOtp}</p>
-            <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">Share this 4-digit OTP with your delivery partner at drop-off.</p>
+            <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wide">Order OTP</p>
+            <p className="text-2xl font-extrabold text-blue-900 dark:text-blue-200 mt-1 tracking-widest">{customerOtp}</p>
+            <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">Share this 4-digit OTP at the restaurant to collect your order.</p>
           </motion.div>
         )}
 
@@ -1512,7 +1512,7 @@ export default function OrderTracking() {
           )}
         </motion.div>
 
-        {/* Rating Logic: Show rating card after delivery */}
+        {/* Rating Logic: Show rating card after order completion */}
         {orderStatus === 'delivered' && !isOrderRated && (
           <motion.div
             className="bg-white dark:bg-[#1a1a1a] rounded-xl p-6 shadow-sm border-2 border-[#DC2626]/10 relative overflow-hidden group"
@@ -1623,7 +1623,7 @@ export default function OrderTracking() {
                 className="w-6 h-6 [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
               />
             }
-            title="Delivery at Location"
+            title="Location"
             subtitle={(() => {
               // Priority 1: Use order address formattedAddress (live location address)
               if (order?.address?.formattedAddress && order.address.formattedAddress !== "Select location") {
@@ -1668,10 +1668,10 @@ export default function OrderTracking() {
           {!isAdminAccepted && orderStatus !== 'cancelled' && orderStatus !== 'delivered' && (
             <SectionItem
               icon={MessageSquare}
-              title={order?.note ? "Edit delivery instructions" : "Add delivery instructions"}
+              title={order?.note ? "Edit instructions" : "Add instructions"}
               subtitle={order?.note ? order.note.substring(0, 35) + (order.note.length > 35 ? "..." : "") : ""}
               onClick={() => {
-                setDeliveryInstructions(order?.note || "");
+                setorderNote(order?.note || "");
                 setIsInstructionsModalOpen(true);
               }}
             />
@@ -1878,12 +1878,12 @@ export default function OrderTracking() {
               </div>
             </div>
 
-            {/* Delivery Instructions Section */}
+            {/* Order Instructions Section */}
             {order?.note && (
               <div className="bg-orange-50/50 rounded-xl p-4 border border-orange-100 flex gap-3">
                 <MessageSquare className="w-5 h-5 text-[#DC2626] shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs text-#991B1B font-bold uppercase tracking-wider mb-1">Delivery Instructions</p>
+                  <p className="text-xs text-#991B1B font-bold uppercase tracking-wider mb-1">Order Instructions</p>
                   <p className="text-sm text-gray-800 leading-relaxed font-medium capitalize">
                     {order.note}
                   </p>
@@ -1981,21 +1981,21 @@ export default function OrderTracking() {
         </DialogContent>
       </Dialog>
 
-      {/* Delivery Instructions Modal */}
+      {/* Order Instructions Modal */}
       <Dialog open={isInstructionsModalOpen} onOpenChange={setIsInstructionsModalOpen}>
         <DialogContent className="sm:max-w-md w-[95vw] rounded-3xl p-6 border-0 shadow-2xl bg-white dark:bg-[#1a1a1a] max-h-[90vh] overflow-y-auto z-[200]">
           <DialogHeader className="mb-2">
             <DialogTitle className="text-xl font-bold bg-gradient-to-r from-#991B1B to-orange-400 bg-clip-text text-transparent">
-              Delivery Instructions
+              Order Instructions
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-500">
-              Add instructions for the delivery partner to help them find your address or know where to leave your order.
+              Add any special instructions for your order.
             </p>
             <Textarea
-              value={deliveryInstructions}
-              onChange={(e) => setDeliveryInstructions(e.target.value)}
+              value={orderNote}
+              onChange={(e) => setorderNote(e.target.value)}
               placeholder="E.g. Ring the doorbell, leave at the front desk..."
               className="min-h-[120px] resize-none border-gray-200 focus:ring-[#DC2626] rounded-xl bg-gray-50 text-base"
             />

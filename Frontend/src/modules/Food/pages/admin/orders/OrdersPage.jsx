@@ -69,8 +69,8 @@ export default function OrdersPage({ statusKey = "all" }) {
     return `${source}${separator}devcache=${cacheKey}`
   }, [])
 
-  const playDeliveryStyleBuzz = useCallback(async () => {
-    const selectedSound = localStorage.getItem("delivery_alert_sound") || "zomato_tone"
+  const playOrderAlertBuzz = useCallback(async () => {
+    const selectedSound = localStorage.getItem("order_alert_sound") || "zomato_tone"
     const soundFile = selectedSound === "original"
       ? resolveAudioSource(originalSound, "admin-original")
       : resolveAudioSource(alertSound, "admin-alert")
@@ -101,7 +101,7 @@ export default function OrdersPage({ statusKey = "all" }) {
   }, [resolveAudioSource])
 
   const playDefaultRing = useCallback(() => {
-    playDeliveryStyleBuzz().then((played) => {
+    playOrderAlertBuzz().then((played) => {
       if (played) return
 
       try {
@@ -165,7 +165,7 @@ export default function OrdersPage({ statusKey = "all" }) {
     }).catch((error) => {
       debugWarn("Ring sound could not be played:", error)
     })
-  }, [playDeliveryStyleBuzz])
+  }, [playOrderAlertBuzz])
 
   const stopAlertLoop = useCallback(() => {
     if (alertLoopTimerRef.current) {
@@ -244,7 +244,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         fallbackAudioRef.current.muted = false
 
         if (!notificationAudioRef.current) {
-          const selectedSound = localStorage.getItem("delivery_alert_sound") || "zomato_tone"
+          const selectedSound = localStorage.getItem("order_alert_sound") || "zomato_tone"
           const soundFile = selectedSound === "original"
             ? resolveAudioSource(originalSound, "admin-original")
             : resolveAudioSource(alertSound, "admin-alert")
@@ -511,8 +511,8 @@ export default function OrdersPage({ statusKey = "all" }) {
         paymentMethodDetail,
         orderStatus: displayStatus,
 
-        orderOtp: order.deliveryOtp,
-        address: order.address || order.customerAddress || order.deliveryAddress,
+        orderOtp: order.pickupOtp,
+        address: order.address || order.customerAddress ,
         refundStatus: order.payment?.refund?.status || (order.payment?.status === 'refunded' ? 'processed' : null)
       }
     })
@@ -722,7 +722,7 @@ export default function OrdersPage({ statusKey = "all" }) {
     }
 
     const shouldDelete = confirm(
-      `Delete order ${order.orderId} permanently?\n\nThis will remove it from customer and delivery apps as well.`,
+      `Delete order ${order.orderId} permanently?\n\nThis will remove it from customer and other apps as well.`,
     )
 
     if (!shouldDelete) return

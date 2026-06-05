@@ -49,18 +49,13 @@ const getOrderStatus = (order) =>
   normalizeOrderToken(order?.status || order?.orderStatus || "");
 
 const getOrderPhase = (order) =>
-  normalizeOrderToken(order?.phase || order?.deliveryPhase || "");
+  normalizeOrderToken(order?.phase || "");
 const ACTIVE_PHASES = new Set([
   "created",
   "confirmed",
   "preparing",
   "accepted",
   "ready",
-  "ready_for_pickup",
-  "reached_pickup",
-  "picked_up",
-  "at_pickup",
-  "at_drop",
 ]);
 
 /** Orders that should show the live tracking strip (any in-flight order, not terminal). */

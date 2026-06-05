@@ -991,7 +991,7 @@ function ScheduledOrders({ onSelectOrder, refreshToken }) {
         const response = await restaurantAPI.getOrders({ page: 1, limit: 100 });
         const list = response?.data?.data?.orders || [];
 
-        // Filter for scheduled orders that are NOT yet out for delivery/delivered
+        // Filter for scheduled orders that are NOT yet ready for pickup/completed
         // And match 'created' or 'confirmed' status with scheduledAt
         const scheduled = list
           .filter((o) => {
@@ -1291,7 +1291,7 @@ export default function OrdersMain() {
   const rejectReasons = [
     "Restaurant is too busy",
     "Item not available",
-    "Outside delivery area",
+    "Outside service area",
     "Kitchen closing soon",
     "Technical issue",
     "Other reason",
@@ -2029,7 +2029,7 @@ export default function OrdersMain() {
       // Customer address
       if (orderToPrint.customerAddress) {
         doc.setFont("helvetica", "bold");
-        doc.text("Delivery Address:", 20, 62);
+        doc.text("Address:", 20, 62);
         doc.setFont("helvetica", "normal");
         const addressText =
           [
@@ -2095,7 +2095,7 @@ export default function OrdersMain() {
         yPos,
       );
 
-      // Estimated delivery time
+      // Estimated arrival time
       if (orderToPrint.estimatedTime) {
         yPos += 8;
         doc.text(
@@ -2105,11 +2105,11 @@ export default function OrdersMain() {
         );
       }
 
-      // Delivery Note
+      // Note
       if (orderToPrint.note) {
         yPos += 10;
         doc.setFont("helvetica", "bold");
-        doc.text("Note for Delivery:", 20, yPos);
+        doc.text("Note:", 20, yPos);
         doc.setFont("helvetica", "normal");
         const noteLines = doc.splitTextToSize(orderToPrint.note, 170);
         doc.text(noteLines, 20, yPos + 7);

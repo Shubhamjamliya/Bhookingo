@@ -284,9 +284,7 @@ function mapBackendOrderStatusToUi(raw) {
   if (s === "confirmed" || s === "accepted") return "confirmed"
   if (s === "preparing" || s === "processed") return "preparing"
   if (s === "ready" || s === "ready_for_pickup" || s === "reached_pickup" || s === "order_confirmed") return "ready"
-  if (s === "picked_up" || s === "ready_for_pickup") return "on_way"
-  if (s === "picked_up") return "at_drop"
-  if (s === "delivered" || s === "completed") return "delivered"
+  if (s === "delivered" || s === "completed" || s === "picked_up") return "delivered"
   if (s.includes("cancelled") || s === "cancelled") return "cancelled"
   return "placed"
 }
@@ -294,7 +292,7 @@ function mapBackendOrderStatusToUi(raw) {
 function mapOrderToTrackingUiStatus(orderLike) {
   if (!orderLike) return "placed"
   const statusRaw = orderLike.status || orderLike.orderStatus
-  const phase = orderLike.deliveryState?.currentPhase
+  const phase = orderLike.orderState?.currentPhase
 
   // Terminal states handled first
   if (isFoodOrderCancelledStatus(statusRaw)) return "cancelled"
@@ -302,7 +300,7 @@ function mapOrderToTrackingUiStatus(orderLike) {
   return mapBackendOrderStatusToUi(statusRaw)
 }
 
-/** Prefer live delivery phase when present (socket / polling include deliveryState). */
+/** Prefer live order phase when present (socket / polling include orderState). */
 function isFoodOrderCancelledStatus(statusRaw) {
   const s = String(statusRaw || "").toLowerCase()
   return s === "cancelled" || s.includes("cancelled")
@@ -384,7 +382,7 @@ export default function OrderTracking() {
           ...updatedOrderData,
           ratings: updatedOrderData.ratings,
           restaurantRating: updatedOrderData.ratings?.restaurant?.rating,
-          deliveryPartnerRating: updatedOrderData.ratings?.deliveryPartner?.rating
+          
         }))
       }
 
@@ -421,14 +419,14 @@ export default function OrderTracking() {
   const ORDER_STATUS_TOAST_ID = 'order-tracking-status-update'
   const ORDER_STATUS_TOAST_DEDUPE_MS = 4000
 
-  // Delivery handover OTP received via socket event.
+  // Order handover OTP received via socket event.
   // Kept separately so UI still renders even if the event arrives
   // before the order API poll populates `order` state.
 
 
-  // OTP received via socket event (deliveryDropOtp)
+  // OTP received via socket event (pickupDropOtp)
   useEffect(() => {
-    const handleDeliveryDropOtp = (event) => {
+    const handlepickupDropOtp = (event) => {
       const detail = event?.detail || {}
       const otp = detail?.otp != null ? String(detail.otp) : null
       const evtOrderId = detail?.orderId != null ? String(detail.orderId) : null
@@ -455,7 +453,7 @@ export default function OrderTracking() {
 
       setOrder((prev) => {
         if (!prev) return prev
-        const prevDV = prev.deliveryVerification || {}
+        const prevDV = prev.pickupVerification || {}
         const prevDropOtp = prevDV.dropOtp || {}
         
         // Only update if code actually changed to avoid render loops
@@ -463,7 +461,7 @@ export default function OrderTracking() {
         
         return {
           ...prev,
-          deliveryVerification: {
+          pickupVerification: {
             ...prevDV,
             dropOtp: {
               ...prevDropOtp,
@@ -606,13 +604,13 @@ export default function OrderTracking() {
 
 
       setOrder((prev) => {
-        if (!prev?.deliveryVerification?.dropOtp?.code) return prev
+        if (!prev?.pickupVerification?.dropOtp?.code) return prev
         return {
           ...prev,
-          deliveryVerification: {
-            ...(prev.deliveryVerification || {}),
+          pickupVerification: {
+            ...(prev.pickupVerification || {}),
             dropOtp: {
-              ...(prev.deliveryVerification?.dropOtp || {}),
+              ...(prev.pickupVerification?.dropOtp || {}),
               code: null
             }
           }
@@ -688,14 +686,14 @@ export default function OrderTracking() {
     ].includes(status)
   }, [order?.status])
 
-  // Single source of truth: backend order.status (+ deliveryState phase for live ride)
+  // Single source of truth: backend order.status (+ orderState phase for live ride)
   useEffect(() => {
     if (!order) return
     setOrderStatus(mapOrderToTrackingUiStatus(order))
   }, [
     order?.status,
-    order?.deliveryState?.currentPhase,
-    order?.deliveryState?.status,
+    order?.orderState?.currentPhase,
+    order?.orderState?.status,
   ])
 
   const acceptedAtMs = useMemo(() => {
@@ -771,7 +769,7 @@ export default function OrderTracking() {
     return () => clearInterval(interval)
   }, [isEditWindowOpen])
 
-  // Poll for order updates (especially when delivery partner accepts)
+  // Poll for order updates (especially when restaurant accepts)
 
   const pollRef = useRef(null);
 
@@ -902,7 +900,7 @@ export default function OrderTracking() {
     return () => clearInterval(timer)
   }, [])
 
-  // Listen for order status updates from socket (e.g., "Delivery partner on the way")
+  // Listen for order status updates from socket (e.g., "Order is ready")
   useEffect(() => {
     const handleOrderStatusNotification = (event) => {
       const payload = event?.detail || {};
@@ -1200,35 +1198,11 @@ export default function OrderTracking() {
       color: "bg-green-600",
       iconType: 'food'
     },
-    assigned: {
-      title: "Rider is arriving",
-      subtitle: "Your order is being processed",
-      color: "bg-green-600",
-      iconType: 'rider'
-    },
-    at_pickup: {
-      title: "Rider at restaurant",
-      subtitle: "Rider is waiting for your order",
-      color: "bg-green-600",
-      iconType: 'rider'
-    },
     ready: {
-      title: "Handover in progress",
-      subtitle: "Rider is picking up your order",
+      title: "Order is ready",
+      subtitle: "Please collect your order",
       color: "bg-green-600",
-      iconType: 'rider'
-    },
-    on_way: {
-      title: "Ready for pickup",
-      subtitle: typeof estimatedTime === 'number' ? `Arriving in ${estimatedTime} mins` : "Ready for pickup",
-      color: "bg-green-600",
-      iconType: 'rider'
-    },
-    at_drop: {
-      title: "Arrived at location",
-      subtitle: "Please come to the door",
-      color: "bg-green-600",
-      iconType: 'rider'
+      iconType: 'food'
     },
     delivered: {
       title: "Order delivered",
@@ -1393,7 +1367,7 @@ export default function OrderTracking() {
               The restaurant will start preparing your order closer to the scheduled time
             </motion.p>
           </div>
-        ) : !['at_pickup', 'ready', 'on_way', 'at_drop', 'delivered'].includes(orderStatus) && (
+        ) : !['ready', 'delivered'].includes(orderStatus) && (
           <div className="px-4 pb-4 text-center">
             <motion.h1
               className="text-2xl font-bold mb-3"
@@ -1480,17 +1454,11 @@ export default function OrderTracking() {
           ) : (
             <div className="flex items-center gap-4">
               <div className={`w-14 h-14 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm border border-gray-100 dark:border-gray-800 ${
-                currentStatus.iconType === 'rider' ? 'bg-blue-50 dark:bg-blue-900/20' : 
                 currentStatus.iconType === 'cancelled' ? 'bg-red-50 dark:bg-red-900/20' : 
                 currentStatus.iconType === 'delivered' ? 'bg-green-50 dark:bg-green-900/20' : 
                 'bg-orange-50 dark:bg-orange-900/20'
               }`}>
-                {currentStatus.iconType === 'rider' ? (
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: RIDER_BIKE_SVG.replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="100%"') }} 
-                    className="w-full h-full" 
-                  />
-                ) : currentStatus.iconType === 'cancelled' ? (
+                {currentStatus.iconType === 'cancelled' ? (
                   <div className="w-full h-full flex items-center justify-center p-2 text-red-500">
                     <X className="w-full h-full" />
                   </div>
@@ -1661,7 +1629,7 @@ export default function OrderTracking() {
                 }
               }
 
-              return 'Add delivery address'
+              return 'Add customer details'
             })()}
             showArrow={false}
           />

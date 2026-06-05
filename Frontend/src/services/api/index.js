@@ -296,16 +296,7 @@ export const adminAPI = {
     apiClient.patch("/food/admin/customization-settings", data, { contextModule: "admin" }),
   getTakeawayCodStatus: () =>
     apiClient.get("/food/admin/customization-settings/takeaway-cod", { contextModule: "admin" }),
-  /** GET /food/admin/delivery/support-tickets/stats - counts by status. */
-  getDeliverySupportTicketStats: () =>
-    apiClient.get("/food/admin/delivery/support-tickets/stats", {
-      contextModule: "admin",
-    }),
-  /** PATCH /food/admin/delivery/support-tickets/:id - update adminResponse, status. */
-  updateDeliverySupportTicket: (id, body) =>
-    apiClient.patch(`/food/admin/delivery/support-tickets/${id}`, body ?? {}, {
-      contextModule: "admin",
-    }),
+
   createBroadcastNotification: (body = {}) =>
     apiClient.post("/food/admin/notifications/broadcast", body ?? {}, {
       contextModule: "admin",
@@ -493,7 +484,7 @@ export const adminAPI = {
       { isActive: isActive !== false },
       { contextModule: "admin" },
     ),
-  /** Orders (admin) – list, get by id, assign delivery partner */
+  /** Orders (admin) – list, get by id, manage orders */
   getOrders: (params = {}) =>
     apiClient.get("/food/admin/orders", {
       params: { limit: 50, page: 1, ...params },
@@ -513,7 +504,7 @@ export const adminAPI = {
     apiClient.post("/food/admin/restaurants", body ?? {}, {
       contextModule: "admin",
     }),
-  /** List delivery zones. Query: limit, page, isActive, search */
+  /** List pickup zones. Query: limit, page, isActive, search */
   getZones: (params = {}) =>
     apiClient.get("/food/admin/zones", {
       params: { limit: 1000, ...params },
@@ -1013,15 +1004,15 @@ export const restaurantAPI = {
             if (v === "created") return "confirmed";
             // Backend: ready_for_pickup -> ready
             if (v === "ready_for_pickup") return "ready";
-            // Backend: picked_up -> out_for_delivery (restaurant handed over)
-            if (v === "picked_up") return "out_for_delivery";
+            // Backend: picked_up -> completed (restaurant handed over)
+            if (v === "picked_up") return "completed";
             if (v.includes("cancel")) return "cancelled";
             return v || "confirmed";
           };
 
           const rows = rowsRaw.map((o) => {
             const status = normalizeStatus(o.orderStatus || o.status);
-            const address = o.deliveryAddress || o.address;
+            const address = o.address;
             const total = o.pricing?.total ?? o.total ?? 0;
             const paymentMethod = o.payment?.method || o.paymentMethod || null;
             return { ...o, status, address, total, paymentMethod };
@@ -1059,7 +1050,7 @@ export const restaurantAPI = {
         .trim();
       if (!v) return v;
       if (v === "ready") return "ready_for_pickup";
-      if (v === "out_for_delivery") return "picked_up";
+      if (v === "completed") return "picked_up";
       if (v === "cancelled") return "cancelled_by_restaurant";
       return v;
     };
@@ -1184,8 +1175,8 @@ export const restaurantAPI = {
     }),
   getPublicOffers: (params = {}, config = {}) =>
     apiClient.get("/food/restaurant/offers", { params, ...config }),
-  /** Resend delivery notification (restaurant dashboard) */
-  resendDeliveryNotification: (orderId) =>
+  /** Resend pickup notification (restaurant dashboard) */
+  resendPickupNotification: (orderId) =>
     apiClient.post(`/food/restaurant/orders/${String(orderId)}/resend-notification`, {}, {
       contextModule: "restaurant",
     }),
@@ -1403,450 +1394,6 @@ const getRestaurantCurrentOnce = () => {
       });
   }
   return restaurantCurrentInFlight;
-};
-
-/** Single in-flight + short cache for delivery /auth/me - one call per page load / refresh. */
-let deliveryMeInFlight = null;
-let deliveryMeCached = null;
-let deliveryMeCacheTime = 0;
-const DELIVERY_ME_CACHE_MS = 3000;
-
-const getDeliveryMeOnce = () => {
-  const now = Date.now();
-  if (deliveryMeCached && now - deliveryMeCacheTime < DELIVERY_ME_CACHE_MS) {
-    return Promise.resolve(deliveryMeCached);
-  }
-  if (!deliveryMeInFlight) {
-    deliveryMeInFlight = authService
-      .getMe("delivery")
-      .then((res) => {
-        deliveryMeCached = res;
-        deliveryMeCacheTime = Date.now();
-        return res;
-      })
-      .finally(() => {
-        deliveryMeInFlight = null;
-      });
-  }
-  return deliveryMeInFlight;
-};
-
-/** Delivery API - OTP login + registration via new backend. */
-export const deliveryAPI = {
-  sendOTP: (phone, _purpose = "login") => {
-    return Promise.reject(new Error("Not implemented"));
-  },
-  verifyOTP: (phone, otp, _purpose, _name, fcmToken = null, platform = "web", confirmAction = null) => {
-    return Promise.reject(new Error("Not implemented"));
-  },
-  getMe: () => getDeliveryMeOnce(),
-  /** Get delivery profile (same as getMe under the hood; maps response to profile shape). */
-  getProfile: () =>
-    getDeliveryMeOnce().then((res) => ({
-      ...res,
-      data: {
-        ...res.data,
-        data: { profile: res.data?.data?.user ?? res.data?.data },
-      },
-    })),
-  getReferralStats: () =>
-    apiClient.get("/food/delivery/referrals/stats", {
-      contextModule: "delivery",
-    }),
-  logout: (refreshToken) => {
-    deliveryMeCached = null;
-    deliveryMeCacheTime = 0;
-    try {
-      localStorage.removeItem("app:isOnline");
-    } catch (_) {}
-    const token =
-      refreshToken ||
-      (typeof localStorage !== "undefined"
-        ? localStorage.getItem("delivery_refreshToken")
-        : null);
-    const fcmToken = typeof localStorage !== "undefined" ? localStorage.getItem("fcm_web_registered_token_delivery") : null;
-    return authService.logout(token, fcmToken, "web");
-  },
-  /** POST /food/delivery/register - multipart FormData (new partner, no token). */
-  register: (formData) => {
-    if (!formData || !(formData instanceof FormData)) {
-      return Promise.reject(
-        new Error("FormData with details and document files is required"),
-      );
-    }
-    return apiClient.post("/food/delivery/register", formData);
-  },
-  /** PATCH /food/delivery/profile - complete profile after OTP (Bearer token required). */
-  completeProfile: (formData) => {
-    if (!formData || !(formData instanceof FormData)) {
-      return Promise.reject(
-        new Error("FormData with details and document files is required"),
-      );
-    }
-    return apiClient.patch("/food/delivery/profile", formData, {
-      contextModule: "delivery",
-    });
-  },
-  /** PATCH /food/delivery/profile/details - JSON updates (vehicle number, etc). */
-  updateProfileDetails: (payload) =>
-    apiClient.patch("/food/delivery/profile/details", payload ?? {}, {
-      contextModule: "delivery",
-    }),
-  /** PATCH /food/delivery/profile - multipart updates for photos/documents (uses same endpoint). */
-  updateProfileMultipart: (formData) => {
-    if (!formData || !(formData instanceof FormData)) {
-      return Promise.reject(new Error("FormData is required"));
-    }
-    return apiClient.patch("/food/delivery/profile", formData, {
-      contextModule: "delivery",
-    });
-  },
-  /** POST /food/delivery/profile/photo-base64 - Flutter in-app camera base64 upload. */
-  updateProfilePhotoBase64: (payload) =>
-    apiClient.post("/food/delivery/profile/photo-base64", payload ?? {}, {
-      contextModule: "delivery",
-    }),
-  /** PATCH /food/delivery/profile/bank-details - update bank details + PAN (JSON, Bearer required). */
-  updateProfile: (payload) =>
-    apiClient.patch("/food/delivery/profile/bank-details", payload ?? {}, {
-      contextModule: "delivery",
-    }),
-  /** PATCH /food/delivery/profile/bank-details - multipart updates for bank details + UPI QR (FormData required). */
-  updateBankDetailsMultipart: (formData) => {
-    if (!formData || !(formData instanceof FormData)) {
-      return Promise.reject(new Error("FormData is required"));
-    }
-    return apiClient.patch("/food/delivery/profile/bank-details", formData, {
-      contextModule: "delivery",
-    });
-  },
-  saveFcmToken: (token, platform = "web") => {
-    if (!token) return Promise.reject(new Error("FCM token is required"));
-    const path =
-      platform === "mobile" ? "/fcm-tokens/mobile/save" : "/fcm-tokens/save";
-    return apiClient.post(
-      path,
-      { token: String(token), platform },
-      { contextModule: "delivery" },
-    );
-  },
-  removeFcmToken: (token, platform = "web") => {
-    if (!token) return Promise.reject(new Error("FCM token is required"));
-    return apiClient.delete(
-      `/fcm-tokens/remove/${encodeURIComponent(String(token))}`,
-      {
-        data: { token: String(token), platform },
-        contextModule: "delivery",
-      },
-    );
-  },
-  /** GET /food/delivery/support-tickets - list tickets for logged-in delivery partner. */
-  getSupportTickets: () =>
-    apiClient.get("/food/delivery/support-tickets", {
-      contextModule: "delivery",
-    }),
-  /** POST /food/delivery/support-tickets - create ticket (body: subject, description, category?, priority?). */
-  createSupportTicket: (body) =>
-    apiClient.post("/food/delivery/support-tickets", body ?? {}, {
-      contextModule: "delivery",
-    }),
-  /** GET /food/delivery/support-tickets/:id - get one ticket (own only). */
-  getSupportTicketById: (id) =>
-    apiClient.get(`/food/delivery/support-tickets/${id}`, {
-      contextModule: "delivery",
-    }),
-  /** PATCH /food/delivery/availability - set online/offline (and optional lat/lng). */
-  updateOnlineStatus: (isOnline) =>
-    apiClient.patch(
-      "/food/delivery/availability",
-      { status: isOnline ? "online" : "offline" },
-      { contextModule: "delivery" },
-    ),
-  updateLocation: (latitude, longitude, isOnline, extras = {}) =>
-    apiClient.patch(
-      "/food/delivery/availability",
-      { status: isOnline ? "online" : "offline", latitude, longitude, ...extras },
-      { contextModule: "delivery" },
-    ),
-  /** Orders */
-  getOrders: (() => {
-    // Collapse duplicate list fetches triggered by multiple effects + StrictMode.
-    let inFlight = new Map(); // key -> Promise
-    let cache = new Map(); // key -> { at, res }
-    const CACHE_MS = 2500;
-
-    const stableKey = (p = {}) => {
-      const safe = p && typeof p === "object" ? { ...p } : {};
-      // Ensure stable ordering + defaults.
-      const normalized = { limit: 50, page: 1, ...safe };
-      // Remove cache-busters if any.
-      delete normalized._ts;
-      return JSON.stringify(
-        Object.keys(normalized)
-          .sort()
-          .reduce((acc, k) => {
-            acc[k] = normalized[k];
-            return acc;
-          }, {}),
-      );
-    };
-
-    return (params = {}) => {
-      const key = stableKey(params);
-      const now = Date.now();
-      const cached = cache.get(key);
-      if (cached && now - cached.at < CACHE_MS)
-        return Promise.resolve(cached.res);
-
-      const existing = inFlight.get(key);
-      if (existing) return existing;
-
-      const p = apiClient
-        .get("/food/delivery/orders/available", {
-          params: { limit: 50, page: 1, ...params },
-          contextModule: "delivery",
-        })
-        .then((res) => {
-          cache.set(key, { at: Date.now(), res });
-          return res;
-        })
-        .finally(() => {
-          inFlight.delete(key);
-        });
-
-      inFlight.set(key, p);
-      return p;
-    };
-  })(),
-  getOrderDetails: (() => {
-    // Collapse duplicate calls coming from multiple effects (and React StrictMode in dev).
-    let inFlight = new Map(); // key -> Promise
-    let cache = new Map(); // key -> { at, res }
-    const CACHE_MS = 1200;
-
-    const isProbablyOrderIdentity = (value) => {
-      const raw = String(value || "").trim();
-      if (!raw) return false;
-      // Mongo ObjectId
-      return /^[a-f0-9]{24}$/i.test(raw);
-    };
-
-    return (orderId) => {
-      const key = String(orderId || "").trim();
-      if (!isProbablyOrderIdentity(key)) {
-        return Promise.resolve({
-          data: { success: false, message: "Invalid order id", data: null },
-          status: 200,
-          statusText: "OK",
-          headers: {},
-          config: {},
-        });
-      }
-
-      const now = Date.now();
-      const cached = cache.get(key);
-      if (cached && now - cached.at < CACHE_MS)
-        return Promise.resolve(cached.res);
-
-      const existing = inFlight.get(key);
-      if (existing) return existing;
-
-      const p = apiClient
-        .get(`/food/delivery/orders/${key}`, { contextModule: "delivery" })
-        .then((res) => {
-          cache.set(key, { at: Date.now(), res });
-          return res;
-        })
-        .finally(() => {
-          inFlight.delete(key);
-        });
-
-      inFlight.set(key, p);
-      return p;
-    };
-  })(),
-  /** GET /food/delivery/current - fallback for some UI hooks */
-  getCurrentDelivery: () => apiClient.get("/food/delivery/orders/current", { contextModule: "delivery" }),
-  acceptOrder: (orderId, body = {}) =>
-    apiClient.patch(
-      `/food/delivery/orders/${String(orderId)}/accept`,
-      body ?? {},
-      {
-        contextModule: "delivery",
-      },
-    ),
-  rejectOrder: (orderId, body = {}) =>
-    apiClient.patch(
-      `/food/delivery/orders/${String(orderId)}/reject`,
-      body ?? {},
-      {
-        contextModule: "delivery",
-      },
-    ),
-  /**
-   * PATCH /food/delivery/orders/:orderId/reached-pickup
-   * Marks "reached pickup" (arrival at restaurant) in backend order deliveryState.
-   */
-  confirmReachedPickup: (orderId) =>
-    apiClient.patch(
-      `/food/delivery/orders/${String(orderId)}/reached-pickup`,
-      {},
-      { contextModule: "delivery" },
-    ),
-  /**
-   * Confirm order ID and upload bill image (Picked Up slide).
-   * Backend endpoint: PATCH /food/delivery/orders/:id/confirm-pickup
-   */
-  confirmOrderId: (orderId, confirmedOrderId, location = {}, data = {}) =>
-    apiClient.patch(
-      `/food/delivery/orders/${String(orderId)}/confirm-pickup`,
-      {
-        confirmedOrderId,
-        latitude: location.lat,
-        longitude: location.lng,
-        billImageUrl: data.billImageUrl,
-      },
-      {
-        contextModule: "delivery",
-      },
-    ),
-  confirmReachedDrop: (orderId) =>
-    apiClient.patch(
-      `/food/delivery/orders/${String(orderId)}/reached-drop`,
-      {},
-      {
-        contextModule: "delivery",
-      },
-    ),
-  verifyDropOtp: (orderId, otp) =>
-    apiClient.post(
-      `/food/delivery/orders/${String(orderId)}/verify-drop-otp`,
-      { otp: String(otp) },
-      {
-        contextModule: "delivery",
-      },
-    ),
-  /** POST /food/delivery/orders/:orderId/collect/qr - create Razorpay payment link (COD collection) */
-  createCollectQr: (orderId, body = {}) =>
-    apiClient.post(
-      `/food/delivery/orders/${String(orderId)}/collect/qr`,
-      body ?? {},
-      {
-        contextModule: "delivery",
-      },
-    ),
-  /** GET /food/delivery/orders/:orderId/payment-status - check COD/QR payment status */
-  getPaymentStatus: (orderId) =>
-    apiClient.get(`/food/delivery/orders/${String(orderId)}/payment-status`, {
-      contextModule: "delivery",
-    }),
-  completeDelivery: (orderId, body = {}) => {
-    // Backward-compatible: older UI calls completeDelivery(orderId, rating, review)
-    // where rating is a number (sent as raw JSON like "3"). Normalize to an object.
-    let payload = body ?? {};
-    if (
-      typeof payload === "number" ||
-      typeof payload === "string" ||
-      payload == null
-    ) {
-      payload = { rating: payload == null ? null : Number(payload) };
-    }
-    return apiClient.patch(
-      `/food/delivery/orders/${String(orderId)}/complete`,
-      payload,
-      {
-        contextModule: "delivery",
-      },
-    );
-  },
-  updateOrderStatus: (orderId, body = {}) =>
-    apiClient.patch(
-      `/food/delivery/orders/${String(orderId)}/status`,
-      body ?? {},
-      {
-        contextModule: "delivery",
-      },
-    ),
-  /** Registration Re-verification */
-  reverify: () =>
-    apiClient.post(
-      "/food/delivery/reverify",
-      {},
-      { contextModule: "delivery" },
-    ),
-  /** GET /food/delivery/wallet - wallet for Pocket/requests page (backend) */
-  getWallet: () =>
-    apiClient.get("/food/delivery/wallet", { contextModule: "delivery" }),
-  /** GET /food/delivery/earnings - earnings summary for Pocket/requests page */
-  getEarnings: (params) =>
-    apiClient.get("/food/delivery/earnings", {
-      params: params ?? {},
-      contextModule: "delivery",
-    }),
-  /** Earning Addons (Hotspots/Bonus) */
-  getActiveEarningAddons: () =>
-    apiClient.get("/food/delivery/earning-addons/active", {
-      contextModule: "delivery",
-    }),
-  /** GET /food/delivery/trip-history - completed/cancelled/pending trips for delivery partner */
-  getTripHistory: (params) =>
-    apiClient.get("/food/delivery/trip-history", {
-      params: params ?? {},
-      contextModule: "delivery",
-    }),
-  /** GET /food/delivery/pocket-details - single-call week details (trips + transactions) */
-  getPocketDetails: (params) =>
-    apiClient.get("/food/delivery/pocket-details", {
-      params: params ?? {},
-      contextModule: "delivery",
-    }),
-  /** GET /food/delivery/emergency-help - admin-set emergency numbers for delivery partner */
-  getEmergencyHelp: () =>
-    apiClient.get("/food/delivery/emergency-help", {
-      contextModule: "delivery",
-    }),
-  /** GET /food/delivery/cash-limit - admin-set cash limit for delivery partner */
-  getCashLimit: () =>
-    apiClient.get("/food/delivery/cash-limit", {
-      contextModule: "delivery",
-    }),
-  createWithdrawalRequest: (body) =>
-    apiClient.post("/food/delivery/wallet/withdraw", body ?? {}, {
-      contextModule: "delivery"
-    }),
-  createDepositOrder: (amount) =>
-    apiClient.post("/food/delivery/wallet/deposit/order", { amount }, {
-      contextModule: "delivery"
-    }),
-  verifyDepositPayment: (body) =>
-    apiClient.post("/food/delivery/wallet/deposit/verify", body ?? {}, {
-      contextModule: "delivery"
-    }),
-  /** Wallet transactions - from wallet response (no separate backend endpoint) */
-  getWalletTransactions: (params) =>
-    apiClient
-      .get("/food/delivery/wallet", {
-        params: params ?? {},
-        contextModule: "delivery",
-      })
-      .then((res) => ({
-        ...res,
-        data: {
-          ...res.data,
-          data: {
-            transactions: res?.data?.data?.wallet?.transactions ?? [],
-          },
-        },
-      })),
-  /** Zone discovery */
-  getZonesInRadius: (lat, lng, radiusKm = 10) =>
-    apiClient.get("/food/zones/nearby", {
-      params: { lat, lng, radius: radiusKm },
-      contextModule: "delivery",
-    }),
-  /** DELETE /food/delivery/account - permanently delete delivery partner account */
-  deleteAccount: () =>
-    apiClient.delete("/food/delivery/account", { contextModule: "delivery" }),
 };
 
 export const userAPI = {

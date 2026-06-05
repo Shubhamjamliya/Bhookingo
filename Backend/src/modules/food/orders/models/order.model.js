@@ -16,6 +16,7 @@ const orderItemSchema = new mongoose.Schema(
     { _id: false }
 );
 
+const addressSchema = new mongoose.Schema(
     {
         label: { type: String, enum: ['Home', 'Office', 'Other'], default: 'Home' },
         name: { type: String, default: '', trim: true },
@@ -103,49 +104,7 @@ const paymentSchema = new mongoose.Schema(
     { _id: false }
 );
 
-const dispatchSchema = new mongoose.Schema(
-    {
-        modeAtCreation: { type: String, enum: ['auto'], default: 'auto' },
-        status: {
-            type: String,
-            enum: ['unassigned', 'assigned', 'accepted', 'rejected', 'cancelled'],
-            default: 'unassigned'
-        },
-        
-        assignedAt: { type: Date },
-        acceptedAt: { type: Date },
-        /** List of partners who were offered this order (to avoid repeats and track timeouts) */
-        offeredTo: [{
-            at: { type: Date, default: Date.now },
-            action: { type: String, enum: ['offered', 'rejected', 'timeout'], default: 'offered' },
-            allowOverLimit: { type: Boolean, default: false },
-            requiredCashForOrder: { type: Number, default: 0 }
-        }],
-        dispatchingAt: { type: Date }
-    },
-    { _id: false }
-);
 
-    {
-        currentPhase: {
-            type: String,
-            enum: [
-                'en_route_to_pickup',
-                'at_pickup',
-                'at_drop',
-                'delivered',
-                'completed'
-            ],
-            default: 'en_route_to_pickup'
-        },
-        status: { type: String, default: '' },
-        reachedPickupAt: { type: Date, default: null },
-        reachedDropAt: { type: Date, default: null },
-        pickedUpAt: { type: Date, default: null },
-        deliveredAt: { type: Date, default: null }
-    },
-    { _id: false }
-);
 
 const statusHistorySchema = new mongoose.Schema(
     {
@@ -174,14 +133,7 @@ const orderRatingsSchema = new mongoose.Schema(
     { _id: false }
 );
 
-    {
-        dropOtp: {
-            required: { type: Boolean, default: false },
-            verified: { type: Boolean, default: false }
-        }
-    },
-    { _id: false }
-);
+
 
 const orderSchema = new mongoose.Schema(
     {
@@ -249,19 +201,12 @@ const orderSchema = new mongoose.Schema(
                 'confirmed',
                 'preparing',
                 'ready_for_pickup',
-                'reached_pickup',
-                'picked_up',
-                'reached_drop',
-                'delivered',
+                'completed',
                 'cancelled_by_user',
                 'cancelled_by_restaurant',
                 'cancelled_by_admin'
             ],
             default: 'created'
-        },
-        dispatch: {
-            type: dispatchSchema,
-            default: () => ({})
         },
         
         statusHistory: {
@@ -275,16 +220,7 @@ const orderSchema = new mongoose.Schema(
         restaurantNote: { type: String, default: '', trim: true },
         note: { type: String, default: '', trim: true },
         sendCutlery: { type: Boolean, default: true },
-        scheduledAt: { type: Date, default: null },
-        riderEarning: { type: Number, default: 0, min: 0 },
-        platformProfit: { type: Number, default: 0, min: 0 },
-        /** Plain 4-digit OTP for handover; cleared after successful verify (never expose to partner in API responses). */
-        
-        /** Latest rider location for this specific order (GeoJSON Point) */
-        lastRiderLocation: {
-            type: { type: String, enum: ['Point'] },
-            coordinates: { type: [Number] }
-        }
+        scheduledAt: { type: Date, default: null }
     },
     {
         collection: 'food_orders',
@@ -292,11 +228,8 @@ const orderSchema = new mongoose.Schema(
     }
 );
 
-orderSchema.index({ lastRiderLocation: '2dsphere' });
 orderSchema.index({ userId: 1, createdAt: -1 });
 orderSchema.index({ restaurantId: 1, orderStatus: 1, createdAt: -1 });
-orderSchema.index({ 'dispatch.status': 1, orderStatus: 1 });
-orderSchema.index({ 'dispatch.status': 1, orderStatus: 1, updatedAt: -1 });
 orderSchema.index({ 'payment.status': 1, createdAt: -1 });
 orderSchema.index({ 'payment.method': 1, createdAt: -1 });
 

@@ -153,19 +153,7 @@ export default function Under250() {
     setShowSortPopup(false)
   }
 
-  const parseDeliveryTime = (time) => {
-    if (!time) return 999
-    const value = String(time)
-    const rangeMatch = value.match(/(\d+)\s*-\s*(\d+)/)
-    if (rangeMatch) {
-      return (parseInt(rangeMatch[1]) + parseInt(rangeMatch[2])) / 2 // Average
-    }
-    const match = value.match(/(\d+)/)
-    if (match) {
-      return parseInt(match[1])
-    }
-    return 999
-  }
+
 
   // Helper function to parse distance (e.g., "0.4 km" -> 0.4)
   const parseDistance = (distance) => {
@@ -222,18 +210,7 @@ export default function Under250() {
         // Secondary sort by number of dishes
         return (b.menuItems?.length || 0) - (a.menuItems?.length || 0)
       })
-    } else if (selectedSort === 'delivery-time-low') {
-      filtered.sort((a, b) => {
-        const timeA = parseDeliveryTime(a.deliveryTime)
-        const timeB = parseDeliveryTime(b.deliveryTime)
-        if (timeA !== timeB) {
-          return timeA - timeB
-        }
-        if ((b.rating || 0) !== (a.rating || 0)) {
-          return (b.rating || 0) - (a.rating || 0)
-        }
-        return (a.originalIndex || 0) - (b.originalIndex || 0)
-      })
+
     } else if (selectedSort === 'distance-low') {
       filtered.sort((a, b) => {
         const distA = Number.isFinite(a.distanceInKm) ? a.distanceInKm : parseDistance(a.distance)

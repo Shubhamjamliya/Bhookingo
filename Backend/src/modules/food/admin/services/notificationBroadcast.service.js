@@ -60,9 +60,6 @@ const buildRestaurantLabel = (doc) => ({
     subLabel: [doc?.ownerPhone, doc?.ownerEmail].filter(Boolean).join(' • ')
 });
 
-    subLabel: [doc?.phone, doc?.email].filter(Boolean).join(' • ')
-});
-
 const modelConfigMap = {
     USER: {
         model: FoodUser,
@@ -125,9 +122,11 @@ const resolveCustomTargets = async ({ targets = [], targetIds = [] } = {}) => {
 
 const resolveTargets = async ({ targetType, targetIds = [], targets = [] } = {}) => {
     if (targetType === 'ALL') {
+        const results = await Promise.all([
             loadTargetsByOwnerType('USER'),
-            loadTargetsByOwnerType('RESTAURANT'),
+            loadTargetsByOwnerType('RESTAURANT')
         ]);
+        return results.flat();
     }
 
     if (targetType === 'USER') return loadTargetsByOwnerType('USER');
@@ -174,7 +173,6 @@ const emitRealtimeNotifications = (targets = [], broadcast) => {
         }
         if (target.ownerType === 'RESTAURANT') {
             io.to(rooms.restaurant(ownerId)).emit('admin_notification', payload);
-        }
         }
     }
 };

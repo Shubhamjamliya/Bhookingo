@@ -104,22 +104,6 @@ export const verifyRestaurantOtpController = async (req, res, next) => {
   }
 };
 
-  try {
-    return sendResponse(res, 200, "OTP sent successfully", {
-      phone,
-      ...result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-  try {
-    return sendResponse(res, 200, "Login successful", result);
-  } catch (error) {
-    next(error);
-  }
-};
 
 export const logoutController = async (req, res, next) => {
   try {

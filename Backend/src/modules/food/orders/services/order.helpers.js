@@ -29,37 +29,17 @@ export function haversineKm(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-  return String(Math.floor(1000 + Math.random() * 9000));
-}
 
 export function sanitizeOrderForExternal(orderDoc) {
   const o = orderDoc?.toObject ? orderDoc.toObject() : { ...(orderDoc || {}) };
-  if (dv && dv.dropOtp != null) {
-    const d = dv.dropOtp;
-      ...dv,
-      dropOtp: {
-        required: Boolean(d.required),
-        verified: Boolean(d.verified),
-      },
-    };
-  }
+
   o.orderMongoId = (o._id || orderDoc?._id || "").toString();
   // Ensure orderId field for UI always contains the pretty ID
   o.orderId = o.order_id || o.orderMongoId; 
   return o;
 }
 
-  try {
-    const io = getIO();
-    if (!io || !plainOtp || !order?.userId) return;
-      orderMongoId: order._id?.toString?.(),
-      orderId: order.order_id || order._id?.toString?.(),
-      otp: plainOtp,
-      message:
-    });
-  } catch (e) {
-  }
-}
+
 
 export async function notifyOwnersSafely(targets, payload) {
   try {
@@ -120,16 +100,11 @@ export function normalizeOrderForClient(orderDoc) {
     orderMongoId: mongoId,
     orderId: displayId,
     status: order?.orderStatus || order?.status || "",
-    deliveredAt:
     rating: order?.ratings?.restaurant?.rating ?? order?.rating ?? null,
     restaurantNote: order?.restaurantNote || "",
     cancellationReason: (order?.orderStatus?.includes('cancel') || order?.status?.includes('cancel')) 
       ? (order.statusHistory?.findLast(h => h.to?.includes('cancel'))?.note || "")
       : null,
-      currentLocation: order?.lastRiderLocation?.coordinates?.length >= 2 ? {
-        lat: order.lastRiderLocation.coordinates[1],
-        lng: order.lastRiderLocation.coordinates[0]
-    }
   };
 }
 
@@ -150,6 +125,7 @@ export async function applyAggregateRating(model, entityId, newRating) {
   await doc.save();
 }
 
+export function formatOrderPayload(orderDoc, restaurantDoc) {
   const order = orderDoc?.toObject ? orderDoc.toObject() : orderDoc || {};
   const restaurant = restaurantDoc || order?.restaurantId || null;
   const restaurantLocation = restaurant?.location || {};

@@ -8,7 +8,6 @@ import { logger } from '../../utils/logger.js';
  * Locks the settlement amount in their wallet until processed.
  */
 export async function createSettlement({ entityType, entityId, amount, notes = '', periodStart, periodEnd }) {
-    }
 
     const settlement = await Settlement.create({
         entityType,
@@ -75,9 +74,6 @@ function resolveWalletForSettlement(entityType, entityId) {
         return {
             Model: mongoose.model('FoodRestaurantWallet'),
             filter: { restaurantId: id }
-        };
-    }
-        return {
         };
     }
     throw new Error(`Unsupported settlement entity: ${entityType}`);

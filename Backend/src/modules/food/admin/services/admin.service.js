@@ -9,8 +9,6 @@ import { FoodItem } from '../models/food.model.js';
 import { FoodOffer } from '../models/offer.model.js';
 import { FoodOfferUsage } from '../models/offerUsage.model.js';
 
-import { FoodEarningAddon } from '../models/earningAddon.model.js';
-import { FoodEarningAddonHistory } from '../models/earningAddonHistory.model.js';
 import { FoodRestaurantCommission } from '../models/restaurantCommission.model.js';
 
 import { FoodFeeSettings } from '../models/feeSettings.model.js';
@@ -29,44 +27,6 @@ import { FoodOrder } from '../../orders/models/order.model.js';
 import { FoodTransaction } from '../../orders/models/foodTransaction.model.js';
 import { FoodRestaurantWithdrawal } from '../../restaurant/models/foodRestaurantWithdrawal.model.js';
 
-
-    countDocuments: async () => 0,
-    find: () => ({
-        sort: () => ({
-            limit: () => ({
-                select: () => ({
-                    lean: async () => []
-                })
-            })
-        }),
-        select: () => ({
-            lean: async () => []
-        }),
-        skip: () => ({
-            limit: () => ({
-                populate: () => ({
-                    lean: async () => []
-                }),
-                lean: async () => []
-            })
-        }),
-        lean: async () => []
-    }),
-    findOne: () => ({
-        select: () => ({
-            lean: async () => null
-        }),
-        lean: async () => null
-    }),
-    findById: () => ({
-        lean: async () => null,
-        select: () => ({
-            lean: async () => null
-        })
-    }),
-    findByIdAndUpdate: async () => null,
-    updateOne: async () => null
-};
 
 
 
@@ -297,14 +257,12 @@ export async function globalSearch(query = '') {
 }
 
 export async function getArchivedAccounts() {
+    const [users, restaurants] = await Promise.all([
         FoodUser.find({ isActive: false })
             .select('name phone email profileImage createdAt updatedAt deletedAt')
             .lean(),
         FoodRestaurant.find({ status: 'deleted' })
             .select('restaurantName ownerPhone ownerEmail profileImage createdAt updatedAt deletedAt')
-            .lean(),
-
-            .select('name phone email profilePhoto createdAt updatedAt deletedAt')
             .lean(),
     ]);
 
@@ -335,15 +293,6 @@ export async function getArchivedAccounts() {
             role: 'Restaurant',
             type: 'restaurant',
             deletedAt: r.deletedAt || r.updatedAt,
-            status: 'Deleted'
-        })),
-            id: d._id,
-            name: d.name,
-            phone: d.phone,
-            originalPhone: getOriginalPhone(d.phone),
-            email: d.email || 'N/A',
-            profileImage: d.profilePhoto,
-            deletedAt: d.deletedAt || d.updatedAt,
             status: 'Deleted'
         }))
     ];
@@ -446,14 +395,6 @@ const DASHBOARD_DERIVED_PLATFORM_FEE_EXPR = {
 };
 const DASHBOARD_PLATFORM_FEE_EXPR = {
     $ifNull: ['$pricing.platformFee', DASHBOARD_DERIVED_PLATFORM_FEE_EXPR]
-};
-    $ifNull: [
-        {
-            $ifNull: [
-                { $ifNull: ['$riderEarning', 0] }
-            ]
-        }
-    ]
 };
 
 const getDateRangeByPeriod = (periodRaw) => {
@@ -584,9 +525,6 @@ export async function getDashboardStats(query = {}) {
                             $cond: [DELIVERED_ORDER_STATUS_EXPR, DASHBOARD_PLATFORM_FEE_EXPR, 0] 
                         } 
                     },
-                        $sum: { 
-                        } 
-                    },
                     gstTotal: { 
                         $sum: { 
                             $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.tax', 0] }, 0] 
@@ -699,13 +637,6 @@ export async function getDashboardStats(query = {}) {
         });
     });
 
-        liveSignals.push({
-            detail: `${d.name} requested to join`,
-            time: formatTimeAgo(d.createdAt),
-            timestamp: d.createdAt
-        });
-    });
-
     (recentPendingOrders || []).forEach(o => {
         liveSignals.push({
             type: 'order_pending',
@@ -785,10 +716,6 @@ export async function getDashboardStats(query = {}) {
                 platformFeeTotal: {
                     $sum: {
                         $cond: [{ $in: ['$status', ['captured', 'settled']] }, { $ifNull: ['$amounts.platformNetProfit', 0] }, 0]
-                    }
-                },
-                    $sum: {
-                        $cond: [{ $in: ['$status', ['captured', 'settled']] }, { $ifNull: ['$amounts.riderShare', 0] }, 0]
                     }
                 },
                 gstTotal: {
@@ -2421,12 +2348,7 @@ export async function updateRestaurantById(id, body = {}) {
     }
     if (body.offer !== undefined) doc.offer = toStr(body.offer);
 
-    }
-        if (minutes === null) {
-        } else if (minutes < 0) {
-        } else {
-        }
-    }
+
 
     // Business & Docs
     if (body.panNumber !== undefined) doc.panNumber = toStr(body.panNumber);
@@ -3772,14 +3694,9 @@ export async function getCashLimitSettlements(query = {}) {
             filter.razorpayPaymentId = query.search;
         }
     }
-
     const [deposits, total] = await Promise.all([
-
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean(),
-
+        Promise.resolve([]),
+        Promise.resolve(0)
     ]);
 
     const transactions = deposits.map((d) => ({

@@ -361,18 +361,7 @@ restaurantSchema.pre("validate", function normalizeDerivedFields(next) {
     }
   }
 
-  // Accepts formats like "25-30 mins", "30 mins", "45".
-  if (
-  ) {
-    const raw =
-        : "";
-    const match = raw.match(/(\d{1,3})/);
-    if (match) {
-      const minutes = parseInt(match[1], 10);
-      if (Number.isFinite(minutes)) {
-      }
-    }
-  }
+
   next();
 });
 

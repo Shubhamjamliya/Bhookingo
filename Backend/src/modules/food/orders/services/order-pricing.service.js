@@ -40,67 +40,6 @@ export async function calculateOrderPricing(userId, dto) {
 
   
   
-  let distanceKm = null;
-  if (
-    restaurant?.location?.coordinates?.length === 2 &&
-  ) {
-    const [rLng, rLat] = restaurant.location.coordinates;
-    const d = haversineKm(rLat, rLng, dLat, dLng);
-    distanceKm = Number.isFinite(d) ? d : null;
-  }
-  
-  
-  if (dto.orderType === "takeaway") {
-    
-  } else if (
-    Number.isFinite(freeUpTo) &&
-    freeUpTo > 0 &&
-    subtotal >= freeUpTo
-  ) {
-    
-  } else if (
-    Number.isFinite(freeThreshold) &&
-    freeThreshold > 0 &&
-    subtotal >= freeThreshold
-  ) {
-    
-  } else {
-    const ranges = [];
-    if (ranges.length > 0) {
-      ranges.sort((a, b) => Number(a.min) - Number(b.min));
-      let matched = null;
-      for (let i = 0; i < ranges.length; i += 1) {
-        const r = ranges[i] || {};
-        const min = Number(r.min);
-        const max = Number(r.max);
-        const fee = Number(r.fee);
-        if (
-          !Number.isFinite(min) ||
-          !Number.isFinite(max) ||
-          !Number.isFinite(fee)
-        ) {
-          continue;
-        }
-        const isLast = i === ranges.length - 1;
-        if (!Number.isFinite(distanceKm)) {
-          continue;
-        }
-        const inRange = isLast
-          ? distanceKm >= min && distanceKm <= max
-          : distanceKm >= min && distanceKm < max;
-        if (inRange) {
-          matched = fee;
-          if (Number.isFinite(distanceKm)) {
-            
-          }
-          break;
-        }
-      }
-      
-    } else {
-      
-    }
-  }
 
   const gstRate = feeSettings.gstRate != null ? Number(feeSettings.gstRate) : 0;
   const tax =

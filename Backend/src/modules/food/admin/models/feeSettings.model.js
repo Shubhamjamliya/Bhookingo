@@ -1,12 +1,5 @@
 import mongoose from 'mongoose';
 
-    {
-        min: { type: Number, required: true, min: 0 },
-        max: { type: Number, required: true, min: 0 },
-        fee: { type: Number, required: true, min: 0 }
-    },
-    { _id: false }
-);
 
 const feeSettingsSchema = new mongoose.Schema(
     {

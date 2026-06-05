@@ -177,85 +177,7 @@ export async function updateOrderStatusRestaurantController(req, res, next) {
     }
 }
 
-    try {
-        return sendResponse(res, 200, 'Orders retrieved', result);
-    } catch (err) {
-        next(err);
-    }
-}
 
-    try {
-        const orderId = req.params.orderId;
-        return sendResponse(res, 200, 'Order accepted', { order });
-    } catch (err) {
-        next(err);
-    }
-}
-
-    try {
-        const orderId = req.params.orderId;
-        return sendResponse(res, 200, 'Order rejected', { order });
-    } catch (err) {
-        next(err);
-    }
-}
-
-    try {
-        const orderId = req.params.orderId;
-        return sendResponse(res, 200, 'Reached pickup confirmed', { order });
-    } catch (err) {
-        next(err);
-    }
-}
-
-    try {
-        const orderId = req.params.orderId;
-        const { billImageUrl } = req.body;
-        return sendResponse(res, 200, 'Pickup confirmed', { order });
-    } catch (err) {
-        next(err);
-    }
-}
-
-    try {
-        const orderId = req.params.orderId;
-        return sendResponse(res, 200, 'Reached drop confirmed', { order });
-    } catch (err) {
-        next(err);
-    }
-}
-
-    try {
-        const orderId = req.params.orderId;
-        const { otp } = req.body;
-        return sendResponse(res, 200, 'OTP verified', { order: result.order });
-    } catch (err) {
-        next(err);
-    }
-}
-
-    try {
-        const orderId = req.params.orderId;
-    } catch (err) {
-        next(err);
-    }
-}
-
-    try {
-        const orderId = req.params.orderId;
-        const dto = validateOrderStatusDto(req.body);
-        return sendResponse(res, 200, 'Order status updated', { order });
-    } catch (err) {
-        next(err);
-    }
-}
-
-    try {
-        return sendResponse(res, 200, 'Current trip retrieved', { activeOrder: order });
-    } catch (err) {
-        next(err);
-    }
-}
 
 export async function createCollectQrController(req, res, next) {
     try {
@@ -267,22 +189,9 @@ export async function createCollectQrController(req, res, next) {
     }
 }
 
-    try {
-        const orderId = req.params.orderId;
-        return sendResponse(res, 200, 'Order retrieved', { order });
-    } catch (err) {
-        next(err);
-    }
-}
 
-export async function getPaymentStatusController(req, res, next) {
-    try {
-        const orderId = req.params.orderId;
-        return sendResponse(res, 200, 'Payment status retrieved', result);
-    } catch (err) {
-        next(err);
-    }
-}
+
+
 
 export async function listOrdersAdminController(req, res, next) {
     try {
@@ -303,13 +212,7 @@ export async function getOrderByIdAdminController(req, res, next) {
     }
 }
 
-    try {
-        const adminId = req.user?.userId;
-        const orderId = req.params.orderId;
-    } catch (err) {
-        next(err);
-    }
-}
+
 
 export async function deleteOrderAdminController(req, res, next) {
     try {
@@ -322,11 +225,4 @@ export async function deleteOrderAdminController(req, res, next) {
     }
 }
 
-    try {
-        const restaurantId = req.user?.userId;
-        const orderId = req.params.orderId;
-        return sendResponse(res, 200, 'Notification resent successfully', result);
-    } catch (err) {
-        next(err);
-    }
-}
+

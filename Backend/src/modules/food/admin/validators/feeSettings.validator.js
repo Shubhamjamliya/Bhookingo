@@ -16,17 +16,7 @@ const feeSettingsUpsertSchema = z.object({
 
 export const validateFeeSettingsUpsertDto = (body) => {
     const normalized = {
-                ? null
-                    : undefined,
-                min: Number(r?.min),
-                max: Number(r?.max),
-                fee: Number(r?.fee)
-            }))
-            : undefined,
-                ? null
-                    : undefined,
-                ? null
-                    : undefined,
+
         platformFee:
             body?.platformFee === null ? null : body?.platformFee !== undefined ? Number(body.platformFee) : undefined,
         packagingFee:
@@ -41,21 +31,7 @@ export const validateFeeSettingsUpsertDto = (body) => {
         throw new ValidationError(result.error.errors[0].message);
     }
 
-    // Validate ranges: min < max, non-overlapping after sorting
-    if (ranges) {
-        const sorted = [...ranges].sort((a, b) => a.min - b.min);
-        for (const r of sorted) {
-            if (r.min >= r.max) {
-                throw new ValidationError('Each range must have min less than max');
-            }
-        }
-        for (let i = 1; i < sorted.length; i++) {
-            const prev = sorted[i - 1];
-            const cur = sorted[i];
-            if (cur.min < prev.max) {
-            }
-        }
-    }
+
 
     return result.data;
 };

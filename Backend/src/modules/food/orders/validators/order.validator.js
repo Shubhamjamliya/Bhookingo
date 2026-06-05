@@ -46,15 +46,6 @@ export function validateCalculateOrderDto(body) {
     const schema = z.object({
         items: z.array(orderItemSchema).min(1, 'At least one item required'),
         restaurantId: z.string().min(1, 'Restaurant id required'),
-            .object({
-                location: z
-                    .object({
-                        type: z.literal('Point').optional(),
-                        coordinates: z.tuple([z.number(), z.number()]).optional()
-                    })
-                    .optional()
-            })
-            .optional(),
         zoneId: z.string().optional(),
         couponCode: z.string().optional(),
     });
@@ -138,14 +129,7 @@ export function validateOrderStatusDto(body) {
     return result.data;
 }
 
-    const schema = z.object({
-    });
-    const result = schema.safeParse(body);
-    if (!result.success) {
-        throw new ValidationError(result.error.errors?.[0]?.message || 'Validation failed');
-    }
-    return result.data;
-}
+
 
 export function validateDispatchSettingsDto(body) {
     const schema = z.object({

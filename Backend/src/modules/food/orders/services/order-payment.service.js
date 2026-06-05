@@ -76,10 +76,7 @@ export async function createCollectQr(
     .lean();
 
   if (!order) throw new NotFoundError('Order not found');
-  if (
-  ) {
-    throw new ForbiddenError('Not your order');
-  }
+
   const tx = await FoodTransaction.findOne({ orderId: order._id }).lean();
   const payment = tx?.payment || order.payment || {};
   if (payment.method !== 'cash' && payment.status === 'paid') {
@@ -160,32 +157,4 @@ export async function createCollectQr(
   };
 }
 
-  const identity = buildOrderIdentityFilter(orderId);
-  if (!identity) throw new ValidationError('Order id required');
 
-  const order = await FoodOrder.findOne(identity).select(
-    'dispatch riderEarning platformProfit',
-  );
-  if (!order) throw new NotFoundError('Order not found');
-  if (
-  ) {
-    throw new ForbiddenError('Not your order');
-  }
-
-  const transaction = await FoodTransaction.findOne({ orderId: order._id }).lean();
-  if (transaction?.payment?.method === 'razorpay_qr') {
-    await syncRazorpayQrPayment(order);
-  }
-  const latestHistory =
-    (transaction?.history || []).sort((a, b) => (b.at || 0) - (a.at || 0))[0] ||
-    null;
-
-  return {
-    payment: transaction?.payment || {},
-    latestPaymentSnapshot: latestHistory,
-    riderEarning: order.riderEarning ?? 0,
-    platformProfit: order.platformProfit ?? 0,
-    pricingTotal: transaction?.pricing?.total ?? 0,
-    transactionStatus: transaction?.status ?? null,
-  };
-}

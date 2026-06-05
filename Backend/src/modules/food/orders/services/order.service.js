@@ -64,8 +64,7 @@ async function getActiveCommissionRules() {
   ) {
     return commissionRulesCache;
   }
-    status: { $ne: false },
-  }).lean();
+  const list = await FoodRestaurantCommission.find({ status: { $ne: false } }).lean();
   commissionRulesCache = list || [];
   commissionRulesLoadedAt = now;
   return commissionRulesCache;
@@ -143,19 +142,7 @@ export async function createOrder(userId, dto) {
   const settings = await getDispatchSettings();
   const dispatchMode = settings.dispatchMode;
 
-    label: dto.address?.label || "Home",
-    name: dto.address?.name || dto.address?.fullName || dto.customerName || "",
-    fullName: dto.address?.fullName || dto.address?.name || dto.customerName || "",
-    street: dto.address?.street || "",
-    additionalDetails: dto.address?.additionalDetails || "",
-    city: dto.address?.city || "",
-    state: dto.address?.state || "",
-    zipCode: dto.address?.zipCode || "",
-    phone: dto.address?.phone || "",
-    location: dto.address?.location?.coordinates
-      ? { type: "Point", coordinates: dto.address.location.coordinates }
-      : undefined,
-  };
+
 
   const paymentMethod =
     dto.paymentMethod === "card" ? "razorpay" : dto.paymentMethod;
@@ -221,7 +208,6 @@ export async function createOrder(userId, dto) {
       (Number.isFinite(normalizedPricing.tax) ? normalizedPricing.tax : 0) +
       (Number.isFinite(normalizedPricing.packagingFee)
         ? normalizedPricing.packagingFee
-        : 0) +
         : 0) +
       (Number.isFinite(normalizedPricing.platformFee)
         ? normalizedPricing.platformFee
@@ -563,21 +549,11 @@ export async function getOrderById(
     throw new ForbiddenError("Not your order");
   if (restaurantId && orderRestaurantId !== restaurantId.toString())
     throw new ForbiddenError("Not your restaurant order");
-    throw new ForbiddenError("Not assigned to you");
 
-    return sanitizeOrderForExternal(order);
-  }
 
   if (userId) {
     const out = normalizeOrderForClient(order);
-      dropOtp: {
-        required: Boolean(drop.required),
-        verified: Boolean(drop.verified),
-      },
-    };
-    if (!drop.verified && secret) {
-      out.handoverOtp = secret;
-    }
+    return out;
     return out;
   }
 
@@ -590,19 +566,9 @@ export async function getDropOtpUser(orderId, userId) {
   const order = await FoodOrder.findOne({
     ...identity,
     userId: new mongoose.Types.ObjectId(userId),
+  });
   if (!order) throw new NotFoundError("Order not found");
-
-  const isEligible = phase === "at_drop";
-
-  if (!isEligible) {
-    throw new ValidationError(
-    );
-  }
-
-    throw new ValidationError(
-    );
-  }
-
+  return { otp: null };
 }
 
 /**
@@ -663,24 +629,13 @@ export async function resyncState(userId, role) {
     if (order) {
       const out = normalizeOrderForClient(order);
       // Re-add handover OTP if order is picked up
-      if (
-      ) {
-      }
+
       return { activeOrder: out };
     }
     return { activeOrder: null };
   }
 
-    const order = await FoodOrder.findOne({
-      "dispatch.status": { $in: ["assigned", "accepted"] },
-      orderStatus: {
-        $nin: ["delivered", "cancelled_by_user", "cancelled_by_restaurant"],
-      },
-    })
-      .populate("restaurantId")
-      .lean();
-    return { activeOrder: order ? sanitizeOrderForExternal(order) : null };
-  }
+
 
   return {};
 }
@@ -885,12 +840,10 @@ export async function submitOrderRatings(orderId, userId, dto) {
     throw new ValidationError("You can rate only delivered orders");
   }
 
-  }
-
   const restaurantAlreadyRated = Number.isFinite(
     Number(order?.ratings?.restaurant?.rating),
   );
-  );
+  if (restaurantAlreadyRated) {
     throw new ValidationError("Ratings already submitted for this order");
   }
 
@@ -902,8 +855,7 @@ export async function submitOrderRatings(orderId, userId, dto) {
     ratedAt: now,
   };
 
-  ;
-  }
+
 
   await Promise.all([
     applyAggregateRating(
@@ -1354,7 +1306,6 @@ export async function deleteOrderAdmin(orderId, adminId) {
 
       if (order.userId) io.to(rooms.user(order.userId)).emit("order_deleted", payload);
       if (order.restaurantId) io.to(rooms.restaurant(order.restaurantId)).emit("order_deleted", payload);
-      }
     }
   } catch (err) {
     logger.warn(`Delete order socket emit failed: ${err?.message || err}`);

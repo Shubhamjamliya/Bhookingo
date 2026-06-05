@@ -64,7 +64,6 @@ export const validateEarningAddonHistoryActionDto = (body) => {
 
 export const validateCheckCompletionsDto = (body) => {
     const force = Boolean(body?.force);
-    
-    }
+    return { force };
 };
 

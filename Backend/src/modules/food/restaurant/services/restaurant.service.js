@@ -84,14 +84,7 @@ const timeToMinutes = (value) => {
     return h * 60 + m;
 };
 
-    const raw = String(value || '').trim();
-    if (!raw) return null;
-    const matches = raw.match(/\d+/g);
-    if (!matches || !matches.length) return null;
-    const numbers = matches.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n >= 0);
-    if (!numbers.length) return null;
-    return Math.round(numbers[numbers.length - 1]);
-};
+
 
 const toRestaurantProfile = (doc) => {
     if (!doc) return null;
@@ -174,7 +167,7 @@ const toRestaurantProfile = (doc) => {
         openingTime: normalizeRestaurantTime(doc.openingTime) || null,
         closingTime: normalizeRestaurantTime(doc.closingTime) || null,
         openDays: Array.isArray(doc.openDays) ? doc.openDays : [],
-                : null,
+
         diningSettings: {
             isEnabled: doc.diningSettings?.isEnabled !== false,
             maxGuests: Math.max(1, parseInt(doc.diningSettings?.maxGuests, 10) || 6),
@@ -896,7 +889,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             .filter(Boolean)
             .slice(0, 7);
     }
-    }
+
 
     const openingMinutes = body.openingTime !== undefined ? timeToMinutes(update.openingTime) : null;
     const closingMinutes = body.closingTime !== undefined ? timeToMinutes(update.closingTime) : null;
@@ -1256,7 +1249,7 @@ export const listApprovedRestaurants = async (query = {}) => {
     if (minRating !== null) {
         filter.rating = { $gte: Math.max(0, Math.min(5, minRating)) };
     }
-    }
+
     const maxPrice = toFiniteNumber(query.maxPrice);
     if (maxPrice !== null) {
         filter.featuredPrice = { $lte: Math.max(0, maxPrice) };

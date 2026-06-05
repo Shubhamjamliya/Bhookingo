@@ -42,9 +42,6 @@ export const searchUnified = async (query = {}, options = {}) => {
     if (minRating) {
         restaurantFilter.rating = { $gte: parseFloat(minRating) };
     }
-
-    }
-    
     console.log(`[Search-Service] Final Restaurant Filter:`, JSON.stringify(restaurantFilter));
 
     let restaurantIds = new Set();

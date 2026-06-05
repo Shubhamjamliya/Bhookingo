@@ -410,11 +410,10 @@ export default function OrdersPage({ statusKey = "all" }) {
 
       const pricing = order.pricing || {}
       const subtotal = Number(pricing.subtotal || 0)
-      const deliveryFee = Number(pricing.deliveryFee || 0)
       const platformFee = Number(pricing.platformFee || 0)
       const taxAmount = Number(pricing.tax || 0)
       const discountAmount = Number(pricing.discount || 0)
-      const computedTotal = subtotal + deliveryFee + platformFee + taxAmount - discountAmount
+      const computedTotal = subtotal + platformFee + taxAmount - discountAmount
       const totalAmount = Number(
         pricing.total != null ? pricing.total : computedTotal
       )
@@ -422,7 +421,7 @@ export default function OrdersPage({ statusKey = "all" }) {
       const paymentMethod = order.payment?.method || order.paymentMethod || order.payment?.paymentMethod || ""
       let paymentType = order.paymentType
       if (!paymentType) {
-        if (paymentMethod === "cash" || paymentMethod === "cod" || paymentMethod === "cash on delivery") paymentType = "Cash on Delivery"
+        if (paymentMethod === "cash" || paymentMethod === "cod" || paymentMethod === "cash payment") paymentType = "Cash Payment"
         else if (paymentMethod === "wallet") paymentType = "Wallet"
         else if (paymentMethod) paymentType = "Online"
         else paymentType = "N/A"
@@ -440,7 +439,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         if (s === "refunded") paymentStatus = "Refunded"
         else if (s === "paid" || s === "authorized" || s === "captured" || s === "settled" || isQrPayment) paymentStatus = "Paid"
         else if (s === "failed") paymentStatus = "Failed"
-        else if (backendStatus === "delivered" && (method === "cash" || method === "cod" || method === "cash on delivery")) paymentStatus = "Paid"
+        else if (backendStatus === "delivered" && (method === "cash" || method === "cod" || method === "cash payment")) paymentStatus = "Paid"
         else paymentStatus = "Pending"
       }
 
@@ -450,7 +449,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         paymentMethodDetail = "COD/QR"
       } else if (method === "wallet") {
         paymentMethodDetail = "Wallet"
-      } else if (method !== "cash" && method !== "cod" && method !== "cash on delivery" && method !== "") {
+      } else if (method !== "cash" && method !== "cod" && method !== "cash payment" && method !== "") {
         paymentMethodDetail = "Online"
       }
 
@@ -504,7 +503,6 @@ export default function OrdersPage({ statusKey = "all" }) {
         totalItemAmount: subtotal,
         couponDiscount: discountAmount,
         itemDiscount: 0,
-        deliveryCharge: deliveryFee,
         vatTax: taxAmount,
         platformFee,
         totalAmount,

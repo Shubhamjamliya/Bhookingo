@@ -956,7 +956,7 @@ Order again from this restaurant in the ${companyName} app.`
                       </div>
                       <span className="text-xs font-semibold text-red-500 dark:text-red-400">Payment failed</span>
                     </div>
-                  ) : order.restaurantRating || order.deliveryRating ? (
+                  ) : order.restaurantRating ? (
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm text-gray-800 dark:text-gray-200">You rated</span>

@@ -109,10 +109,10 @@ const getTimeRemaining = (order) => {
   const isScheduled = !!order.scheduledAt;
   const estimatedMinutes = isScheduled ? 0 : 45;
   
-  const estimatedDeliveryTime = new Date(orderTime.getTime() + estimatedMinutes * 60000);
+  const estimatedArrivalTime = new Date(orderTime.getTime() + estimatedMinutes * 60000);
   const now = new Date();
   
-  const diffMs = estimatedDeliveryTime - now;
+  const diffMs = estimatedArrivalTime - now;
   if (diffMs <= 0) return 0;
   
   return Math.ceil(diffMs / 60000);

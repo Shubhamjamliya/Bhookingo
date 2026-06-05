@@ -356,7 +356,7 @@ export default function DesktopNavbar({ showLogo = true }) {
                                     : "text-gray-600 dark:text-gray-400 hover:text-[#DC2626]"
                                     }`}
                             >
-                                <span className="text-sm font-bold tracking-wide uppercase">Delivery</span>
+                                <span className="text-sm font-bold tracking-wide uppercase">Order</span>
                                 {(location.pathname === '/' || location.pathname === '/food/user' || location.pathname === '/food') && (
                                     <motion.div
                                         layoutId="navIndicator"

@@ -492,7 +492,7 @@ export default function OrderTracking() {
     const isScheduled = !!orderData.scheduledAt;
     const estimatedMinutes = isScheduled 
       ? 0 
-      : (orderData.estimatedDeliveryTime || orderData.estimatedTime || orderData.estimated_delivery_time || 35);
+      : (orderData.estimatedTime || 35);
 
     const deliveryTime = new Date(orderTime.getTime() + estimatedMinutes * 60000);
     return Math.max(0, Math.floor((deliveryTime - new Date()) / 60000));
@@ -906,7 +906,7 @@ export default function OrderTracking() {
   useEffect(() => {
     const handleOrderStatusNotification = (event) => {
       const payload = event?.detail || {};
-      const { message, status, estimatedDeliveryTime, orderId: evtOrderId, orderMongoId } = payload;
+      const { message, status, estimatedTime, orderId: evtOrderId, orderMongoId } = payload;
 
       const evtKeys = [evtOrderId, orderMongoId, payload?._id].filter(Boolean).map(String)
       const idMatches =
@@ -948,8 +948,8 @@ export default function OrderTracking() {
           id: ORDER_STATUS_TOAST_ID,
           duration: 5000,
           position: 'top-center',
-          description: estimatedDeliveryTime
-            ? `Estimated delivery in ${Math.round(estimatedDeliveryTime / 60)} minutes`
+          description: estimatedTime
+            ? `Estimated arrival in ${Math.round(estimatedTime / 60)} minutes`
             : undefined
         });
 
@@ -1583,29 +1583,7 @@ export default function OrderTracking() {
                   ))}
                 </div>
               </div>
-              
-              {hasDeliveryPartner && (
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Delivery Service</span>
-                    {order?.ratings?.deliveryPartner?.comment && (
-                      <span className="text-[10px] text-gray-500 dark:text-gray-400 italic mt-0.5 line-clamp-1">"{order.ratings.deliveryPartner.comment}"</span>
-                    )}
-                  </div>
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={`del-rated-${star}`}
-                        className={`w-3.5 h-3.5 ${
-                          star <= (order?.ratings?.deliveryPartner?.rating || order?.deliveryPartnerRating)
-                            ? "text-yellow-400 fill-yellow-400"
-                            : "text-gray-200 dark:text-gray-800"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+
             </div>
           </motion.div>
         )}
@@ -1961,11 +1939,6 @@ export default function OrderTracking() {
               )}
 
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">Delivery Fee</span>
-                <span className="text-gray-900 font-medium">₹{Number(order?.deliveryFee || 0).toFixed(2)}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">GST</span>
                 <span className="text-gray-900 font-medium">₹{Number(order?.gst || 0).toFixed(2)}</span>
               </div>
@@ -2081,44 +2054,11 @@ export default function OrderTracking() {
               />
             </div>
 
-            {/* Delivery Rating */}
-            {hasDeliveryPartner && (
-              <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-gray-800 dark:text-gray-200">How was the delivery?</p>
-                  <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400 rounded-full font-medium">Delivery</span>
-                </div>
-                <div className="flex justify-center gap-3">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <motion.button
-                      key={`del-star-${star}`}
-                      whileHover={{ scale: 1.15 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setSelectedDeliveryRating(star)}
-                      className="p-1"
-                    >
-                      <Star
-                        className={`w-10 h-10 transition-all duration-300 ${
-                          star <= selectedDeliveryRating
-                            ? "text-yellow-400 fill-yellow-400 drop-shadow-sm"
-                            : "text-gray-200 dark:text-gray-800"
-                        }`}
-                      />
-                    </motion.button>
-                  ))}
-                </div>
-                <Textarea
-                  placeholder={`How was ${order?.deliveryPartnerName || 'the rider'}? (optional)`}
-                  value={deliveryFeedbackText}
-                  onChange={(e) => setDeliveryFeedbackText(e.target.value)}
-                  className="min-h-[80px] text-sm bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 resize-none rounded-xl"
-                />
-              </div>
-            )}
+
 
             <Button
               onClick={handleSubmitRating}
-              disabled={submittingRating || selectedRestaurantRating === null || (hasDeliveryPartner && selectedDeliveryRating === null)}
+              disabled={submittingRating || selectedRestaurantRating === null}
               className="w-full bg-[#DC2626] hover:bg-[#991B1B] text-white font-bold h-14 rounded-2xl shadow-lg mt-4"
             >
               {submittingRating ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit Feedback"}

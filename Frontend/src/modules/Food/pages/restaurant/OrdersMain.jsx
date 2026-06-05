@@ -75,7 +75,6 @@ const transformOrderForList = (order) => ({
   mongoId: order._id,
   status: order.status || "pending",
   customerName: order.userId?.name || order.customerName || "Customer",
-  type: "Home Delivery",
   tableOrToken: null,
   timePlaced: new Date(getAllOrdersTimestamp(order)).toLocaleDateString(
     "en-US",
@@ -93,12 +92,10 @@ const transformOrderForList = (order) => ({
   photoUrl: order.items?.[0]?.image || null,
   photoAlt: order.items?.[0]?.name || "Order",
   paymentMethod: order.paymentMethod || order.payment?.method || null,
-  
-  dispatchStatus: order.dispatch?.status || null,
   preparingTimestamp: order.tracking?.preparing?.timestamp
     ? new Date(order.tracking.preparing.timestamp)
     : new Date(order.createdAt || Date.now()),
-  initialETA: order.estimatedDeliveryTime || 30,
+  initialETA: order.estimatedTime ||  30,
   sortTimestamp: new Date(getAllOrdersTimestamp(order)).getTime(),
   scheduledAt: order.scheduledAt || null,
   restaurantNote: order.restaurantNote || null,
@@ -129,7 +126,7 @@ function CompletedOrders({ onSelectOrder, refreshToken = 0 }) {
             mongoId: order._id,
             status: order.status || "delivered",
             customerName: order.userId?.name || order.customerName || "Customer",
-            type: "Home Delivery",
+
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
@@ -335,7 +332,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
             mongoId: order._id,
             status: order.status || "cancelled",
             customerName: order.userId?.name || order.customerName || "Customer",
-            type: "Home Delivery",
+
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
@@ -1639,7 +1636,7 @@ export default function OrdersMain() {
               status: orderToPopup.status,
               createdAt: orderToPopup.createdAt,
               scheduledAt: orderToPopup.scheduledAt,
-              estimatedDeliveryTime: orderToPopup.estimatedDeliveryTime || 30,
+              estimatedTime: orderToPopup.estimatedTime || 30,
               note: orderToPopup.note || "",
               sendCutlery: orderToPopup.sendCutlery,
               paymentMethod:
@@ -2099,10 +2096,10 @@ export default function OrdersMain() {
       );
 
       // Estimated delivery time
-      if (orderToPrint.estimatedDeliveryTime) {
+      if (orderToPrint.estimatedTime) {
         yPos += 8;
         doc.text(
-          `Estimated Delivery: ${orderToPrint.estimatedDeliveryTime} minutes`,
+          `Estimated Time: ${orderToPrint.estimatedTime} minutes`,
           20,
           yPos,
         );
@@ -2894,7 +2891,7 @@ export default function OrdersMain() {
                         </span>
                         <span
                           className={`text-sm font-semibold ${isCod ? "text-amber-600" : "text-green-600"}`}>
-                          {isCod ? "Cash on Delivery" : "Online"}
+                          {isCod ? "Cash Payment" : "Online"}
                         </span>
                       </div>
                     );
@@ -3299,7 +3296,7 @@ export default function OrdersMain() {
                       Payment:{" "}
                       <span
                         className={`font-medium ${isCod ? "text-amber-700" : "text-black"}`}>
-                        {isCod ? "Cash on Delivery" : "Paid online"}
+                        {isCod ? "Cash Payment" : "Paid online"}
                       </span>
                     </span>
                   );
@@ -3539,7 +3536,7 @@ function PreparingOrders({
           );
 
           const transformedOrders = preparingOrders.map((order) => {
-            const initialETA = order.estimatedDeliveryTime || 30; // in minutes
+            const initialETA =  30; // in minutes
             const preparingTimestamp = order.tracking?.preparing?.timestamp
               ? new Date(order.tracking.preparing.timestamp)
               : new Date(order.createdAt); // Fallback to createdAt if preparing timestamp not available
@@ -3549,10 +3546,6 @@ function PreparingOrders({
               mongoId: order._id,
               status: order.status || "preparing",
               customerName: order.userId?.name || "Customer",
-              type:
-                order.deliveryFleet === "standard"
-                  ? "Home Delivery"
-                  : "Express Delivery",
               tableOrToken: null,
               timePlaced: new Date(order.createdAt).toLocaleTimeString(
                 "en-US",
@@ -3566,8 +3559,6 @@ function PreparingOrders({
                   .join(", ") || "No items",
               photoUrl: order.items?.[0]?.image || null,
               photoAlt: order.items?.[0]?.name || "Order",
-              
-              dispatchStatus: order.dispatch?.status || null,
               paymentMethod:
                 order.paymentMethod || order.payment?.method || null,
               scheduledAt: order.scheduledAt || null,
@@ -3817,7 +3808,7 @@ function PreparingOrders({
                 photoAlt={order.photoAlt}
                 paymentMethod={order.paymentMethod}
                 
-                dispatchStatus={order.dispatchStatus}
+
                 onSelect={onSelectOrder}
                 onCancel={onCancel}
                 onMarkReady={handleMarkReady}
@@ -3859,16 +3850,12 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
             mongoId: order._id,
             status: order.status || "ready",
             customerName: order.userId?.name || "Customer",
-            type:
-              order.deliveryFleet === "standard"
-                ? "Home Delivery"
-                : "Express Delivery",
             tableOrToken: null,
             timePlaced: new Date(order.createdAt).toLocaleTimeString("en-US", {
               hour: "2-digit",
               minute: "2-digit",
             }),
-            eta: null, // Don't show ETA for ready orders
+            eta: null,
             itemsSummary:
               order.items
                 ?.map((item) => `${item.quantity}x ${item.name}`)
@@ -3876,8 +3863,6 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
             photoUrl: order.items?.[0]?.image || null,
             photoAlt: order.items?.[0]?.name || "Order",
             paymentMethod: order.paymentMethod || order.payment?.method || null,
-            
-            dispatchStatus: order.dispatch?.status || null,
             scheduledAt: order.scheduledAt || null,
             restaurantNote: order.restaurantNote || null,
           }));

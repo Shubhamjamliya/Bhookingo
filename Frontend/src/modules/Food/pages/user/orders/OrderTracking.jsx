@@ -88,110 +88,7 @@ const AnimatedCheckmark = ({ delay = 0 }) => (
 )
 
 // Real Delivery Map Component with User Live Location
-const DeliveryMap = memo(({ orderId, order, isVisible, fallbackCustomerCoords = null, userLiveCoords = null, userLocationAccuracy = null, onEtaUpdate = null }) => {
-  const toPointFromGeoJSON = (coords) => {
-    if (!Array.isArray(coords) || coords.length < 2) return null;
-    const lng = Number(coords[0]);
-    const lat = Number(coords[1]);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-    return { lat, lng };
-  };
 
-  // Memoize coordinates to prevent re-calculating on every parent render
-  const restaurantCoords = useMemo(() => {
-    // Try multiple sources for restaurant coordinates
-    let coords = null;
-
-    if (order?.restaurantLocation?.coordinates &&
-      Array.isArray(order.restaurantLocation.coordinates) &&
-      order.restaurantLocation.coordinates.length >= 2) {
-      coords = order.restaurantLocation.coordinates;
-    }
-    else if (order?.restaurantId?.location?.coordinates &&
-      Array.isArray(order.restaurantId.location.coordinates) &&
-      order.restaurantId.location.coordinates.length >= 2) {
-      coords = order.restaurantId.location.coordinates;
-    }
-    else if (order?.restaurantId?.location?.latitude && order?.restaurantId?.location?.longitude) {
-      coords = [order.restaurantId.location.longitude, order.restaurantId.location.latitude];
-    }
-
-    const fromCoords = toPointFromGeoJSON(coords);
-    if (fromCoords) return fromCoords;
-
-    const fallbackLat = Number(order?.restaurantId?.location?.latitude || order?.restaurant?.location?.latitude);
-    const fallbackLng = Number(order?.restaurantId?.location?.longitude || order?.restaurant?.location?.longitude);
-    if (Number.isFinite(fallbackLat) && Number.isFinite(fallbackLng)) {
-      return { lat: fallbackLat, lng: fallbackLng };
-    }
-    return null;
-  }, [order?.restaurantId, order?.restaurantLocation, order?.restaurant]);
-
-  const customerCoords = useMemo(() => {
-    const coords = order?.address?.coordinates || order?.address?.location?.coordinates;
-    const fromCoords = toPointFromGeoJSON(coords);
-    if (fromCoords) return fromCoords;
-
-    if (
-      fallbackCustomerCoords &&
-      Number.isFinite(fallbackCustomerCoords.lat) &&
-      Number.isFinite(fallbackCustomerCoords.lng)
-    ) {
-      return fallbackCustomerCoords;
-    }
-    return null;
-  }, [order?.address, fallbackCustomerCoords]);
-
-  const effectiveCustomerCoords = useMemo(() => {
-    if (customerCoords) return customerCoords;
-    if (userLiveCoords && Number.isFinite(userLiveCoords.lat) && Number.isFinite(userLiveCoords.lng)) {
-      return userLiveCoords;
-    }
-    if (restaurantCoords) return restaurantCoords;
-    return null;
-  }, [customerCoords, userLiveCoords, restaurantCoords]);
-
-  const effectiveRestaurantCoords = useMemo(() => {
-    if (restaurantCoords) return restaurantCoords;
-    if (effectiveCustomerCoords) return effectiveCustomerCoords;
-    return null;
-  }, [restaurantCoords, effectiveCustomerCoords]);
-
-  // Firebase and backend write tracking under order.orderId (string) or mongoId; subscribe to all so we receive updates
-  const orderTrackingIdsList = useMemo(() => [
-    order?.orderId,
-    order?.mongoId,
-    order?._id,
-    orderId,
-    order?.id
-  ].filter(Boolean), [order?.orderId, order?.mongoId, order?._id, orderId, order?.id]);
-
-  if (!isVisible || !orderId || !order || !effectiveRestaurantCoords || !effectiveCustomerCoords) {
-    return (
-      <div
-        className="relative h-[300px] sm:h-[450px] bg-gradient-to-b from-gray-100 to-gray-200 dark:from-[#0a0a0a] dark:to-[#1a1a1a]"
-      />
-    );
-  }
-
-  return (
-    <div
-      className="relative w-full h-[300px] sm:h-[450px] overflow-visible"
-    >
-      <DeliveryTrackingMap
-        orderId={orderId}
-        orderTrackingIds={orderTrackingIdsList}
-        restaurantCoords={effectiveRestaurantCoords}
-        customerCoords={effectiveCustomerCoords}
-
-        userLiveCoords={userLiveCoords}
-        userLocationAccuracy={userLocationAccuracy}
-        order={order}
-        onEtaUpdate={onEtaUpdate}
-      />
-    </div>
-  );
-});
 
 // Section item component
 const SectionItem = ({ icon: Icon, iconNode, title, subtitle, onClick, showArrow = true, rightContent }) => (
@@ -1063,7 +960,8 @@ export default function OrderTracking() {
       }
     };
 
-    // Listen for custom event from DeliveryTrackingMap
+
+    // Listen for order status notifications
     window.addEventListener('orderStatusNotification', handleOrderStatusNotification);
 
     return () => {
@@ -1712,82 +1610,7 @@ export default function OrderTracking() {
           </motion.div>
         )}
 
-        {/* Delivery Partner Info */}
-        {order?.deliveryPartnerId && (
-          <motion.div
-            className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.55 }}
-          >
-            <div className="flex items-center gap-3 p-4 border-b border-dashed border-gray-200 dark:border-gray-800">
-              <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 overflow-hidden flex items-center justify-center flex-shrink-0 border border-blue-100 dark:border-blue-900/30 p-1">
-                {order.deliveryPartner?.avatar ? (
-                  <img src={order.deliveryPartner.avatar} alt="Rider" className="w-full h-full object-cover" />
-                ) : (
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: RIDER_BIKE_SVG.replace(/width="\d+"/, 'width="100%"').replace(/height="\d+"/, 'height="100%"') }} 
-                    className="w-full h-full p-1" 
-                  />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900 dark:text-gray-100">{order.deliveryPartner?.name || 'Delivery Partner'}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {orderStatus === 'delivered' ? 'Delivered your order' : 'Your delivery partner is arriving'}
-                </p>
-              </div>
-              <motion.button
-                className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center"
-                onClick={handleCallRider}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Phone className="w-5 h-5 text-blue-600" />
-              </motion.button>
-            </div>
-            {order?.note && (
-              <div className="bg-blue-50/50 dark:bg-blue-900/10 p-3 mx-4 mb-4 rounded-lg flex items-start gap-2 border border-blue-100 dark:border-blue-900/20">
-                <MessageSquare className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-0.5">Instruction for Rider</p>
-                  <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium">"{order.note}"</p>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
 
-        {/* Delivery Partner Safety */}
-        {orderStatus !== 'delivered' && orderStatus !== 'cancelled' && (
-          <motion.button
-            className="w-full bg-white dark:bg-[#1a1a1a] rounded-xl p-4 shadow-sm flex items-center gap-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            whileTap={{ scale: 0.99 }}
-            onClick={() => navigate('/user/profile/report-safety-emergency', { state: { returnTo: location.pathname } })}
-          >
-            <Shield className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-            <span className="flex-1 text-left font-medium text-gray-900 dark:text-gray-100">
-              Learn about delivery partner safety
-            </span>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
-          </motion.button>
-        )}
-
-        {/* Delivery Details Banner */}
-        {orderStatus !== 'delivered' && orderStatus !== 'cancelled' && (
-          <motion.div
-            className="bg-yellow-50 dark:bg-yellow-900/10 rounded-xl p-4 text-center border dark:border-yellow-900/30"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.65 }}
-          >
-            <p className="text-yellow-800 dark:text-yellow-400 font-medium text-sm">
-              All your delivery details in one place 🥡
-            </p>
-          </motion.div>
-        )}
 
         {/* Contact & Address Section */}
         <motion.div

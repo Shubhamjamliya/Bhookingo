@@ -2,12 +2,13 @@ import { FoodRestaurant } from '../models/restaurant.model.js';
 import { uploadImageBuffer } from '../../../../services/cloudinary.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import mongoose from 'mongoose';
-import { FoodZone } from '../../admin/models/zone.model.js';
+import { FoodHighway } from '../../admin/models/highway.model.js';
 import { FoodOffer } from '../../admin/models/offer.model.js';
 import { FoodDiningRestaurant } from '../../dining/models/diningRestaurant.model.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { getFoodDisplayPrice } from '../../admin/services/foodVariant.service.js';
 import { FoodOrder } from '../../orders/models/order.model.js';
+import { assignHighwayToRestaurant } from '../../admin/services/highway.service.js';
 import { FoodRestaurantOutletTimings } from '../models/outletTimings.model.js';
 
 const normalizeName = (value) =>
@@ -136,7 +137,7 @@ const toRestaurantProfile = (doc) => {
         restaurantId: doc.restaurantId || undefined,
         name: doc.restaurantName || '',
         restaurantName: doc.restaurantName || '',
-        zoneId: doc.zoneId ? String(doc.zoneId) : '',
+        highwayId: doc.highwayId ? String(doc.highwayId) : '',
         cuisines: Array.isArray(doc.cuisines) ? doc.cuisines : [],
         location,
         ownerName: doc.ownerName || '',
@@ -199,8 +200,8 @@ const parseSortBy = (value) => {
     return allowed.has(v) ? v : null;
 };
 
-const zoneToPolygon = (zoneDoc) => {
-    const coords = Array.isArray(zoneDoc?.coordinates) ? zoneDoc.coordinates : [];
+const zoneToPolygon = (highwayDoc) => {
+    const coords = Array.isArray(highwayDoc?.coordinates) ? highwayDoc.coordinates : [];
     if (coords.length < 3) return null;
     const ring = coords
         .map((c) => [Number(c.longitude), Number(c.latitude)])
@@ -247,7 +248,7 @@ export const registerRestaurant = async (payload, files) => {
         formattedAddress,
         latitude,
         longitude,
-        zoneId,
+        highwayId,
         cuisines,
         openingTime,
         closingTime,
@@ -331,8 +332,8 @@ export const registerRestaurant = async (payload, files) => {
             ownerPhoneLast10,
             primaryContactNumber,
             pureVegRestaurant: pureVegRestaurant === true,
-            zoneId: zoneId && mongoose.Types.ObjectId.isValid(String(zoneId).trim())
-                ? new mongoose.Types.ObjectId(String(zoneId).trim())
+            highwayId: highwayId && mongoose.Types.ObjectId.isValid(String(highwayId).trim())
+                ? new mongoose.Types.ObjectId(String(highwayId).trim())
                 : undefined,
             // Store unified location object (geo + address).
             location: {
@@ -373,6 +374,9 @@ export const registerRestaurant = async (payload, files) => {
             ...images
         });
 
+        // Fire-and-forget highway assignment (non-blocking)
+        setImmediate(() => assignHighwayToRestaurant(restaurant._id).catch(() => {}));
+
         try {
             const { notifyAdminsSafely } = await import('../../../../core/notifications/firebase.service.js');
             void notifyAdminsSafely({
@@ -405,7 +409,7 @@ export const getCurrentRestaurantProfile = async (restaurantId) => {
             [
                 'restaurantName',
                 'restaurantId',
-                'zoneId',
+                'highwayId',
                 'cuisines',
                 'location',
                 'addressLine1',
@@ -783,10 +787,10 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         }
     }
 
-    if (body.zoneId !== undefined) {
-        const zoneId = String(body.zoneId || '').trim();
-        update.zoneId = zoneId && mongoose.Types.ObjectId.isValid(zoneId)
-            ? new mongoose.Types.ObjectId(zoneId)
+    if (body.highwayId !== undefined) {
+        const highwayId = String(body.highwayId || '').trim();
+        update.highwayId = highwayId && mongoose.Types.ObjectId.isValid(highwayId)
+            ? new mongoose.Types.ObjectId(highwayId)
             : undefined;
     }
 
@@ -1047,7 +1051,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                     'accountType',
                     'upiId',
                     'upiQrImage',
-                    'zoneId'
+                    'highwayId'
                 ].join(' ')
             }
         ).lean();
@@ -1281,12 +1285,12 @@ export const listApprovedRestaurants = async (query = {}) => {
         filter['diningSettings.isEnabled'] = true;
     }
 
-    const zoneIdRaw = String(query.zoneId || '').trim();
-    if (zoneIdRaw && mongoose.Types.ObjectId.isValid(zoneIdRaw)) {
-        filter.$or = [{ zoneId: new mongoose.Types.ObjectId(zoneIdRaw) }];
-        const zoneDoc = await FoodZone.findById(zoneIdRaw).select('isActive coordinates location').lean();
-        if (zoneDoc && zoneDoc.isActive) {
-            const polygon = zoneToPolygon(zoneDoc);
+    const highwayIdRaw = String(query.highwayId || '').trim();
+    if (highwayIdRaw && mongoose.Types.ObjectId.isValid(highwayIdRaw)) {
+        filter.$or = [{ highwayId: new mongoose.Types.ObjectId(highwayIdRaw) }];
+        const highwayDoc = await FoodHighway.findById(highwayIdRaw).select('isActive coordinates location').lean();
+        if (highwayDoc && highwayDoc.isActive) {
+            const polygon = zoneToPolygon(highwayDoc);
             if (polygon) {
                 filter.$or.push({ location: { $geoWithin: { $geometry: polygon } } });
             }
@@ -1538,14 +1542,14 @@ export const getRestaurantComplaints = async (restaurantId, query = {}) => {
  * This collapses 50+ frontend requests into ONE optimized backend call.
  */
 export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 250) => {
-    const zoneIdRaw = String(query.zoneId || '').trim();
-    if (!zoneIdRaw || !mongoose.Types.ObjectId.isValid(zoneIdRaw)) {
-        throw new ValidationError('Valid zoneId is required for Under 250 fetching');
+    const highwayIdRaw = String(query.highwayId || '').trim();
+    if (!highwayIdRaw || !mongoose.Types.ObjectId.isValid(highwayIdRaw)) {
+        throw new ValidationError('Valid highwayId is required for Under 250 fetching');
     }
 
     // 1. Find all approved restaurants in the specified zone first (Zone Filter first)
     const restaurantsInZone = await FoodRestaurant.find({
-        zoneId: new mongoose.Types.ObjectId(zoneIdRaw),
+        highwayId: new mongoose.Types.ObjectId(highwayIdRaw),
         status: 'approved'
     })
     .lean();

@@ -23,7 +23,7 @@ const getRestaurantContext = async (restaurantId) => {
     }
 
     const restaurant = await FoodRestaurant.findById(restaurantId)
-        .select('zoneId pureVegRestaurant')
+        .select('highwayId pureVegRestaurant')
         .lean();
     if (!restaurant?._id) {
         throw new ValidationError('Restaurant not found');
@@ -31,25 +31,25 @@ const getRestaurantContext = async (restaurantId) => {
 
     return {
         restaurantId: toObjectId(restaurantId),
-        zoneId: restaurant.zoneId ? String(restaurant.zoneId) : '',
+        highwayId: restaurant.highwayId ? String(restaurant.highwayId) : '',
         pureVegRestaurant: restaurant.pureVegRestaurant === true
     };
 };
 
-const applyZoneVisibilityFilter = (filterAndList, zoneIdRaw) => {
-    if (zoneIdRaw && mongoose.Types.ObjectId.isValid(zoneIdRaw)) {
+const applyZoneVisibilityFilter = (filterAndList, highwayIdRaw) => {
+    if (highwayIdRaw && mongoose.Types.ObjectId.isValid(highwayIdRaw)) {
         filterAndList.push({
             $or: [
-                { zoneId: new mongoose.Types.ObjectId(zoneIdRaw) },
-                { zoneId: { $exists: false } },
-                { zoneId: null }
+                { highwayId: new mongoose.Types.ObjectId(highwayIdRaw) },
+                { highwayId: { $exists: false } },
+                { highwayId: null }
             ]
         });
         return;
     }
 
     filterAndList.push({
-        $or: [{ zoneId: { $exists: false } }, { zoneId: null }]
+        $or: [{ highwayId: { $exists: false } }, { highwayId: null }]
     });
 };
 
@@ -63,7 +63,7 @@ export async function listRestaurantCategories(restaurantId, query = {}) {
     const includeInactive = query.includeInactive === 'true' || query.includeInactive === '1';
     const withCounts = query.withCounts === 'true' || query.withCounts === '1';
     const compact = query.compact === 'true' || query.compact === '1';
-    const zoneIdRaw = typeof query.zoneId === 'string' ? query.zoneId.trim() : context.zoneId;
+    const highwayIdRaw = typeof query.highwayId === 'string' ? query.highwayId.trim() : context.highwayId;
 
     const filter = {};
     if (!includeInactive) filter.isActive = true;
@@ -101,7 +101,7 @@ export async function listRestaurantCategories(restaurantId, query = {}) {
         const term = escapeRegex(search.slice(0, 80));
         filter.$and.push({ name: { $regex: term, $options: 'i' } });
     }
-    applyZoneVisibilityFilter(filter.$and, zoneIdRaw);
+    applyZoneVisibilityFilter(filter.$and, highwayIdRaw);
 
     if (compact && context.pureVegRestaurant) {
         filter.$and.push({ foodTypeScope: 'Veg' });
@@ -113,8 +113,8 @@ export async function listRestaurantCategories(restaurantId, query = {}) {
         .limit(limit)
         .select(
             compact
-                ? 'name image type foodTypeScope approvalStatus rejectionReason zoneId restaurantId createdByRestaurantId isActive sortOrder requestedAt approvedAt rejectedAt globalizedAt'
-                : 'name image type foodTypeScope approvalStatus rejectionReason zoneId restaurantId createdByRestaurantId isActive sortOrder requestedAt approvedAt rejectedAt globalizedAt createdAt updatedAt'
+                ? 'name image type foodTypeScope approvalStatus rejectionReason highwayId restaurantId createdByRestaurantId isActive sortOrder requestedAt approvedAt rejectedAt globalizedAt'
+                : 'name image type foodTypeScope approvalStatus rejectionReason highwayId restaurantId createdByRestaurantId isActive sortOrder requestedAt approvedAt rejectedAt globalizedAt createdAt updatedAt'
         );
 
     const [list, total] = await Promise.all([
@@ -165,12 +165,12 @@ export async function listPublicCategories(query = {}) {
     const skip = (page - 1) * limit;
 
     const search = typeof query.search === 'string' ? query.search.trim() : '';
-    const zoneIdRaw = typeof query.zoneId === 'string' ? query.zoneId.trim() : '';
+    const highwayIdRaw = typeof query.highwayId === 'string' ? query.highwayId.trim() : '';
 
     let approvedCategoryIds = [];
-    if (zoneIdRaw && mongoose.Types.ObjectId.isValid(zoneIdRaw)) {
+    if (highwayIdRaw && mongoose.Types.ObjectId.isValid(highwayIdRaw)) {
         const zoneRestaurants = await FoodRestaurant.find({
-            zoneId: new mongoose.Types.ObjectId(zoneIdRaw),
+            highwayId: new mongoose.Types.ObjectId(highwayIdRaw),
             status: 'approved'
         }).select('_id').lean();
         const zoneRestaurantIds = zoneRestaurants.map(r => r._id);
@@ -201,11 +201,11 @@ export async function listPublicCategories(query = {}) {
         const term = escapeRegex(search.slice(0, 80));
         filter.$and.push({ name: { $regex: term, $options: 'i' } });
     }
-    applyZoneVisibilityFilter(filter.$and, zoneIdRaw);
+    applyZoneVisibilityFilter(filter.$and, highwayIdRaw);
 
     const list = await FoodCategory.find(filter)
         .sort({ sortOrder: 1, createdAt: -1 })
-        .select('name image type foodTypeScope zoneId sortOrder createdAt updatedAt')
+        .select('name image type foodTypeScope highwayId sortOrder createdAt updatedAt')
         .lean();
 
     // Deduplicate categories by name in memory
@@ -229,13 +229,13 @@ export async function listPublicCategories(query = {}) {
 
         // Prioritize: 1. zone specific match, 2. global category, 3. has image, 4. sortOrder, 5. updatedAt
         group.sort((a, b) => {
-            const aZoneMatch = zoneIdRaw && String(a.zoneId) === String(zoneIdRaw);
-            const bZoneMatch = zoneIdRaw && String(b.zoneId) === String(zoneIdRaw);
-            if (aZoneMatch && !bZoneMatch) return -1;
-            if (!aZoneMatch && bZoneMatch) return 1;
+            const aHighwayMatch = highwayIdRaw && String(a.highwayId) === String(highwayIdRaw);
+            const bHighwayMatch = highwayIdRaw && String(b.highwayId) === String(highwayIdRaw);
+            if (aHighwayMatch && !bHighwayMatch) return -1;
+            if (!aHighwayMatch && bHighwayMatch) return 1;
 
-            const aGlobal = !a.zoneId;
-            const bGlobal = !b.zoneId;
+            const aGlobal = !a.highwayId;
+            const bGlobal = !b.highwayId;
             if (aGlobal && !bGlobal) return -1;
             if (!aGlobal && bGlobal) return 1;
 
@@ -305,8 +305,8 @@ export async function createRestaurantCategory(restaurantId, body = {}) {
         isApproved: false,
         rejectionReason: '',
         requestedAt: new Date(),
-        zoneId: context.zoneId && mongoose.Types.ObjectId.isValid(context.zoneId)
-            ? new mongoose.Types.ObjectId(context.zoneId)
+        highwayId: context.highwayId && mongoose.Types.ObjectId.isValid(context.highwayId)
+            ? new mongoose.Types.ObjectId(context.highwayId)
             : undefined
     });
     await doc.save();

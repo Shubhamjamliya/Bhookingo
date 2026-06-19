@@ -195,10 +195,27 @@ const restaurantSchema = new mongoose.Schema(
       type: geoPointSchema,
       default: undefined,
     },
-    /** Optional service zone id (can be computed from location). */
-    zoneId: {
+
+    /** National Highway classification (auto-assigned from location). */
+    highwayId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "FoodZone",
+      ref: "FoodHighway",
+      index: true,
+      default: null,
+    },
+    highwayName: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    highwayRef: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    isHighwayRestaurant: {
+      type: Boolean,
+      default: false,
       index: true,
     },
     businessModel: {
@@ -389,7 +406,9 @@ restaurantSchema.index(
 restaurantSchema.index({ status: 1, createdAt: -1 });
 restaurantSchema.index({ "takeawaySettings.isEnabled": 1 });
 restaurantSchema.index({ "diningSettings.isEnabled": 1 });
-restaurantSchema.index({ zoneId: 1, status: 1 });
+
+restaurantSchema.index({ highwayId: 1, status: 1 });
+restaurantSchema.index({ isHighwayRestaurant: 1, status: 1 });
 
 export const FoodRestaurant = mongoose.model(
   "FoodRestaurant",

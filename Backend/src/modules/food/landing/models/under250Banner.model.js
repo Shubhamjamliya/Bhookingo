@@ -19,7 +19,7 @@ const foodUnder250BannerSchema = new mongoose.Schema(
         ctaLink: {
             type: String
         },
-        zoneId: {
+        highwayId: {
             type: String
         },
         sortOrder: {

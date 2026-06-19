@@ -44,8 +44,8 @@ export const adminSidebarMenu = [
     items: [
       {
         type: "link",
-        label: "Zone Setup",
-        path: "/admin/food/zone-setup",
+        label: "Highway Setup",
+        path: "/admin/food/highway-setup",
         icon: "MapPin",
       },
       {

@@ -88,7 +88,7 @@ import {
   DropdownMenuTrigger,
 } from "@food/components/ui/dropdown-menu";
 import { useLocation } from "@food/hooks/useLocation";
-import { useZone } from "@food/hooks/useZone";
+import { useHighway as useZone } from "@food/hooks/useHighway";
 import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png";
 import homeBannerRed from "@food/assets/home-banner-red-clean.png";
 if (typeof window !== 'undefined') {

@@ -5,7 +5,7 @@ import { logger } from '../../../../utils/logger.js';
 import { FoodUser } from '../../../../core/users/user.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 
-import { FoodZone } from '../../admin/models/zone.model.js';
+import { FoodHighway } from '../../admin/models/highway.model.js';
 import { FoodFeeSettings } from '../../admin/models/feeSettings.model.js';
 import { ValidationError, ForbiddenError, NotFoundError } from '../../../../core/auth/errors.js';
 import { buildPaginationOptions, buildPaginatedResult } from '../../../../utils/helpers.js';
@@ -124,7 +124,7 @@ export async function calculateOrder(userId, dto) {
 // ----- Create order -----
 export async function createOrder(userId, dto) {
   const restaurant = await FoodRestaurant.findById(dto.restaurantId)
-    .select("status restaurantName zoneId location isAcceptingOrders takeawaySettings")
+    .select("status restaurantName highwayId location isAcceptingOrders takeawaySettings")
     .lean();
   if (!restaurant) throw new ValidationError("Restaurant not found");
   if (restaurant.status !== "approved")
@@ -266,9 +266,9 @@ export async function createOrder(userId, dto) {
   const order = new FoodOrder({
     userId: new mongoose.Types.ObjectId(userId),
     restaurantId: new mongoose.Types.ObjectId(dto.restaurantId),
-    zoneId: dto.zoneId
-      ? new mongoose.Types.ObjectId(dto.zoneId)
-      : restaurant.zoneId,
+    highwayId: dto.highwayId
+      ? new mongoose.Types.ObjectId(dto.highwayId)
+      : restaurant.highwayId,
     items: dto.items,
     orderType,
     pricing: normalizedPricing,

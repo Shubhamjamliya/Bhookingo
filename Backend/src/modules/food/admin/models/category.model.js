@@ -30,7 +30,7 @@ const foodCategorySchema = new mongoose.Schema(
          * - When set: category is visible only for that zone.
          * - When null/undefined: category is global (visible for all zones).
          */
-        zoneId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodZone', index: true, default: undefined },
+        highwayId: { type: mongoose.Schema.Types.ObjectId, ref: 'FoodHighway', index: true, default: undefined },
         isActive: { type: Boolean, default: true, index: true },
         sortOrder: { type: Number, default: 0, index: true }
     },

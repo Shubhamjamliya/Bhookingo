@@ -806,7 +806,7 @@ export default function ExploreMore() {
   ]
 
   const settingsItems = [
-    { id: 4, label: "Zone Setup", icon: MapPin, route: "/food/restaurant/zone-setup" },
+    { id: 4, label: "Highway Setup", icon: MapPin, route: "/admin/food/highway-setup" },
   ]
 
   const ordersItems = [

@@ -41,7 +41,12 @@ import {
     getPublicGourmetController,
     getPublicLandingSettingsController
 } from '../controllers/publicLanding.controller.js';
-import { detectZonePublicController, listZonesPublicController, listZonesNearbyPublicController } from '../controllers/zonePublic.controller.js';
+
+import {
+    detectHighwayPublicController,
+    listHighwaysPublicController,
+    listHighwaysNearbyPublicController
+} from '../controllers/highwayPublic.controller.js';
 import { getPublicEnvController } from '../controllers/publicEnv.controller.js';
 import {
     listGourmetAdmin,
@@ -123,9 +128,11 @@ router.get('/hero-banners/dining/public', getPublicDiningBannersController);
 router.get('/explore-icons/public', getPublicExploreIconsController);
 router.get('/hero-banners/gourmet/public', getPublicGourmetController);
 router.get('/landing/settings/public', getPublicLandingSettingsController);
-router.get('/zones/detect', detectZonePublicController);
-router.get('/zones/nearby', listZonesNearbyPublicController);
-router.get('/zones/public', listZonesPublicController);
+// Highway public endpoints (replaces zone detection)
+router.get('/highways/detect', detectHighwayPublicController);
+router.get('/highways/nearby', listHighwaysNearbyPublicController);
+router.get('/highways/public', listHighwaysPublicController);
+
 router.get('/public/env', getPublicEnvController);
 // Admin landing settings (old paths used by admin UI)
 router.get('/hero-banners/landing/settings', getAdminLandingSettingsController);

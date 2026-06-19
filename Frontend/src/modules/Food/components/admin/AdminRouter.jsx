@@ -16,11 +16,8 @@ const OrdersPage = lazy(() => import("@food/pages/admin/orders/OrdersPage"));
 const Category = lazy(() => import("@food/pages/admin/categories/Category"));
 const FeeSettings = lazy(() => import("@food/pages/admin/fee-settings/FeeSettings"));
 const ReferralSettings = lazy(() => import("@food/pages/admin/referral-settings/ReferralSettings"));
-// Restaurant Management
-const ZoneSetup = lazy(() => import("@food/pages/admin/restaurant/ZoneSetup"));
-const AddZone = lazy(() => import("@food/pages/admin/restaurant/AddZone"));
-const ViewZone = lazy(() => import("@food/pages/admin/restaurant/ViewZone"));
-const AllZonesMap = lazy(() => import("@food/pages/admin/restaurant/AllZonesMap"));
+// Highway Management (replaces Zone Management)
+const HighwaySetup = lazy(() => import("@food/pages/admin/restaurant/HighwaySetup"));
 const RestaurantsList = lazy(() => import("@food/pages/admin/restaurant/RestaurantsList"));
 const AddRestaurant = lazy(() => import("@food/pages/admin/restaurant/AddRestaurant"));
 const JoiningRequest = lazy(() => import("@food/pages/admin/restaurant/JoiningRequest"));
@@ -161,11 +158,10 @@ export default function AdminRouter() {
             <Route path="order-refunds/new" element={<NewRefundRequests />} />
 
             {/* RESTAURANT MANAGEMENT */}
-            <Route path="zone-setup" element={<ZoneSetup />} />
-            <Route path="zone-setup/map" element={<AllZonesMap />} />
-            <Route path="zone-setup/add" element={<AddZone />} />
-            <Route path="zone-setup/edit/:id" element={<AddZone />} />
-            <Route path="zone-setup/view/:id" element={<ViewZone />} />
+            <Route path="highway-setup" element={<HighwaySetup />} />
+            {/* Legacy zone routes — redirect to highway-setup */}
+            <Route path="zone-setup" element={<Navigate to="../highway-setup" replace />} />
+            <Route path="zone-setup/*" element={<Navigate to="../../highway-setup" replace />} />
             <Route path="food-approval" element={<FoodApproval />} />
             <Route path="restaurants" element={<RestaurantsList />} />
             <Route path="restaurants/add" element={<AddRestaurant />} />

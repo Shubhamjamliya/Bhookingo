@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@food/components/ui/select"
-import { restaurantAPI, zoneAPI, uploadAPI, api } from "@food/api"
+import { restaurantAPI, uploadAPI, api } from "@food/api"
 import { MobileTimePicker } from "@mui/x-date-pickers/MobileTimePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
@@ -600,8 +600,7 @@ export default function RestaurantOnboarding() {
   const [isEditing, setIsEditing] = useState(true)
   const [hasExistingRestaurantProfile, setHasExistingRestaurantProfile] = useState(false)
   const [isFssaiCalendarOpen, setIsFssaiCalendarOpen] = useState(false)
-  const [zones, setZones] = useState([])
-  const [zonesLoading, setZonesLoading] = useState(false)
+
   const [isOnboardingHydrated, setIsOnboardingHydrated] = useState(false)
   const isHydratingRef = useRef(false)
 
@@ -612,7 +611,7 @@ export default function RestaurantOnboarding() {
     ownerEmail: "",
     ownerPhone: "",
     primaryContactNumber: "",
-    zoneId: "",
+
     location: {
       formattedAddress: "",
       addressLine1: "",
@@ -916,7 +915,7 @@ export default function RestaurantOnboarding() {
             ownerEmail: s1.ownerEmail || apiData.email || "",
             ownerPhone: s1.ownerPhone || apiData.phone || "",
             primaryContactNumber: s1.primaryContactNumber || apiData.primaryContactNumber || "",
-            zoneId: s1.zoneId || apiData.zoneId || "",
+
             location: {
               ...prev.location,
               formattedAddress: loc.formattedAddress || loc.address || apiData.address || "",
@@ -1174,9 +1173,7 @@ export default function RestaurantOnboarding() {
     } else if (!/^\d{10}$/.test(normalizePhoneDigits(step1.primaryContactNumber))) {
        errors.push("Primary contact number must be exactly 10 digits")
     }
-    if (!step1.zoneId?.trim()) {
-      errors.push("Service zone is required")
-    }
+
     if (!step1.location?.area?.trim()) {
       errors.push("Area/Sector/Locality is required")
     }
@@ -1416,7 +1413,7 @@ export default function RestaurantOnboarding() {
             ownerEmail: (step1.ownerEmail || "").trim(),
             ownerPhone: normalizePhoneDigits(step1.ownerPhone),
             primaryContactNumber: normalizePhoneDigits(step1.primaryContactNumber),
-            zoneId: step1.zoneId || "",
+
             location: {
               formattedAddress: step1.location?.formattedAddress || "",
               addressLine1: step1.location?.addressLine1 || "",
@@ -1479,7 +1476,7 @@ export default function RestaurantOnboarding() {
         formData.append("ownerEmail", (step1.ownerEmail || "").trim())
         formData.append("ownerPhone", normalizePhoneDigits(step1.ownerPhone))
         formData.append("primaryContactNumber", normalizePhoneDigits(step1.primaryContactNumber))
-        formData.append("zoneId", step1.zoneId || "")
+
         formData.append("addressLine1", step1.location?.addressLine1 || "")
         formData.append("addressLine2", step1.location?.addressLine2 || "")
         formData.append("area", step1.location?.area || "")
@@ -1600,7 +1597,7 @@ export default function RestaurantOnboarding() {
         pincode: "452010",
         formattedAddress: "123 Bhookingo Plaza, Vijay Nagar, Indore, MP 452010"
       },
-      zoneId: zones[0]?._id || zones[0]?.id || prev.zoneId
+
     }));
     toast.success("Step 1 data filled!");
   };
@@ -1765,7 +1762,8 @@ export default function RestaurantOnboarding() {
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <h2 className="text-lg font-semibold text-black">Restaurant contact & location</h2>
-        <div>
+        <div className="space-y-4">
+          <div>
           <Label className="text-xs text-gray-700">Primary contact number*</Label>
           <Input
             value={step1.primaryContactNumber || ""}
@@ -1792,33 +1790,7 @@ export default function RestaurantOnboarding() {
             support.
           </p>
         </div>
-        <div className="space-y-3">
-          <p className="text-sm text-gray-700">
-            Add your restaurant's location for order pick-up.
-          </p>
-          <div>
-            <Label className="text-xs text-gray-700">Service zone*</Label>
-            <select
-              value={step1.zoneId || ""}
-              onChange={(e) => setStep1({ ...step1, zoneId: e.target.value })}
-              className="mt-1 w-full h-9 rounded-md border border-input bg-white px-3 text-sm"
-              disabled={zonesLoading || !isEditing}
-            >
-              <option value="">{zonesLoading ? "Loading zones..." : "Select a zone"}</option>
-              {zones.map((z) => {
-                const id = String(z?._id || z?.id || "")
-                const label = z?.name || z?.zoneName || z?.serviceLocation || id
-                return (
-                  <option key={id} value={id}>
-                    {label}
-                  </option>
-                )
-              })}
-            </select>
-            <p className="text-[11px] text-gray-500 mt-1">
-              Choose the service zone where your restaurant will be available.
-            </p>
-          </div>
+
           <div className="relative">
             <Label className="text-xs text-gray-700">Search location</Label>
             <div className="relative">
@@ -2193,24 +2165,7 @@ export default function RestaurantOnboarding() {
     return () => clearTimeout(t)
   }, [locationSearchValue, step])
 
-  // Load zones for onboarding dropdown (public endpoint).
-  useEffect(() => {
-    if (step !== 1) return
-    let cancelled = false
-    setZonesLoading(true)
-    zoneAPI.getPublicZones()
-      .then((res) => {
-        const list = res?.data?.data?.zones || res?.data?.zones || []
-        if (!cancelled) setZones(Array.isArray(list) ? list : [])
-      })
-      .catch(() => {
-        if (!cancelled) setZones([])
-      })
-      .finally(() => {
-        if (!cancelled) setZonesLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [step])
+
 
 
   const renderStep2 = () => (

@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@food/components/ui/select"
-import { restaurantAPI, zoneAPI, uploadAPI } from "@food/api"
+import { restaurantAPI, uploadAPI } from "@food/api"
 import OptimizedImage from "@food/components/OptimizedImage"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
@@ -184,7 +184,7 @@ export default function EditOwner() {
     restaurantName: "",
     pureVegRestaurant: false,
     primaryContactNumber: "",
-    zoneId: "",
+
     location: {
       formattedAddress: "",
       addressLine1: "",
@@ -225,7 +225,7 @@ export default function EditOwner() {
   })
 
   const [initialData, setInitialData] = useState(null)
-  const [zones, setZones] = useState([])
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -253,22 +253,7 @@ export default function EditOwner() {
     }
   }, [])
 
-  // Load Zones on Mount
-  useEffect(() => {
-    let cancelled = false
-    zoneAPI
-      .getPublicZones()
-      .then((res) => {
-        const list = res?.data?.data?.zones || res?.data?.zones || []
-        if (!cancelled) setZones(Array.isArray(list) ? list : [])
-      })
-      .catch((err) => {
-        console.error("Failed to load zones:", err)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+
 
   // Fetch restaurant details
   useEffect(() => {
@@ -304,7 +289,7 @@ export default function EditOwner() {
             restaurantName: apiData.restaurantName || apiData.name || "",
             pureVegRestaurant: Boolean(apiData.pureVegRestaurant),
             primaryContactNumber: (apiData.primaryContactNumber || "").replace(/\D/g, "").slice(-10),
-            zoneId: apiData.zoneId ? String(apiData.zoneId) : "",
+
             location: {
               formattedAddress: loc.formattedAddress || loc.address || "",
               addressLine1: loc.addressLine1 || "",
@@ -522,9 +507,7 @@ export default function EditOwner() {
       errors.push({ tab: "restaurant", field: "primaryContactNumber", message: "Primary contact must be exactly 10 digits" })
     }
 
-    if (!formData.zoneId) {
-      errors.push({ tab: "restaurant", field: "zoneId", message: "Service zone selection is required" })
-    }
+
 
     if (!formData.location?.addressLine1?.trim()) {
       errors.push({ tab: "restaurant", field: "addressLine1", message: "Address details are required" })
@@ -691,7 +674,7 @@ export default function EditOwner() {
         restaurantName: formData.restaurantName.trim(),
         pureVegRestaurant: formData.pureVegRestaurant,
         primaryContactNumber: formData.primaryContactNumber.trim(),
-        zoneId: formData.zoneId,
+
         location: {
           formattedAddress: formData.location.formattedAddress || "",
           addressLine1: formData.location.addressLine1.trim(),
@@ -971,26 +954,7 @@ export default function EditOwner() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
-                    Service Zone
-                  </label>
-                  <Select
-                    value={formData.zoneId}
-                    onValueChange={(val) => handleInputChange("zoneId", val)}
-                  >
-                    <SelectTrigger className="w-full text-sm h-11 bg-white">
-                      <SelectValue placeholder="Select service zone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {zones.map((z) => (
-                        <SelectItem key={z._id || z.id} value={z._id || z.id}>
-                          {z.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+
               </div>
 
               {/* Address details */}

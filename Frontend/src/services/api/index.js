@@ -504,13 +504,47 @@ export const adminAPI = {
     apiClient.post("/food/admin/restaurants", body ?? {}, {
       contextModule: "admin",
     }),
-  /** List pickup zones. Query: limit, page, isActive, search */
-  getZones: (params = {}) =>
-    apiClient.get("/food/admin/zones", {
-      params: { limit: 1000, ...params },
+
+  // ── Highway APIs (replaces Zone APIs) ────────────────────────────────────
+  /** List all cached national highways. */
+  getHighways: (params = {}) =>
+    apiClient.get("/food/admin/highways", {
+      params: { limit: 500, ...params },
       contextModule: "admin",
     }),
-  /** Restaurant report (admin). */
+  getHighwayById: (id) =>
+    apiClient.get(`/food/admin/highways/${String(id)}`, { contextModule: "admin" }),
+  /** Create a manual highway */
+  createHighway: (body) =>
+    apiClient.post("/food/admin/highways", body, { contextModule: "admin" }),
+  /** Update a manual highway */
+  updateHighway: (id, body) =>
+    apiClient.put(`/food/admin/highways/${String(id)}`, body, { contextModule: "admin" }),
+  /** Bulk import National Highways from GeoJSON file (upload) or server default path. */
+  importHighways: (file = null) => {
+    if (file) {
+      const formData = new FormData()
+      formData.append('geojson', file)
+      return apiClient.post("/food/admin/highways/import", formData, {
+        contextModule: "admin",
+        timeout: 600000,
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    }
+    return apiClient.post("/food/admin/highways/import", {}, { contextModule: "admin", timeout: 600000 })
+  },
+  /** Delete a highway record. */
+  deleteHighway: (id) =>
+    apiClient.delete(`/food/admin/highways/${String(id)}`, { contextModule: "admin" }),
+  /** Toggle highway active/inactive. */
+  toggleHighwayStatus: (id) =>
+    apiClient.patch(`/food/admin/highways/${String(id)}/toggle`, {}, { contextModule: "admin" }),
+  /** Get the distance threshold setting. */
+  getHighwaySettings: () =>
+    apiClient.get("/food/admin/highway-settings", { contextModule: "admin" }),
+  /** Update the distance threshold setting. */
+  updateHighwaySettings: (body) =>
+    apiClient.patch("/food/admin/highway-settings", body ?? {}, { contextModule: "admin" }),
   getRestaurantReport: (params = {}) =>
     apiClient.get("/food/admin/reports/restaurants", {
       params: { page: 1, limit: 1000, ...params },
@@ -1564,16 +1598,22 @@ export const userAPI = {
     apiClient.delete("/food/user/account", { contextModule: "user" }),
 };
 export const locationAPI = createStubAPI();
-export const zoneAPI = {
-  /** Public: detect active service zone for a lat/lng point. */
-  detectZone: (lat, lng) =>
-    apiClient.get("/food/zones/detect", {
+/** Highway API – replaces the zone-based service area detection. */
+export const highwayAPI = {
+  /** Detect nearest highway for a lat/lng point. Replaces detectZone. */
+  detectHighway: (lat, lng) =>
+    apiClient.get("/food/landing/highways/detect", {
       params: { lat, lng },
     }),
-  /** Public: list active zones (for onboarding dropdowns). */
-  getPublicZones: (params = {}, config = {}) =>
-    apiClient.get("/food/zones/public", { params: params ?? {}, ...config }),
+  /** List active highways (for displays). */
+  getPublicHighways: (params = {}, config = {}) =>
+    apiClient.get("/food/landing/highways/public", { params: params ?? {}, ...config }),
+  /** Get nearby highways for map rendering. */
+  getNearbyHighways: (params = {}, config = {}) =>
+    apiClient.get("/food/landing/highways/nearby", { params: params ?? {}, ...config }),
 };
+
+
 export const uploadAPI = {
   /**
    * Upload a single image file to the backend (Cloudinary-backed).

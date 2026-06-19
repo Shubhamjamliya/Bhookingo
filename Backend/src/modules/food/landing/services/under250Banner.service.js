@@ -31,7 +31,7 @@ export const createUnder250BannersFromFiles = async (files, meta = {}) => {
                 title: meta.title,
                 ctaText: meta.ctaText,
                 ctaLink: meta.ctaLink,
-                zoneId: meta.zoneId,
+                highwayId: meta.highwayId,
                 sortOrder: meta.sortOrder ?? 0,
                 isActive: true,
             });

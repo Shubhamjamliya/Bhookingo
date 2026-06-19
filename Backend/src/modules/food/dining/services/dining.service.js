@@ -341,7 +341,7 @@ export async function listDiningRestaurantsPublic(query = {}) {
     const filter = { isEnabled: true };
     const categoryValue = String(query.category || '').trim();
     const cityValue = String(query.city || '').trim();
-    const zoneIdValue = String(query.zoneId || '').trim();
+    const zoneIdValue = String(query.highwayId || '').trim();
 
     if (categoryValue) {
         const category = await FoodDiningCategory.findOne({
@@ -369,7 +369,7 @@ export async function listDiningRestaurantsPublic(query = {}) {
     }
 
     if (zoneIdValue && mongoose.Types.ObjectId.isValid(zoneIdValue)) {
-        restaurantAndConditions.push({ zoneId: new mongoose.Types.ObjectId(zoneIdValue) });
+        restaurantAndConditions.push({ highwayId: new mongoose.Types.ObjectId(zoneIdValue) });
     }
 
     if (restaurantAndConditions.length > 0) {

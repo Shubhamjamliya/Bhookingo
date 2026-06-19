@@ -19,7 +19,7 @@ export const searchUnified = async (query = {}, options = {}) => {
         isVeg,
         page = 1,
         limit = 20,
-        zoneId
+        highwayId
     } = query;
 
     const skip = (page - 1) * limit;
@@ -29,10 +29,10 @@ export const searchUnified = async (query = {}, options = {}) => {
     // 1. Initial Filter (approved status and basic conditions)
     const restaurantFilter = { status: 'approved' };
     
-    console.log(`[Search-Service] Querying with term: "${term}", categoryId: "${categoryId}", zoneId: "${zoneId}"`);
+    console.log(`[Search-Service] Querying with term: "${term}", categoryId: "${categoryId}", highwayId: "${highwayId}"`);
 
-    if (zoneId && mongoose.Types.ObjectId.isValid(zoneId)) {
-        restaurantFilter.zoneId = new mongoose.Types.ObjectId(zoneId);
+    if (highwayId && mongoose.Types.ObjectId.isValid(highwayId)) {
+        restaurantFilter.highwayId = new mongoose.Types.ObjectId(highwayId);
     }
 
     if (isVeg === 'true') {
@@ -167,7 +167,7 @@ export const searchUnified = async (query = {}, options = {}) => {
             total: results.length,
             page: parseInt(page),
             limit: parseInt(limit),
-            zoneFiltered: !!(zoneId && mongoose.Types.ObjectId.isValid(zoneId))
+            highwayFiltered: !!(highwayId && mongoose.Types.ObjectId.isValid(highwayId))
         }
     };
 
@@ -178,12 +178,12 @@ export const searchUnified = async (query = {}, options = {}) => {
  * Fetch Admin-only categories
  */
 export const getAdminCategories = async (query = {}) => {
-    const zoneId = query.zoneId;
+    const highwayId = query.highwayId;
 
     let approvedCategoryIds = [];
-    if (zoneId && mongoose.Types.ObjectId.isValid(zoneId)) {
+    if (highwayId && mongoose.Types.ObjectId.isValid(highwayId)) {
         const zoneRestaurants = await FoodRestaurant.find({
-            zoneId: new mongoose.Types.ObjectId(zoneId),
+            highwayId: new mongoose.Types.ObjectId(highwayId),
             status: 'approved'
         }).select('_id').lean();
         const zoneRestaurantIds = zoneRestaurants.map(r => r._id);
@@ -219,19 +219,19 @@ export const getAdminCategories = async (query = {}) => {
         ]
     };
 
-    if (zoneId && mongoose.Types.ObjectId.isValid(zoneId)) {
+    if (highwayId && mongoose.Types.ObjectId.isValid(highwayId)) {
         filter.$and.push({
             $or: [
-                { zoneId: new mongoose.Types.ObjectId(zoneId) },
-                { zoneId: { $exists: false } },
-                { zoneId: null }
+                { highwayId: new mongoose.Types.ObjectId(highwayId) },
+                { highwayId: { $exists: false } },
+                { highwayId: null }
             ]
         });
     } else {
         filter.$and.push({
             $or: [
-                { zoneId: { $exists: false } },
-                { zoneId: null }
+                { highwayId: { $exists: false } },
+                { highwayId: null }
             ]
         });
     }
@@ -258,13 +258,13 @@ export const getAdminCategories = async (query = {}) => {
         }
 
         group.sort((a, b) => {
-            const aZoneMatch = zoneId && String(a.zoneId) === String(zoneId);
-            const bZoneMatch = zoneId && String(b.zoneId) === String(zoneId);
-            if (aZoneMatch && !bZoneMatch) return -1;
-            if (!aZoneMatch && bZoneMatch) return 1;
+            const aHighwayMatch = highwayId && String(a.highwayId) === String(highwayId);
+            const bHighwayMatch = highwayId && String(b.highwayId) === String(highwayId);
+            if (aHighwayMatch && !bHighwayMatch) return -1;
+            if (!aHighwayMatch && bHighwayMatch) return 1;
 
-            const aGlobal = !a.zoneId;
-            const bGlobal = !b.zoneId;
+            const aGlobal = !a.highwayId;
+            const bGlobal = !b.highwayId;
             if (aGlobal && !bGlobal) return -1;
             if (!aGlobal && bGlobal) return 1;
 

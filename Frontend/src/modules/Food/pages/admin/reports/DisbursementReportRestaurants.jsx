@@ -14,7 +14,7 @@ export default function DisbursementReportRestaurants() {
   const [searchQuery, setSearchQuery] = useState("")
   const [disbursements, setDisbursements] = useState(emptyDisbursementReportRestaurants)
   const [filters, setFilters] = useState({
-    zone: "All Zones",
+    zone: "All Highways",
     restaurant: "All restaurants",
     paymentMethod: "All Payment Method",
     status: "All status",
@@ -34,7 +34,7 @@ export default function DisbursementReportRestaurants() {
       )
     }
 
-    if (filters.zone !== "All Zones") {
+    if (filters.zone !== "All Highways") {
       // Filter by zone if needed
     }
 
@@ -83,7 +83,7 @@ export default function DisbursementReportRestaurants() {
 
   const handleResetFilters = () => {
     setFilters({
-      zone: "All Zones",
+      zone: "All Highways",
       restaurant: "All restaurants",
       paymentMethod: "All Payment Method",
       status: "All status",
@@ -91,7 +91,7 @@ export default function DisbursementReportRestaurants() {
     })
   }
 
-  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.paymentMethod !== "All Payment Method" ? 1 : 0) + (filters.status !== "All status" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (filters.zone !== "All Highways" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.paymentMethod !== "All Payment Method" ? 1 : 0) + (filters.status !== "All status" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
 
   return (
     <div className="p-4 lg:p-6 bg-slate-50 min-h-screen">
@@ -171,7 +171,7 @@ export default function DisbursementReportRestaurants() {
                   onChange={(e) => setFilters(prev => ({ ...prev, zone: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="All Zones">All Zones</option>
+                  <option value="All Highways">All Highways</option>
                   <option value="Zone 1">Zone 1</option>
                   <option value="Zone 2">Zone 2</option>
                   <option value="Zone 3">Zone 3</option>
@@ -189,7 +189,7 @@ export default function DisbursementReportRestaurants() {
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="All restaurants">All restaurants</option>
-                  <option value="Café Monarch">Café Monarch</option>
+                  <option value="Cafï¿½ Monarch">Cafï¿½ Monarch</option>
                   <option value="Hungry Puppets">Hungry Puppets</option>
                   <option value="Redcliff Cafe">Redcliff Cafe</option>
                 </select>

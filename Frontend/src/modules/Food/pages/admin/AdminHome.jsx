@@ -39,26 +39,26 @@ function formatCurrency(amount, options = {}) {
 
 export default function AdminHome() {
   const navigate = useNavigate()
-  const [selectedZone, setSelectedZone] = useState("all")
+  const [selectedHighway, setSelectedHighway] = useState("all")
   const [selectedPeriod, setSelectedPeriod] = useState("overall")
   const [isLoading, setIsLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState(null)
-  const [zones, setZones] = useState([])
+  const [highways, setHighways] = useState([])
 
-  // Fetch zone list for filter
+  // Fetch highway list for filter
   useEffect(() => {
-    const fetchZones = async () => {
+    const fetchHighways = async () => {
       try {
-        const response = await adminAPI.getZones({ page: 1, limit: 1000 })
-        const list = response?.data?.data?.zones || []
-        setZones(Array.isArray(list) ? list : [])
+        const response = await adminAPI.getHighways({ page: 1, limit: 1000 })
+        const list = response?.data?.data?.highways || []
+        setHighways(Array.isArray(list) ? list : [])
       } catch (error) {
-        debugError("Error fetching zones:", error)
-        setZones([])
+        debugError("Error fetching highways:", error)
+        setHighways([])
       }
     }
 
-    fetchZones()
+    fetchHighways()
   }, [])
 
   // Fetch dashboard stats from backend when filters change
@@ -68,7 +68,7 @@ export default function AdminHome() {
         setIsLoading(true)
         const params = {
           period: selectedPeriod,
-          ...(selectedZone !== "all" ? { zoneId: selectedZone } : {}),
+          ...(selectedHighway !== "all" ? { highwayId: selectedHighway } : {}),
         }
         const response = await adminAPI.getDashboardStats(params)
         if (response.data?.success && response.data?.data) {
@@ -87,7 +87,7 @@ export default function AdminHome() {
     }
 
     fetchDashboardStats()
-  }, [selectedZone, selectedPeriod])
+  }, [selectedHighway, selectedPeriod])
 
   // Get order stats from real data
   const getOrderStats = () => {
@@ -185,15 +185,15 @@ export default function AdminHome() {
 
           </div>
           <div className="flex flex-wrap gap-3">
-            <Select value={selectedZone} onValueChange={setSelectedZone}>
+            <Select value={selectedHighway} onValueChange={setSelectedHighway}>
               <SelectTrigger className="min-w-[160px] border-neutral-300 bg-white text-neutral-900">
-                <SelectValue placeholder="All zones" />
+                <SelectValue placeholder="All highways" />
               </SelectTrigger>
               <SelectContent className="border-neutral-200 bg-white text-neutral-900">
-                <SelectItem value="all">All zones</SelectItem>
-                {zones.map((zone) => (
-                  <SelectItem key={zone._id} value={zone._id}>
-                    {zone.zoneName || zone.name || "Unnamed Zone"}
+                <SelectItem value="all">All highways</SelectItem>
+                {highways.map((highway) => (
+                  <SelectItem key={highway._id} value={highway._id}>
+                    {highway.name || highway.ref || "Unnamed Highway"}
                   </SelectItem>
                 ))}
               </SelectContent>

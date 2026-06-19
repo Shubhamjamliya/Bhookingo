@@ -30,6 +30,7 @@ pids
 # IDE - IntelliJ
 .idea/
 
-# OS files
-.DS_Store
-Thumbs.db
+# Large highway GeoJSON datasets (download separately — see data/highways/README.md)
+data/highways/*.geojson
+data/highways/*.json
+

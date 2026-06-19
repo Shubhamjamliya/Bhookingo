@@ -40,12 +40,12 @@ export default function RegularOrderReport() {
   const [loading, setLoading] = useState(true)
   const [filterLoading, setFilterLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [zones, setZones] = useState([])
+  const [highways, setHighways] = useState([])
   const [restaurants, setRestaurants] = useState([])
   const [customers, setCustomers] = useState([])
   
   const [filters, setFilters] = useState({
-    zone: "All Zones",
+    zone: "All Highways",
     restaurant: "All restaurants",
     customer: "All customers",
     time: "All Time",
@@ -55,14 +55,14 @@ export default function RegularOrderReport() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
-  // Fetch zones, restaurants, and customers for filter dropdowns
+  // Fetch highways, restaurants, and customers for filter dropdowns
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
         // Fetch zones
-        const zonesRes = await adminAPI.getZones({ limit: 1000, isActive: true })
+        const zonesRes = await adminAPI.getHighways({ limit: 1000, isActive: true })
         if (zonesRes.data?.success) {
-          setZones(zonesRes.data.data.zones || [])
+          setHighways(zonesRes.data.data.zones || [])
         }
 
         // Fetch restaurants
@@ -187,12 +187,12 @@ export default function RegularOrderReport() {
               return String(candidateId || "") === String(restaurantId || "")
             })
 
-            const zoneId =
-              order.zoneId?._id ||
-              order.zoneId?.id ||
-              order.zoneId ||
-              restaurantMeta?.zoneId?._id ||
-              restaurantMeta?.zoneId ||
+            const highwayId =
+              order.highwayId?._id ||
+              order.highwayId?.id ||
+              order.highwayId ||
+              restaurantMeta?.highwayId?._id ||
+              restaurantMeta?.highwayId ||
               ""
 
             const backendStatus = String(order.orderStatus || "").toLowerCase()
@@ -217,7 +217,7 @@ export default function RegularOrderReport() {
               restaurant: restaurantName,
               customerId: String(customerId || ""),
               customerName,
-              zoneId: String(zoneId || ""),
+              highwayId: String(highwayId || ""),
               totalItemAmount: subtotal,
               couponDiscount,
               vatTax,
@@ -247,8 +247,8 @@ export default function RegularOrderReport() {
   const filteredOrders = useMemo(() => {
     let result = [...orders]
 
-    if (filters.zone !== "All Zones") {
-      result = result.filter((order) => String(order.zoneId || "") === String(filters.zone))
+    if (filters.zone !== "All Highways") {
+      result = result.filter((order) => String(order.highwayId || "") === String(filters.zone))
     }
 
     if (filters.restaurant !== "All restaurants") {
@@ -298,7 +298,7 @@ export default function RegularOrderReport() {
 
   const handleResetFilters = () => {
     setFilters({
-      zone: "All Zones",
+      zone: "All Highways",
       restaurant: "All restaurants",
       customer: "All customers",
       time: "All Time",
@@ -307,7 +307,7 @@ export default function RegularOrderReport() {
     setCurrentPage(1)
   }
 
-  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (filters.zone !== "All Highways" ? 1 : 0) + (filters.restaurant !== "All restaurants" ? 1 : 0) + (filters.customer !== "All customers" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE))
 
@@ -425,10 +425,10 @@ export default function RegularOrderReport() {
                 onChange={(e) => handleFilterChange("zone", e.target.value)}
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs appearance-none cursor-pointer"
               >
-                <option value="All Zones">All Zones</option>
-                {zones.map((zone) => (
-                  <option key={zone._id} value={zone._id}>
-                    {zone.zoneName || zone.name}
+                <option value="All Highways">All Highways</option>
+                {highways.map((zone) => (
+                  <option key={highway._id} value={highway._id}>
+                    {highway.name || zone.name}
                   </option>
                 ))}
               </select>

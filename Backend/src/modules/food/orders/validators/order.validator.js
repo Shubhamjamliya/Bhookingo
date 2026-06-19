@@ -46,7 +46,7 @@ export function validateCalculateOrderDto(body) {
     const schema = z.object({
         items: z.array(orderItemSchema).min(1, 'At least one item required'),
         restaurantId: z.string().min(1, 'Restaurant id required'),
-        zoneId: z.string().optional(),
+        highwayId: z.string().optional(),
         couponCode: z.string().optional(),
     });
     const result = schema.safeParse(body);
@@ -72,7 +72,7 @@ export function validateCreateOrderDto(body) {
         restaurantNote: z.string().optional(),
         sendCutlery: z.boolean().optional(),
         paymentMethod: z.enum(['cash', 'razorpay', 'razorpay_qr', 'card', 'wallet']),
-        zoneId: z.string().nullable().optional(),
+        highwayId: z.string().nullable().optional(),
         scheduledAt: z.string().datetime({ offset: true }).nullable().optional()
     });
     const result = schema.safeParse(body);

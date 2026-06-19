@@ -10,6 +10,17 @@ import * as diningAdminController from '../../dining/controllers/diningAdmin.con
 import * as orderController from '../../orders/controllers/order.controller.js';
 import { getAdminPageController, upsertAdminPageController } from '../controllers/pageContent.controller.js';
 import * as systemConfigController from '../controllers/systemConfig.controller.js';
+import {
+    importHighwaysController,
+    listHighwaysController,
+    getHighwayByIdController,
+    deleteHighwayController,
+    toggleHighwayStatusController,
+    getHighwaySettingsController,
+    updateHighwaySettingsController,
+    createHighwayController,
+    updateHighwayController
+} from '../controllers/highway.controller.js';
 import { upload } from '../../../../middleware/upload.js';
 
 const router = express.Router();
@@ -142,12 +153,16 @@ router.get('/archived-accounts', adminController.getArchivedAccounts);
 
 router.get('/contact-messages', adminController.getContactMessages);
 
-// ----- Zones -----
-router.get('/zones', adminController.getZones);
-router.get('/zones/:id', adminController.getZoneById);
-router.post('/zones', adminController.createZone);
-router.patch('/zones/:id', adminController.updateZone);
-router.delete('/zones/:id', adminController.deleteZone);
+// ----- Highways (replaces Zones) -----
+router.post('/highways/import', upload.single('geojson'), importHighwaysController);
+router.post('/highways', createHighwayController);
+router.get('/highways', listHighwaysController);
+router.get('/highway-settings', getHighwaySettingsController);
+router.patch('/highway-settings', updateHighwaySettingsController);
+router.get('/highways/:id', getHighwayByIdController);
+router.put('/highways/:id', updateHighwayController);
+router.delete('/highways/:id', deleteHighwayController);
+router.patch('/highways/:id/toggle', toggleHighwayStatusController);
 
 // ----- Dining -----
 router.get('/dining/categories', diningAdminController.getDiningCategories);

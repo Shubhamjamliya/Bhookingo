@@ -27,7 +27,7 @@ export const uploadUnder250BannersController = async (req, res, next) => {
             title: req.body.title,
             ctaText: req.body.ctaText,
             ctaLink: req.body.ctaLink,
-            zoneId: req.body.zoneId,
+            highwayId: req.body.highwayId,
         };
 
         const results = await createUnder250BannersFromFiles(req.files, meta);

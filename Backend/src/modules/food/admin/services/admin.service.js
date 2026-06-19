@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { assignHighwayToRestaurant } from './highway.service.js';
 
 
-import { FoodZone } from '../models/zone.model.js';
+import { FoodHighway } from '../models/highway.model.js';
 import { FoodCategory } from '../models/category.model.js';
 import { FoodItem } from '../models/food.model.js';
 import { FoodOffer } from '../models/offer.model.js';
@@ -349,8 +350,8 @@ export async function getRestaurants(query) {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .select('restaurantName location area city profileImage coverImages menuImages status ownerName ownerPhone zoneId')
-            .populate('zoneId', 'name zoneName')
+            .select('restaurantName location area city profileImage coverImages menuImages status ownerName ownerPhone highwayId')
+            .populate('highwayId', 'name ref')
             .lean(),
         FoodRestaurant.countDocuments(filter)
     ]);
@@ -440,8 +441,8 @@ const formatMonthShort = (year, monthIndex) =>
 
 export async function getDashboardStats(query = {}) {
     const periodRange = getDateRangeByPeriod(query.period);
-    const zoneId = query.zoneId && mongoose.Types.ObjectId.isValid(query.zoneId)
-        ? new mongoose.Types.ObjectId(query.zoneId)
+    const highwayId = query.highwayId && mongoose.Types.ObjectId.isValid(query.highwayId)
+        ? new mongoose.Types.ObjectId(query.highwayId)
         : null;
 
     const orderMatch = {
@@ -453,20 +454,20 @@ export async function getDashboardStats(query = {}) {
     if (periodRange) {
         orderMatch.createdAt = { $gte: periodRange.start, $lte: periodRange.end };
     }
-    if (zoneId) {
-        orderMatch.zoneId = zoneId;
+    if (highwayId) {
+        orderMatch.highwayId = highwayId;
     }
 
     const restaurantMatch = {};
-    if (zoneId) {
-        restaurantMatch.zoneId = zoneId;
+    if (highwayId) {
+        restaurantMatch.highwayId = highwayId;
     }
 
-    const zoneRestaurantIds = zoneId
-        ? await FoodRestaurant.find({ zoneId }).distinct('_id')
+    const highwayRestaurantIds = highwayId
+        ? await FoodRestaurant.find({ highwayId }).distinct('_id')
         : null;
-    const zoneScopedRestaurantMatch = zoneId
-        ? { restaurantId: { $in: zoneRestaurantIds || [] } }
+    const highwayScopedRestaurantMatch = highwayId
+        ? { restaurantId: { $in: highwayRestaurantIds || [] } }
         : {};
 
     const [
@@ -577,9 +578,9 @@ export async function getDashboardStats(query = {}) {
         FoodRestaurant.countDocuments({ ...restaurantMatch, status: 'pending' }),
         0,
         0,
-        FoodItem.countDocuments({ approvalStatus: 'approved', ...zoneScopedRestaurantMatch }),
-        FoodAddon.countDocuments({ approvalStatus: 'approved', isDeleted: { $ne: true }, ...zoneScopedRestaurantMatch }),
-        zoneId
+        FoodItem.countDocuments({ approvalStatus: 'approved', ...highwayScopedRestaurantMatch }),
+        FoodAddon.countDocuments({ approvalStatus: 'approved', isDeleted: { $ne: true }, ...highwayScopedRestaurantMatch }),
+        highwayId
             ? FoodOrder.distinct('userId', { ...orderMatch, userId: { $ne: null } }).then((ids) => ids.length)
             : FoodUser.countDocuments({}),
         FoodRestaurant.find({ ...restaurantMatch, status: 'pending' }).sort({ createdAt: -1 }).limit(5).select('restaurantName createdAt').lean(),
@@ -593,7 +594,7 @@ export async function getDashboardStats(query = {}) {
             ...orderMatch,
             orderStatus: { $in: CANCELLED_ORDER_STATUSES },
         }).sort({ updatedAt: -1 }).limit(5).select('orderId updatedAt').lean(),
-        zoneId
+        highwayId
             ? FoodOrder.aggregate([
                 { $match: { ...orderMatch, userId: { $ne: null } } },
                 { $sort: { createdAt: -1 } },
@@ -689,8 +690,8 @@ export async function getDashboardStats(query = {}) {
     if (periodRange) {
         txMatch.createdAt = { $gte: periodRange.start, $lte: periodRange.end };
     }
-    if (zoneId) {
-        txMatch.restaurantId = { $in: zoneRestaurantIds || [] };
+    if (highwayId) {
+        txMatch.restaurantId = { $in: highwayRestaurantIds || [] };
     }
 
     const txAgg = await FoodTransaction.aggregate([
@@ -758,8 +759,8 @@ export async function getDashboardStats(query = {}) {
             $lte: new Date()
         }
     };
-    if (zoneId) {
-        txMonthlyMatch.restaurantId = { $in: zoneRestaurantIds || [] };
+    if (highwayId) {
+        txMonthlyMatch.restaurantId = { $in: highwayRestaurantIds || [] };
     }
     
     const txMonthly = await FoodTransaction.aggregate([
@@ -889,18 +890,18 @@ export async function getTransactionReport(query = {}) {
         // Robust Zone Handling (supports both Name string and ObjectId)
         if (zone && zone !== 'All Zones') {
             if (mongoose.Types.ObjectId.isValid(zone)) {
-                restFilter.zoneId = new mongoose.Types.ObjectId(zone);
+                restFilter.highwayId = new mongoose.Types.ObjectId(zone);
             } else {
-                const matchedZone = await FoodZone.findOne({
-                    $or: [{ name: zone }, { zoneName: zone }]
+                const matchedZone = await FoodHighway.findOne({
+                    $or: [{ name: zone }, { highwayName: zone }]
                 })
                     .select('_id')
                     .lean();
                 if (matchedZone?._id) {
-                    restFilter.zoneId = matchedZone._id;
+                    restFilter.highwayId = matchedZone._id;
                 } else {
                     // Force empty result if zone name is not found
-                    restFilter.zoneId = new mongoose.Types.ObjectId();
+                    restFilter.highwayId = new mongoose.Types.ObjectId();
                 }
             }
         }
@@ -1063,15 +1064,15 @@ export async function getRestaurantReport(query = {}) {
     const zoneRaw = String(query.zone || '').trim();
     if (zoneRaw) {
         if (mongoose.Types.ObjectId.isValid(zoneRaw)) {
-            restaurantFilter.zoneId = new mongoose.Types.ObjectId(zoneRaw);
+            restaurantFilter.highwayId = new mongoose.Types.ObjectId(zoneRaw);
         } else {
-            const matchedZone = await FoodZone.findOne({
-                $or: [{ name: zoneRaw }, { zoneName: zoneRaw }]
+            const matchedZone = await FoodHighway.findOne({
+                $or: [{ name: zoneRaw }, { highwayName: zoneRaw }]
             })
                 .select('_id')
                 .lean();
             if (matchedZone?._id) {
-                restaurantFilter.zoneId = matchedZone._id;
+                restaurantFilter.highwayId = matchedZone._id;
             } else {
                 return { restaurants: [], total: 0, page, limit };
             }
@@ -1111,8 +1112,8 @@ export async function getRestaurantReport(query = {}) {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .select('restaurantName profileImage rating totalRatings status zoneId')
-            .populate('zoneId', 'name zoneName')
+            .select('restaurantName profileImage rating totalRatings status highwayId')
+            .populate('highwayId', 'name ref')
             .lean(),
         FoodRestaurant.countDocuments(restaurantFilter)
     ]);
@@ -1206,7 +1207,7 @@ export async function getRestaurantReport(query = {}) {
             averageRatings: Number(restaurant.rating || 0),
             reviews: Number(restaurant.totalRatings || 0),
             status: restaurant.status || 'pending',
-            zoneName: restaurant.zoneId?.name || restaurant.zoneId?.zoneName || ''
+            highwayName: restaurant.highwayId?.name || restaurant.highwayId?.ref || ''
         };
     });
 
@@ -2130,7 +2131,7 @@ export async function getRestaurantById(id) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
     return FoodRestaurant.findById(id)
         .select('-__v')
-        .populate('zoneId', 'name zoneName serviceLocation isActive')
+        .populate('highwayId', 'name ref isActive')
         .lean();
 }
 
@@ -2283,13 +2284,13 @@ export async function updateRestaurantMenuById(id, menu) {
 
 export async function getPendingRestaurants() {
     const restaurants = await FoodRestaurant.find({ status: { $in: ['pending', 'rejected'] } })
-        .populate('zoneId', 'name zoneName')
+        .populate('highwayId', 'name ref')
         .sort({ createdAt: -1 })
         .lean();
     return restaurants.map((r, i) => ({
         ...r,
         sl: i + 1,
-        zone: r.zoneId?.zoneName || r.zoneId?.name || null,
+        highway: r.highwayId?.name || r.highwayId?.ref || null,
     }));
 }
 
@@ -2386,7 +2387,7 @@ export async function updateRestaurantById(id, body = {}) {
     }
 
     await doc.save();
-    return FoodRestaurant.findById(id).select('-__v').populate('zoneId', 'name zoneName serviceLocation isActive').lean();
+    return FoodRestaurant.findById(id).select('-__v').populate('highwayId', 'name ref isActive').lean();
 }
 
 export async function updateRestaurantStatus(id, body = {}) {
@@ -2460,19 +2461,21 @@ export async function updateRestaurantLocation(id, body = {}) {
     doc.pincode = pincode;
     doc.landmark = landmark;
 
-    if (body.zoneId !== undefined) {
-        const zoneId = String(body.zoneId || '').trim();
-        if (!zoneId) {
-            doc.zoneId = undefined;
-        } else if (!mongoose.Types.ObjectId.isValid(zoneId)) {
-            throw new ValidationError('Invalid zoneId');
+    if (body.highwayId !== undefined) {
+        const highwayId = String(body.highwayId || '').trim();
+        if (!highwayId) {
+            doc.highwayId = undefined;
+        } else if (!mongoose.Types.ObjectId.isValid(highwayId)) {
+            throw new ValidationError('Invalid highwayId');
         } else {
-            doc.zoneId = new mongoose.Types.ObjectId(zoneId);
+            doc.highwayId = new mongoose.Types.ObjectId(highwayId);
         }
     }
 
     await doc.save();
-    return FoodRestaurant.findById(id).select('-__v').populate('zoneId', 'name zoneName serviceLocation isActive').lean();
+    // Fire-and-forget highway re-assignment when location changes
+    setImmediate(() => assignHighwayToRestaurant(id).catch(() => {}));
+    return FoodRestaurant.findById(id).select('-__v').lean();
 }
 
 // ----- Categories -----
@@ -2487,14 +2490,14 @@ export async function getCategories(query) {
         filter.$or = [{ name: { $regex: term, $options: 'i' } }];
     }
     // Optional zone filter for admin list.
-    // - zoneId=global => only global categories (zoneId missing)
-    // - zoneId=<ObjectId> => only categories bound to that zone
-    if (query.zoneId && String(query.zoneId).trim()) {
-        const zid = String(query.zoneId).trim();
+    // - highwayId=global => only global categories (highwayId missing)
+    // - highwayId=<ObjectId> => only categories bound to that zone
+    if (query.highwayId && String(query.highwayId).trim()) {
+        const zid = String(query.highwayId).trim();
         if (zid === 'global') {
-            filter.$or = [...(filter.$or || []), { zoneId: { $exists: false } }, { zoneId: null }];
+            filter.$or = [...(filter.$or || []), { highwayId: { $exists: false } }, { highwayId: null }];
         } else if (mongoose.Types.ObjectId.isValid(zid)) {
-            filter.zoneId = new mongoose.Types.ObjectId(zid);
+            filter.highwayId = new mongoose.Types.ObjectId(zid);
         }
     }
     if (query.approvalStatus) {
@@ -2570,12 +2573,12 @@ export async function createCategory(body) {
         image: typeof body.image === 'string' ? body.image.trim() : '',
         type: typeof body.type === 'string' ? body.type.trim() : '',
         foodTypeScope: normalizeCategoryFoodTypeScope(body.foodTypeScope, 'Both'),
-        zoneId:
-            body.zoneId && String(body.zoneId).trim()
+        highwayId:
+            body.highwayId && String(body.highwayId).trim()
                 ? (() => {
-                    const zid = String(body.zoneId).trim();
+                    const zid = String(body.highwayId).trim();
                     if (zid === 'global') return undefined;
-                    if (!mongoose.Types.ObjectId.isValid(zid)) throw new ValidationError('Invalid zoneId');
+                    if (!mongoose.Types.ObjectId.isValid(zid)) throw new ValidationError('Invalid highwayId');
                     return new mongoose.Types.ObjectId(zid);
                 })()
                 : undefined,
@@ -2644,7 +2647,7 @@ export async function makeCategoryGlobal(id) {
 
     doc.createdByRestaurantId = doc.createdByRestaurantId || doc.restaurantId;
     doc.restaurantId = undefined;
-    doc.zoneId = undefined;
+    doc.highwayId = undefined;
     doc.approvalStatus = 'approved';
     doc.isApproved = true;
     doc.rejectionReason = '';
@@ -2678,14 +2681,14 @@ export async function updateCategory(id, body) {
     if (body.type !== undefined) doc.type = String(body.type || '').trim();
     if (body.foodTypeScope !== undefined) doc.foodTypeScope = nextFoodTypeScope;
     if (!doc.restaurantId && doc.createdByRestaurantId) {
-        doc.zoneId = undefined;
-    } else if (body.zoneId !== undefined) {
-        const raw = String(body.zoneId || '').trim();
+        doc.highwayId = undefined;
+    } else if (body.highwayId !== undefined) {
+        const raw = String(body.highwayId || '').trim();
         if (!raw || raw === 'global') {
-            doc.zoneId = undefined;
+            doc.highwayId = undefined;
         } else {
-            if (!mongoose.Types.ObjectId.isValid(raw)) throw new ValidationError('Invalid zoneId');
-            doc.zoneId = new mongoose.Types.ObjectId(raw);
+            if (!mongoose.Types.ObjectId.isValid(raw)) throw new ValidationError('Invalid highwayId');
+            doc.highwayId = new mongoose.Types.ObjectId(raw);
         }
     }
     if (body.isActive !== undefined) doc.isActive = body.isActive !== false;
@@ -3249,14 +3252,14 @@ export async function createRestaurantByAdmin(body) {
         approvedAt: new Date()
     };
 
-    if (body.zoneId !== undefined) {
-        const zoneId = String(body.zoneId || '').trim();
-        if (!zoneId) {
-            doc.zoneId = undefined;
-        } else if (!mongoose.Types.ObjectId.isValid(zoneId)) {
-            throw new ValidationError('Invalid zoneId');
+    if (body.highwayId !== undefined) {
+        const highwayId = String(body.highwayId || '').trim();
+        if (!highwayId) {
+            doc.highwayId = undefined;
+        } else if (!mongoose.Types.ObjectId.isValid(highwayId)) {
+            throw new ValidationError('Invalid highwayId');
         } else {
-            doc.zoneId = new mongoose.Types.ObjectId(zoneId);
+            doc.highwayId = new mongoose.Types.ObjectId(highwayId);
         }
     }
 
@@ -3286,6 +3289,8 @@ export async function createRestaurantByAdmin(body) {
     }
 
     const restaurant = await FoodRestaurant.create(doc);
+    // Fire-and-forget highway assignment (non-blocking)
+    setImmediate(() => assignHighwayToRestaurant(restaurant._id).catch(() => {}));
     return restaurant.toObject();
 }
 
@@ -3583,88 +3588,7 @@ function generateBonusTransactionId() {
 
 
 
-// ----- Zones CRUD -----
-export async function getZones(query) {
-    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 100, 1), 1000);
-    const page = Math.max(parseInt(query.page, 10) || 1, 1);
-    const skip = (page - 1) * limit;
-    const isActive = query.isActive;
-    const search = typeof query.search === 'string' ? query.search.trim() : '';
 
-    const filter = {};
-    if (isActive !== undefined && isActive !== '') {
-        filter.isActive = isActive === 'true' || isActive === '1';
-    }
-    if (search) {
-        filter.$or = [
-            { name: { $regex: search, $options: 'i' } },
-            { zoneName: { $regex: search, $options: 'i' } },
-            { serviceLocation: { $regex: search, $options: 'i' } },
-            { country: { $regex: search, $options: 'i' } }
-        ];
-    }
-
-    const [zones, total] = await Promise.all([
-        FoodZone.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-        FoodZone.countDocuments(filter)
-    ]);
-    return { zones, total, page, limit };
-}
-
-export async function getZoneById(id) {
-    return FoodZone.findById(id).lean();
-}
-
-export async function createZone(body) {
-    const name = typeof body.name === 'string' ? body.name.trim() : (body.zoneName && body.zoneName.trim()) || '';
-    if (!name) return { error: 'Zone name is required' };
-    const coordinates = Array.isArray(body.coordinates) ? body.coordinates : [];
-    if (coordinates.length < 3) return { error: 'At least 3 coordinates (polygon points) are required' };
-
-    const normalized = coordinates.map((c) => ({
-        latitude: Number(c.latitude) || 0,
-        longitude: Number(c.longitude) || 0
-    }));
-
-    const zone = new FoodZone({
-        name,
-        zoneName: body.zoneName && body.zoneName.trim() ? body.zoneName.trim() : name,
-        country: (body.country && body.country.trim()) || 'India',
-        serviceLocation: (body.serviceLocation && body.serviceLocation.trim()) || name,
-        unit: body.unit === 'miles' ? 'miles' : 'kilometer',
-        coordinates: normalized,
-        isActive: body.isActive !== false
-    });
-    await zone.save();
-    return { zone: zone.toObject() };
-}
-
-export async function updateZone(id, body) {
-    const zone = await FoodZone.findById(id);
-    if (!zone) return null;
-
-    if (body.name !== undefined) zone.name = String(body.name).trim();
-    if (body.zoneName !== undefined) zone.zoneName = String(body.zoneName).trim();
-    if (body.country !== undefined) zone.country = String(body.country).trim();
-    if (body.serviceLocation !== undefined) zone.serviceLocation = String(body.serviceLocation).trim();
-    if (body.unit !== undefined) zone.unit = body.unit === 'miles' ? 'miles' : 'kilometer';
-    if (body.isActive !== undefined) zone.isActive = body.isActive !== false;
-    if (Array.isArray(body.coordinates) && body.coordinates.length >= 3) {
-        zone.coordinates = body.coordinates.map((c) => ({
-            latitude: Number(c.latitude) || 0,
-            longitude: Number(c.longitude) || 0
-        }));
-    }
-    if (zone.name) zone.serviceLocation = zone.serviceLocation || zone.name;
-
-    await zone.save();
-    return { zone: zone.toObject() };
-}
-
-export async function deleteZone(id) {
-    const zone = await FoodZone.findByIdAndDelete(id);
-    return zone ? { id } : null;
-}
 
 // ----- Withdrawals (admin) -----
 

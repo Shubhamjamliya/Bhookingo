@@ -15,21 +15,21 @@ export default function RestaurantReport() {
   const [restaurants, setRestaurants] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
-    zone: "All Zones",
+    zone: "All Highways",
     all: "All",
     type: "All types",
     time: "All Time",
   })
-  const [zones, setZones] = useState([])
+  const [highways, setHighways] = useState([])
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   // Fetch zones for filter dropdown
   useEffect(() => {
     const fetchZones = async () => {
       try {
-        const response = await adminAPI.getZones({ limit: 1000 })
+        const response = await adminAPI.getHighways({ limit: 1000 })
         if (response?.data?.success && response.data.data?.zones) {
-          setZones(response.data.data.zones)
+          setHighways(response.data.data.zones)
         }
       } catch (error) {
         debugError("Error fetching zones:", error)
@@ -45,7 +45,7 @@ export default function RestaurantReport() {
         setLoading(true)
         
         const params = {
-          zone: filters.zone !== "All Zones" ? filters.zone : undefined,
+          zone: filters.zone !== "All Highways" ? filters.zone : undefined,
           all: filters.all !== "All" ? filters.all : undefined,
           type: filters.type !== "All types" ? filters.type : undefined,
           time: filters.time !== "All Time" ? filters.time : undefined,
@@ -82,7 +82,7 @@ export default function RestaurantReport() {
 
   const handleReset = () => {
     setFilters({
-      zone: "All Zones",
+      zone: "All Highways",
       all: "All",
       type: "All types",
       time: "All Time",
@@ -118,7 +118,7 @@ export default function RestaurantReport() {
     // Filters are already applied via useMemo
   }
 
-  const activeFiltersCount = (filters.zone !== "All Zones" ? 1 : 0) + (filters.all !== "All" ? 1 : 0) + (filters.type !== "All types" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
+  const activeFiltersCount = (filters.zone !== "All Highways" ? 1 : 0) + (filters.all !== "All" ? 1 : 0) + (filters.type !== "All types" ? 1 : 0) + (filters.time !== "All Time" ? 1 : 0)
 
   const renderStars = (rating, reviews) => {
     const numericRating = Number(rating || 0)
@@ -185,9 +185,9 @@ export default function RestaurantReport() {
                   onChange={(e) => setFilters(prev => ({ ...prev, zone: e.target.value }))}
                   className="w-full px-4 py-2.5 pr-8 text-sm rounded-lg border border-slate-300 bg-white text-slate-700 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="All Zones">All Zones</option>
-                  {zones.map(zone => (
-                    <option key={zone._id} value={zone.name}>{zone.name}</option>
+                  <option value="All Highways">All Highways</option>
+                  {highways.map(zone => (
+                    <option key={highway._id} value={highway.name}>{highway.name}</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-2 bottom-2.5 w-4 h-4 text-slate-500 pointer-events-none" />

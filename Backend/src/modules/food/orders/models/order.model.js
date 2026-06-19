@@ -164,9 +164,9 @@ const orderSchema = new mongoose.Schema(
             ref: 'FoodRestaurant',
             required: true
         },
-        zoneId: {
+        highwayId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'FoodZone',
+            ref: 'FoodHighway',
             index: true
         },
         transactionId: {

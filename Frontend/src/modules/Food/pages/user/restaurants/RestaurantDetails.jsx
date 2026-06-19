@@ -6,7 +6,7 @@ import { restaurantAPI, diningAPI, orderAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
 import { toast } from "sonner"
 import { useLocation } from "@food/hooks/useLocation"
-import { useZone } from "@food/hooks/useZone"
+import { useHighway as useZone } from "@food/hooks/useHighway"
 import {
   ArrowLeft,
   Search,

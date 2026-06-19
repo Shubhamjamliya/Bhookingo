@@ -1,0 +1,381 @@
+import mongoose from 'mongoose';
+import * as turf from '@turf/turf';
+import { FoodHighway } from '../models/highway.model.js';
+import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
+import { FoodSystemConfig } from '../models/systemConfig.model.js';
+import { ValidationError } from '../../../../core/auth/errors.js';
+import {
+    parseHighwayGeoJSON,
+    computeBoundingBoxFromSegments,
+    computeTotalDistanceMeters,
+    pickLongestSegment,
+    countNodes
+} from '../utils/geojsonHighwayParser.js';
+
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const DEFAULT_THRESHOLD_METERS = 1000;
+const HIGHWAY_THRESHOLD_CONFIG_KEY = 'highway_threshold_meters';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Return all line segments for a highway document. */
+const getHighwaySegments = (highway) => {
+    if (Array.isArray(highway.segments) && highway.segments.length > 0) {
+        return highway.segments;
+    }
+    if (Array.isArray(highway.coordinates) && highway.coordinates.length >= 2) {
+        return [highway.coordinates];
+    }
+    return [];
+};
+
+// ─── Threshold Config ────────────────────────────────────────────────────────
+
+export async function getHighwayThresholdMeters() {
+    try {
+        const config = await FoodSystemConfig.findOne({ key: HIGHWAY_THRESHOLD_CONFIG_KEY }).lean();
+        const val = Number(config?.value);
+        return Number.isFinite(val) && val > 0 ? val : DEFAULT_THRESHOLD_METERS;
+    } catch {
+        return DEFAULT_THRESHOLD_METERS;
+    }
+}
+
+export async function setHighwayThresholdMeters(meters, adminId = null) {
+    const val = Number(meters);
+    if (!Number.isFinite(val) || val <= 0) {
+        throw new ValidationError('Threshold must be a positive number in meters');
+    }
+    await FoodSystemConfig.findOneAndUpdate(
+        { key: HIGHWAY_THRESHOLD_CONFIG_KEY },
+        {
+            $set: {
+                key: HIGHWAY_THRESHOLD_CONFIG_KEY,
+                value: val,
+                description: 'Distance threshold (meters) for restaurant-to-highway proximity assignment',
+                updatedBy: adminId
+                    ? { role: 'ADMIN', adminId: new mongoose.Types.ObjectId(adminId), at: new Date() }
+                    : undefined
+            }
+        },
+        { upsert: true, new: true }
+    );
+    return val;
+}
+
+// ─── GeoJSON Bulk Import ─────────────────────────────────────────────────────
+
+/**
+ * Import National Highways from a static GeoJSON FeatureCollection.
+ * Groups LineString segments by NH ref and upserts one document per highway.
+ *
+ * @param {object} geojson - Parsed GeoJSON object
+ * @returns {{ inserted, updated, skipped, total, uniqueRefs }}
+ */
+export async function importHighwaysFromGeoJSON(geojson) {
+    const highwayMap = parseHighwayGeoJSON(geojson);
+
+    if (!highwayMap.size) {
+        throw new ValidationError(
+            'No National Highway features found in GeoJSON. Expected LineString features with Name like "NH 44".'
+        );
+    }
+
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const [ref, data] of highwayMap.entries()) {
+        const { name, segments } = data;
+        if (!segments.length) {
+            skipped++;
+            continue;
+        }
+
+        const boundingBox = computeBoundingBoxFromSegments(segments);
+        const totalDistance = computeTotalDistanceMeters(segments);
+        const coordinates = pickLongestSegment(segments);
+        const nodeCount = countNodes(segments);
+        const segmentCount = segments.length;
+
+        try {
+            const existing = await FoodHighway.findOne({ ref });
+            const payload = {
+                name,
+                ref,
+                segments,
+                coordinates,
+                boundingBox,
+                totalDistance,
+                nodeCount,
+                segmentCount,
+                isActive: true,
+                source: 'geojson',
+                importedAt: new Date()
+            };
+
+            if (existing) {
+                await FoodHighway.updateOne({ ref }, { $set: payload });
+                updated++;
+            } else {
+                await FoodHighway.create(payload);
+                inserted++;
+            }
+        } catch (err) {
+            console.error(`[HighwayService] Failed to upsert highway ${ref}:`, err.message);
+            skipped++;
+        }
+    }
+
+    return {
+        inserted,
+        updated,
+        skipped,
+        total: inserted + updated,
+        uniqueRefs: highwayMap.size
+    };
+}
+
+// ─── Nearest Highway Detection ───────────────────────────────────────────────
+
+export async function findNearestHighway(lat, lng, thresholdMeters) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+    const threshold = thresholdMeters || DEFAULT_THRESHOLD_METERS;
+    const paddingDeg = (threshold + 5000) / 111_000;
+
+    const candidates = await FoodHighway.find({
+        isActive: true,
+        'boundingBox.minLat': { $lte: lat + paddingDeg },
+        'boundingBox.maxLat': { $gte: lat - paddingDeg },
+        'boundingBox.minLng': { $lte: lng + paddingDeg },
+        'boundingBox.maxLng': { $gte: lng - paddingDeg }
+    })
+        .select('name ref coordinates segments')
+        .lean();
+
+    if (!candidates.length) return null;
+
+    const restaurantPoint = turf.point([lng, lat]);
+    let nearest = null;
+    let nearestDistance = Infinity;
+
+    for (const highway of candidates) {
+        const segmentList = getHighwaySegments(highway);
+
+        for (const coords of segmentList) {
+            if (!coords || coords.length < 2) continue;
+
+            const lineCoords = coords.map((c) => [c.lng, c.lat]);
+            const line = turf.lineString(lineCoords);
+
+            let nearestPt;
+            try {
+                nearestPt = turf.nearestPointOnLine(line, restaurantPoint, { units: 'meters' });
+            } catch {
+                continue;
+            }
+
+            const distMeters = nearestPt?.properties?.dist;
+            if (!Number.isFinite(distMeters)) continue;
+
+            if (distMeters < nearestDistance) {
+                nearestDistance = distMeters;
+                nearest = highway;
+            }
+        }
+    }
+
+    if (nearest && nearestDistance <= threshold) {
+        return { highway: nearest, distanceMeters: nearestDistance };
+    }
+
+    return null;
+}
+
+// ─── Restaurant Assignment ───────────────────────────────────────────────────
+
+export async function assignHighwayToRestaurant(restaurantId, thresholdOverride = null) {
+    try {
+        const restaurant = await FoodRestaurant.findById(restaurantId)
+            .select('location highwayId isHighwayRestaurant')
+            .lean();
+        if (!restaurant) return;
+
+        const loc = restaurant.location;
+        const lat = typeof loc?.latitude === 'number' ? loc.latitude
+            : (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null);
+        const lng = typeof loc?.longitude === 'number' ? loc.longitude
+            : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
+
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        const threshold = thresholdOverride ?? await getHighwayThresholdMeters();
+        const result = await findNearestHighway(lat, lng, threshold);
+
+        const update = result
+            ? {
+                highwayId: result.highway._id,
+                highwayName: result.highway.name,
+                highwayRef: result.highway.ref,
+                isHighwayRestaurant: true
+            }
+            : {
+                highwayId: null,
+                highwayName: null,
+                highwayRef: null,
+                isHighwayRestaurant: false
+            };
+
+        await FoodRestaurant.updateOne({ _id: restaurantId }, { $set: update });
+    } catch (err) {
+        console.error(`[HighwayService] assignHighwayToRestaurant(${restaurantId}) failed:`, err.message);
+    }
+}
+
+export async function detectHighwayAtPoint(lat, lng) {
+    const threshold = await getHighwayThresholdMeters();
+    const result = await findNearestHighway(lat, lng, threshold);
+
+    if (result) {
+        return {
+            status: 'IN_SERVICE',
+            highwayId: result.highway._id,
+            highwayName: result.highway.name,
+            highwayRef: result.highway.ref,
+            distanceMeters: Math.round(result.distanceMeters)
+        };
+    }
+
+    return {
+        status: 'OUT_OF_SERVICE',
+        highwayId: null,
+        highwayName: null,
+        highwayRef: null,
+        distanceMeters: null
+    };
+}
+
+// ─── Bulk / Admin ────────────────────────────────────────────────────────────
+
+export async function listHighways(query = {}) {
+    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 200, 1), 1000);
+    const page = Math.max(parseInt(query.page, 10) || 1, 1);
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (query.isActive !== undefined) filter.isActive = query.isActive === 'true' || query.isActive === true;
+    if (query.ref) filter.ref = { $regex: String(query.ref), $options: 'i' };
+
+    const [highways, total] = await Promise.all([
+        FoodHighway.find(filter)
+            .select('name ref isActive importedAt source boundingBox totalDistance nodeCount segmentCount')
+            .sort({ ref: 1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+        FoodHighway.countDocuments(filter)
+    ]);
+
+    return { highways, total, page, limit };
+}
+
+export async function getHighwayById(id) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ValidationError('Invalid highway ID');
+    }
+    const hw = await FoodHighway.findById(id).lean();
+    if (!hw) throw new ValidationError('Highway not found');
+    return hw;
+}
+
+export async function toggleHighwayStatus(id) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ValidationError('Invalid highway ID');
+    }
+    const hw = await FoodHighway.findById(id).select('isActive').lean();
+    if (!hw) throw new ValidationError('Highway not found');
+    await FoodHighway.updateOne({ _id: id }, { $set: { isActive: !hw.isActive } });
+    return { isActive: !hw.isActive };
+}
+
+export async function deleteHighway(id) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ValidationError('Invalid highway ID');
+    }
+    const result = await FoodHighway.findByIdAndDelete(id);
+    if (!result) throw new ValidationError('Highway not found');
+    return { deleted: true };
+}
+
+export async function createHighway({ name, ref, coordinates, segments }) {
+    const segmentList = Array.isArray(segments) && segments.length
+        ? segments
+        : coordinates?.length >= 2
+            ? [coordinates]
+            : null;
+
+    if (!name || !segmentList?.length) {
+        throw new ValidationError('Name and at least one line segment with 2+ points are required');
+    }
+
+    const boundingBox = computeBoundingBoxFromSegments(segmentList);
+    const totalDistance = computeTotalDistanceMeters(segmentList);
+    const primaryCoords = pickLongestSegment(segmentList);
+
+    const highway = await FoodHighway.create({
+        name,
+        ref: ref || `MANUAL-${Date.now()}`,
+        segments: segmentList,
+        coordinates: primaryCoords,
+        boundingBox,
+        totalDistance,
+        nodeCount: countNodes(segmentList),
+        segmentCount: segmentList.length,
+        isActive: true,
+        source: 'manual',
+        importedAt: new Date()
+    });
+    return highway;
+}
+
+export async function updateHighway(id, { name, ref, coordinates, segments }) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ValidationError('Invalid highway ID');
+    }
+
+    const segmentList = Array.isArray(segments) && segments.length
+        ? segments
+        : coordinates?.length >= 2
+            ? [coordinates]
+            : null;
+
+    if (!segmentList?.length) {
+        throw new ValidationError('At least one line segment with 2+ points is required');
+    }
+
+    const boundingBox = computeBoundingBoxFromSegments(segmentList);
+    const totalDistance = computeTotalDistanceMeters(segmentList);
+    const primaryCoords = pickLongestSegment(segmentList);
+
+    const hw = await FoodHighway.findByIdAndUpdate(
+        id,
+        {
+            $set: {
+                name,
+                ref,
+                segments: segmentList,
+                coordinates: primaryCoords,
+                boundingBox,
+                totalDistance,
+                nodeCount: countNodes(segmentList),
+                segmentCount: segmentList.length,
+                source: 'manual_edit'
+            }
+        },
+        { new: true }
+    );
+    if (!hw) throw new ValidationError('Highway not found');
+    return hw;
+}

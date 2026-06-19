@@ -101,7 +101,7 @@ export default function HighwayMapModal({
     segments.forEach((seg) => {
       seg.forEach((c) => bounds.extend(new window.google.maps.LatLng(c.lat, c.lng)));
     });
-    mapRef.current.fitBounds(bounds);
+    mapRef.current.fitBounds(bounds, { top: 60, bottom: 60, left: 60, right: 60 });
   }, [isLoaded, segments]);
 
   const onUnmount = useCallback(() => {
@@ -159,115 +159,194 @@ export default function HighwayMapModal({
     }
   };
 
+  const formatDistance = (meters) => {
+    if (!meters) return "—"
+    if (meters >= 1000) return `${(meters / 1000).toFixed(1)} km`
+    return `${meters} m`
+  }
+
   const showDrawingTool = isManualMode && primarySegment.length === 0;
   const showEditableSingle = isManualMode && primarySegment.length > 0 && segments.length <= 1;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !saving && !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {highway ? (isReadOnly ? "View Highway" : "Edit Highway") : "Draw Manual Highway"}
-          </DialogTitle>
-          <DialogDescription>
-            {isReadOnly
-              ? `Showing ${segmentCount || segments.length} road segment(s) loaded from the database.`
-              : highway
-                ? "View or edit this highway path on the map."
-                : "Draw a single path for a manually added highway."}
-          </DialogDescription>
-        </DialogHeader>
-
-        {!isReadOnly && (
-          <div className="grid grid-cols-2 gap-4 mt-2">
-            <div className="space-y-2">
-              <Label>Highway Name *</Label>
-              <Input placeholder="e.g. National Highway 44" value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Reference Code</Label>
-              <Input placeholder="e.g. NH-44" value={ref} onChange={(e) => setRef(e.target.value)} />
-            </div>
+      <DialogContent className="max-w-[100vw] w-screen h-[100dvh] m-0 p-0 rounded-none border-none flex flex-col md:flex-row overflow-hidden bg-white shadow-none gap-0">
+        
+        {/* Left Side: Details & Forms (~30%) */}
+        <div className="w-full md:w-[350px] lg:w-[400px] xl:w-[450px] shrink-0 bg-white border-r border-gray-200 flex flex-col h-full shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
+          <div className="px-6 py-6 border-b border-gray-100 flex-none bg-white">
+            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+               {highway ? (isReadOnly ? "Highway Route" : "Edit Route") : "Draw New Route"}
+            </h2>
+            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+              {isReadOnly
+                ? `Viewing official data with ${segmentCount || segments.length} segments.`
+                : highway
+                  ? "Update the geometry and details for this route."
+                  : "Click on the map to draw a custom highway route."}
+            </p>
           </div>
-        )}
 
-        <div className="relative mt-4 border rounded-xl overflow-hidden bg-gray-50 h-[500px]">
-          {loading ? (
-            <div className="flex h-full items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-            </div>
-          ) : !isLoaded ? (
-            <div className="flex h-full items-center justify-center text-sm text-gray-500">Loading Map...</div>
-          ) : (
-            <>
-              <GoogleMap
-                mapContainerStyle={MAP_CONTAINER_STYLE}
-                center={DEFAULT_CENTER}
-                zoom={5}
-                onLoad={onLoad}
-                onUnmount={onUnmount}
-                options={{ streetViewControl: false, mapTypeControl: false }}
-              >
-                {isReadOnly && segments.map((seg, idx) => (
-                  <Polyline key={`seg-${idx}`} path={seg} options={POLYLINE_OPTIONS} />
-                ))}
-
-                {showEditableSingle && (
-                  <Polyline
-                    path={primarySegment}
-                    options={{ ...POLYLINE_OPTIONS, strokeWeight: 5, editable: true }}
-                    onLoad={(pl) => { polylineRef.current = pl; }}
-                    onMouseUp={() => {
-                      if (polylineRef.current) {
-                        const path = polylineRef.current.getPath();
-                        const newCoords = [];
-                        for (let i = 0; i < path.getLength(); i++) {
-                          const pt = path.getAt(i);
-                          newCoords.push({ lat: pt.lat(), lng: pt.lng() });
-                        }
-                        setSegments([newCoords]);
-                      }
-                    }}
+          <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-gray-50/30">
+            {!isReadOnly && (
+              <div className="space-y-6">
+                <div className="space-y-2.5">
+                  <Label className="text-sm font-semibold text-gray-700">Highway Name <span className="text-red-500">*</span></Label>
+                  <Input 
+                    placeholder="e.g. National Highway 44" 
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)}
+                    className="bg-white border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 h-11 transition-all"
                   />
-                )}
-
-                {showDrawingTool && (
-                  <DrawingManager
-                    onPolylineComplete={onPolylineComplete}
-                    options={{
-                      drawingControl: true,
-                      drawingControlOptions: {
-                        position: window.google?.maps?.ControlPosition?.TOP_CENTER,
-                        drawingModes: ['polyline']
-                      },
-                      polylineOptions: { ...POLYLINE_OPTIONS, strokeWeight: 5, editable: true }
-                    }}
-                  />
-                )}
-              </GoogleMap>
-
-              {showEditableSingle && (
-                <div className="absolute top-4 right-4 bg-white p-2 rounded-lg shadow-lg">
-                  <Button variant="destructive" size="sm" onClick={handleClearDrawing} className="flex items-center gap-2">
-                    <Trash2 className="w-4 h-4" /> Clear & Redraw
-                  </Button>
                 </div>
-              )}
-            </>
-          )}
+                <div className="space-y-2.5">
+                  <Label className="text-sm font-semibold text-gray-700">Reference Code</Label>
+                  <Input 
+                    placeholder="e.g. NH-44" 
+                    value={ref} 
+                    onChange={(e) => setRef(e.target.value)}
+                    className="bg-white border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 h-11 transition-all"
+                  />
+                </div>
+              </div>
+            )}
+            
+            {isReadOnly && highway && (
+               <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm space-y-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Highway Name</p>
+                    <p className="font-semibold text-gray-900 text-base">{highway.name || "Unnamed Highway"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Reference Code</p>
+                    <p className="font-semibold text-gray-900">{highway.ref || "N/A"}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Total Points</p>
+                      <p className="font-semibold text-gray-900">{highway.nodeCount ?? 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Total Segments</p>
+                      <p className="font-semibold text-gray-900">{highway.segmentCount ?? 0}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Length</p>
+                      <p className="font-semibold text-gray-900">{formatDistance(highway.totalDistance)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Status</p>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${highway.isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+                        {highway.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                  </div>
+               </div>
+            )}
+
+            {!isReadOnly && showEditableSingle && (
+              <div className="bg-blue-50/80 rounded-xl p-4 border border-blue-100 text-sm text-blue-800 font-medium flex items-start gap-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0"></div>
+                <p>You can drag the points on the map to adjust the route path.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 border-t border-gray-200 bg-white flex flex-col gap-3 flex-none mt-auto">
+            {!isReadOnly && (
+              <Button onClick={handleSave} disabled={saving || loading || primarySegment.length < 2} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white shadow-md font-semibold text-base transition-all">
+                {saving ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                {highway ? "Update Highway" : "Save Highway"}
+              </Button>
+            )}
+            <Button variant="outline" onClick={onClose} disabled={saving} className="w-full h-12 border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold text-base transition-colors">
+              {isReadOnly ? "Close View" : "Cancel"}
+            </Button>
+          </div>
         </div>
 
-        <DialogFooter className="mt-6">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            {isReadOnly ? "Close" : "Cancel"}
-          </Button>
-          {!isReadOnly && (
-            <Button onClick={handleSave} disabled={saving || loading || primarySegment.length < 2}>
-              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              {highway ? "Update Highway" : "Save Highway"}
-            </Button>
-          )}
-        </DialogFooter>
+        {/* Right Side: Map (~70%) */}
+        <div className="flex-1 relative bg-gray-100 border-l border-gray-200/50">
+           {loading ? (
+             <div className="absolute inset-0 flex items-center justify-center bg-gray-50/90 backdrop-blur-sm z-20">
+                <div className="flex flex-col items-center gap-4">
+                  <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                  <p className="text-gray-600 font-medium text-lg tracking-tight">Loading Map Data...</p>
+                </div>
+             </div>
+           ) : !isLoaded ? (
+             <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-gray-500">Initializing Map Engine...</div>
+           ) : (
+             <>
+               <GoogleMap
+                 mapContainerStyle={{ width: "100%", height: "100%" }}
+                 center={DEFAULT_CENTER}
+                 zoom={5}
+                 onLoad={onLoad}
+                 onUnmount={onUnmount}
+                 options={{ 
+                   streetViewControl: false, 
+                   mapTypeControl: true,
+                   fullscreenControl: false,
+                   zoomControlOptions: {
+                     position: window.google?.maps?.ControlPosition?.RIGHT_BOTTOM
+                   }
+                 }}
+               >
+                 {isReadOnly && segments.map((seg, idx) => (
+                   <Polyline key={`seg-${idx}`} path={seg} options={POLYLINE_OPTIONS} />
+                 ))}
+
+                 {showEditableSingle && (
+                   <Polyline
+                     path={primarySegment}
+                     options={{ ...POLYLINE_OPTIONS, strokeWeight: 5, editable: true }}
+                     onLoad={(pl) => { polylineRef.current = pl; }}
+                     onMouseUp={() => {
+                       if (polylineRef.current) {
+                         const path = polylineRef.current.getPath();
+                         const newCoords = [];
+                         for (let i = 0; i < path.getLength(); i++) {
+                           const pt = path.getAt(i);
+                           newCoords.push({ lat: pt.lat(), lng: pt.lng() });
+                         }
+                         setSegments([newCoords]);
+                       }
+                     }}
+                   />
+                 )}
+
+                 {showDrawingTool && (
+                   <DrawingManager
+                     onPolylineComplete={onPolylineComplete}
+                     options={{
+                       drawingControl: true,
+                       drawingControlOptions: {
+                         position: window.google?.maps?.ControlPosition?.TOP_CENTER,
+                         drawingModes: ['polyline']
+                       },
+                       polylineOptions: { ...POLYLINE_OPTIONS, strokeWeight: 5, editable: true }
+                     }}
+                   />
+                 )}
+               </GoogleMap>
+               
+               {showEditableSingle && (
+                 <div className="absolute top-6 right-6 z-10">
+                   <Button 
+                     variant="destructive" 
+                     onClick={handleClearDrawing} 
+                     className="flex items-center gap-2 shadow-xl hover:shadow-2xl transition-all h-11 px-5 rounded-full font-semibold text-sm border border-red-700"
+                   >
+                     <Trash2 className="w-4 h-4" /> Clear Route
+                   </Button>
+                 </div>
+               )}
+             </>
+           )}
+        </div>
       </DialogContent>
     </Dialog>
   );

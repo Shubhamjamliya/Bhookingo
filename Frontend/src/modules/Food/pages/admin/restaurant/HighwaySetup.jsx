@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@food/components/ui/ca
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { Switch } from "@food/components/ui/switch"
-import { Loader2, Upload, Trash2, MapPin, Search } from "lucide-react"
+import { Loader2, Upload, Trash2, MapPin, Search, Info } from "lucide-react"
 import { adminAPI } from "@food/api"
 import { toast } from "sonner"
 import { ConfirmationModal } from "@food/components/admin/ConfirmationModal"
@@ -152,21 +152,24 @@ export default function HighwaySetup() {
   )
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">National Highway Setup</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Import official MoRTH/GatiShakti highway geometry once — all runtime data comes from the database.
+    <div className="min-h-screen bg-gray-50/50 p-6 lg:p-8 space-y-8 pb-20">
+      {/* Header Section */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-10 opacity-60 translate-x-1/2 -translate-y-1/2"></div>
+        <div className="z-10">
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">National Highway Setup</h1>
+          <p className="text-base text-gray-500 mt-2 max-w-2xl">
+            Manage the official highway geometry for your service network. Import data once, and define proximity thresholds to connect restaurants.
           </p>
         </div>
-        <div className="flex gap-3 items-center flex-wrap">
+        <div className="flex gap-3 items-center flex-wrap z-10">
           <Button
             onClick={() => { setSelectedHighway(null); setMapModalOpen(true); }}
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 h-11 px-5 shadow-sm hover:bg-gray-50"
           >
-            <MapPin className="w-4 h-4" /> Add Manual Highway
+            <MapPin className="w-4 h-4 text-blue-600" /> 
+            <span className="font-medium">Add Manual</span>
           </Button>
           <input
             ref={fileInputRef}
@@ -177,9 +180,9 @@ export default function HighwaySetup() {
             id="highway-geojson-upload"
           />
           <label htmlFor="highway-geojson-upload">
-            <Button variant="outline" className="flex items-center gap-2" asChild>
-              <span>
-                <Upload className="w-4 h-4" />
+            <Button variant="outline" className="flex items-center gap-2 h-11 px-5 shadow-sm hover:bg-gray-50 border-gray-200" asChild>
+              <span className="cursor-pointer font-medium text-gray-700">
+                <Upload className="w-4 h-4 text-gray-500" />
                 {selectedFile ? selectedFile.name.slice(0, 20) + (selectedFile.name.length > 20 ? "…" : "") : "Choose GeoJSON"}
               </span>
             </Button>
@@ -187,110 +190,128 @@ export default function HighwaySetup() {
           <Button
             onClick={handleImport}
             disabled={importing}
-            className="bg-[#000000] hover:bg-gray-800 text-white"
+            className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md transition-all duration-200"
           >
             {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-            {importing ? "Importing..." : "Import GeoJSON"}
+            {importing ? "Importing Data..." : "Import GeoJSON"}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="col-span-1 border-gray-100 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">System Settings</CardTitle>
+      <div className="flex flex-col gap-6">
+        {/* Settings Section */}
+        <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden">
+          <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-3 px-5">
+            <CardTitle className="text-base font-semibold text-gray-800">System Settings</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Service Threshold (Meters)</label>
-                <p className="text-xs text-gray-500 mb-2">Distance from highway to include a restaurant.</p>
-                <div className="flex gap-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-0.5">Service Threshold</label>
+                <p className="text-xs text-gray-500">
+                  Maximum distance from a highway to include a restaurant.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 max-w-[280px] w-full">
+                <div className="relative flex-1">
                   <Input
                     type="number"
                     value={threshold}
                     onChange={(e) => setThreshold(e.target.value)}
                     placeholder="e.g. 1000"
+                    className="pr-8 h-9 text-sm focus:ring-blue-500"
                   />
-                  <Button onClick={handleSaveThreshold} disabled={savingThreshold} variant="outline">
-                    {savingThreshold ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
-                  </Button>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-400">m</span>
                 </div>
-              </div>
-              <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-lg border border-blue-100 space-y-2">
-                <p><strong>One-time import:</strong> Upload the official National Highways GeoJSON (MoRTH/GatiShakti). Geometry is stored permanently in the database.</p>
-                <p className="text-xs text-blue-700">Download from: github.com/yashveeeeeeer/india-geodata (INDIA_NATIONAL_HIGHWAY.geojson)</p>
+                <Button size="sm" onClick={handleSaveThreshold} disabled={savingThreshold} className="bg-gray-900 h-9 text-white hover:bg-gray-800 px-5 text-xs font-medium">
+                  {savingThreshold ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="col-span-1 md:col-span-2 border-gray-100 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Mapped Highways ({filteredHighways.length})</CardTitle>
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+        {/* Highways Table */}
+        <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden flex flex-col">
+          <CardHeader className="bg-white border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-5 px-6 shrink-0">
+            <div>
+              <CardTitle className="text-lg font-semibold text-gray-800">Mapped Highways</CardTitle>
+              <p className="text-sm text-gray-500 mt-1">Total {filteredHighways.length} routes active</p>
+            </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search highways..."
+                placeholder="Search by name or reference..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9"
+                className="pl-9 bg-gray-50/50 border-gray-200 focus:bg-white transition-colors"
               />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-gray-500">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50 rounded-t-lg">
+          <div className="flex-1 overflow-x-auto">
+            <table className="w-full text-sm text-left whitespace-nowrap">
+              <thead className="text-xs text-gray-500 uppercase bg-gray-50/80 sticky top-0 z-10">
+                <tr>
+                  <th scope="col" className="px-6 py-4 font-semibold tracking-wider">Highway Details</th>
+                  <th scope="col" className="px-6 py-4 font-semibold tracking-wider">Segments</th>
+                  <th scope="col" className="px-6 py-4 font-semibold tracking-wider">Length</th>
+                  <th scope="col" className="px-6 py-4 font-semibold tracking-wider">Status</th>
+                  <th scope="col" className="px-6 py-4 font-semibold tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
                   <tr>
-                    <th scope="col" className="px-6 py-3 rounded-tl-lg">Highway Name</th>
-                    <th scope="col" className="px-6 py-3">Ref</th>
-                    <th scope="col" className="px-6 py-3">Segments</th>
-                    <th scope="col" className="px-6 py-3">Length</th>
-                    <th scope="col" className="px-6 py-3">Status</th>
-                    <th scope="col" className="px-6 py-3 text-right rounded-tr-lg">Action</th>
+                    <td colSpan="5" className="px-6 py-12 text-center">
+                      <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-blue-600" />
+                      <p className="text-gray-500 font-medium">Loading highway network...</p>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan="6" className="text-center py-8 text-gray-500">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-gray-400" />
-                        Loading highways...
+                ) : filteredHighways.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-16 text-center">
+                      <div className="max-w-xs mx-auto">
+                        <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-base font-medium text-gray-900 mb-1">No Highways Found</h3>
+                        <p className="text-sm text-gray-500">
+                          {searchQuery
+                            ? "Try adjusting your search filters."
+                            : "Upload a GeoJSON file to get started with the highway network."}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredHighways.map((highway) => (
+                    <tr key={highway._id} className="bg-white hover:bg-blue-50/30 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-gray-900">{highway.name || "Unnamed Highway"}</span>
+                          {highway.ref && (
+                            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full w-fit mt-1 border border-blue-100">
+                              {highway.ref}
+                            </span>
+                          )}
+                        </div>
                       </td>
-                    </tr>
-                  ) : filteredHighways.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="text-center py-8 text-gray-500">
-                        {searchQuery
-                          ? "No highways match your search."
-                          : "No highways imported yet. Upload a GeoJSON file and click Import GeoJSON."}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-gray-900 font-medium">{highway.segmentCount ?? 0}</span>
+                          <span className="text-xs text-gray-500">{highway.nodeCount ?? 0} points</span>
+                        </div>
                       </td>
-                    </tr>
-                  ) : (
-                    filteredHighways.map((highway) => (
-                      <tr key={highway._id} className="bg-white border-b hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-gray-900">
-                          {highway.name || "Unnamed Highway"}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded border border-gray-200">
-                            {highway.ref || "N/A"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {highway.segmentCount ?? 0} ({highway.nodeCount ?? 0} pts)
-                        </td>
-                        <td className="px-6 py-4">
-                          {formatDistance(highway.totalDistance)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <Switch
-                            checked={highway.isActive}
-                            onCheckedChange={() => handleToggle(highway._id, highway.isActive)}
-                          />
-                        </td>
-                        <td className="px-6 py-4 text-right flex justify-end gap-2">
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {formatDistance(highway.totalDistance)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Switch
+                          checked={highway.isActive}
+                          onCheckedChange={() => handleToggle(highway._id, highway.isActive)}
+                          className="data-[state=checked]:bg-blue-600"
+                        />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
                           <Button
                             variant="outline"
                             size="sm"
@@ -298,10 +319,10 @@ export default function HighwaySetup() {
                               setSelectedHighway(highway)
                               setMapModalOpen(true)
                             }}
-                            className="flex items-center gap-1 h-8"
+                            className="h-8 bg-white hover:bg-gray-50 border-gray-200 text-gray-700 shadow-sm font-medium transition-colors"
                           >
-                            <MapPin className="w-3.5 h-3.5" />
-                            View Map
+                            <MapPin className="w-3.5 h-3.5 mr-1.5 text-blue-500" />
+                            View Route
                           </Button>
                           <Button
                             variant="ghost"
@@ -310,18 +331,18 @@ export default function HighwaySetup() {
                               setHighwayToDelete(highway)
                               setDeleteModalOpen(true)
                             }}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                            className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </Card>
       </div>
 
@@ -329,9 +350,9 @@ export default function HighwaySetup() {
         isOpen={deleteModalOpen}
         onClose={() => !deleting && setDeleteModalOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Highway"
-        description={`Are you sure you want to delete ${highwayToDelete?.name || highwayToDelete?.ref}? This action cannot be undone.`}
-        confirmText={deleting ? "Deleting..." : "Delete"}
+        title="Delete Highway Route"
+        description={`Are you absolutely sure you want to delete ${highwayToDelete?.name || highwayToDelete?.ref}? This action cannot be undone and will affect restaurant mappings.`}
+        confirmText={deleting ? "Deleting..." : "Yes, Delete"}
         confirmVariant="destructive"
         loading={deleting}
       />

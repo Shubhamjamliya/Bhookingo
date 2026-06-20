@@ -38,9 +38,39 @@ export default function HighwayMapModal({
 
   const mapRef = useRef(null);
   const polylineRef = useRef(null);
+  const fitBoundsTimerRef = useRef(null);
 
   const isManualMode = !highway || !isReadOnly;
   const primarySegment = segments[0] || [];
+  const hasRoute = segments.some((seg) => Array.isArray(seg) && seg.length >= 2);
+
+  const fitMapToRoute = useCallback((mapInstance = mapRef.current) => {
+    if (!mapInstance || !window.google?.maps || !segments.length) return;
+
+    const bounds = new window.google.maps.LatLngBounds();
+    let pointCount = 0;
+
+    for (const seg of segments) {
+      if (!Array.isArray(seg)) continue;
+      for (const c of seg) {
+        const lat = Number(c?.lat);
+        const lng = Number(c?.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        bounds.extend({ lat, lng });
+        pointCount++;
+      }
+    }
+
+    if (pointCount === 0) return;
+
+    if (fitBoundsTimerRef.current) clearTimeout(fitBoundsTimerRef.current);
+
+    // Wait for dialog layout + polylines to mount before fitting bounds
+    fitBoundsTimerRef.current = setTimeout(() => {
+      if (!mapRef.current) return;
+      mapRef.current.fitBounds(bounds, 48);
+    }, 150);
+  }, [segments]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -93,16 +123,21 @@ export default function HighwayMapModal({
 
   const onLoad = useCallback((map) => {
     mapRef.current = map;
-  }, []);
+    if (segments.some((seg) => Array.isArray(seg) && seg.length >= 2)) {
+      fitMapToRoute(map);
+    }
+  }, [segments, fitMapToRoute]);
 
   useEffect(() => {
-    if (!isLoaded || !mapRef.current || !segments.length) return;
-    const bounds = new window.google.maps.LatLngBounds();
-    segments.forEach((seg) => {
-      seg.forEach((c) => bounds.extend(new window.google.maps.LatLng(c.lat, c.lng)));
-    });
-    mapRef.current.fitBounds(bounds, { top: 60, bottom: 60, left: 60, right: 60 });
-  }, [isLoaded, segments]);
+    if (!isLoaded || loading || !hasRoute) return;
+    fitMapToRoute();
+  }, [isLoaded, loading, hasRoute, fitMapToRoute]);
+
+  useEffect(() => {
+    return () => {
+      if (fitBoundsTimerRef.current) clearTimeout(fitBoundsTimerRef.current);
+    };
+  }, []);
 
   const onUnmount = useCallback(() => {
     mapRef.current = null;
@@ -281,9 +316,9 @@ export default function HighwayMapModal({
            ) : (
              <>
                <GoogleMap
+                 key={highway?._id || "new-highway"}
                  mapContainerStyle={{ width: "100%", height: "100%" }}
-                 center={DEFAULT_CENTER}
-                 zoom={5}
+                 {...(!hasRoute ? { center: DEFAULT_CENTER, zoom: 5 } : {})}
                  onLoad={onLoad}
                  onUnmount={onUnmount}
                  options={{ 

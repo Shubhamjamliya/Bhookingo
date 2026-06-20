@@ -74,6 +74,66 @@ export const pickLongestSegment = (segments) => {
     return segments.reduce((best, seg) => (seg.length > best.length ? seg : best), segments[0]);
 };
 
+const endpointDistanceMeters = (a, b) =>
+    turf.distance(turf.point([a.lng, a.lat]), turf.point([b.lng, b.lat]), { units: 'meters' });
+
+/**
+ * Merge LineString fragments whose endpoints are within tolerance.
+ * MoRTH GeoJSON stores each highway as hundreds of small segments — without
+ * merging, the map shows many broken polylines even for one continuous road.
+ *
+ * @param {{ lat: number, lng: number }[][]} segments
+ * @param {number} toleranceMeters - max gap between endpoints to treat as connected
+ * @returns {{ lat: number, lng: number }[][]}
+ */
+export const mergeConnectedSegments = (segments, toleranceMeters = 100) => {
+    const pool = (segments || [])
+        .filter((seg) => Array.isArray(seg) && seg.length >= 2)
+        .map((seg) => seg.map((c) => ({ lat: c.lat, lng: c.lng })));
+
+    if (pool.length <= 1) return pool;
+
+    const merged = [];
+
+    while (pool.length > 0) {
+        let chain = pool.shift();
+        let extended = true;
+
+        while (extended) {
+            extended = false;
+            for (let i = pool.length - 1; i >= 0; i--) {
+                const seg = pool[i];
+                const chainStart = chain[0];
+                const chainEnd = chain[chain.length - 1];
+                const segStart = seg[0];
+                const segEnd = seg[seg.length - 1];
+
+                const tryAttach = (appendCoords) => {
+                    chain = appendCoords;
+                    pool.splice(i, 1);
+                    extended = true;
+                };
+
+                if (endpointDistanceMeters(chainEnd, segStart) <= toleranceMeters) {
+                    tryAttach([...chain, ...seg.slice(1)]);
+                } else if (endpointDistanceMeters(chainStart, segEnd) <= toleranceMeters) {
+                    tryAttach([...seg.slice(0, -1), ...chain]);
+                } else if (endpointDistanceMeters(chainEnd, segEnd) <= toleranceMeters) {
+                    const reversed = [...seg].reverse();
+                    tryAttach([...chain, ...reversed.slice(1)]);
+                } else if (endpointDistanceMeters(chainStart, segStart) <= toleranceMeters) {
+                    const reversed = [...seg].reverse();
+                    tryAttach([...reversed.slice(0, -1), ...chain]);
+                }
+            }
+        }
+
+        merged.push(chain);
+    }
+
+    return merged.sort((a, b) => b.length - a.length);
+};
+
 /**
  * Extract NH ref from feature properties (MoRTH / datta07 schema).
  * @param {object} properties
@@ -129,6 +189,12 @@ export const parseHighwayGeoJSON = (geojson) => {
             });
         }
         highwayMap.get(ref).segments.push(coords);
+    }
+
+    // Stitch digitized fragments into continuous chains where endpoints meet
+    for (const entry of highwayMap.values()) {
+        entry.rawSegmentCount = entry.segments.length;
+        entry.segments = mergeConnectedSegments(entry.segments);
     }
 
     return highwayMap;

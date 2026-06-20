@@ -65,6 +65,11 @@ const highwaySchema = new mongoose.Schema(
             type: Number,
             default: 0
         },
+        /** LineString count in source GeoJSON before endpoint merging. */
+        rawSegmentCount: {
+            type: Number,
+            default: 0
+        },
         isActive: {
             type: Boolean,
             default: true,

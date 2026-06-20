@@ -1,4 +1,4 @@
-import { FoodPageContent } from '../models/pageContent.model.js';
+import { FoodPageContent, FOOD_LEGAL_PAGE_KEYS } from '../models/pageContent.model.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 
 const normalizeKey = (key) => String(key || '').trim().toLowerCase();
@@ -50,10 +50,7 @@ export const getAdminPageByKey = async (key) => getPublicPageByKey(key);
 
 export const upsertLegalPage = async (key, payload, updatedBy) => {
     const k = normalizeKey(key);
-    const allowedKeys = [
-        'refund', 'shipping', 'cancellation',
-    ];
-    if (!allowedKeys.includes(k)) {
+    if (!FOOD_LEGAL_PAGE_KEYS.includes(k)) {
         throw new ValidationError('Invalid page key');
     }
     const title = String(payload?.title || '').trim();

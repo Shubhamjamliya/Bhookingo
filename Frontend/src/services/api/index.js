@@ -520,18 +520,26 @@ export const adminAPI = {
   /** Update a manual highway */
   updateHighway: (id, body) =>
     apiClient.put(`/food/admin/highways/${String(id)}`, body, { contextModule: "admin" }),
-  /** Bulk import National Highways from GeoJSON file (upload) or server default path. */
-  importHighways: (file = null) => {
-    if (file) {
-      const formData = new FormData()
-      formData.append('geojson', file)
-      return apiClient.post("/food/admin/highways/import", formData, {
-        contextModule: "admin",
-        timeout: 600000,
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+  /** Bulk import National Highways from GeoJSON file upload. */
+  importHighways: (file, { onUploadProgress } = {}) => {
+    if (!file) {
+      return Promise.reject(new Error('GeoJSON file is required'))
     }
-    return apiClient.post("/food/admin/highways/import", {}, { contextModule: "admin", timeout: 600000 })
+    const formData = new FormData()
+    formData.append('geojson', file)
+    return apiClient.post("/food/admin/highways/import", formData, {
+      contextModule: "admin",
+      timeout: 600000,
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (event) => {
+        if (!onUploadProgress) return
+        if (event.total) {
+          onUploadProgress(Math.min(100, Math.round((event.loaded * 100) / event.total)))
+        } else {
+          onUploadProgress(0)
+        }
+      },
+    })
   },
   /** Delete a highway record. */
   deleteHighway: (id) =>

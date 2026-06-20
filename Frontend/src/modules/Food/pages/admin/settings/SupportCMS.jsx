@@ -10,6 +10,7 @@ export default function SupportCMS() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState("edit"); // "edit" | "preview"
+  const [activeRole, setActiveRole] = useState("user");
   const [supportData, setSupportData] = useState({
     title: "Help & Support",
     content: "",

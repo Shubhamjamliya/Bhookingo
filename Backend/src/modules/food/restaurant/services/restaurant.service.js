@@ -374,8 +374,10 @@ export const registerRestaurant = async (payload, files) => {
             ...images
         });
 
-        // Fire-and-forget highway assignment (non-blocking)
-        setImmediate(() => assignHighwayToRestaurant(restaurant._id).catch(() => {}));
+        // Assign nearest highway from coordinates (replaces legacy zone tracing)
+        await assignHighwayToRestaurant(restaurant._id);
+
+        const refreshed = await FoodRestaurant.findById(restaurant._id).lean();
 
         try {
             const { notifyAdminsSafely } = await import('../../../../core/notifications/firebase.service.js');
@@ -392,7 +394,7 @@ export const registerRestaurant = async (payload, files) => {
             console.error('Failed to notify admins of new restaurant registration:', e);
         }
 
-        return restaurant.toObject();
+        return refreshed || restaurant.toObject();
     } catch (err) {
         // Handle uniqueness conflicts deterministically (race-safe).
         if (err && (err.code === 11000 || err?.name === 'MongoServerError')) {
@@ -1060,6 +1062,65 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             const restaurantNameForNotification =
                 update.restaurantName || currentRestaurant.restaurantName || doc?.restaurantName;
             void notifyAdminsAboutRestaurantProfileReview(restaurantId, restaurantNameForNotification);
+        }
+
+        // Re-assign highway when location changes (replaces legacy zone tracing)
+        if (body.location !== undefined) {
+            await assignHighwayToRestaurant(restaurantId);
+            const refreshed = await FoodRestaurant.findById(restaurantId)
+                .select(
+                    [
+                        'restaurantName',
+                        'cuisines',
+                        'location',
+                        'addressLine1',
+                        'addressLine2',
+                        'area',
+                        'city',
+                        'state',
+                        'pincode',
+                        'landmark',
+                        'ownerName',
+                        'ownerEmail',
+                        'ownerPhone',
+                        'primaryContactNumber',
+                        'pureVegRestaurant',
+                        'profileImage',
+                        'coverImages',
+                        'menuImages',
+                        'openingTime',
+                        'closingTime',
+                        'openDays',
+                        'status',
+                        'createdAt',
+                        'updatedAt',
+                        'panNumber',
+                        'nameOnPan',
+                        'panImage',
+                        'gstRegistered',
+                        'gstNumber',
+                        'gstLegalName',
+                        'gstAddress',
+                        'gstImage',
+                        'fssaiNumber',
+                        'fssaiExpiry',
+                        'fssaiImage',
+                        'accountNumber',
+                        'ifscCode',
+                        'accountHolderName',
+                        'accountType',
+                        'upiId',
+                        'upiQrImage',
+                        'highwayId',
+                        'highwayName',
+                        'highwayRef',
+                        'isHighwayRestaurant'
+                    ].join(' ')
+                )
+                .lean();
+            if (refreshed) {
+                return toRestaurantProfile(refreshed);
+            }
         }
 
         return toRestaurantProfile(doc);

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@food/components/ui/ca
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { Switch } from "@food/components/ui/switch"
-import { Loader2, Upload, Trash2, MapPin, Search, Info } from "lucide-react"
+import { Loader2, Upload, Trash2, MapPin, Search } from "lucide-react"
 import { adminAPI } from "@food/api"
 import { toast } from "sonner"
 import { ConfirmationModal } from "@food/components/admin/ConfirmationModal"
@@ -13,10 +13,12 @@ export default function HighwaySetup() {
   const [highways, setHighways] = useState([])
   const [loading, setLoading] = useState(true)
   const [importing, setImporting] = useState(false)
+  const [importProgress, setImportProgress] = useState(0)
+  const [importPhase, setImportPhase] = useState(null) // 'upload' | 'processing'
+  const [importFileName, setImportFileName] = useState("")
   const [threshold, setThreshold] = useState(1000)
   const [savingThreshold, setSavingThreshold] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedFile, setSelectedFile] = useState(null)
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [highwayToDelete, setHighwayToDelete] = useState(null)
@@ -58,40 +60,54 @@ export default function HighwaySetup() {
     fetchSettings()
   }, [])
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      if (!file.name.endsWith('.geojson') && !file.name.endsWith('.json')) {
-        toast.error("Please select a .geojson or .json file")
-        return
-      }
-      setSelectedFile(file)
-    }
+  const resetImportState = () => {
+    setImporting(false)
+    setImportProgress(0)
+    setImportPhase(null)
+    setImportFileName("")
+    if (fileInputRef.current) fileInputRef.current.value = ""
   }
 
-  const handleImport = async () => {
+  const handleUploadClick = () => {
+    if (importing) return
+    fileInputRef.current?.click()
+  }
+
+  const handleFileSelected = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.name.endsWith(".geojson") && !file.name.endsWith(".json")) {
+      toast.error("Please select a .geojson or .json file")
+      if (fileInputRef.current) fileInputRef.current.value = ""
+      return
+    }
+
+    setImporting(true)
+    setImportProgress(0)
+    setImportPhase("upload")
+    setImportFileName(file.name)
+
     try {
-      setImporting(true)
-      const toastId = toast.loading(
-        selectedFile
-          ? `Importing from ${selectedFile.name}... This may take a few minutes.`
-          : "Importing from server GeoJSON file... This may take a few minutes."
-      )
-      const res = await adminAPI.importHighways(selectedFile)
+      const res = await adminAPI.importHighways(file, {
+        onUploadProgress: (pct) => {
+          setImportProgress(pct)
+          if (pct >= 100) setImportPhase("processing")
+        },
+      })
+
       if (res?.data?.success) {
         const { inserted, updated, total } = res.data.data || {}
-        toast.success(`Import complete: ${total ?? 0} highways (${inserted ?? 0} new, ${updated ?? 0} updated)`, { id: toastId })
-        setSelectedFile(null)
-        if (fileInputRef.current) fileInputRef.current.value = ""
+        toast.success(`Import complete: ${total ?? 0} highways (${inserted ?? 0} new, ${updated ?? 0} updated)`)
         fetchHighways()
       } else {
-        toast.error(res?.data?.message || "Import failed", { id: toastId })
+        toast.error(res?.data?.message || "Import failed")
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to import highways")
+      toast.error(error?.response?.data?.message || error.message || "Failed to import highways")
       console.error(error)
     } finally {
-      setImporting(false)
+      resetImportState()
     }
   }
 
@@ -151,52 +167,75 @@ export default function HighwaySetup() {
     (h.ref || "").toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  const progressLabel =
+    importPhase === "processing"
+      ? "Processing and saving highways to database..."
+      : "Uploading GeoJSON file..."
+
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 lg:p-8 space-y-8 pb-20">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".geojson,.json"
+        onChange={handleFileSelected}
+        className="hidden"
+      />
+
       {/* Header Section */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-10 opacity-60 translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -z-10 opacity-60 translate-x-1/2 -translate-y-1/2" />
         <div className="z-10">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">National Highway Setup</h1>
           <p className="text-base text-gray-500 mt-2 max-w-2xl">
-            Manage the official highway geometry for your service network. Import data once, and define proximity thresholds to connect restaurants.
+            Upload the official MoRTH GeoJSON file once. All highway routes are stored in the database permanently.
           </p>
         </div>
-        <div className="flex gap-3 items-center flex-wrap z-10">
+        <div className="z-10 shrink-0">
           <Button
-            onClick={() => { setSelectedHighway(null); setMapModalOpen(true); }}
-            variant="outline"
-            className="flex items-center gap-2 h-11 px-5 shadow-sm hover:bg-gray-50"
-          >
-            <MapPin className="w-4 h-4 text-blue-600" /> 
-            <span className="font-medium">Add Manual</span>
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".geojson,.json"
-            onChange={handleFileChange}
-            className="hidden"
-            id="highway-geojson-upload"
-          />
-          <label htmlFor="highway-geojson-upload">
-            <Button variant="outline" className="flex items-center gap-2 h-11 px-5 shadow-sm hover:bg-gray-50 border-gray-200" asChild>
-              <span className="cursor-pointer font-medium text-gray-700">
-                <Upload className="w-4 h-4 text-gray-500" />
-                {selectedFile ? selectedFile.name.slice(0, 20) + (selectedFile.name.length > 20 ? "…" : "") : "Choose GeoJSON"}
-              </span>
-            </Button>
-          </label>
-          <Button
-            onClick={handleImport}
+            onClick={handleUploadClick}
             disabled={importing}
-            className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md transition-all duration-200"
+            className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-md"
           >
-            {importing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-            {importing ? "Importing Data..." : "Import GeoJSON"}
+            {importing ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4 mr-2" />
+            )}
+            {importing ? "Importing..." : "Upload GeoJSON"}
           </Button>
         </div>
       </div>
+
+      {/* Import progress */}
+      {importing && (
+        <div className="bg-white rounded-xl border border-blue-100 shadow-sm p-5 space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{progressLabel}</p>
+              {importFileName && (
+                <p className="text-xs text-gray-500 mt-0.5 truncate max-w-md">{importFileName}</p>
+              )}
+            </div>
+            <span className="text-sm font-bold text-blue-600 tabular-nums">
+              {importPhase === "processing" ? "…" : `${importProgress}%`}
+            </span>
+          </div>
+          <div className="h-2.5 w-full rounded-full bg-gray-100 overflow-hidden">
+            {importPhase === "processing" ? (
+              <div className="h-full w-full rounded-full bg-blue-500 animate-pulse" />
+            ) : (
+              <div
+                className="h-full rounded-full bg-blue-600 transition-all duration-300 ease-out"
+                style={{ width: `${importProgress}%` }}
+              />
+            )}
+          </div>
+          <p className="text-xs text-gray-500">
+            Large files (~100 MB) can take several minutes. Please keep this tab open.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-6">
         {/* Settings Section */}
@@ -273,11 +312,23 @@ export default function HighwaySetup() {
                       <div className="max-w-xs mx-auto">
                         <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                         <h3 className="text-base font-medium text-gray-900 mb-1">No Highways Found</h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-500 mb-4">
                           {searchQuery
                             ? "Try adjusting your search filters."
-                            : "Upload a GeoJSON file to get started with the highway network."}
+                            : "Click Upload GeoJSON to import the official highway network."}
                         </p>
+                        {!searchQuery && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleUploadClick}
+                            disabled={importing}
+                            className="gap-2"
+                          >
+                            <Upload className="w-4 h-4" />
+                            Upload GeoJSON
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Input } from "@food/components/ui/input"
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@food/components/ui/select"
-import { restaurantAPI, uploadAPI, api } from "@food/api"
+import { restaurantAPI, uploadAPI, api, highwayAPI } from "@food/api"
 import { MobileTimePicker } from "@mui/x-date-pickers/MobileTimePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
@@ -678,6 +678,17 @@ export default function RestaurantOnboarding() {
   const [locationSuggestions, setLocationSuggestions] = useState([])
   const [isSearchingLocation, setIsSearchingLocation] = useState(false)
 
+  const [highwayInfo, setHighwayInfo] = useState({
+    loading: false,
+    status: null,
+    thresholdMeters: null,
+    highwayId: null,
+    highwayName: null,
+    highwayRef: null,
+    distanceMeters: null,
+  })
+  const highwayDetectTimerRef = useRef(null)
+
   const getPreviewImageUrl = (value) => {
     if (!value) return null
     if (typeof value === "string") return value
@@ -1071,6 +1082,81 @@ export default function RestaurantOnboarding() {
     }
   }, [])
 
+  const detectHighwayForLocation = useCallback(async (lat, lng) => {
+    const latNum = Number(lat)
+    const lngNum = Number(lng)
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+      setHighwayInfo({
+        loading: false,
+        status: null,
+        thresholdMeters: null,
+        highwayId: null,
+        highwayName: null,
+        highwayRef: null,
+        distanceMeters: null,
+      })
+      return
+    }
+
+    setHighwayInfo((prev) => ({ ...prev, loading: true }))
+    try {
+      const res = await highwayAPI.detectHighway(latNum, lngNum)
+      const data = res?.data?.data
+      if (res?.data?.success && data) {
+        setHighwayInfo({
+          loading: false,
+          status: data.status,
+          thresholdMeters: data.thresholdMeters ?? null,
+          highwayId: data.highwayId || null,
+          highwayName: data.highwayName || null,
+          highwayRef: data.highwayRef || null,
+          distanceMeters: data.distanceMeters ?? null,
+        })
+      } else {
+        setHighwayInfo({
+          loading: false,
+          status: "OUT_OF_SERVICE",
+          thresholdMeters: null,
+          highwayId: null,
+          highwayName: null,
+          highwayRef: null,
+          distanceMeters: null,
+        })
+      }
+    } catch {
+      setHighwayInfo((prev) => ({ ...prev, loading: false }))
+    }
+  }, [])
+
+  // Detect nearest national highway when restaurant location coordinates change
+  useEffect(() => {
+    if (step !== 1) return
+
+    const lat = step1.location?.latitude
+    const lng = step1.location?.longitude
+    if (!lat || !lng) {
+      setHighwayInfo({
+        loading: false,
+        status: null,
+        thresholdMeters: null,
+        highwayId: null,
+        highwayName: null,
+        highwayRef: null,
+        distanceMeters: null,
+      })
+      return
+    }
+
+    if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
+    highwayDetectTimerRef.current = setTimeout(() => {
+      detectHighwayForLocation(lat, lng)
+    }, 400)
+
+    return () => {
+      if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
+    }
+  }, [step, step1.location?.latitude, step1.location?.longitude, detectHighwayForLocation])
+
   // Save to localStorage whenever step data changes
   useEffect(() => {
     if (!isOnboardingHydrated) return
@@ -1184,6 +1270,23 @@ export default function RestaurantOnboarding() {
       errors.push("Pincode is required")
     } else if (!/^\d{6}$/.test(normalizePincode(step1.location.pincode))) {
       errors.push("Pincode must be exactly 6 digits")
+    }
+
+    const lat = Number(step1.location?.latitude)
+    const lng = Number(step1.location?.longitude)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      errors.push("Please search and select a location so map coordinates are captured")
+    } else if (highwayInfo.loading) {
+      errors.push("Checking highway proximity — please wait a moment")
+    } else if (highwayInfo.status !== "IN_SERVICE") {
+      const threshold = highwayInfo.thresholdMeters || 1000
+      if (highwayInfo.highwayRef && Number.isFinite(highwayInfo.distanceMeters)) {
+        errors.push(
+          `Restaurant must be within ${threshold} m of a national highway. Nearest ${highwayInfo.highwayRef} is ${highwayInfo.distanceMeters} m away.`
+        )
+      } else {
+        errors.push(`Restaurant must be within ${threshold} m of an active national highway`)
+      }
     }
 
     return errors
@@ -1426,6 +1529,9 @@ export default function RestaurantOnboarding() {
               latitude: step1.location?.latitude || "",
               longitude: step1.location?.longitude || "",
             },
+            ...(highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId
+              ? { highwayId: String(highwayInfo.highwayId) }
+              : {}),
             cuisines: Array.isArray(step2.cuisines) ? step2.cuisines : [],
             openingTime: normalizeTimeValue(step2.openingTime) || "",
             closingTime: normalizeTimeValue(step2.closingTime) || "",
@@ -1487,6 +1593,9 @@ export default function RestaurantOnboarding() {
         formData.append("formattedAddress", step1.location?.formattedAddress || "")
         formData.append("latitude", String(step1.location?.latitude || ""))
         formData.append("longitude", String(step1.location?.longitude || ""))
+        if (highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId) {
+          formData.append("highwayId", String(highwayInfo.highwayId))
+        }
 
         // Step 2
         formData.append("cuisines", (step2.cuisines || []).join(","))
@@ -1947,6 +2056,46 @@ export default function RestaurantOnboarding() {
               placeholder="Pincode"
             />
           </div>
+
+          {(highwayInfo.loading || highwayInfo.status) && (
+            <div
+              className={`rounded-lg border px-3 py-2.5 text-sm ${
+                highwayInfo.loading
+                  ? "bg-gray-50 border-gray-200 text-gray-600"
+                  : highwayInfo.status === "IN_SERVICE"
+                    ? "bg-green-50 border-green-200 text-green-800"
+                    : "bg-amber-50 border-amber-200 text-amber-800"
+              }`}
+            >
+              {highwayInfo.loading ? (
+                <span>Checking if location is within the national highway service range...</span>
+              ) : highwayInfo.status === "IN_SERVICE" ? (
+                <span>
+                  Within service range ({highwayInfo.thresholdMeters ?? 1000} m): assigned to{" "}
+                  <strong>{highwayInfo.highwayRef || highwayInfo.highwayName}</strong>
+                  {Number.isFinite(highwayInfo.distanceMeters)
+                    ? ` — ${highwayInfo.distanceMeters} m from highway`
+                    : ""}
+                </span>
+              ) : (
+                <span>
+                  {highwayInfo.highwayRef && Number.isFinite(highwayInfo.distanceMeters) ? (
+                    <>
+                      Too far from highway service area. Nearest{" "}
+                      <strong>{highwayInfo.highwayRef}</strong> is {highwayInfo.distanceMeters} m away
+                      (max allowed: {highwayInfo.thresholdMeters ?? 1000} m). Choose a location closer to the highway.
+                    </>
+                  ) : (
+                    <>
+                      No active national highway within {highwayInfo.thresholdMeters ?? 1000} m of this location.
+                      Choose a location closer to a mapped highway.
+                    </>
+                  )}
+                </span>
+              )}
+            </div>
+          )}
+
           <p className="text-[11px] text-gray-500 mt-1">
             Please ensure that this address is the same as mentioned on your FSSAI license.
           </p>

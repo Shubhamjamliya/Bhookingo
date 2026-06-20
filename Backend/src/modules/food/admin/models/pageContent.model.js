@@ -1,5 +1,19 @@
 import mongoose from 'mongoose';
 
+export const FOOD_LEGAL_PAGE_KEYS = [
+    'terms',
+    'terms_restaurant',
+    'privacy',
+    'privacy_restaurant',
+    'support_user',
+    'support_restaurant',
+    'refund',
+    'shipping',
+    'cancellation'
+];
+
+export const FOOD_PAGE_CONTENT_KEYS = ['about', ...FOOD_LEGAL_PAGE_KEYS];
+
 const featureSchema = new mongoose.Schema(
     {
         icon: { type: String, default: 'Heart' },
@@ -42,9 +56,7 @@ const pageContentSchema = new mongoose.Schema(
             required: true,
             unique: true,
             index: true,
-            enum: [
-                'refund', 'shipping', 'cancellation', 'about',
-            ]
+            enum: FOOD_PAGE_CONTENT_KEYS
         },
         legal: { type: legalPageSchema, default: undefined },
         about: { type: aboutPageSchema, default: undefined },

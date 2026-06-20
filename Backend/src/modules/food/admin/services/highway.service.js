@@ -9,7 +9,8 @@ import {
     computeBoundingBoxFromSegments,
     computeTotalDistanceMeters,
     pickLongestSegment,
-    countNodes
+    countNodes,
+    mergeConnectedSegments
 } from '../utils/geojsonHighwayParser.js';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -93,6 +94,7 @@ export async function importHighwaysFromGeoJSON(geojson) {
             continue;
         }
 
+        const rawSegmentCount = data.rawSegmentCount ?? segments.length;
         const boundingBox = computeBoundingBoxFromSegments(segments);
         const totalDistance = computeTotalDistanceMeters(segments);
         const coordinates = pickLongestSegment(segments);
@@ -110,6 +112,7 @@ export async function importHighwaysFromGeoJSON(geojson) {
                 totalDistance,
                 nodeCount,
                 segmentCount,
+                rawSegmentCount,
                 isActive: true,
                 source: 'geojson',
                 importedAt: new Date()
@@ -139,11 +142,14 @@ export async function importHighwaysFromGeoJSON(geojson) {
 
 // ─── Nearest Highway Detection ───────────────────────────────────────────────
 
-export async function findNearestHighway(lat, lng, thresholdMeters) {
+/**
+ * Find geographically nearest active highway segment (ignores service threshold).
+ * @returns {{ highway, distanceMeters } | null}
+ */
+const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters = DEFAULT_THRESHOLD_METERS + 5000) => {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-    const threshold = thresholdMeters || DEFAULT_THRESHOLD_METERS;
-    const paddingDeg = (threshold + 5000) / 111_000;
+    const paddingDeg = searchPaddingMeters / 111_000;
 
     const candidates = await FoodHighway.find({
         isActive: true,
@@ -187,11 +193,15 @@ export async function findNearestHighway(lat, lng, thresholdMeters) {
         }
     }
 
-    if (nearest && nearestDistance <= threshold) {
-        return { highway: nearest, distanceMeters: nearestDistance };
-    }
+    if (!nearest) return null;
+    return { highway: nearest, distanceMeters: nearestDistance };
+};
 
-    return null;
+export async function findNearestHighway(lat, lng, thresholdMeters) {
+    const threshold = thresholdMeters || DEFAULT_THRESHOLD_METERS;
+    const result = await findNearestHighwayUnchecked(lat, lng, threshold + 5000);
+    if (!result || result.distanceMeters > threshold) return null;
+    return result;
 }
 
 // ─── Restaurant Assignment ───────────────────────────────────────────────────
@@ -236,24 +246,40 @@ export async function assignHighwayToRestaurant(restaurantId, thresholdOverride 
 
 export async function detectHighwayAtPoint(lat, lng) {
     const threshold = await getHighwayThresholdMeters();
-    const result = await findNearestHighway(lat, lng, threshold);
+    const nearest = await findNearestHighwayUnchecked(lat, lng, threshold + 5000);
 
-    if (result) {
+    if (!nearest) {
+        return {
+            status: 'OUT_OF_SERVICE',
+            thresholdMeters: threshold,
+            highwayId: null,
+            highwayName: null,
+            highwayRef: null,
+            distanceMeters: null
+        };
+    }
+
+    const distanceMeters = Math.round(nearest.distanceMeters);
+    const withinThreshold = nearest.distanceMeters <= threshold;
+
+    if (withinThreshold) {
         return {
             status: 'IN_SERVICE',
-            highwayId: result.highway._id,
-            highwayName: result.highway.name,
-            highwayRef: result.highway.ref,
-            distanceMeters: Math.round(result.distanceMeters)
+            thresholdMeters: threshold,
+            highwayId: nearest.highway._id,
+            highwayName: nearest.highway.name,
+            highwayRef: nearest.highway.ref,
+            distanceMeters
         };
     }
 
     return {
         status: 'OUT_OF_SERVICE',
+        thresholdMeters: threshold,
         highwayId: null,
-        highwayName: null,
-        highwayRef: null,
-        distanceMeters: null
+        highwayName: nearest.highway.name,
+        highwayRef: nearest.highway.ref,
+        distanceMeters
     };
 }
 
@@ -287,6 +313,12 @@ export async function getHighwayById(id) {
     }
     const hw = await FoodHighway.findById(id).lean();
     if (!hw) throw new ValidationError('Highway not found');
+
+    // Stitch fragments for map display (idempotent if already merged at import)
+    if (Array.isArray(hw.segments) && hw.segments.length > 1) {
+        hw.segments = mergeConnectedSegments(hw.segments);
+    }
+
     return hw;
 }
 

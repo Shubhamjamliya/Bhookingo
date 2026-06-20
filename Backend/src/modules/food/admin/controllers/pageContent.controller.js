@@ -1,5 +1,6 @@
 import { sendResponse } from '../../../../utils/response.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
+import { FOOD_LEGAL_PAGE_KEYS } from '../models/pageContent.model.js';
 import {
     getPublicPageByKey,
     getAdminPageByKey,
@@ -38,10 +39,7 @@ export const upsertAdminPageController = async (req, res, next) => {
             const result = await upsertAboutPage(req.body ?? {}, updatedBy);
             return sendResponse(res, 200, 'Page updated successfully', result.data);
         }
-        const allowedLegalKeys = [
-            'refund', 'shipping', 'cancellation',
-        ];
-        if (allowedLegalKeys.includes(key)) {
+        if (FOOD_LEGAL_PAGE_KEYS.includes(key)) {
             const result = await upsertLegalPage(key, req.body ?? {}, updatedBy);
             return sendResponse(res, 200, 'Page updated successfully', result.data);
         }

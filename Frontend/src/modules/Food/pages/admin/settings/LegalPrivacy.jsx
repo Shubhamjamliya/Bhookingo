@@ -8,6 +8,7 @@ export default function PrivacyPolicy() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState("edit"); // "edit" | "preview"
+  const [activeRole, setActiveRole] = useState("user");
   const [privacyData, setPrivacyData] = useState({
     title: "Privacy Policy",
     content: "",

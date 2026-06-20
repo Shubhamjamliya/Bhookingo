@@ -25,6 +25,7 @@ export const detectHighwayPublicController = async (req, res, next) => {
             message: result.status === 'IN_SERVICE' ? 'Highway detected' : 'Out of service area',
             data: {
                 status: result.status,
+                thresholdMeters: result.thresholdMeters,
                 highwayId: result.highwayId,
                 highwayName: result.highwayName,
                 highwayRef: result.highwayRef,

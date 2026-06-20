@@ -146,11 +146,12 @@ export default function App() {
     
     // Safety Net: Aggressively check local storage every 2 seconds if active token gets deleted
     const safetyInterval = setInterval(() => {
-      // Don't kick users out of auth pages or public legal pages!
+      // Don't kick users out of auth pages, onboarding, or public legal pages!
       const isRestaurantAuth = location.pathname.includes('/login') || location.pathname.includes('/otp') || location.pathname.includes('/signup') || location.pathname.includes('/auth') || location.pathname.includes('/forgot-password')
+      const isRestaurantOnboarding = location.pathname.includes('/onboarding')
       const isPublicLegalPage = location.pathname.includes('/privacy') || location.pathname.includes('/terms') || location.pathname.includes('/help-content') || location.pathname.includes('/help/content') || location.pathname.includes('/help-centre/support')
       
-      if (location.pathname.startsWith('/food/restaurant') && !isRestaurantAuth && !isPublicLegalPage) {
+      if (location.pathname.startsWith('/food/restaurant') && !isRestaurantAuth && !isRestaurantOnboarding && !isPublicLegalPage) {
         if (!localStorage.getItem('restaurant_accessToken')) {
           navigate('/food/restaurant/login', { replace: true })
         }

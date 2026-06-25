@@ -1610,15 +1610,15 @@ export const locationAPI = createStubAPI();
 export const highwayAPI = {
   /** Detect nearest highway for a lat/lng point. Replaces detectZone. */
   detectHighway: (lat, lng) =>
-    apiClient.get("/food/landing/highways/detect", {
+    apiClient.get("/food/highways/detect", {
       params: { lat, lng },
     }),
   /** List active highways (for displays). */
   getPublicHighways: (params = {}, config = {}) =>
-    apiClient.get("/food/landing/highways/public", { params: params ?? {}, ...config }),
+    apiClient.get("/food/highways/public", { params: params ?? {}, ...config }),
   /** Get nearby highways for map rendering. */
   getNearbyHighways: (params = {}, config = {}) =>
-    apiClient.get("/food/landing/highways/nearby", { params: params ?? {}, ...config }),
+    apiClient.get("/food/highways/nearby", { params: params ?? {}, ...config }),
 };
 
 

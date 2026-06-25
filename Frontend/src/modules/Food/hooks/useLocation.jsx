@@ -215,55 +215,18 @@ const TEMPORARY_DEFAULT_INDORE_LOCATION = {
 
 export function useLocation() {
   const [isDefaultLocationMode, setIsDefaultLocationMode] = useState(() => {
-    try {
-      const saved = localStorage.getItem("bhookingo_customization_settings")
-      if (saved) {
-        return JSON.parse(saved).default_location_enabled === true
-      }
-    } catch {}
-    return false
+    return true;
   })
 
   const [location, setLocation] = useState(() => {
-    try {
-      const cached = localStorage.getItem("userLocation")
-      if (cached) return JSON.parse(cached)
-      
-      const savedSettings = localStorage.getItem("bhookingo_customization_settings")
-      const isEnabled = savedSettings ? JSON.parse(savedSettings).default_location_enabled === true : false
-      return isEnabled ? TEMPORARY_DEFAULT_INDORE_LOCATION : null
-    } catch {
-      const savedSettings = localStorage.getItem("bhookingo_customization_settings")
-      const isEnabled = savedSettings ? JSON.parse(savedSettings).default_location_enabled === true : false
-      return isEnabled ? TEMPORARY_DEFAULT_INDORE_LOCATION : null
-    }
+    return TEMPORARY_DEFAULT_INDORE_LOCATION;
   })
   const [loading, setLoading] = useState(globalLocationLoading)
 
   useEffect(() => {
     const handleSettingsLoaded = () => {
-      try {
-        const saved = localStorage.getItem("bhookingo_customization_settings")
-        if (saved) {
-          const enabled = JSON.parse(saved).default_location_enabled === true
-          setIsDefaultLocationMode(enabled)
-          
-          if (!enabled) {
-            // If default location mode is disabled, check if the current userLocation is the default Indore one
-            const currentStored = localStorage.getItem("userLocation")
-            if (currentStored) {
-              const parsed = JSON.parse(currentStored)
-              if (parsed?.latitude === TEMPORARY_DEFAULT_INDORE_LOCATION.latitude && 
-                  parsed?.longitude === TEMPORARY_DEFAULT_INDORE_LOCATION.longitude) {
-                // Clear it so the original flow triggers location prompt
-                localStorage.removeItem("userLocation")
-                setLocation(null)
-                debugLog("?? Default location mode disabled. Cleared default Indore location from storage.")
-              }
-            }
-          }
-        }
-      } catch {}
+      // Force default location mode to true for temporary fix
+      setIsDefaultLocationMode(true);
     }
     
     window.addEventListener("customizationSettingsLoaded", handleSettingsLoaded)

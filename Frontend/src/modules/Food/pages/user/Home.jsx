@@ -1488,8 +1488,9 @@ export default function Home() {
           params.lng = parseFloat(effectiveLocation.longitude.toFixed(4));
         }
 
-        // Limit results for performance
-        params.limit = 40;
+        // Limit results for performance (temporary fix to show all)
+        params.limit = 1000;
+        params.radiusKm = 100; // Temporary fix to get all restaurants in the area
 
         // Sort by
         if (filters.sortBy || sortBy) {

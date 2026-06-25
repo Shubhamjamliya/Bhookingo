@@ -15,6 +15,8 @@ const baseURL =
     ? String(import.meta.env.VITE_API_BASE_URL).replace(/\/$/, "")
     : "/api/v1";
 
+    console.log(baseURL)
+
 const apiClient = axios.create({
   baseURL: baseURL || undefined,
   timeout: 30000,

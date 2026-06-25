@@ -41,7 +41,10 @@ app.use(helmet({
     noSniff: true,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
-app.use(cors());
+app.use(cors({
+    origin: ["http://localhost:5173"],
+    credentials: true
+}));
 // app.use(morgan('dev'));
 app.use(express.json({
     verify: (req, res, buf) => {

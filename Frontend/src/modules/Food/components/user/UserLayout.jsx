@@ -1,6 +1,5 @@
 import { Outlet, useLocation, useNavigate, useNavigationType } from "react-router-dom"
-import { useEffect, useState, createContext, useContext, useRef, useCallback, useMemo } from "react"
-import { toast } from "sonner"
+import { useEffect, useState, createContext, useContext, useCallback, useMemo } from "react"
 import { ProfileProvider } from "@food/context/ProfileContext"
 import LocationPrompt from "./LocationPrompt"
 import { CartProvider } from "@food/context/CartContext"
@@ -17,7 +16,6 @@ import { useUserNotifications } from "../../hooks/useUserNotifications"
 import { useProfile } from "@food/context/ProfileContext"
 import { useLocation as useGeoLocation } from "../../hooks/useLocation"
 import { useHighway as useZone } from "../../hooks/useHighway"
-import OutOfZoneScreen from "./OutOfZoneScreen"
 import { isModuleAuthenticated } from "../../utils/auth"
 import { AppShellSkeleton } from "@food/components/ui/loading-skeletons"
 import LoginRequiredModal from "./LoginRequiredModal"
@@ -162,8 +160,7 @@ function UserLayoutContent() {
   const location = useLocation()
   const { location: activeLocation, loading: isGeoLoading } = useGeoLocation()
   const { loading: isProfileLoading } = useProfile()
-  const { isOutOfService: isOutOfZone, loading: isZoneLoading, zoneStatus } = useZone(activeLocation)
-  const { openLocationSelector } = useLocationSelector()
+  const { loading: isZoneLoading, zoneStatus } = useZone(activeLocation)
   const navigationType = useNavigationType()
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
 
@@ -182,29 +179,10 @@ function UserLayoutContent() {
     : location.pathname
   const normalizedPath = path.length > 1 ? path.replace(/\/+$/, "") : path
 
-  const isMainPage = normalizedPath === "/" || 
-    normalizedPath === "" || 
-    normalizedPath === "/user" || 
-    normalizedPath === "/dining" || 
-    normalizedPath === "/user/dining" || 
-    normalizedPath === "/takeaway" || 
-    normalizedPath === "/user/takeaway" ||
-    normalizedPath === "/under-250" ||
-    normalizedPath === "/user/under-250";
-
-  // Determine if this is a policy or auth page immediately
   const isAuthPage = normalizedPath.includes('auth/');
   const isPolicyPage = normalizedPath.includes('terms') || 
                        normalizedPath.includes('privacy') || 
                        normalizedPath.includes('support');
-
-  const shouldBlockOutOfZone = 
-    !isAuthPage && 
-    !isPolicyPage &&
-    !normalizedPath.includes('profile') &&
-    !normalizedPath.includes('wallet') &&
-    !normalizedPath.includes('help') &&
-    !normalizedPath.includes('address');
 
   // Debounced loading state to prevent flickering and ensure smooth navigation transitions
   const { showGlobalLoader, setShowGlobalLoader } = useLocationSelector()
@@ -287,52 +265,6 @@ function UserLayoutContent() {
     normalizedPath === "")
 
   const isUnder250 = normalizedPath === "/under-250" || normalizedPath === "/user/under-250"
-  const lastOutOfZoneRef = useRef(isOutOfZone)
-
-  // Out of Zone Branded Toast Trigger
-  useEffect(() => {
-    // Only show toast if out of zone, loader is gone, and we are on a main page where the out-of-zone screen is shown
-    if (isOutOfZone && !lastOutOfZoneRef.current && !showGlobalLoader && isMainPage) {
-      const timer = setTimeout(() => {
-        toast.custom((t) => (
-          <div
-            className="w-[calc(100vw-32px)] sm:w-[380px] bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl pointer-events-auto flex items-center gap-4 p-3.5 border border-gray-50 duration-300 animate-in fade-in slide-in-from-top-4"
-          >
-            <div className="flex-shrink-0">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#DC2626] to-[#991B1B] flex items-center justify-center p-1.5 shadow-lg">
-                <img 
-                  src="/assets/images/bhookingo-toast-logo.png" 
-                  alt="Bhookingo" 
-                  className="w-full h-full object-contain brightness-0 invert" 
-                />
-              </div>
-            </div>
-            <div className="flex-1 pr-2">
-              <p className="text-[14px] font-bold text-gray-800 leading-tight">
-                Restaurants are unavailable here right now.
-              </p>
-              <p className="text-[13px] font-medium text-gray-500 mt-1">
-                Please choose a different location
-              </p>
-            </div>
-          </div>
-        ), {
-          duration: 4000,
-          position: 'top-center',
-          id: 'out-of-zone-toast'
-        });
-      }, 300); // Shorter delay after loader is gone
-
-      lastOutOfZoneRef.current = true;
-      return () => clearTimeout(timer);
-    }
-    
-    // Reset the ref if user moves back into a zone
-    if (!isOutOfZone) {
-      lastOutOfZoneRef.current = false;
-    }
-  }, [isOutOfZone, showGlobalLoader, isMainPage]);
-
 
   return (
     <>
@@ -351,25 +283,20 @@ function UserLayoutContent() {
 
       {/* Desktop Navbar - Hidden on mobile, visible on medium+ screens */}
       <div className="hidden md:block">
-        {showBottomNav && !isOutOfZone && <DesktopNavbar showLogo={!isUnder250} />}
+        {showBottomNav && <DesktopNavbar showLogo={!isUnder250} />}
       </div>
       {!isPolicyPage && !isAuthPage && <LocationPrompt />}
       
       {isInitialChecking && !location.pathname.includes('/search') ? (
         <AppShellSkeleton />
-      ) : (zoneStatus === "OUT_OF_SERVICE" && !isZoneLoading && !isGeoLoading) && shouldBlockOutOfZone ? (
-        <OutOfZoneScreen 
-          location={activeLocation} 
-          handleLocationClick={openLocationSelector} 
-        />
       ) : (
         <main className={`${showBottomNav ? "md:pt-40" : ""} min-h-screen flex flex-col`}>
           <Outlet />
         </main>
       )}
 
-      {(normalizedPath === "/" || normalizedPath === "" || normalizedPath === "/user") && !isOutOfZone && <BackToTop />}
-      {showBottomNav && !isOutOfZone && <BottomNavigation />}
+      {(normalizedPath === "/" || normalizedPath === "" || normalizedPath === "/user") && <BackToTop />}
+      {showBottomNav && <BottomNavigation />}
       
       {/* Central Login Required Modal */}
       <LoginRequiredModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />

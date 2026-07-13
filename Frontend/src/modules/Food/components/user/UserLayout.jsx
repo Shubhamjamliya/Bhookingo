@@ -1,15 +1,14 @@
 import { Outlet, useLocation, useNavigate, useNavigationType } from "react-router-dom"
-import { useEffect, useState, createContext, useContext, useRef, useCallback, useMemo } from "react"
-import { toast } from "sonner"
+import { useEffect, useState, createContext, useContext, useCallback, useMemo } from "react"
 import { ProfileProvider } from "@food/context/ProfileContext"
 import LocationPrompt from "./LocationPrompt"
 import LocationDebugger from "../debug/LocationDebugger"
 import { CartProvider } from "@food/context/CartContext"
 import { OrdersProvider } from "@food/context/OrdersContext"
 import { MapPin } from "lucide-react"
-const debugLog = (...args) => {}
-const debugWarn = (...args) => {}
-const debugError = (...args) => {}
+const debugLog = (...args) => { }
+const debugWarn = (...args) => { }
+const debugError = (...args) => { }
 
 import SearchOverlay from "./SearchOverlay"
 import BottomNavigation from "./BottomNavigation"
@@ -35,7 +34,7 @@ function RouteSyncHandler() {
       path = path.substring(5) || "/"
     }
     const normalizedPath = path.replace(/\/+$/, "") || "/"
-    
+
     // Paths that should PRESERVE the current orderType (sub-navigation)
     const preservePaths = [
       "/cart", "/user/cart",
@@ -46,7 +45,7 @@ function RouteSyncHandler() {
       "/profile", "/user/profile"
     ]
     const isPreservePath = preservePaths.some(p => normalizedPath === p || normalizedPath.startsWith(p + "/"))
-    
+
     if (isPreservePath) return
 
     // Explicit mode switches
@@ -162,8 +161,8 @@ function LocationSelectorProvider({ children }) {
 function UserLayoutContent() {
   const location = useLocation()
   const isAuthenticated = isModuleAuthenticated('user')
-  const { 
-    location: activeLocation, 
+  const {
+    location: activeLocation,
     loading: isGeoLoading,
     permissionGranted,
     error: locationError,
@@ -192,29 +191,10 @@ function UserLayoutContent() {
     : location.pathname
   const normalizedPath = path.length > 1 ? path.replace(/\/+$/, "") : path
 
-  const isMainPage = normalizedPath === "/" || 
-    normalizedPath === "" || 
-    normalizedPath === "/user" || 
-    normalizedPath === "/dining" || 
-    normalizedPath === "/user/dining" || 
-    normalizedPath === "/takeaway" || 
-    normalizedPath === "/user/takeaway" ||
-    normalizedPath === "/under-250" ||
-    normalizedPath === "/user/under-250";
-
-  // Determine if this is a policy or auth page immediately
   const isAuthPage = normalizedPath.includes('auth/');
-  const isPolicyPage = normalizedPath.includes('terms') || 
-                       normalizedPath.includes('privacy') || 
-                       normalizedPath.includes('support');
-
-  const shouldBlockOutOfZone = 
-    !isAuthPage && 
-    !isPolicyPage &&
-    !normalizedPath.includes('profile') &&
-    !normalizedPath.includes('wallet') &&
-    !normalizedPath.includes('help') &&
-    !normalizedPath.includes('address');
+  const isPolicyPage = normalizedPath.includes('terms') ||
+    normalizedPath.includes('privacy') ||
+    normalizedPath.includes('support');
 
   // Debounced loading state to prevent flickering and ensure smooth navigation transitions
   const { showGlobalLoader, setShowGlobalLoader } = useLocationSelector()
@@ -263,8 +243,8 @@ function UserLayoutContent() {
 
   // Global Refresh Handler - Scroll to top ONLY on browser refresh
   useEffect(() => {
-    const isReload = 
-      performance.getEntriesByType('navigation')[0]?.type === 'reload' || 
+    const isReload =
+      performance.getEntriesByType('navigation')[0]?.type === 'reload' ||
       window.performance?.navigation?.type === 1;
 
     if (isReload) {
@@ -277,7 +257,7 @@ function UserLayoutContent() {
   useEffect(() => {
     const rootPaths = ["/", "/user", "/food", "/dining", "/user/dining", "/takeaway", "/user/takeaway"];
     const isAtRoot = rootPaths.includes(location.pathname);
-    
+
     if (navigationType !== 'POP' && !isAtRoot && !location.pathname.includes('/search')) {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
@@ -297,58 +277,12 @@ function UserLayoutContent() {
     normalizedPath === "")
 
   const isUnder250 = normalizedPath === "/under-250" || normalizedPath === "/user/under-250"
-  const lastOutOfZoneRef = useRef(isOutOfZone)
-
-  // Out of Zone Branded Toast Trigger
-  useEffect(() => {
-    // Only show toast if out of zone, loader is gone, and we are on a main page where the out-of-zone screen is shown
-    if (isOutOfZone && !lastOutOfZoneRef.current && !showGlobalLoader && isMainPage) {
-      const timer = setTimeout(() => {
-        toast.custom((t) => (
-          <div
-            className="w-[calc(100vw-32px)] sm:w-[380px] bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-3xl pointer-events-auto flex items-center gap-4 p-3.5 border border-gray-50 duration-300 animate-in fade-in slide-in-from-top-4"
-          >
-            <div className="flex-shrink-0">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#DC2626] to-[#991B1B] flex items-center justify-center p-1.5 shadow-lg">
-                <img 
-                  src="/assets/images/bhookingo-toast-logo.png" 
-                  alt="Bhookingo" 
-                  className="w-full h-full object-contain brightness-0 invert" 
-                />
-              </div>
-            </div>
-            <div className="flex-1 pr-2">
-              <p className="text-[14px] font-bold text-gray-800 leading-tight">
-                Restaurants are unavailable here right now.
-              </p>
-              <p className="text-[13px] font-medium text-gray-500 mt-1">
-                Please choose a different location
-              </p>
-            </div>
-          </div>
-        ), {
-          duration: 4000,
-          position: 'top-center',
-          id: 'out-of-zone-toast'
-        });
-      }, 300); // Shorter delay after loader is gone
-
-      lastOutOfZoneRef.current = true;
-      return () => clearTimeout(timer);
-    }
-    
-    // Reset the ref if user moves back into a zone
-    if (!isOutOfZone) {
-      lastOutOfZoneRef.current = false;
-    }
-  }, [isOutOfZone, showGlobalLoader, isMainPage]);
-
 
   return (
     <>
       {showDebug && <LocationDebugger />}
       <RouteSyncHandler />
-      
+
       {/* Location Fetching Loader - Only shown on main pages after login */}
       {showGlobalLoader && !isInitialChecking && !location.pathname.includes('/search') && (
         <div className="fixed inset-0 z-[1000] bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300 pointer-events-auto">
@@ -362,10 +296,10 @@ function UserLayoutContent() {
 
       {/* Desktop Navbar - Hidden on mobile, visible on medium+ screens */}
       <div className="hidden md:block">
-        {showBottomNav && !isOutOfZone && <DesktopNavbar showLogo={!isUnder250} />}
+        {showBottomNav && <DesktopNavbar showLogo={!isUnder250} />}
       </div>
       {!isPolicyPage && !isAuthPage && <LocationPrompt />}
-      
+
       {isInitialChecking && !location.pathname.includes('/search') ? (
         <AppShellSkeleton />
       ) : (!isAuthPage && !isPolicyPage && isAuthenticated && hasNoLocation && !isGeoLoading) ? (
@@ -378,7 +312,7 @@ function UserLayoutContent() {
                 <MapPin className="h-10 w-10 text-white" />
               </div>
             </div>
-            
+
             <h2 className="text-2xl font-bold mb-3 tracking-tight">Location Access Required</h2>
             <p className="text-sm text-white/80 leading-relaxed mb-6">
               Please enable location access to discover restaurants near you.
@@ -433,9 +367,9 @@ function UserLayoutContent() {
         </main>
       )}
 
-      {(normalizedPath === "/" || normalizedPath === "" || normalizedPath === "/user") && !isOutOfZone && <BackToTop />}
-      {showBottomNav && !isOutOfZone && <BottomNavigation />}
-      
+      {(normalizedPath === "/" || normalizedPath === "" || normalizedPath === "/user") && <BackToTop />}
+      {showBottomNav && <BottomNavigation />}
+
       {/* Central Login Required Modal */}
       <LoginRequiredModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
     </>

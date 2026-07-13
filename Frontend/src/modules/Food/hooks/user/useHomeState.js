@@ -18,8 +18,6 @@ export const useHomeState = () => {
   const [showVegModePopup, setShowVegModePopup] = useState(false);
   const [showSwitchOffPopup, setShowSwitchOffPopup] = useState(false);
   const [showLocationAlert, setShowLocationAlert] = useState(false);
-  const [outOfZone, setOutOfZone] = useState(false);
-  const [outOfZoneRestaurant, setOutOfZoneRestaurant] = useState(null);
 
   // Collections state
   const [isManageCollectionsOpen, setIsManageCollectionsOpen] = useState(false);
@@ -46,8 +44,6 @@ export const useHomeState = () => {
     showVegModePopup, setShowVegModePopup,
     showSwitchOffPopup, setShowSwitchOffPopup,
     showLocationAlert, setShowLocationAlert,
-    outOfZone, setOutOfZone,
-    outOfZoneRestaurant, setOutOfZoneRestaurant,
     isManageCollectionsOpen, setIsManageCollectionsOpen
   };
 };

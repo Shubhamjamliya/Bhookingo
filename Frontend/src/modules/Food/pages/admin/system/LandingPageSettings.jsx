@@ -1011,12 +1011,12 @@ export default function LandingPageSettings({ type = "admin" }) {
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
-                      defaultValue="#006fbd"
+                      defaultValue="#f50022"
                       className="w-16 h-10 rounded border border-slate-300 cursor-pointer"
                     />
                     <input
                       type="text"
-                      placeholder="#006fbd"
+                      placeholder="#f50022"
                       className="flex-1 px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>

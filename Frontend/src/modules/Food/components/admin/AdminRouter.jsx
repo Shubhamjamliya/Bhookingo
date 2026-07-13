@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminLayout from "./AdminLayout";
+import AdminErrorBoundary from "./AdminErrorBoundary";
 import AuthRedirect from "@food/components/AuthRedirect";
 import Loader from "@food/components/Loader";
 
@@ -126,7 +127,9 @@ export default function AdminRouter() {
         <Route
           element={
             <ProtectedRoute>
-              <AdminLayout />
+              <AdminErrorBoundary>
+                <AdminLayout />
+              </AdminErrorBoundary>
             </ProtectedRoute>
           }
         >

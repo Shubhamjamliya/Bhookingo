@@ -297,7 +297,7 @@ export default function FoodApproval() {
                 placeholder="Search by name, category, restaurant or status"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-md border border-gray-300 bg-white py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:border-[#006fbd] focus:ring-1 focus:ring-[#006fbd]"
+                className="w-full rounded-md border border-gray-300 bg-white py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:border-[#f50022] focus:ring-1 focus:ring-[#f50022]"
               />
             </div>
           </div>
@@ -305,13 +305,13 @@ export default function FoodApproval() {
           {/* Table */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#006fbd]" />
+              <Loader2 className="w-8 h-8 animate-spin text-[#f50022]" />
             </div>
           ) : (
             <div className="border-t border-gray-200">
               <div className="w-full overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead style={{ backgroundColor: "rgba(0, 111, 189, 0.1)" }}>
+                  <thead style={{ backgroundColor: "rgba(245, 0, 34, 0.1)" }}>
                     <tr>
                       <th className="px-3 py-3 !text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         S.No
@@ -408,7 +408,7 @@ export default function FoodApproval() {
                               <button
                                 onClick={() => handleViewDetails(request)}
                                 className="inline-flex h-7 w-7 items-center justify-center rounded-md text-white transition-colors"
-                                style={{ backgroundColor: "#006fbd" }}
+                                style={{ backgroundColor: "#f50022" }}
                                 title="View Details"
                               >
                                 <Eye className="w-4 h-4" />

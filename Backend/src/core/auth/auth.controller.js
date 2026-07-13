@@ -1,6 +1,7 @@
 import {
   requestUserOtp,
   verifyUserOtpAndLogin,
+  googleLoginUser,
   adminLogin,
   refreshAccessToken,
   requestRestaurantOtp,
@@ -17,6 +18,7 @@ import {
 } from "./auth.service.js";
 import { validateUserOtpRequestDto } from "../../dtos/auth/userOtpRequest.dto.js";
 import { validateUserOtpVerifyDto } from "../../dtos/auth/userOtpVerify.dto.js";
+import { validateGoogleLoginDto } from "../../dtos/auth/googleLogin.dto.js";
 import { validateAdminLoginDto } from "../../dtos/auth/adminLogin.dto.js";
 import { validateRestaurantOtpRequestDto } from "../../dtos/auth/restaurantOtpRequest.dto.js";
 import { validateRestaurantOtpVerifyDto } from "../../dtos/auth/restaurantOtpVerify.dto.js";
@@ -56,6 +58,16 @@ export const verifyUserOtpController = async (req, res, next) => {
       confirmAction,
     );
     return sendResponse(res, 200, "Login successful", result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const googleLoginController = async (req, res, next) => {
+  try {
+    const { credential, fcmToken, platform, ref } = validateGoogleLoginDto(req.body);
+    const result = await googleLoginUser(credential, fcmToken, platform, ref);
+    return sendResponse(res, 200, "Google login successful", result);
   } catch (error) {
     next(error);
   }

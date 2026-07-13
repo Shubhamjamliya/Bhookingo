@@ -79,12 +79,19 @@ export default function Category() {
   useEffect(() => {
     let cancelled = false
     setZonesLoading(true)
-    adminAPI
-      .getZones({ limit: 1000 })
+    const fetchLocations = adminAPI.getHighways || adminAPI.getZones
+    
+    if (typeof fetchLocations !== 'function') {
+      console.warn("No API found for fetching highways")
+      setZonesLoading(false)
+      return
+    }
+
+    fetchLocations({ limit: 1000 })
       .then((res) => {
         const list =
+          res?.data?.data?.highways ||
           res?.data?.data?.zones ||
-          res?.data?.data?.data?.zones ||
           res?.data?.data ||
           []
         if (!cancelled) setZones(Array.isArray(list) ? list : [])

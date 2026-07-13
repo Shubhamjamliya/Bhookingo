@@ -1145,3 +1145,34 @@ export async function getExpiredFssaiNotifications(req, res, next) {
         next(error);
     }
 }
+
+// ----- Withdrawals (admin) -----
+
+export async function getWithdrawalRequests(req, res, next) {
+    try {
+        const { status, search, page, limit } = req.query;
+        const requests = await adminService.getWithdrawalRequests({ status, search, page, limit });
+        res.status(200).json({ success: true, data: { requests } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function approveWithdrawalRequest(req, res, next) {
+    try {
+        const withdrawal = await adminService.approveWithdrawalRequest(req.params.id);
+        res.status(200).json({ success: true, message: 'Withdrawal approved successfully', data: withdrawal });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function rejectWithdrawalRequest(req, res, next) {
+    try {
+        const { rejectionReason } = req.body;
+        const withdrawal = await adminService.rejectWithdrawalRequest(req.params.id, rejectionReason);
+        res.status(200).json({ success: true, message: 'Withdrawal rejected successfully', data: withdrawal });
+    } catch (error) {
+        next(error);
+    }
+}

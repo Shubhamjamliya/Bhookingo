@@ -756,6 +756,8 @@ export default function JoiningRequest() {
                 const approvalStatus = r?.status || (r?.isActive !== false ? "approved" : "pending")
                 const hasFlatDocs = r?.panNumber || r?.panImage || r?.fssaiNumber || r?.accountNumber
                 const menuImgList = Array.isArray(r?.menuImages) ? r.menuImages : (r?.onboarding?.step2?.menuImageUrls || [])
+                const openingTime = r?.openingTime || r?.onboarding?.step2?.openingTime || ""
+                const closingTime = r?.closingTime || r?.onboarding?.step2?.closingTime || ""
                 return (
                 <div className="space-y-6">
                   {/* Restaurant Basic Info */}
@@ -872,8 +874,10 @@ export default function JoiningRequest() {
                     </div>
                   </div>
 
-                  {/* Timings */}
-                  <div>
+                  {/* Timings & Facilities */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-200">
+                    {/* Timings */}
+                    <div>
                       <h4 className="text-lg font-semibold text-slate-900 mb-4">Timings & Status</h4>
                       <div className="space-y-3">
                         {(openingTime || closingTime) && (
@@ -910,6 +914,54 @@ export default function JoiningRequest() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Facilities */}
+                    <div>
+                      <h4 className="text-lg font-semibold text-slate-900 mb-4">Facilities</h4>
+                      <div className="flex flex-wrap gap-2.5">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                          r?.facilities?.parking
+                            ? "bg-green-50 text-green-700 border border-green-200"
+                            : "bg-red-50 text-red-700 border border-red-200"
+                        }`}>
+                          {r?.facilities?.parking ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
+                          Parking Available
+                        </span>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                          r?.facilities?.wifi
+                            ? "bg-green-50 text-green-700 border border-green-200"
+                            : "bg-red-50 text-red-700 border border-red-200"
+                        }`}>
+                          {r?.facilities?.wifi ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
+                          WiFi Available
+                        </span>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                          r?.facilities?.familyFriendly
+                            ? "bg-green-50 text-green-700 border border-green-200"
+                            : "bg-red-50 text-red-700 border border-red-200"
+                        }`}>
+                          {r?.facilities?.familyFriendly ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
+                          Family Friendly
+                        </span>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                          r?.facilities?.evCharging
+                            ? "bg-green-50 text-green-700 border border-green-200"
+                            : "bg-red-50 text-red-700 border border-red-200"
+                        }`}>
+                          {r?.facilities?.evCharging ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
+                          EV Charging
+                        </span>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                          r?.facilities?.washroom
+                            ? "bg-green-50 text-green-700 border border-green-200"
+                            : "bg-red-50 text-red-700 border border-red-200"
+                        }`}>
+                          {r?.facilities?.washroom ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
+                          Washroom
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Registration Documents – flat schema (PAN, GST, FSSAI, Bank) */}
                   {restaurantPhotoList.length > 0 && (

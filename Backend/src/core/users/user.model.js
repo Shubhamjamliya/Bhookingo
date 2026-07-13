@@ -69,7 +69,6 @@ const userSchema = new mongoose.Schema(
     {
         phone: {
             type: String,
-            required: true,
             trim: true
         },
         countryCode: {
@@ -81,6 +80,16 @@ const userSchema = new mongoose.Schema(
         },
         email: {
             type: String
+        },
+        googleId: {
+            type: String,
+            unique: true,
+            sparse: true
+        },
+        authProvider: {
+            type: String,
+            enum: ['local', 'google'],
+            default: 'local'
         },
         profileImage: {
             type: String,
@@ -148,7 +157,7 @@ const userSchema = new mongoose.Schema(
     }
 );
 
-userSchema.index({ phone: 1 }, { unique: true });
+userSchema.index({ phone: 1 }, { unique: true, sparse: true });
 userSchema.index({ 'addresses.location': '2dsphere' });
 
 export const FoodUser = mongoose.model('FoodUser', userSchema);

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react"
-const debugLog = (...args) => {}
-const debugWarn = (...args) => {}
-const debugError = (...args) => {}
+import { locationAPI } from "@food/api"
+const debugLog = (...args) => console.log(...args)
+const debugWarn = (...args) => console.warn(...args)
+const debugError = (...args) => console.error(...args)
 
 
 /**
@@ -134,6 +135,7 @@ export function useLocationSimple() {
   const reverseGeocode = async (latitude, longitude) => {
     try {
       const response = await locationAPI.reverseGeocode(latitude, longitude)
+      console.log("LOCATION API RESPONSE", response.data)
 
       // Check if API call was successful
       if (!response?.data?.success) {
@@ -176,6 +178,18 @@ export function useLocationSimple() {
     }
   }
 
+  const broadcastLocationUpdate = (locData) => {
+    try {
+      console.log("SETTING LOCATION", locData)
+      localStorage.setItem("userLocation", JSON.stringify(locData))
+      console.log("STORED LOCATION", localStorage.getItem("userLocation"))
+      setLocation(locData)
+      window.dispatchEvent(new CustomEvent("userLocationUpdated"))
+    } catch (e) {
+      debugError("Failed to broadcast location update:", e)
+    }
+  }
+
   /**
    * Get user's current location using HTML5 Geolocation API
    * 
@@ -196,18 +210,24 @@ export function useLocationSimple() {
       }
 
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords
-          const locationData = {
-            latitude,
-            longitude,
-            area: "",
-            city: "",
-            state: "",
-            formattedAddress: "",
+          try {
+            const locationData = await reverseGeocode(latitude, longitude)
+            broadcastLocationUpdate(locationData)
+            resolve(locationData)
+          } catch (geocodeErr) {
+            const fallbackLocation = {
+              latitude,
+              longitude,
+              area: "",
+              city: "Current Location",
+              state: "",
+              formattedAddress: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+            }
+            broadcastLocationUpdate(fallbackLocation)
+            resolve(fallbackLocation)
           }
-          localStorage.setItem("userLocation", JSON.stringify(locationData))
-          resolve(locationData)
         },
         (err) => {
           // Handle geolocation errors
@@ -245,8 +265,7 @@ export function useLocationSimple() {
 
     try {
       const locationData = await getCurrentLocation(true) // Force fresh location
-      
-      setLocation(locationData)
+      broadcastLocationUpdate(locationData)
       setPermissionGranted(true)
       setError(null)
       
@@ -318,6 +337,36 @@ export function useLocationSimple() {
           setError(err.message)
           setPermissionGranted(false)
         })
+    }
+
+    // Keep state in sync with other updates/components
+    const handleStorageChange = (e) => {
+      if (e.key === "userLocation" && e.newValue) {
+        try {
+          const newLoc = JSON.parse(e.newValue)
+          setLocation(newLoc)
+        } catch (err) {
+          debugError("Failed to parse location from storage event:", err)
+        }
+      }
+    }
+
+    const handleCustomUpdate = () => {
+      const stored = localStorage.getItem("userLocation")
+      if (stored) {
+        try {
+          const newLoc = JSON.parse(stored)
+          setLocation(newLoc)
+        } catch {}
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('userLocationUpdated', handleCustomUpdate)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('userLocationUpdated', handleCustomUpdate)
     }
   }, [])
 

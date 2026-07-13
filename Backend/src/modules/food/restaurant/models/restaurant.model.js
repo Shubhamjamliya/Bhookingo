@@ -252,6 +252,28 @@ const restaurantSchema = new mongoose.Schema(
     takeawaySettings: {
       isEnabled: { type: Boolean, default: false },
     },
+    facilities: {
+      parking: {
+        type: Boolean,
+        default: false
+      },
+      wifi: {
+        type: Boolean,
+        default: false
+      },
+      familyFriendly: {
+        type: Boolean,
+        default: false
+      },
+      evCharging: {
+        type: Boolean,
+        default: false
+      },
+      washroom: {
+        type: Boolean,
+        default: false
+      }
+    },
     menu: {
       sections: { type: Array, default: [] },
     },

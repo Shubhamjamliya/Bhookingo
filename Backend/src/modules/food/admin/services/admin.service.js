@@ -350,7 +350,7 @@ export async function getRestaurants(query) {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .select('restaurantName location area city profileImage coverImages menuImages status ownerName ownerPhone highwayId')
+            .select('restaurantName location area city profileImage coverImages menuImages status ownerName ownerPhone highwayId facilities')
             .populate('highwayId', 'name ref')
             .lean(),
         FoodRestaurant.countDocuments(filter)
@@ -373,15 +373,11 @@ const DASHBOARD_DERIVED_PLATFORM_FEE_EXPR = {
                     $subtract: [
                         {
                             $subtract: [
-                                {
-                                    $subtract: [
-                                        { $ifNull: ['$pricing.total', 0] },
-                                        { $ifNull: ['$pricing.subtotal', 0] }
-                                    ]
-                                },
-                                { $ifNull: ['$pricing.packagingFee', 0] }
+                                { $ifNull: ['$pricing.total', 0] },
+                                { $ifNull: ['$pricing.subtotal', 0] }
                             ]
                         },
+                        { $ifNull: ['$pricing.packagingFee', 0] }
                     ]
                 },
                 {
@@ -576,15 +572,12 @@ export async function getDashboardStats(query = {}) {
         ]),
         FoodRestaurant.countDocuments({ ...restaurantMatch, status: 'approved' }),
         FoodRestaurant.countDocuments({ ...restaurantMatch, status: 'pending' }),
-        0,
-        0,
         FoodItem.countDocuments({ approvalStatus: 'approved', ...highwayScopedRestaurantMatch }),
         FoodAddon.countDocuments({ approvalStatus: 'approved', isDeleted: { $ne: true }, ...highwayScopedRestaurantMatch }),
         highwayId
             ? FoodOrder.distinct('userId', { ...orderMatch, userId: { $ne: null } }).then((ids) => ids.length)
             : FoodUser.countDocuments({}),
         FoodRestaurant.find({ ...restaurantMatch, status: 'pending' }).sort({ createdAt: -1 }).limit(5).select('restaurantName createdAt').lean(),
-        [],
         FoodOrder.find({ 
             ...orderMatch,
             orderStatus: { $in: PENDING_ORDER_STATUSES },
@@ -628,7 +621,8 @@ export async function getDashboardStats(query = {}) {
 
     const liveSignals = [];
     
-    (recentPendingRestaurants || []).forEach(r => {
+    const safePendingRestaurants = Array.isArray(recentPendingRestaurants) ? recentPendingRestaurants : recentPendingRestaurants?.restaurants || [];
+    safePendingRestaurants.forEach(r => {
         liveSignals.push({
             type: 'restaurant',
             title: 'New Restaurant Request',
@@ -638,7 +632,8 @@ export async function getDashboardStats(query = {}) {
         });
     });
 
-    (recentPendingOrders || []).forEach(o => {
+    const safePendingOrders = Array.isArray(recentPendingOrders) ? recentPendingOrders : recentPendingOrders?.orders || [];
+    safePendingOrders.forEach(o => {
         liveSignals.push({
             type: 'order_pending',
             title: 'New Order Received',
@@ -648,7 +643,8 @@ export async function getDashboardStats(query = {}) {
         });
     });
 
-    (recentDeliveredOrders || []).forEach(o => {
+    const safeDeliveredOrders = Array.isArray(recentDeliveredOrders) ? recentDeliveredOrders : recentDeliveredOrders?.orders || [];
+    safeDeliveredOrders.forEach(o => {
         liveSignals.push({
             type: 'order_delivered',
             title: 'Order Confirmed',
@@ -658,7 +654,8 @@ export async function getDashboardStats(query = {}) {
         });
     });
 
-    (recentCancelledOrders || []).forEach(o => {
+    const safeCancelledOrders = Array.isArray(recentCancelledOrders) ? recentCancelledOrders : recentCancelledOrders?.orders || [];
+    safeCancelledOrders.forEach(o => {
         liveSignals.push({
             type: 'order_cancelled',
             title: 'Order Cancelled',
@@ -668,7 +665,8 @@ export async function getDashboardStats(query = {}) {
         });
     });
 
-    (recentCustomers || []).forEach(c => {
+    const safeRecentCustomers = Array.isArray(recentCustomers) ? recentCustomers : recentCustomers?.customers || [];
+    safeRecentCustomers.forEach(c => {
         liveSignals.push({
             type: 'customer',
             title: 'New Customer',
@@ -2349,6 +2347,24 @@ export async function updateRestaurantById(id, body = {}) {
     }
     if (body.offer !== undefined) doc.offer = toStr(body.offer);
 
+    if (body.facilities !== undefined) {
+        let parsedFacilities = body.facilities;
+        if (typeof parsedFacilities === 'string') {
+            try {
+                parsedFacilities = JSON.parse(parsedFacilities);
+            } catch (e) {
+                parsedFacilities = {};
+            }
+        }
+        doc.facilities = {
+            parking: parsedFacilities?.parking === true || parsedFacilities?.parking === 'true',
+            wifi: parsedFacilities?.wifi === true || parsedFacilities?.wifi === 'true',
+            familyFriendly: parsedFacilities?.familyFriendly === true || parsedFacilities?.familyFriendly === 'true',
+            evCharging: parsedFacilities?.evCharging === true || parsedFacilities?.evCharging === 'true',
+            washroom: parsedFacilities?.washroom === true || parsedFacilities?.washroom === 'true'
+        };
+    }
+
 
 
     // Business & Docs
@@ -3592,10 +3608,87 @@ function generateBonusTransactionId() {
 
 // ----- Withdrawals (admin) -----
 
+/**
+ * Fetch withdrawal requests
+ */
+export async function getWithdrawalRequests(query = {}) {
+    const matchStage = {};
 
+    if (query.status) {
+        matchStage.status = query.status.toLowerCase();
+    }
 
+    const pipeline = [
+        { $match: matchStage },
+        {
+            $lookup: {
+                from: 'food_restaurants',
+                localField: 'restaurantId',
+                foreignField: '_id',
+                as: 'restaurant'
+            }
+        },
+        { $unwind: { path: '$restaurant', preserveNullAndEmptyArrays: true } }
+    ];
 
+    if (query.search) {
+        const searchRegex = new RegExp(query.search, 'i');
+        pipeline.push({
+            $match: {
+                $or: [
+                    { 'restaurant.name': searchRegex },
+                    { 'restaurant.restaurantId': searchRegex }
+                ]
+            }
+        });
+    }
 
+    pipeline.push({ $sort: { createdAt: -1 } });
+
+    const withdrawals = await FoodRestaurantWithdrawal.aggregate(pipeline);
+
+    return withdrawals.map(w => ({
+        id: w._id,
+        amount: w.amount,
+        status: w.status === 'pending' ? 'Pending' : w.status === 'approved' ? 'Approved' : 'Rejected',
+        requestedAt: w.createdAt,
+        processedAt: w.processedAt,
+        rejectionReason: w.rejectionReason,
+        restaurantIdString: w.restaurant?.restaurantId || '-',
+        restaurantName: w.restaurant?.name || 'Unknown',
+        restaurantBankDetails: w.bankDetails || w.restaurant?.bankDetails || {}
+    }));
+}
+
+/**
+ * Approve withdrawal request
+ */
+export async function approveWithdrawalRequest(id) {
+    const withdrawal = await FoodRestaurantWithdrawal.findById(id);
+    if (!withdrawal) throw new NotFoundError('Withdrawal request not found');
+    if (withdrawal.status !== 'pending') throw new ValidationError('Only pending requests can be approved');
+
+    withdrawal.status = 'approved';
+    withdrawal.processedAt = new Date();
+    await withdrawal.save();
+    return withdrawal;
+}
+
+/**
+ * Reject withdrawal request
+ */
+export async function rejectWithdrawalRequest(id, rejectionReason) {
+    if (!rejectionReason) throw new ValidationError('Rejection reason is required');
+    const withdrawal = await FoodRestaurantWithdrawal.findById(id);
+    if (!withdrawal) throw new NotFoundError('Withdrawal request not found');
+    if (withdrawal.status !== 'pending') throw new ValidationError('Only pending requests can be rejected');
+
+    withdrawal.status = 'rejected';
+    withdrawal.rejectionReason = rejectionReason;
+    withdrawal.processedAt = new Date();
+    await withdrawal.save();
+    return withdrawal;
+}
 
 
 

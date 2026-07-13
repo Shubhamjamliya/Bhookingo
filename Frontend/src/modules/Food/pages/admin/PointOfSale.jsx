@@ -362,7 +362,7 @@ export default function PointOfSale() {
                     setTimeout(() => setShowSearchResults(false), 200)
                   }}
                   placeholder="Type restaurant name or ID to search..."
-                  className="w-full h-11 pl-10 pr-3 rounded-md border border-[#e3e6ef] bg-white text-sm text-[#4a5671] focus:outline-none focus:ring-1 focus:ring-[#006fbd]"
+                  className="w-full h-11 pl-10 pr-3 rounded-md border border-[#e3e6ef] bg-white text-sm text-[#4a5671] focus:outline-none focus:ring-1 focus:ring-[#f50022]"
                 />
                 
                 {/* Search Results Dropdown */}
@@ -384,7 +384,7 @@ export default function PointOfSale() {
                             <p className="text-xs text-[#8a94aa]">ID: {restaurant.restaurantId || restaurant._id}</p>
                           </div>
                           {selectedRestaurant === restaurant._id && (
-                            <div className="w-2 h-2 bg-[#006fbd] rounded-full"></div>
+                            <div className="w-2 h-2 bg-[#f50022] rounded-full"></div>
                           )}
                         </div>
                       </button>
@@ -420,8 +420,8 @@ export default function PointOfSale() {
                     if (selected) {
                       setSearchQuery(selected.name)
                     }
-                  }}
-                        className="w-full h-11 rounded-md border border-[#e3e6ef] bg-white px-3 pr-10 text-sm text-[#4a5671] focus:outline-none focus:ring-1 focus:ring-[#006fbd]"
+                    }}
+                        className="w-full h-11 rounded-md border border-[#e3e6ef] bg-white px-3 pr-10 text-sm text-[#4a5671] focus:outline-none focus:ring-1 focus:ring-[#f50022]"
                       >
                   <option value="">Select Restaurant</option>
                   {restaurants.map(restaurant => (
@@ -588,7 +588,7 @@ export default function PointOfSale() {
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-[#e3e6ef]">
                     <span className="text-sm text-[#8a94aa]">Total Commission (Admin)</span>
-                    <span className="text-base font-semibold text-[#006fbd]">{formatCurrency(analyticsData.totalCommission)}</span>
+                    <span className="text-base font-semibold text-[#f50022]">{formatCurrency(analyticsData.totalCommission)}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-[#e3e6ef]">
                     <span className="text-sm text-[#8a94aa]">Restaurant Share</span>
@@ -648,7 +648,7 @@ export default function PointOfSale() {
                   </div>
                   <div className="flex justify-between items-center py-2">
                     <span className="text-sm font-semibold text-[#334257]">Total Order Value</span>
-                    <span className="text-sm font-bold text-[#006fbd]">{formatCurrency(paymentSummary?.total || 0)}</span>
+                    <span className="text-sm font-bold text-[#f50022]">{formatCurrency(paymentSummary?.total || 0)}</span>
                   </div>
                 </div>
 
@@ -765,7 +765,7 @@ export default function PointOfSale() {
           </div>
         ) : selectedRestaurant && loading ? (
           <div className="bg-white rounded-lg shadow-sm border border-[#e3e6ef] p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#006fbd] mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f50022] mx-auto mb-4"></div>
             <p className="text-sm text-[#8a94aa]">Loading restaurant analytics...</p>
           </div>
         ) : (

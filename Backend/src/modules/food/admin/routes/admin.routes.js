@@ -91,6 +91,11 @@ router.patch('/restaurant-commissions/:id', adminController.updateRestaurantComm
 router.delete('/restaurant-commissions/:id', adminController.deleteRestaurantCommission);
 router.patch('/restaurant-commissions/:id/toggle', adminController.toggleRestaurantCommissionStatus);
 
+// ----- Withdrawals (admin) -----
+router.get('/withdrawals', adminController.getWithdrawalRequests);
+router.patch('/withdrawals/:id/approve', adminController.approveWithdrawalRequest);
+router.patch('/withdrawals/:id/reject', adminController.rejectWithdrawalRequest);
+
 // ----- Categories -----
 router.get('/categories', adminController.getCategories);
 router.post('/categories', adminController.createCategory);

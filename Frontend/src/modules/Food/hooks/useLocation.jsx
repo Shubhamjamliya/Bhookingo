@@ -215,7 +215,7 @@ const TEMPORARY_DEFAULT_INDORE_LOCATION = {
 
 export function useLocation() {
   const [isDefaultLocationMode, setIsDefaultLocationMode] = useState(() => {
-    return true;
+    return false;
   })
 
   const [location, setLocation] = useState(() => {
@@ -225,8 +225,8 @@ export function useLocation() {
 
   useEffect(() => {
     const handleSettingsLoaded = () => {
-      // Force default location mode to true for temporary fix
-      setIsDefaultLocationMode(true);
+      // Force default location mode to false to support real location retrieval
+      setIsDefaultLocationMode(false);
     }
     
     window.addEventListener("customizationSettingsLoaded", handleSettingsLoaded)

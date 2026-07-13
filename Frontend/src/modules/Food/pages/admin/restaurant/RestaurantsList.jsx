@@ -755,6 +755,19 @@ export default function RestaurantsList() {
       openingTime: openingTimeValue,
       closingTime: closingTimeValue,
       isActive: restaurant.isActive !== false,
+      facilities: restaurant.facilities ? {
+        parking: restaurant.facilities.parking === true,
+        wifi: restaurant.facilities.wifi === true,
+        familyFriendly: restaurant.facilities.familyFriendly === true,
+        evCharging: restaurant.facilities.evCharging === true,
+        washroom: restaurant.facilities.washroom === true
+      } : {
+        parking: false,
+        wifi: false,
+        familyFriendly: false,
+        evCharging: false,
+        washroom: false
+      },
     }
   }
 
@@ -817,6 +830,7 @@ export default function RestaurantsList() {
         openingTime: normalizedOpeningTime,
         closingTime: normalizedClosingTime,
         isActive: detailsForm.isActive,
+        facilities: detailsForm.facilities,
       }
 
       if (profileImage) {
@@ -1406,6 +1420,182 @@ export default function RestaurantsList() {
                         </button>
                       </div>
                     </div>
+
+                    <div className="md:col-span-2 border-t border-slate-100 pt-4">
+                      <label className="block text-sm font-bold text-slate-800 mb-3">Facilities</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs text-slate-500 mb-1">Parking Available</label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setDetailsForm((prev) => ({
+                                ...prev,
+                                facilities: { ...prev.facilities, parking: true }
+                              }))}
+                              className={`px-3 py-1.5 text-xs rounded-full border ${
+                                detailsForm.facilities?.parking === true
+                                  ? "bg-green-600 text-white border-green-600"
+                                  : "bg-white text-slate-700 border-slate-300"
+                              }`}
+                            >
+                              Yes
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDetailsForm((prev) => ({
+                                ...prev,
+                                facilities: { ...prev.facilities, parking: false }
+                              }))}
+                              className={`px-3 py-1.5 text-xs rounded-full border ${
+                                detailsForm.facilities?.parking === false
+                                  ? "bg-slate-900 text-white border-slate-900"
+                                  : "bg-white text-slate-700 border-slate-300"
+                              }`}
+                            >
+                              No
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs text-slate-500 mb-1">WiFi Available</label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setDetailsForm((prev) => ({
+                                ...prev,
+                                facilities: { ...prev.facilities, wifi: true }
+                              }))}
+                              className={`px-3 py-1.5 text-xs rounded-full border ${
+                                detailsForm.facilities?.wifi === true
+                                  ? "bg-green-600 text-white border-green-600"
+                                  : "bg-white text-slate-700 border-slate-300"
+                              }`}
+                            >
+                              Yes
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDetailsForm((prev) => ({
+                                ...prev,
+                                facilities: { ...prev.facilities, wifi: false }
+                              }))}
+                              className={`px-3 py-1.5 text-xs rounded-full border ${
+                                detailsForm.facilities?.wifi === false
+                                  ? "bg-slate-900 text-white border-slate-900"
+                                  : "bg-white text-slate-700 border-slate-300"
+                              }`}
+                            >
+                              No
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs text-slate-500 mb-1">Family Friendly</label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setDetailsForm((prev) => ({
+                                ...prev,
+                                facilities: { ...prev.facilities, familyFriendly: true }
+                              }))}
+                              className={`px-3 py-1.5 text-xs rounded-full border ${
+                                detailsForm.facilities?.familyFriendly === true
+                                  ? "bg-green-600 text-white border-green-600"
+                                  : "bg-white text-slate-700 border-slate-300"
+                              }`}
+                            >
+                              Yes
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDetailsForm((prev) => ({
+                                ...prev,
+                                facilities: { ...prev.facilities, familyFriendly: false }
+                              }))}
+                              className={`px-3 py-1.5 text-xs rounded-full border ${
+                                detailsForm.facilities?.familyFriendly === false
+                                  ? "bg-slate-900 text-white border-slate-900"
+                                  : "bg-white text-slate-700 border-slate-300"
+                              }`}
+                            >
+                              No
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs text-slate-500 mb-1">EV Charging Available</label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setDetailsForm((prev) => ({
+                                ...prev,
+                                facilities: { ...prev.facilities, evCharging: true }
+                              }))}
+                              className={`px-3 py-1.5 text-xs rounded-full border ${
+                                detailsForm.facilities?.evCharging === true
+                                  ? "bg-green-600 text-white border-green-600"
+                                  : "bg-white text-slate-700 border-slate-300"
+                              }`}
+                            >
+                              Yes
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDetailsForm((prev) => ({
+                                ...prev,
+                                facilities: { ...prev.facilities, evCharging: false }
+                              }))}
+                              className={`px-3 py-1.5 text-xs rounded-full border ${
+                                detailsForm.facilities?.evCharging === false
+                                  ? "bg-slate-900 text-white border-slate-900"
+                                  : "bg-white text-slate-700 border-slate-300"
+                              }`}
+                            >
+                              No
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs text-slate-500 mb-1">Washroom Available</label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setDetailsForm((prev) => ({
+                                ...prev,
+                                facilities: { ...prev.facilities, washroom: true }
+                              }))}
+                              className={`px-3 py-1.5 text-xs rounded-full border ${
+                                detailsForm.facilities?.washroom === true
+                                  ? "bg-green-600 text-white border-green-600"
+                                  : "bg-white text-slate-700 border-slate-300"
+                              }`}
+                            >
+                              Yes
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDetailsForm((prev) => ({
+                                ...prev,
+                                facilities: { ...prev.facilities, washroom: false }
+                              }))}
+                              className={`px-3 py-1.5 text-xs rounded-full border ${
+                                detailsForm.facilities?.washroom === false
+                                  ? "bg-slate-900 text-white border-slate-900"
+                                  : "bg-white text-slate-700 border-slate-300"
+                              }`}
+                            >
+                              No
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-xs text-slate-500 mb-1">Restaurant Email</label>
                       <input type="email" value={detailsForm.email} onChange={(e) => setDetailsForm((prev) => ({ ...prev, email: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" />
@@ -1471,6 +1661,8 @@ export default function RestaurantsList() {
                 const featuredDishVal = r?.featuredDish || r?.onboarding?.step4?.featuredDish || ""
                 const featuredPriceVal = r?.featuredPrice ?? r?.onboarding?.step4?.featuredPrice
                 const diningSettingsVal = r?.diningSettings || r?.onboarding?.step4?.diningSettings || null
+                const openingTimeVal = r?.openingTime || r?.onboarding?.step2?.openingTime || ""
+                const closingTimeVal = r?.closingTime || r?.onboarding?.step2?.closingTime || ""
                 const panDocumentUrl = typeof r?.panImage === "string" ? r.panImage : (r?.panImage?.url || r?.onboarding?.step3?.pan?.image?.url || "")
                 const gstDocumentUrl = typeof r?.gstImage === "string" ? r.gstImage : (r?.gstImage?.url || r?.onboarding?.step3?.gst?.image?.url || "")
                 const fssaiDocumentUrl = typeof r?.fssaiImage === "string" ? r.fssaiImage : (r?.fssaiImage?.url || r?.onboarding?.step3?.fssai?.image?.url || "")
@@ -1641,9 +1833,8 @@ export default function RestaurantsList() {
                     </div>
                   </div>
 
-                  {/* Timings */}
-                  <div className="grid grid-cols-1 gap-6">
-
+                  {/* Timings & Facilities */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-200">
                     <div>
                       <h4 className="text-lg font-semibold text-slate-900 mb-4">Timings & Status</h4>
                       <div className="space-y-3">
@@ -1677,6 +1868,42 @@ export default function RestaurantsList() {
                           <p className="mt-2 text-xs text-slate-500">
                             Outlet: {(r?.isActive !== false) ? "Active" : "Inactive"}
                           </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-lg font-semibold text-slate-900 mb-4">Facilities</h4>
+                      <div className="space-y-2 max-w-xs">
+                        <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
+                          <span className="text-slate-500 font-medium">Parking</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.parking ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                            {r?.facilities?.parking ? "Available" : "Not Available"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
+                          <span className="text-slate-500 font-medium">WiFi</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.wifi ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                            {r?.facilities?.wifi ? "Available" : "Not Available"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
+                          <span className="text-slate-500 font-medium">Family Friendly</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.familyFriendly ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                            {r?.facilities?.familyFriendly ? "Yes" : "No"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
+                          <span className="text-slate-500 font-medium">EV Charging</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.evCharging ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                            {r?.facilities?.evCharging ? "Available" : "Not Available"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
+                          <span className="text-slate-500 font-medium">Washroom</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.washroom ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                            {r?.facilities?.washroom ? "Available" : "Not Available"}
+                          </span>
                         </div>
                       </div>
                     </div>

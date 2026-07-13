@@ -101,7 +101,23 @@ const restaurantRegisterSchema = z.object({
     accountHolderName: z.string().optional(),
     accountType: z.string().optional(),
     isTakeawayEnabled: z.string().optional(),
-    isTakeawayCodEnabled: z.string().optional()
+    isTakeawayCodEnabled: z.string().optional(),
+    facilities: z.preprocess((val) => {
+        if (typeof val === 'string') {
+            try {
+                return JSON.parse(val);
+            } catch (e) {
+                return {};
+            }
+        }
+        return val;
+    }, z.object({
+        parking: z.preprocess((v) => v === 'true' || v === true, z.boolean().default(false)),
+        wifi: z.preprocess((v) => v === 'true' || v === true, z.boolean().default(false)),
+        familyFriendly: z.preprocess((v) => v === 'true' || v === true, z.boolean().default(false)),
+        evCharging: z.preprocess((v) => v === 'true' || v === true, z.boolean().default(false)),
+        washroom: z.preprocess((v) => v === 'true' || v === true, z.boolean().default(false))
+    })).optional()
 });
 
 export const validateRestaurantRegisterDto = (body) => {

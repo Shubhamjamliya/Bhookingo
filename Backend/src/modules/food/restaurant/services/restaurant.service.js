@@ -177,6 +177,19 @@ const toRestaurantProfile = (doc) => {
         takeawaySettings: {
             isEnabled: doc.takeawaySettings?.isEnabled === true
         },
+        facilities: doc.facilities ? {
+            parking: Boolean(doc.facilities.parking),
+            wifi: Boolean(doc.facilities.wifi),
+            familyFriendly: Boolean(doc.facilities.familyFriendly),
+            evCharging: Boolean(doc.facilities.evCharging),
+            washroom: Boolean(doc.facilities.washroom)
+        } : {
+            parking: false,
+            wifi: false,
+            familyFriendly: false,
+            evCharging: false,
+            washroom: false
+        },
         isAcceptingOrders: doc.isAcceptingOrders !== false,
         status: doc.status || null,
         createdAt: doc.createdAt,
@@ -194,6 +207,8 @@ const toFiniteNumber = (value) => {
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const normalizeCuisine = (value) => String(value || '').trim().slice(0, 80);
+
+const allowed = new Set(['rating', 'rating-high', 'rating-low', 'price-low', 'price-high', 'newest']);
 
 const parseSortBy = (value) => {
     const v = String(value || '').trim();
@@ -265,7 +280,8 @@ export const registerRestaurant = async (payload, files) => {
         ifscCode,
         accountHolderName,
         accountType,
-        isTakeawayEnabled
+        isTakeawayEnabled,
+        facilities
     } = payload;
 
     if (!ownerPhone) {
@@ -371,6 +387,13 @@ export const registerRestaurant = async (payload, files) => {
             takeawaySettings: {
                 isEnabled: isTakeawayEnabled === 'true' || isTakeawayEnabled === true
             },
+            facilities: facilities ? {
+                parking: facilities.parking === true || facilities.parking === 'true',
+                wifi: facilities.wifi === true || facilities.wifi === 'true',
+                familyFriendly: facilities.familyFriendly === true || facilities.familyFriendly === 'true',
+                evCharging: facilities.evCharging === true || facilities.evCharging === 'true',
+                washroom: facilities.washroom === true || facilities.washroom === 'true'
+            } : undefined,
             ...images
         });
 
@@ -455,6 +478,7 @@ export const getCurrentRestaurantProfile = async (restaurantId) => {
                 'rating',
                 'totalRatings',
                 'status',
+                'facilities',
                 'createdAt',
                 'updatedAt'
             ].join(' ')
@@ -789,6 +813,24 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         }
     }
 
+    if (body.facilities !== undefined) {
+        let parsedFacilities = body.facilities;
+        if (typeof parsedFacilities === 'string') {
+            try {
+                parsedFacilities = JSON.parse(parsedFacilities);
+            } catch (e) {
+                parsedFacilities = {};
+            }
+        }
+        update.facilities = {
+            parking: parsedFacilities?.parking === true || parsedFacilities?.parking === 'true',
+            wifi: parsedFacilities?.wifi === true || parsedFacilities?.wifi === 'true',
+            familyFriendly: parsedFacilities?.familyFriendly === true || parsedFacilities?.familyFriendly === 'true',
+            evCharging: parsedFacilities?.evCharging === true || parsedFacilities?.evCharging === 'true',
+            washroom: parsedFacilities?.washroom === true || parsedFacilities?.washroom === 'true'
+        };
+    }
+
     if (body.highwayId !== undefined) {
         const highwayId = String(body.highwayId || '').trim();
         update.highwayId = highwayId && mongoose.Types.ObjectId.isValid(highwayId)
@@ -1053,7 +1095,8 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                     'accountType',
                     'upiId',
                     'upiQrImage',
-                    'highwayId'
+                    'highwayId',
+                    'facilities'
                 ].join(' ')
             }
         ).lean();
@@ -1114,7 +1157,8 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                         'highwayId',
                         'highwayName',
                         'highwayRef',
-                        'isHighwayRestaurant'
+                        'isHighwayRestaurant',
+                        'facilities'
                     ].join(' ')
                 )
                 .lean();

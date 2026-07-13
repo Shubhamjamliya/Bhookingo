@@ -3,8 +3,10 @@ import { useEffect, useState, createContext, useContext, useRef, useCallback, us
 import { toast } from "sonner"
 import { ProfileProvider } from "@food/context/ProfileContext"
 import LocationPrompt from "./LocationPrompt"
+import LocationDebugger from "../debug/LocationDebugger"
 import { CartProvider } from "@food/context/CartContext"
 import { OrdersProvider } from "@food/context/OrdersContext"
+import { MapPin } from "lucide-react"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -17,7 +19,6 @@ import { useUserNotifications } from "../../hooks/useUserNotifications"
 import { useProfile } from "@food/context/ProfileContext"
 import { useLocation as useGeoLocation } from "../../hooks/useLocation"
 import { useHighway as useZone } from "../../hooks/useHighway"
-import OutOfZoneScreen from "./OutOfZoneScreen"
 import { isModuleAuthenticated } from "../../utils/auth"
 import { AppShellSkeleton } from "@food/components/ui/loading-skeletons"
 import LoginRequiredModal from "./LoginRequiredModal"
@@ -160,10 +161,19 @@ function LocationSelectorProvider({ children }) {
 
 function UserLayoutContent() {
   const location = useLocation()
-  const { location: activeLocation, loading: isGeoLoading } = useGeoLocation()
+  const isAuthenticated = isModuleAuthenticated('user')
+  const { 
+    location: activeLocation, 
+    loading: isGeoLoading,
+    permissionGranted,
+    error: locationError,
+    requestLocation
+  } = useGeoLocation()
   const { loading: isProfileLoading } = useProfile()
   const { isOutOfService: isOutOfZone, loading: isZoneLoading, zoneStatus } = useZone(activeLocation)
   const { openLocationSelector } = useLocationSelector()
+  const hasNoLocation = !activeLocation?.latitude || !activeLocation?.longitude || activeLocation?.formattedAddress === "Select location"
+  const showDebug = new URLSearchParams(window.location.search).get('debug') === 'location'
   const navigationType = useNavigationType()
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
 
@@ -336,6 +346,7 @@ function UserLayoutContent() {
 
   return (
     <>
+      {showDebug && <LocationDebugger />}
       <RouteSyncHandler />
       
       {/* Location Fetching Loader - Only shown on main pages after login */}
@@ -357,11 +368,65 @@ function UserLayoutContent() {
       
       {isInitialChecking && !location.pathname.includes('/search') ? (
         <AppShellSkeleton />
-      ) : (zoneStatus === "OUT_OF_SERVICE" && !isZoneLoading && !isGeoLoading) && shouldBlockOutOfZone ? (
-        <OutOfZoneScreen 
-          location={activeLocation} 
-          handleLocationClick={openLocationSelector} 
-        />
+      ) : (!isAuthPage && !isPolicyPage && isAuthenticated && hasNoLocation && !isGeoLoading) ? (
+        <div className="flex flex-col h-[100dvh] bg-[#2a1c3d] overflow-hidden fixed inset-0 z-50 flex items-center justify-center p-6 text-white text-center">
+          <div className="max-w-md w-full bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-[32px] shadow-2xl flex flex-col items-center animate-in fade-in zoom-in duration-300">
+            {/* Location Icon with pulsing rings */}
+            <div className="relative mb-6">
+              <div className="absolute inset-0 rounded-full bg-red-500/25 animate-ping opacity-75"></div>
+              <div className="relative h-20 w-20 rounded-full bg-[#DC2626] flex items-center justify-center ring-8 ring-red-500/30">
+                <MapPin className="h-10 w-10 text-white" />
+              </div>
+            </div>
+            
+            <h2 className="text-2xl font-bold mb-3 tracking-tight">Location Access Required</h2>
+            <p className="text-sm text-white/80 leading-relaxed mb-6">
+              Please enable location access to discover restaurants near you.
+            </p>
+
+            {locationError && (
+              <div className="w-full bg-red-950/40 border border-red-500/30 text-red-200 rounded-2xl p-4 text-xs font-semibold mb-6">
+                Error: {locationError}
+              </div>
+            )}
+
+            {/* Instruction list */}
+            <div className="w-full text-left space-y-3 mb-8 text-xs text-white/80">
+              <div className="flex gap-2">
+                <span className="font-bold text-[#DC2626]">1.</span>
+                <span>Click the **Allow** button in the browser popup when prompted.</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-bold text-[#DC2626]">2.</span>
+                <span>If blocked, check your browser settings and allow location permissions for this site.</span>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex flex-col gap-3 w-full">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await requestLocation(true, true, true);
+                  } catch (e) {
+                    console.error("Retry location failed:", e);
+                  }
+                }}
+                className="w-full h-12 rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-sm transition-all duration-200 shadow-lg shadow-red-600/20 active:scale-95"
+              >
+                Retry Requesting Location
+              </button>
+              <button
+                type="button"
+                onClick={openLocationSelector}
+                className="w-full h-12 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition-all duration-200 border border-white/20 active:scale-95"
+              >
+                Select Location Manually
+              </button>
+            </div>
+          </div>
+        </div>
       ) : (
         <main className={`${showBottomNav ? "md:pt-40" : ""} min-h-screen flex flex-col`}>
           <Outlet />

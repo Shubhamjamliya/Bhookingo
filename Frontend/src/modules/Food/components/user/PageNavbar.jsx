@@ -32,10 +32,10 @@ export default function PageNavbar({
   const [companyName, setCompanyName] = useState(null)
   const autoLocationAttemptedRef = useRef(false)
   const requestLocationRef = useRef(requestLocation)
-  const enableLocationDebugLogs = false
+  const enableLocationDebugLogs = true
   const debugLog = (...args) => {
     if (enableLocationDebugLogs && import.meta.env.DEV) {
-      debugLog(...args)
+      console.log("[PageNavbar]", ...args)
     }
   }
 

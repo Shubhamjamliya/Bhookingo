@@ -611,6 +611,13 @@ export default function RestaurantOnboarding() {
     ownerEmail: "",
     ownerPhone: "",
     primaryContactNumber: "",
+    facilities: {
+      parking: false,
+      wifi: false,
+      familyFriendly: false,
+      evCharging: false,
+      washroom: false
+    },
 
     location: {
       formattedAddress: "",
@@ -926,6 +933,13 @@ export default function RestaurantOnboarding() {
             ownerEmail: s1.ownerEmail || apiData.email || "",
             ownerPhone: s1.ownerPhone || apiData.phone || "",
             primaryContactNumber: s1.primaryContactNumber || apiData.primaryContactNumber || "",
+            facilities: {
+              parking: s1.facilities?.parking ?? apiData.facilities?.parking ?? false,
+              wifi: s1.facilities?.wifi ?? apiData.facilities?.wifi ?? false,
+              familyFriendly: s1.facilities?.familyFriendly ?? apiData.facilities?.familyFriendly ?? false,
+              evCharging: s1.facilities?.evCharging ?? apiData.facilities?.evCharging ?? false,
+              washroom: s1.facilities?.washroom ?? apiData.facilities?.washroom ?? false
+            },
 
             location: {
               ...prev.location,
@@ -1555,6 +1569,13 @@ export default function RestaurantOnboarding() {
             accountType: step3.accountType || "",
             isTakeawayEnabled: step2.isTakeawayEnabled === true,
             isTakeawayCodEnabled: step2.isTakeawayCodEnabled === true,
+            facilities: step1.facilities || {
+              parking: false,
+              wifi: false,
+              familyFriendly: false,
+              evCharging: false,
+              washroom: false
+            },
           }
 
 
@@ -1582,6 +1603,13 @@ export default function RestaurantOnboarding() {
         formData.append("ownerEmail", (step1.ownerEmail || "").trim())
         formData.append("ownerPhone", normalizePhoneDigits(step1.ownerPhone))
         formData.append("primaryContactNumber", normalizePhoneDigits(step1.primaryContactNumber))
+        formData.append("facilities", JSON.stringify(step1.facilities || {
+          parking: false,
+          wifi: false,
+          familyFriendly: false,
+          evCharging: false,
+          washroom: false
+        }))
 
         formData.append("addressLine1", step1.location?.addressLine1 || "")
         formData.append("addressLine2", step1.location?.addressLine2 || "")
@@ -1694,9 +1722,17 @@ export default function RestaurantOnboarding() {
     setStep1(prev => ({
       ...prev,
       restaurantName: "The Bhookingo Kitchen",
+      pureVegRestaurant: true,
       ownerName: "Prince Bangar",
       ownerEmail: "princeb@bhookingo.test",
       primaryContactNumber: "9876543210",
+      facilities: {
+        parking: true,
+        wifi: true,
+        familyFriendly: true,
+        evCharging: false,
+        washroom: true
+      },
       location: {
         ...prev.location,
         addressLine1: "123 Bhookingo Plaza",
@@ -2099,6 +2135,196 @@ export default function RestaurantOnboarding() {
           <p className="text-[11px] text-gray-500 mt-1">
             Please ensure that this address is the same as mentioned on your FSSAI license.
           </p>
+        </div>
+      </section>
+
+      <section className="bg-white p-4 sm:p-6 rounded-md">
+        <h2 className="text-lg font-semibold text-black mb-4">Restaurant Facilities</h2>
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100 last:border-none">
+            <div>
+              <Label className="text-xs font-semibold text-gray-700">Parking Available?*</Label>
+              <p className="text-[11px] text-gray-500">Is parking facility available for customers?</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => isEditing && setStep1(prev => ({
+                  ...prev,
+                  facilities: { ...prev.facilities, parking: true }
+                }))}
+                className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
+                  step1.facilities?.parking === true
+                    ? "bg-green-600 text-white border-green-600"
+                    : "bg-white text-gray-700 border-gray-200"
+                } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => isEditing && setStep1(prev => ({
+                  ...prev,
+                  facilities: { ...prev.facilities, parking: false }
+                }))}
+                className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
+                  step1.facilities?.parking === false
+                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-200"
+                } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                No
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100 last:border-none">
+            <div>
+              <Label className="text-xs font-semibold text-gray-700">WiFi Available?*</Label>
+              <p className="text-[11px] text-gray-500">Is internet/WiFi access provided?</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => isEditing && setStep1(prev => ({
+                  ...prev,
+                  facilities: { ...prev.facilities, wifi: true }
+                }))}
+                className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
+                  step1.facilities?.wifi === true
+                    ? "bg-green-600 text-white border-green-600"
+                    : "bg-white text-gray-700 border-gray-200"
+                } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => isEditing && setStep1(prev => ({
+                  ...prev,
+                  facilities: { ...prev.facilities, wifi: false }
+                }))}
+                className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
+                  step1.facilities?.wifi === false
+                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-200"
+                } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                No
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100 last:border-none">
+            <div>
+              <Label className="text-xs font-semibold text-gray-700">Family Friendly?*</Label>
+              <p className="text-[11px] text-gray-500">Is the atmosphere suitable for families?</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => isEditing && setStep1(prev => ({
+                  ...prev,
+                  facilities: { ...prev.facilities, familyFriendly: true }
+                }))}
+                className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
+                  step1.facilities?.familyFriendly === true
+                    ? "bg-green-600 text-white border-green-600"
+                    : "bg-white text-gray-700 border-gray-200"
+                } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => isEditing && setStep1(prev => ({
+                  ...prev,
+                  facilities: { ...prev.facilities, familyFriendly: false }
+                }))}
+                className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
+                  step1.facilities?.familyFriendly === false
+                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-200"
+                } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                No
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100 last:border-none">
+            <div>
+              <Label className="text-xs font-semibold text-gray-700">EV Charging Available?*</Label>
+              <p className="text-[11px] text-gray-500">Are EV charging ports available?</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => isEditing && setStep1(prev => ({
+                  ...prev,
+                  facilities: { ...prev.facilities, evCharging: true }
+                }))}
+                className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
+                  step1.facilities?.evCharging === true
+                    ? "bg-green-600 text-white border-green-600"
+                    : "bg-white text-gray-700 border-gray-200"
+                } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => isEditing && setStep1(prev => ({
+                  ...prev,
+                  facilities: { ...prev.facilities, evCharging: false }
+                }))}
+                className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
+                  step1.facilities?.evCharging === false
+                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-200"
+                } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                No
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100 last:border-none">
+            <div>
+              <Label className="text-xs font-semibold text-gray-700">Washroom Available?*</Label>
+              <p className="text-[11px] text-gray-500">Are washroom facilities available?</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => isEditing && setStep1(prev => ({
+                  ...prev,
+                  facilities: { ...prev.facilities, washroom: true }
+                }))}
+                className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
+                  step1.facilities?.washroom === true
+                    ? "bg-green-600 text-white border-green-600"
+                    : "bg-white text-gray-700 border-gray-200"
+                } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => isEditing && setStep1(prev => ({
+                  ...prev,
+                  facilities: { ...prev.facilities, washroom: false }
+                }))}
+                className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
+                  step1.facilities?.washroom === false
+                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    : "bg-white text-gray-700 border-gray-200"
+                } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+              >
+                No
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </div>

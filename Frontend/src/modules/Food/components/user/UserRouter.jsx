@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from "react"
 import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom"
+import { GoogleOAuthProvider } from "@react-oauth/google"
 import UserLayout from "./UserLayout"
 import Loader from "@food/components/Loader"
 import ProtectedRoute from "@food/components/ProtectedRoute"
@@ -142,8 +143,9 @@ const RequireInitialAuth = ({ children }) => {
 
 export default function UserRouter() {
   return (
-    <Suspense fallback={<AppShellSkeleton />}>
-      <Routes>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <Suspense fallback={<AppShellSkeleton />}>
+        <Routes>
         <Route element={<RequireInitialAuth><UserLayout /></RequireInitialAuth>}>
           {/* ========================================== */}
           {/* PUBLIC ROUTES (No login required)          */}
@@ -265,5 +267,6 @@ export default function UserRouter() {
         </Route>
       </Routes>
     </Suspense>
+    </GoogleOAuthProvider>
   )
 }

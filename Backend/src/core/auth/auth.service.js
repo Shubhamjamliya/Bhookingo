@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import ms from "ms";
+import { OAuth2Client } from "google-auth-library";
 import { FoodUser } from "../users/user.model.js";
 import { FoodAdmin } from "../admin/admin.model.js";
 import { AdminResetOtp } from "../admin/adminResetOtp.model.js";
@@ -300,6 +301,211 @@ export const verifyUserOtpAndLogin = async (
 
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(payload);
+
+  const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
+  const expiresAt = new Date(Date.now() + ttlMs);
+
+  await FoodRefreshToken.create({
+    userId: user._id,
+    token: refreshToken,
+    expiresAt,
+  });
+
+  return {
+    token: accessToken,
+    accessToken,
+    refreshToken,
+    user: sanitizeUserForAuthResponse(user),
+    isNewUser,
+  };
+};
+
+export const googleLoginUser = async (credential, fcmToken = null, platform = "web", ref = null) => {
+  if (!credential) {
+    throw new ValidationError("Google credential is required");
+  }
+
+  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  
+  let payload;
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (error) {
+    logger.error({ err: error }, "Google token verification failed");
+    throw new AuthError("Invalid Google authentication token");
+  }
+
+  if (!payload || !payload.email) {
+    throw new AuthError("Google authentication failed to provide email");
+  }
+
+  const { sub: googleId, email, name, picture: profileImage } = payload;
+  const trimmedName = typeof name === "string" ? name.trim() : "";
+
+  // Find existing user by googleId or email
+  let existingUser = await FoodUser.findOne({
+    $or: [{ googleId }, { email }],
+  });
+
+  let isNewUser = false;
+  let userDoc = existingUser;
+
+  if (userDoc && userDoc.isActive === false) {
+     throw new AuthError("Your account has been deactivated. Please contact support.");
+  }
+
+  if (!userDoc) {
+    isNewUser = true;
+    userDoc = await FoodUser.create({
+      googleId,
+      email,
+      name: trimmedName,
+      profileImage,
+      authProvider: "google",
+      isVerified: true, // Google handles email verification
+    });
+  } else {
+    // Update existing user if needed
+    let needsSave = false;
+    if (!userDoc.googleId) {
+      userDoc.googleId = googleId;
+      needsSave = true;
+    }
+    if (userDoc.authProvider !== "google") {
+      userDoc.authProvider = "google";
+      needsSave = true;
+    }
+    if (!userDoc.isVerified) {
+      userDoc.isVerified = true;
+      needsSave = true;
+    }
+    if (!userDoc.email) {
+      userDoc.email = email;
+      needsSave = true;
+    }
+    if (!userDoc.profileImage && profileImage) {
+      userDoc.profileImage = profileImage;
+      needsSave = true;
+    }
+    if (!userDoc.name && trimmedName) {
+      userDoc.name = trimmedName;
+      needsSave = true;
+    }
+    if (needsSave) await userDoc.save();
+  }
+
+  // Update FCM token if provided
+  if (fcmToken) {
+    let isModified = false;
+    if (platform === "mobile") {
+      if (!userDoc.fcmTokenMobile) userDoc.fcmTokenMobile = [];
+      if (!userDoc.fcmTokenMobile.includes(fcmToken)) {
+        userDoc.fcmTokenMobile.push(fcmToken);
+        isModified = true;
+      }
+    } else {
+      // Default to web if not explicitly mobile
+      if (!userDoc.fcmTokens) userDoc.fcmTokens = [];
+      if (!userDoc.fcmTokens.includes(fcmToken)) {
+        userDoc.fcmTokens.push(fcmToken);
+        isModified = true;
+      }
+    }
+    if (isModified) {
+      await userDoc.save();
+    }
+  }
+
+  // Ensure referralCode exists
+  if (!userDoc.referralCode) {
+    userDoc.referralCode = String(userDoc._id);
+    await userDoc.save();
+  }
+
+  // Referral crediting for brand new accounts
+  const refRaw = typeof ref === "string" ? String(ref).trim() : "";
+  if (isNewUser && refRaw) {
+    try {
+      if (mongoose.Types.ObjectId.isValid(refRaw)) {
+        const referrerId = new mongoose.Types.ObjectId(refRaw);
+        if (String(referrerId) !== String(userDoc._id)) {
+          const [referrer, settingsDoc] = await Promise.all([
+            FoodUser.findById(referrerId).select("_id referralCount").lean(),
+            FoodReferralSettings.findOne({ isActive: true })
+              .sort({ createdAt: -1 })
+              .lean(),
+          ]);
+
+          if (referrer && settingsDoc) {
+            const reward = Math.max(
+              0,
+              Number(settingsDoc.referralRewardUser) || 0,
+            );
+            const limit = Math.max(
+              0,
+              Number(settingsDoc.referralLimitUser) || 0,
+            );
+
+            if (
+              reward > 0 &&
+              limit > 0 &&
+              Number(referrer.referralCount || 0) < limit
+            ) {
+              userDoc.referredBy = referrerId;
+              await userDoc.save();
+
+              const log = await FoodReferralLog.create({
+                referrerId,
+                refereeId: userDoc._id,
+                role: "USER",
+                rewardAmount: reward,
+                status: "credited",
+              });
+
+              await Promise.all([
+                FoodUser.updateOne(
+                  { _id: referrerId },
+                  { $inc: { referralCount: 1 } },
+                ),
+                creditReferralReward(referrerId, reward, {
+                  role: "USER",
+                  refereeId: String(userDoc._id),
+                  referralLogId: String(log._id),
+                }),
+              ]);
+            } else {
+              await FoodReferralLog.create({
+                referrerId,
+                refereeId: userDoc._id,
+                role: "USER",
+                rewardAmount: reward,
+                status: "rejected",
+                reason:
+                  reward <= 0
+                    ? "reward_disabled"
+                    : limit <= 0
+                      ? "limit_disabled"
+                      : "limit_reached",
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Never fail login due to referral errors.
+      logger?.warn?.({ err: e }, "Referral crediting failed (google login)");
+    }
+  }
+
+  const user = userDoc.toObject();
+  const jwtPayload = { userId: user._id.toString(), role: user.role || "USER" };
+
+  const accessToken = signAccessToken(jwtPayload);
+  const refreshToken = signRefreshToken(jwtPayload);
 
   const ttlMs = ms(config.jwtRefreshExpiresIn || "7d");
   const expiresAt = new Date(Date.now() + ttlMs);

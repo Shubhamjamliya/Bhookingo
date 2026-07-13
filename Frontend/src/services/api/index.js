@@ -113,6 +113,7 @@ export const authAPI = {
       confirmAction,
     );
   },
+  googleLogin: (payload) => authService.googleLogin(payload),
   getCurrentUser: () => getUserMeOnce(),
   refreshToken: (token) => authService.refreshToken(token),
   logout: (refreshToken, fcmToken = null, platform = "web") => {
@@ -271,14 +272,19 @@ export const adminAPI = {
       contextModule: "admin",
     }),
   /** List restaurant withdrawal requests (admin). */
-  getWithdrawals: (params = {}) =>
+  getWithdrawalRequests: (params = {}) =>
     apiClient.get("/food/admin/withdrawals", {
       params,
       contextModule: "admin",
     }),
-  /** Update status of a withdrawal request. */
-  updateWithdrawalStatus: (id, body) =>
-    apiClient.patch(`/food/admin/withdrawals/${id}`, body, {
+  /** Approve a withdrawal request. */
+  approveWithdrawalRequest: (id) =>
+    apiClient.patch(`/food/admin/withdrawals/${id}/approve`, {}, {
+      contextModule: "admin",
+    }),
+  /** Reject a withdrawal request. */
+  rejectWithdrawalRequest: (id, rejectionReason) =>
+    apiClient.patch(`/food/admin/withdrawals/${id}/reject`, { rejectionReason }, {
       contextModule: "admin",
     }),
   
@@ -624,6 +630,23 @@ export const adminAPI = {
     ),
   deleteAdminOffer: (offerId) =>
     apiClient.delete(`/food/admin/offers/${String(offerId)}`, {
+      contextModule: "admin",
+    }),
+  getRestaurantCommissionBootstrap: () =>
+    apiClient.get("/food/admin/restaurant-commissions/bootstrap", {
+      contextModule: "admin",
+    }),
+  getRestaurantCommissions: (params = {}) =>
+    apiClient.get("/food/admin/restaurant-commissions", {
+      params,
+      contextModule: "admin",
+    }),
+  createRestaurantCommission: (body) =>
+    apiClient.post("/food/admin/restaurant-commissions", body ?? {}, {
+      contextModule: "admin",
+    }),
+  getRestaurantCommissionById: (id) =>
+    apiClient.get(`/food/admin/restaurant-commissions/${String(id)}`, {
       contextModule: "admin",
     }),
   updateRestaurantCommission: (id, body) =>

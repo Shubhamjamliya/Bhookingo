@@ -11,7 +11,7 @@ import { toast } from "sonner"
 import { Switch } from "@food/components/ui/switch"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
 
-const debugLog = (...args) => {}
+const debugLog = (...args) => { }
 const debugWarn = (...args) => { console.warn(...args) }
 const debugError = (...args) => { console.error(...args) }
 
@@ -181,9 +181,9 @@ function TimeDropdownPicker({ label, value, onChange }) {
             </option>
           ))}
         </select>
-        
+
         <span className="text-slate-400 font-bold">:</span>
-        
+
         <select
           value={minute}
           onChange={(e) => handleMinuteChange(e.target.value)}
@@ -525,7 +525,7 @@ export default function AddRestaurant() {
         ),
         profileImage:
           !isUploadableFile(step2.profileImage) &&
-          (step2.profileImage?.url || (typeof step2.profileImage === "string" && step2.profileImage.trim()))
+            (step2.profileImage?.url || (typeof step2.profileImage === "string" && step2.profileImage.trim()))
             ? step2.profileImage
             : null,
       }
@@ -534,17 +534,17 @@ export default function AddRestaurant() {
         ...step3,
         panImage:
           !isUploadableFile(step3.panImage) &&
-          (step3.panImage?.url || (typeof step3.panImage === "string" && step3.panImage.trim()))
+            (step3.panImage?.url || (typeof step3.panImage === "string" && step3.panImage.trim()))
             ? step3.panImage
             : null,
         gstImage:
           !isUploadableFile(step3.gstImage) &&
-          (step3.gstImage?.url || (typeof step3.gstImage === "string" && step3.gstImage.trim()))
+            (step3.gstImage?.url || (typeof step3.gstImage === "string" && step3.gstImage.trim()))
             ? step3.gstImage
             : null,
         fssaiImage:
           !isUploadableFile(step3.fssaiImage) &&
-          (step3.fssaiImage?.url || (typeof step3.fssaiImage === "string" && step3.fssaiImage.trim()))
+            (step3.fssaiImage?.url || (typeof step3.fssaiImage === "string" && step3.fssaiImage.trim()))
             ? step3.fssaiImage
             : null,
       }
@@ -866,11 +866,10 @@ export default function AddRestaurant() {
   const locationSearchInputRef = useRef(null)
   const placesAutocompleteRef = useRef(null)
   const mapsScriptLoadedRef = useRef(false)
+  const isPlaceSelectedRef = useRef(false)
 
   // Manual search states for fallback
   const [locationSearchValue, setLocationSearchValue] = useState("")
-  const [locationSuggestions, setLocationSuggestions] = useState([])
-  const [isSearchingLocation, setIsSearchingLocation] = useState(false)
 
 
 
@@ -891,7 +890,7 @@ export default function AddRestaurant() {
         }
         await new Promise((r) => setTimeout(r, 100))
       }
-      
+
       if (!inputElement || cancelled) return
 
       const loadMaps = async () => {
@@ -916,15 +915,15 @@ export default function AddRestaurant() {
         // 4. Check for any existing script and force libraries=places
         const scripts = Array.from(document.getElementsByTagName("script"))
         const mapsScript = scripts.find(s => s.src?.includes("maps.googleapis.com/maps/api/js"))
-        
+
         if (mapsScript && !mapsScript.src.includes("libraries=places")) {
           mapsScript.remove()
         } else if (mapsScript && mapsScript.src.includes("libraries=places")) {
-           for (let i = 0; i < 60; i++) {
-              if (window.google?.maps?.places?.Autocomplete) return true
-              if (cancelled) return false
-              await new Promise(r => setTimeout(r, 100))
-           }
+          for (let i = 0; i < 60; i++) {
+            if (window.google?.maps?.places?.Autocomplete) return true
+            if (cancelled) return false
+            await new Promise(r => setTimeout(r, 100))
+          }
         }
 
         // 5. Create and append new script
@@ -950,14 +949,14 @@ export default function AddRestaurant() {
         const formattedAddress = place?.formatted_address || ""
         const comps = Array.isArray(place?.address_components) ? place.address_components : []
         const get = (types) => comps.find((c) => types.some((t) => c.types?.includes(t)))?.long_name || ""
-        
+
         const area = get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"])
         const city = get(["locality"]) || get(["administrative_area_level_2"])
         const state = get(["administrative_area_level_1"]) || get(["administrative_area_level_2"])
         const pincode = get(["postal_code"])
         const lat = place?.geometry?.location?.lat?.()
         const lng = place?.geometry?.location?.lng?.()
-        
+
         return {
           formattedAddress,
           area,
@@ -972,7 +971,7 @@ export default function AddRestaurant() {
       const ok = await loadMaps()
       if (!ok || cancelled || !inputElement) return
 
-      if (inputElement.hasAttribute('data-google-places-initialized')) return
+      if (inputElement.hasAttribute('data-google-places-initialized')) return;
 
       try {
         autocomplete = new window.google.maps.places.Autocomplete(
@@ -983,13 +982,17 @@ export default function AddRestaurant() {
             types: ["geocode", "establishment"]
           }
         )
-        
+
         inputElement.setAttribute('data-google-places-initialized', 'true')
         placesAutocompleteRef.current = autocomplete
+        isPlaceSelectedRef.current = false
 
         autocomplete.addListener("place_changed", () => {
+          if (cancelled) return
           const place = autocomplete.getPlace()
           if (!place?.geometry) return
+          
+          isPlaceSelectedRef.current = true
           
           const parsed = parsePlace(place)
           setStep1((prev) => ({
@@ -1006,41 +1009,84 @@ export default function AddRestaurant() {
               longitude: parsed.longitude !== "" ? parsed.longitude : prev.location.longitude,
             },
           }))
-          
+
           setLocationSearchValue(parsed.formattedAddress)
-          inputElement.blur()
+          
+          if (inputElement) {
+            inputElement.blur()
+          }
+
+          // Force hide autocomplete dropdown container
+          const containers = document.querySelectorAll('.pac-container')
+          containers.forEach(container => {
+            if (container) {
+              container.style.display = 'none'
+              container.style.visibility = 'hidden'
+            }
+          })
         })
-        
+
         const pacContainerFix = () => {
+          if (cancelled) return
+          if (isPlaceSelectedRef.current) {
+            const containers = document.querySelectorAll('.pac-container')
+            containers.forEach(container => {
+              if (container) {
+                container.style.display = 'none'
+                container.style.visibility = 'hidden'
+              }
+            })
+            return
+          }
           const applyFix = () => {
-            const containers = document.querySelectorAll('.pac-container');
+            if (cancelled || isPlaceSelectedRef.current) {
+              const containers = document.querySelectorAll('.pac-container')
+              containers.forEach(container => {
+                if (container) {
+                  container.style.display = 'none'
+                  container.style.visibility = 'hidden'
+                }
+              })
+              return
+            }
+            const containers = document.querySelectorAll('.pac-container')
             if (containers.length > 0) {
               containers.forEach(container => {
-                container.style.zIndex = '999999';
-                container.style.pointerEvents = 'auto';
-                container.style.visibility = 'visible';
-                container.style.display = 'block';
-              });
+                if (container) {
+                  container.style.zIndex = '999999'
+                  container.style.pointerEvents = 'auto'
+                  container.style.visibility = 'visible'
+                  container.style.display = 'block'
+                }
+              })
             }
-          };
-          applyFix();
-          setTimeout(applyFix, 100);
-          setTimeout(applyFix, 300);
-        };
-        
-        inputElement.addEventListener('focus', pacContainerFix);
-        inputElement.addEventListener('input', pacContainerFix);
+          }
+          applyFix()
+          setTimeout(applyFix, 100)
+          setTimeout(applyFix, 300)
+        }
+
+        inputElement.addEventListener('focus', () => {
+          if (cancelled) return
+          isPlaceSelectedRef.current = false
+          pacContainerFix()
+        })
+        inputElement.addEventListener('input', () => {
+          if (cancelled) return
+          isPlaceSelectedRef.current = false
+          pacContainerFix()
+        })
       } catch (e) {
         debugError("Autocomplete error:", e)
       }
     }
 
-    init().catch(() => {})
+    init().catch(() => { })
 
     return () => {
       cancelled = true
       if (autocomplete) {
-        try { window.google?.maps?.event?.clearInstanceListeners(autocomplete) } catch {}
+        try { window.google?.maps?.event?.clearInstanceListeners(autocomplete) } catch { }
       }
       if (locationSearchInputRef.current) {
         locationSearchInputRef.current.removeAttribute('data-google-places-initialized')
@@ -1048,40 +1094,6 @@ export default function AddRestaurant() {
       placesAutocompleteRef.current = null
     }
   }, [step])
-
-  // Hybrid Search Fallback (Nominatim)
-  useEffect(() => {
-    if (step !== 1) return
-    const q = String(locationSearchValue || "").trim()
-    if (q.length < 3) {
-      setLocationSuggestions([])
-      setIsSearchingLocation(false)
-      return
-    }
-
-    const t = setTimeout(async () => {
-      try {
-        setIsSearchingLocation(true)
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=4&q=${encodeURIComponent(q)}&countrycodes=in`
-        const res = await fetch(url, { headers: { Accept: "application/json" } })
-        const json = await res.json()
-        const mapped = (Array.isArray(json) ? json : []).map(r => ({
-          id: r.place_id,
-          display: r.display_name || "",
-          lat: Number(r.lat),
-          lng: Number(r.lon),
-          addr: r.address || {},
-        }))
-        setLocationSuggestions(mapped)
-      } catch (e) {
-        debugError("Nominatim search failed:", e)
-      } finally {
-        setIsSearchingLocation(false)
-      }
-    }, 400)
-
-    return () => clearTimeout(t)
-  }, [locationSearchValue, step])
 
 
   // Render functions for each step
@@ -1105,22 +1117,20 @@ export default function AddRestaurant() {
               <button
                 type="button"
                 onClick={() => setStep1({ ...step1, pureVegRestaurant: true })}
-                className={`px-3 py-1.5 text-xs rounded-full border ${
-                  step1.pureVegRestaurant === true
-                    ? "bg-green-600 text-white border-green-600"
-                    : "bg-white text-gray-700 border-gray-200"
-                }`}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.pureVegRestaurant === true
+                  ? "bg-green-600 text-white border-green-600"
+                  : "bg-white text-gray-700 border-gray-200"
+                  }`}
               >
                 Yes, Pure Veg
               </button>
               <button
                 type="button"
                 onClick={() => setStep1({ ...step1, pureVegRestaurant: false })}
-                className={`px-3 py-1.5 text-xs rounded-full border ${
-                  step1.pureVegRestaurant === false
-                    ? "bg-gray-900 text-white border-gray-900"
-                    : "bg-white text-gray-700 border-gray-200"
-                }`}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.pureVegRestaurant === false
+                  ? "bg-gray-900 text-white border-gray-900"
+                  : "bg-white text-gray-700 border-gray-200"
+                  }`}
               >
                 No, Mixed Menu
               </button>
@@ -1180,51 +1190,8 @@ export default function AddRestaurant() {
               className="mt-1 bg-white text-sm"
               placeholder="Search and select restaurant address..."
             />
-            {isSearchingLocation && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-              </div>
-            )}
           </div>
 
-          {locationSuggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto">
-              {locationSuggestions.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => {
-                    const { lat, lng, display, addr } = s
-                    const area = addr.suburb || addr.neighbourhood || addr.city_district || addr.locality || ""
-                    const city = addr.city || addr.town || addr.village || ""
-                    const state = addr.state || ""
-                    const pincode = addr.postcode || ""
-
-                    setStep1((prev) => ({
-                      ...prev,
-                      location: {
-                        ...prev.location,
-                        formattedAddress: display,
-                        addressLine1: display,
-                        area: area || prev.location.area,
-                        city: city || prev.location.city,
-                        state: state || prev.location.state,
-                        pincode: pincode || prev.location.pincode,
-                        latitude: lat,
-                        longitude: lng,
-                      },
-                    }))
-                    setLocationSearchValue(display)
-                    setLocationSuggestions([])
-                  }}
-                  className="w-full px-4 py-2 text-left text-[13px] font-medium text-gray-700 hover:bg-orange-50 border-b border-gray-100 last:border-none"
-                >
-                  <span className="truncate">{s.display}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          
           <p className="text-[11px] text-gray-500 mt-1">
             Search to auto-fill Area, City, State, Pincode and coordinates.
           </p>
@@ -1695,7 +1662,7 @@ export default function AddRestaurant() {
               </DialogDescription>
             </DialogHeader>
             <div className="mt-8">
-              <Button 
+              <Button
                 onClick={() => {
                   setShowSuccessDialog(false)
                   navigate("/admin/restaurants")

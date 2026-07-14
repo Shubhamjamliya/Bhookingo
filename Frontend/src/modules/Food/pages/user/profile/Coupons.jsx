@@ -51,20 +51,20 @@ export default function Coupons() {
   }
 
   return (
-    <AnimatedPage className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a]">
+    <AnimatedPage className="min-h-screen bg-background dark:bg-[#0a0a0a]">
       <div className="max-w-md mx-auto px-4 py-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <Link to="/user/profile">
             <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-              <ArrowLeft className="h-5 w-5 text-black dark:text-white" />
+              <ArrowLeft className="h-5 w-5 text-text-primary dark:text-white" />
             </Button>
           </Link>
-          <h1 className="text-xl font-bold text-black dark:text-white">Your coupons</h1>
+          <h1 className="text-xl font-bold text-text-primary dark:text-white">Your coupons</h1>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center min-h-[60vh] text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center justify-center min-h-[60vh] text-sm text-text-secondary dark:text-text-secondary">
             Loading coupons...
           </div>
         ) : sortedOffers.length > 0 ? (
@@ -82,7 +82,7 @@ export default function Coupons() {
               return (
                 <div
                   key={offer?.id || offer?.offerId || code}
-                  className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-gray-200 dark:border-gray-800 p-4"
+                  className="bg-surface dark:bg-[#1a1a1a] rounded-2xl border border-border dark:border-gray-800 p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
@@ -91,7 +91,7 @@ export default function Coupons() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                          <span className="text-sm font-semibold text-text-primary dark:text-white">
                             {code}
                           </span>
                           {title && (
@@ -100,10 +100,10 @@ export default function Coupons() {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 truncate">
+                        <p className="text-xs text-text-secondary dark:text-text-secondary mt-1 truncate">
                           {restaurantName}
                         </p>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-500 mt-1">
+                        <p className="text-[11px] text-text-secondary dark:text-text-secondary mt-1">
                           {expiryText}
                         </p>
                       </div>
@@ -254,8 +254,8 @@ export default function Coupons() {
 
           {/* Text Content */}
           <div className="text-center space-y-3 max-w-sm">
-            <h2 className="text-xl font-bold text-black">No coupons found</h2>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <h2 className="text-xl font-bold text-text-primary">No coupons found</h2>
+            <p className="text-sm text-text-secondary leading-relaxed">
               Discover hidden coupons on your map screen after placing an order
             </p>
           </div>

@@ -430,17 +430,17 @@ export default function OTP() {
         <div className="absolute inset-0 bg-white/60 dark:bg-black/80" />
       </div>
 
-      <div className="w-full max-w-[450px] bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl relative z-10 overflow-hidden border border-gray-100 dark:border-gray-800">
+      <div className="w-full max-w-[450px] bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-2xl relative z-10 overflow-hidden border border-border dark:border-gray-800">
         {/* Header */}
-        <div className="flex items-center px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center px-6 py-4 border-b border-border dark:border-gray-800">
           <button
             onClick={() => navigate("/food/user/auth/login")}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
             aria-label="Go back"
           >
-            <ArrowLeft className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            <ArrowLeft className="h-5 w-5 text-text-secondary dark:text-gray-300" />
           </button>
-          <span className="ml-4 font-bold text-gray-900 dark:text-white">
+          <span className="ml-4 font-bold text-text-primary dark:text-white">
             {showNameInput ? "Welcome!" : "OTP Verification"}
           </span>
         </div>
@@ -459,14 +459,14 @@ export default function OTP() {
               </div>
             )}
             <div className="space-y-2">
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white leading-tight">
+              <h2 className="text-xl md:text-2xl font-bold text-text-primary dark:text-white leading-tight">
                 {showNameInput 
                   ? "Help us know you better" 
                   : contactType === "email"
                     ? "Verify your email"
                     : "Verify your phone"}
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+              <p className="text-sm text-text-secondary dark:text-text-secondary max-w-xs mx-auto">
                 {showNameInput
                   ? "We're excited to have you join us! Please tell us your full name to get started."
                   : `We've sent a 4-digit code to ${contactInfo}`}
@@ -492,13 +492,13 @@ export default function OTP() {
                     onPaste={index === 0 ? handlePaste : undefined}
                     disabled={isLoading}
                     aria-label={`OTP digit ${index + 1} of 4`}
-                    className="w-12 h-12 sm:w-14 sm:h-14 text-center text-xl font-bold border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary bg-white dark:bg-[#2a2a2a] text-gray-900 dark:text-white transition-all outline-none"
+                    className="w-12 h-12 sm:w-14 sm:h-14 text-center text-xl font-bold border-2 border-border dark:border-gray-700 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary bg-surface dark:bg-[#2a2a2a] text-text-primary dark:text-white transition-all outline-none"
                   />
                 ))}
               </div>
 
               {error && (
-                <div className="flex items-center justify-center gap-1.5 text-xs text-red-500 bg-red-50 dark:bg-red-900/10 py-2 rounded-lg">
+                <div className="flex items-center justify-center gap-1.5 text-xs text-red-500 bg-primary-light/10 dark:bg-red-900/10 py-2 rounded-lg">
                   <AlertCircle className="h-3.5 w-3.5" />
                   <span>{error}</span>
                 </div>
@@ -506,16 +506,16 @@ export default function OTP() {
 
               {/* Resend Section */}
               <div className="text-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-text-secondary dark:text-text-secondary">
                   Didn't get the OTP?{" "}
                   {resendTimer > 0 ? (
-                    <span className="font-medium text-gray-900 dark:text-white">Retry in {resendTimer}s</span>
+                    <span className="font-medium text-text-primary dark:text-white">Retry in {resendTimer}s</span>
                   ) : (
                     <button
                       type="button"
                       onClick={handleResend}
                       disabled={isLoading}
-                      className="text-primary hover:text-[#991B1B] font-bold transition-colors disabled:opacity-50"
+                      className="text-primary hover:text-[var(--primary-dark)] font-bold transition-colors disabled:opacity-50"
                     >
                       Resend SMS
                     </button>
@@ -538,7 +538,7 @@ export default function OTP() {
                   }}
                   disabled={isLoading}
                   placeholder="Full Name"
-                  className={`h-12 md:h-14 text-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-700 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary ${nameError ? "border-red-500" : ""} transition-all`}
+                  className={`h-12 md:h-14 text-lg bg-surface dark:bg-[#1a1a1a] text-text-primary dark:text-white border-border dark:border-gray-700 rounded-xl focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary ${nameError ? "border-red-500" : ""} transition-all`}
                 />
                 {nameError && (
                   <p className="text-xs text-red-500 pl-1">
@@ -550,7 +550,7 @@ export default function OTP() {
               <Button
                 onClick={handleSubmitName}
                 disabled={isLoading}
-                className="w-full h-12 md:h-14 bg-primary hover:bg-[#991B1B] text-white font-bold text-lg rounded-xl transition-all hover:shadow-lg active:scale-[0.98]"
+                className="w-full h-12 md:h-14 bg-primary hover:bg-primary-dark text-white font-bold text-lg rounded-xl transition-all hover:shadow-lg active:scale-[0.98]"
               >
                 {isLoading ? "Getting things ready..." : "Finish Registration"}
               </Button>
@@ -567,7 +567,7 @@ export default function OTP() {
         
         {/* Footer info */}
         <div className="p-6 bg-gray-50 dark:bg-[#1f1f1f] text-center">
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest font-bold">
+            <p className="text-[10px] text-text-secondary dark:text-text-secondary uppercase tracking-widest font-bold">
             </p>
         </div>
       </div>
@@ -576,30 +576,30 @@ export default function OTP() {
       {showRestorePopup && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 overflow-y-auto py-10">
           <div 
-            className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl overflow-hidden p-6 text-center border border-gray-100 dark:border-gray-800"
+            className="w-full max-w-sm bg-surface dark:bg-[#1a1a1a] rounded-3xl shadow-2xl overflow-hidden p-6 text-center border border-border dark:border-gray-800"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <Smartphone className="h-8 w-8 text-primary" />
             </div>
             
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Account Found!</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              A deleted account for <span className="font-bold text-gray-900 dark:text-white">{contactInfo}</span> was found. 
+            <h3 className="text-xl font-bold text-text-primary dark:text-white mb-2">Account Found!</h3>
+            <p className="text-sm text-text-secondary dark:text-text-secondary mb-6">
+              A deleted account for <span className="font-bold text-text-primary dark:text-white">{contactInfo}</span> was found. 
               Do you want to restore your old data or start fresh with a new account?
             </p>
 
             <div className="space-y-3">
               <Button
                 onClick={() => handleRestoreAction("restore")}
-                className="w-full h-12 bg-primary hover:bg-[#991B1B] text-white font-bold rounded-xl shadow-lg shadow-primary/20"
+                className="w-full h-12 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl shadow-lg shadow-primary/20"
               >
                 Restore My Account
               </Button>
               <Button
                 variant="outline"
                 onClick={() => handleRestoreAction("new")}
-                className="w-full h-12 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl"
+                className="w-full h-12 border-2 border-border dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl"
               >
                 Create New Account
               </Button>

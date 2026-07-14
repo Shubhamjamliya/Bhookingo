@@ -146,7 +146,7 @@ export async function importHighwaysFromGeoJSON(geojson) {
  * Find geographically nearest active highway segment (ignores service threshold).
  * @returns {{ highway, distanceMeters } | null}
  */
-const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters = DEFAULT_THRESHOLD_METERS + 5000) => {
+export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters = DEFAULT_THRESHOLD_METERS + 5000) => {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
     const paddingDeg = searchPaddingMeters / 111_000;

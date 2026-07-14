@@ -237,9 +237,9 @@ export default function DiningExploreNear() {
                   }
                 }}
                 placeholder="Search for restaurants, cuisines, dishes..."
-                className="w-full h-12 sm:h-14 md:h-16 pl-12 sm:pl-14 pr-12 sm:pr-14 rounded-xl border-2 border-gray-200 focus:border-[#DC2626] bg-white shadow-sm text-base sm:text-lg md:text-xl"
+                className="w-full h-12 sm:h-14 md:h-16 pl-12 sm:pl-14 pr-12 sm:pr-14 rounded-xl border-2 border-border focus:border-[var(--primary)] bg-surface shadow-sm text-base sm:text-lg md:text-xl"
               />
-              <Search className="absolute left-4 sm:left-5 md:left-6 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-gray-400" />
+              <Search className="absolute left-4 sm:left-5 md:left-6 top-1/2 -translate-y-1/2 h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-text-secondary" />
               <Button
                 variant="ghost"
                 size="icon"
@@ -248,7 +248,7 @@ export default function DiningExploreNear() {
                   // Voice search functionality
                 }}
               >
-                <Mic className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-gray-500" />
+                <Mic className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-text-secondary" />
               </Button>
             </div>
           </div>
@@ -257,7 +257,7 @@ export default function DiningExploreNear() {
           <div className="mb-4 mt-2 sm:mt-4">
             <div className="mb-6">
               <div className="flex items-center justify-center mb-2">
-                <h3 className="px-3 text-sm font-semibold text-gray-500 uppercase tracking-wide text-center">
+                <h3 className="px-3 text-sm font-semibold text-text-secondary uppercase tracking-wide text-center">
                   POPULAR RESTAURANTS AROUND YOU
                 </h3>
               </div>
@@ -276,10 +276,10 @@ export default function DiningExploreNear() {
                 <Button
                   variant="outline"
                   onClick={() => setIsFilterOpen(true)}
-                  className="h-7 sm:h-8 px-2 sm:px-3 rounded-full flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 font-medium transition-all bg-white border border-gray-200 hover:bg-gray-50 text-gray-700"
+                  className="h-7 sm:h-8 px-2 sm:px-3 rounded-full flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 font-medium transition-all bg-surface border border-border hover:bg-gray-50 text-gray-700"
                 >
                   <SlidersHorizontal className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="text-xs sm:text-sm font-bold text-black">Filters</span>
+                  <span className="text-xs sm:text-sm font-bold text-text-primary">Filters</span>
                 </Button>
 
                 {/* Filter Buttons */}
@@ -298,12 +298,12 @@ export default function DiningExploreNear() {
                       variant="outline"
                       onClick={() => toggleFilter(filter.id)}
                       className={`h-7 sm:h-8 px-2 sm:px-3 rounded-full flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 transition-all font-medium ${isActive
-                        ? 'bg-[#DC2626] text-white border-[#DC2626] hover:bg-[#991B1B]'
-                        : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-600'
+                        ? 'bg-[var(--primary)] text-white border-[var(--primary)] hover:bg-primary-dark'
+                        : 'bg-surface border border-border hover:bg-gray-50 text-text-secondary'
                         }`}
                     >
                       {Icon && <Icon className={`h-3 w-3 sm:h-4 sm:w-4 ${isActive ? 'fill-white' : ''}`} />}
-                      <span className="text-xs sm:text-sm font-bold text-black">{filter.label}</span>
+                      <span className="text-xs sm:text-sm font-bold text-text-primary">{filter.label}</span>
                     </Button>
                   )
                 })}
@@ -335,7 +335,7 @@ export default function DiningExploreNear() {
 
                 return (
                   <Link key={restaurant.id} to={`/user/restaurants/${restaurantSlug}`}>
-                    <Card className="overflow-hidden gap-0 cursor-pointer border-0 group bg-white shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-2xl">
+                    <Card className="overflow-hidden gap-0 cursor-pointer border-0 group bg-surface shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-2xl">
 
                       {/* Image Section */}
                       <div className="relative h-48 sm:h-56 md:h-60 w-full overflow-hidden rounded-t-2xl">
@@ -362,11 +362,11 @@ export default function DiningExploreNear() {
                           className="absolute top-3 right-3 h-9 w-9 bg-white/90 backdrop-blur-sm rounded-lg hover:bg-white transition-colors"
                           onClick={handleToggleFavorite}
                         >
-                          <Bookmark className={`h-5 w-5 ${favorite ? "fill-gray-800 text-gray-800" : "text-gray-600"}`} strokeWidth={2} />
+                          <Bookmark className={`h-5 w-5 ${favorite ? "fill-gray-800 text-gray-800" : "text-text-secondary"}`} strokeWidth={2} />
                         </Button>
 
                         {/* Blue Section - Bottom 40% */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-[#DC2626] to-transparent" style={{ height: '40%' }}>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-[var(--primary)] to-transparent" style={{ height: '40%' }}>
                           <div className="h-full flex flex-col justify-end">
                             <div className="pl-4 sm:pl-5 pb-4 sm:pb-5">
                               <p className="text-white text-xs sm:text-sm font-medium uppercase tracking-wide mb-1">
@@ -386,7 +386,7 @@ export default function DiningExploreNear() {
                         {/* Restaurant Name & Rating */}
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-lg sm:text-xl font-bold text-gray-900 line-clamp-1">
+                            <h3 className="text-lg sm:text-xl font-bold text-text-primary line-clamp-1">
                               {restaurant.name}
                             </h3>
                           </div>
@@ -396,7 +396,7 @@ export default function DiningExploreNear() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1 text-sm text-gray-500 mb-2">
+                        <div className="flex items-center gap-1 text-sm text-text-secondary mb-2">
                           <Clock className="h-4 w-4" strokeWidth={1.5} />
                           <span className="mx-1">|</span>
                           <span className="font-medium">{restaurant.distance}</span>
@@ -405,7 +405,7 @@ export default function DiningExploreNear() {
                         {/* Offer Badge */}
                         {restaurant.offer && (
                           <div className="flex items-center gap-2 text-sm">
-                            <BadgePercent className="h-4 w-4 text-[#DC2626]" strokeWidth={2} />
+                            <BadgePercent className="h-4 w-4 text-[var(--primary)]" strokeWidth={2} />
                             <span className="text-gray-700 font-medium">{restaurant.offer}</span>
                           </div>
                         )}
@@ -429,17 +429,17 @@ export default function DiningExploreNear() {
           />
 
           {/* Modal Content */}
-          <div className="absolute bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 bg-white rounded-t-3xl md:rounded-3xl max-h-[85vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col animate-[slideUp_0.3s_ease-out]">
+          <div className="absolute bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 bg-surface rounded-t-3xl md:rounded-3xl max-h-[85vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col animate-[slideUp_0.3s_ease-out]">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-4 border-b">
-              <h2 className="text-lg font-bold text-gray-900">Filters and sorting</h2>
+              <h2 className="text-lg font-bold text-text-primary">Filters and sorting</h2>
               <button
                 onClick={() => {
                   setActiveFilters(new Set())
                   setSortBy(null)
                   setSelectedCuisine(null)
                 }}
-                className="text-[#DC2626] font-medium text-sm"
+                className="text-[var(--primary)] font-medium text-sm"
               >
                 Clear all
               </button>
@@ -463,11 +463,11 @@ export default function DiningExploreNear() {
                     <button
                       key={tab.id}
                       onClick={() => setActiveFilterTab(tab.id)}
-                      className={`flex flex-col items-center gap-1 py-4 px-2 text-center relative transition-colors ${isActive ? 'bg-white text-[#DC2626]' : 'text-gray-500 hover:bg-gray-100'
+                      className={`flex flex-col items-center gap-1 py-4 px-2 text-center relative transition-colors ${isActive ? 'bg-white text-[var(--primary)]' : 'text-text-secondary hover:bg-gray-100'
                         }`}
                     >
                       {isActive && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626] rounded-r" />
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--primary)] rounded-r" />
                       )}
                       <Icon className="h-5 w-5" strokeWidth={1.5} />
                       <span className="text-xs font-medium leading-tight">{tab.label}</span>
@@ -481,7 +481,7 @@ export default function DiningExploreNear() {
                 {/* Sort By Tab */}
                 {activeFilterTab === 'sort' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Sort by</h3>
+                    <h3 className="text-lg font-semibold text-text-primary mb-4">Sort by</h3>
                     <div className="flex flex-col gap-3">
                       {[
                         { id: null, label: 'Relevance' },
@@ -493,7 +493,7 @@ export default function DiningExploreNear() {
                           onClick={() => setSortBy(option.id)}
                           className={`px-4 py-3 rounded-xl border text-left transition-colors ${sortBy === option.id
                               ? 'border-green-500 bg-green-50'
-                              : 'border-gray-200 hover:border-green-500'
+                              : 'border-border hover:border-green-500'
                             }`}
                         >
                           <span className={`text-sm font-medium ${sortBy === option.id ? 'text-green-600' : 'text-gray-700'}`}>
@@ -510,36 +510,36 @@ export default function DiningExploreNear() {
                 {/* Rating Tab */}
                 {activeFilterTab === 'rating' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Restaurant Rating</h3>
+                    <h3 className="text-lg font-semibold text-text-primary mb-4">Restaurant Rating</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter('rating-35-plus')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('rating-35-plus')
                             ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-500'
+                            : 'border-border hover:border-green-500'
                           }`}
                       >
-                        <Star className={`h-6 w-6 ${activeFilters.has('rating-35-plus') ? 'text-green-600 fill-green-600' : 'text-gray-400'}`} />
+                        <Star className={`h-6 w-6 ${activeFilters.has('rating-35-plus') ? 'text-green-600 fill-green-600' : 'text-text-secondary'}`} />
                         <span className={`text-sm font-medium ${activeFilters.has('rating-35-plus') ? 'text-green-600' : 'text-gray-700'}`}>Rated 3.5+</span>
                       </button>
                       <button
                         onClick={() => toggleFilter('rating-4-plus')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('rating-4-plus')
                             ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-500'
+                            : 'border-border hover:border-green-500'
                           }`}
                       >
-                        <Star className={`h-6 w-6 ${activeFilters.has('rating-4-plus') ? 'text-green-600 fill-green-600' : 'text-gray-400'}`} />
+                        <Star className={`h-6 w-6 ${activeFilters.has('rating-4-plus') ? 'text-green-600 fill-green-600' : 'text-text-secondary'}`} />
                         <span className={`text-sm font-medium ${activeFilters.has('rating-4-plus') ? 'text-green-600' : 'text-gray-700'}`}>Rated 4.0+</span>
                       </button>
                       <button
                         onClick={() => toggleFilter('rating-45-plus')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('rating-45-plus')
                             ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-500'
+                            : 'border-border hover:border-green-500'
                           }`}
                       >
-                        <Star className={`h-6 w-6 ${activeFilters.has('rating-45-plus') ? 'text-green-600 fill-green-600' : 'text-gray-400'}`} />
+                        <Star className={`h-6 w-6 ${activeFilters.has('rating-45-plus') ? 'text-green-600 fill-green-600' : 'text-text-secondary'}`} />
                         <span className={`text-sm font-medium ${activeFilters.has('rating-45-plus') ? 'text-green-600' : 'text-gray-700'}`}>Rated 4.5+</span>
                       </button>
                     </div>
@@ -549,26 +549,26 @@ export default function DiningExploreNear() {
                 {/* Distance Tab */}
                 {activeFilterTab === 'distance' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Distance</h3>
+                    <h3 className="text-lg font-semibold text-text-primary mb-4">Distance</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter('distance-under-1km')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('distance-under-1km')
                             ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-500'
+                            : 'border-border hover:border-green-500'
                           }`}
                       >
-                        <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-1km') ? 'text-green-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                        <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-1km') ? 'text-green-600' : 'text-text-secondary'}`} strokeWidth={1.5} />
                         <span className={`text-sm font-medium ${activeFilters.has('distance-under-1km') ? 'text-green-600' : 'text-gray-700'}`}>Under 1 km</span>
                       </button>
                       <button
                         onClick={() => toggleFilter('distance-under-2km')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('distance-under-2km')
                             ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-500'
+                            : 'border-border hover:border-green-500'
                           }`}
                       >
-                        <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-2km') ? 'text-green-600' : 'text-gray-600'}`} strokeWidth={1.5} />
+                        <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-2km') ? 'text-green-600' : 'text-text-secondary'}`} strokeWidth={1.5} />
                         <span className={`text-sm font-medium ${activeFilters.has('distance-under-2km') ? 'text-green-600' : 'text-gray-700'}`}>Under 2 km</span>
                       </button>
                     </div>
@@ -578,13 +578,13 @@ export default function DiningExploreNear() {
                 {/* Price Tab */}
                 {activeFilterTab === 'price' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Dish Price</h3>
+                    <h3 className="text-lg font-semibold text-text-primary mb-4">Dish Price</h3>
                     <div className="flex flex-col gap-3">
                       <button
                         onClick={() => toggleFilter('price-under-200')}
                         className={`px-4 py-3 rounded-xl border text-left transition-colors ${activeFilters.has('price-under-200')
                             ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-500'
+                            : 'border-border hover:border-green-500'
                           }`}
                       >
                         <span className={`text-sm font-medium ${activeFilters.has('price-under-200') ? 'text-green-600' : 'text-gray-700'}`}>Under ₹200</span>
@@ -593,7 +593,7 @@ export default function DiningExploreNear() {
                         onClick={() => toggleFilter('price-under-500')}
                         className={`px-4 py-3 rounded-xl border text-left transition-colors ${activeFilters.has('price-under-500')
                             ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-green-500'
+                            : 'border-border hover:border-green-500'
                           }`}
                       >
                         <span className={`text-sm font-medium ${activeFilters.has('price-under-500') ? 'text-green-600' : 'text-gray-700'}`}>Under ₹500</span>
@@ -605,7 +605,7 @@ export default function DiningExploreNear() {
                 {/* Cuisine Tab */}
                 {activeFilterTab === 'cuisine' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Cuisine</h3>
+                    <h3 className="text-lg font-semibold text-text-primary mb-4">Cuisine</h3>
                     <div className="grid grid-cols-2 gap-3">
                       {['Continental', 'Italian', 'Asian', 'Indian', 'Chinese', 'American', 'Seafood', 'Cafe'].map((cuisine) => (
                         <button
@@ -613,7 +613,7 @@ export default function DiningExploreNear() {
                           onClick={() => setSelectedCuisine(selectedCuisine === cuisine ? null : cuisine)}
                           className={`px-4 py-3 rounded-xl border text-center transition-colors ${selectedCuisine === cuisine
                               ? 'border-green-500 bg-green-50'
-                              : 'border-gray-200 hover:border-green-500'
+                              : 'border-border hover:border-green-500'
                             }`}
                         >
                           <span className={`text-sm font-medium ${selectedCuisine === cuisine ? 'text-green-600' : 'text-gray-700'}`}>
@@ -639,7 +639,7 @@ export default function DiningExploreNear() {
                 onClick={() => setIsFilterOpen(false)}
                 className={`flex-1 py-3 font-semibold rounded-xl transition-colors ${activeFilters.size > 0 || sortBy || selectedCuisine
                     ? 'bg-green-600 text-white hover:bg-green-700'
-                    : 'bg-gray-200 text-gray-500'
+                    : 'bg-gray-200 text-text-secondary'
                   }`}
               >
                 {activeFilters.size > 0 || sortBy || selectedCuisine

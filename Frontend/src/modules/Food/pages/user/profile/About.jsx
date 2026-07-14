@@ -85,8 +85,8 @@ export default function About() {
       <AnimatedPage className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-[#0a0a0a] dark:to-[#1a1a1a]">
         <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-600 dark:text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+            <Loader2 className="h-8 w-8 animate-spin text-text-secondary dark:text-text-secondary mx-auto mb-4" />
+            <p className="text-text-secondary dark:text-text-secondary">Loading...</p>
           </div>
         </div>
       </AnimatedPage>
@@ -100,10 +100,10 @@ export default function About() {
         <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
           <Link to="/user/profile">
             <Button variant="ghost" size="icon" className="h-9 w-9 md:h-10 md:w-10 p-0 hover:bg-gray-100 dark:hover:bg-gray-800">
-              <ArrowLeft className="h-5 w-5 md:h-6 md:w-6 text-gray-900 dark:text-white" />
+              <ArrowLeft className="h-5 w-5 md:h-6 md:w-6 text-text-primary dark:text-white" />
             </Button>
           </Link>
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">About</h1>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-text-primary dark:text-white">About</h1>
         </div>
 
         {/* App Info Card */}
@@ -112,7 +112,7 @@ export default function About() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Card className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-lg border-0 dark:border-gray-800 mb-6 overflow-hidden">
+          <Card className="bg-surface dark:bg-[#1a1a1a] rounded-2xl shadow-lg border-0 dark:border-gray-800 mb-6 overflow-hidden">
             <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-8 md:p-10 text-center">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -121,8 +121,8 @@ export default function About() {
                 className="flex justify-center mb-6"
               >
                 <div className="relative">
-                  <div className="absolute inset-0 bg-[#DC2626] rounded-full blur-2xl opacity-30 animate-pulse" />
-                  <div className="relative bg-white dark:bg-gray-800 rounded-full p-4 md:p-6 shadow-xl">
+                  <div className="absolute inset-0 bg-[var(--primary)] rounded-full blur-2xl opacity-30 animate-pulse" />
+                  <div className="relative bg-surface dark:bg-gray-800 rounded-full p-4 md:p-6 shadow-xl">
                     <img
                       src={logoUrl || quickSpicyLogo}
                       alt={`${aboutData.appName} Logo`}
@@ -141,7 +141,7 @@ export default function About() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.5 }}
-                className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-2"
+                className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary dark:text-white mb-2"
               >
                 {aboutData.appName || companyName || "About"}
               </motion.h2>
@@ -150,7 +150,7 @@ export default function About() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.5 }}
-                className="text-gray-600 dark:text-gray-400 text-sm md:text-base mb-4"
+                className="text-text-secondary dark:text-text-secondary text-sm md:text-base mb-4"
               >
                 {aboutData.version ? `Version ${aboutData.version}` : " "}
               </motion.p>
@@ -188,17 +188,17 @@ export default function About() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <Card className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-md border-0 dark:border-gray-800 hover:shadow-xl transition-shadow duration-300 h-full">
+                  <Card className="bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-md border-0 dark:border-gray-800 hover:shadow-xl transition-shadow duration-300 h-full">
                     <CardContent className="p-5 md:p-6">
                       <div className="flex items-start gap-4">
                         <div className={`${feature.bgColor} rounded-xl p-3 flex-shrink-0`}>
                           <IconComponent className={`h-6 w-6 md:h-7 md:w-7 ${feature.color}`} />
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                          <h3 className="text-lg md:text-xl font-semibold text-text-primary dark:text-white mb-2">
                             {feature.title}
                           </h3>
-                          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+                          <p className="text-sm md:text-base text-text-secondary dark:text-text-secondary leading-relaxed">
                             {feature.description}
                           </p>
                         </div>
@@ -217,10 +217,10 @@ export default function About() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.5 }}
         >
-          <Card className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-md border-0 dark:border-gray-800">
+          <Card className="bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-md border-0 dark:border-gray-800">
             <CardContent className="p-5 md:p-6">
-              <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <FileText className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <h3 className="text-lg md:text-xl font-semibold text-text-primary dark:text-white mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                 Legal Information
               </h3>
               <div className="space-y-3">
@@ -229,17 +229,17 @@ export default function About() {
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                 >
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
-                    <FileText className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <FileText className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900 dark:text-white group-hover:text-[#DC2626] dark:group-hover:text-[#DC2626] transition-colors">
+                    <div className="text-base font-medium text-text-primary dark:text-white group-hover:text-[var(--primary)] dark:group-hover:text-[var(--primary)] transition-colors">
                       Terms and Conditions
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-500">
+                    <div className="text-sm text-text-secondary dark:text-text-secondary">
                       Read our terms and conditions
                     </div>
                   </div>
-                  <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+                  <ArrowRight className="h-5 w-5 text-text-secondary group-hover:text-text-secondary dark:group-hover:text-gray-300 transition-colors" />
                 </Link>
 
                 <Link
@@ -247,17 +247,17 @@ export default function About() {
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                 >
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
-                    <Lock className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <Lock className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900 dark:text-white group-hover:text-[#DC2626] dark:group-hover:text-[#DC2626] transition-colors">
+                    <div className="text-base font-medium text-text-primary dark:text-white group-hover:text-[var(--primary)] dark:group-hover:text-[var(--primary)] transition-colors">
                       Privacy Policy
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-500">
+                    <div className="text-sm text-text-secondary dark:text-text-secondary">
                       Learn how we protect your data
                     </div>
                   </div>
-                  <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+                  <ArrowRight className="h-5 w-5 text-text-secondary group-hover:text-text-secondary dark:group-hover:text-gray-300 transition-colors" />
                 </Link>
 
                 <Link
@@ -265,17 +265,17 @@ export default function About() {
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                 >
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
-                    <Receipt className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <Receipt className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900 dark:text-white group-hover:text-[#DC2626] dark:group-hover:text-[#DC2626] transition-colors">
+                    <div className="text-base font-medium text-text-primary dark:text-white group-hover:text-[var(--primary)] dark:group-hover:text-[var(--primary)] transition-colors">
                       Refund Policy
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-500">
+                    <div className="text-sm text-text-secondary dark:text-text-secondary">
                       Read our refund terms and conditions
                     </div>
                   </div>
-                  <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+                  <ArrowRight className="h-5 w-5 text-text-secondary group-hover:text-text-secondary dark:group-hover:text-gray-300 transition-colors" />
                 </Link>
 
                 <Link
@@ -283,17 +283,17 @@ export default function About() {
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                 >
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
-                    <Truck className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <Truck className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900 dark:text-white group-hover:text-[#DC2626] dark:group-hover:text-[#DC2626] transition-colors">
+                    <div className="text-base font-medium text-text-primary dark:text-white group-hover:text-[var(--primary)] dark:group-hover:text-[var(--primary)] transition-colors">
                       Shipping Policy
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-500">
+                    <div className="text-sm text-text-secondary dark:text-text-secondary">
                       Learn about our shipping terms
                     </div>
                   </div>
-                  <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+                  <ArrowRight className="h-5 w-5 text-text-secondary group-hover:text-text-secondary dark:group-hover:text-gray-300 transition-colors" />
                 </Link>
 
                 <Link
@@ -301,17 +301,17 @@ export default function About() {
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                 >
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 group-hover:bg-gray-200 dark:group-hover:bg-gray-700 transition-colors">
-                    <XCircle className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <XCircle className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900 dark:text-white group-hover:text-[#DC2626] dark:group-hover:text-[#DC2626] transition-colors">
+                    <div className="text-base font-medium text-text-primary dark:text-white group-hover:text-[var(--primary)] dark:group-hover:text-[var(--primary)] transition-colors">
                       Cancellation Policy
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-500">
+                    <div className="text-sm text-text-secondary dark:text-text-secondary">
                       Read our cancellation terms and conditions
                     </div>
                   </div>
-                  <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+                  <ArrowRight className="h-5 w-5 text-text-secondary group-hover:text-text-secondary dark:group-hover:text-gray-300 transition-colors" />
                 </Link>
               </div>
             </CardContent>
@@ -325,7 +325,7 @@ export default function About() {
           transition={{ delay: 1.4, duration: 0.5 }}
           className="text-center mt-8 mb-4"
         >
-          <p className="text-sm text-gray-500 dark:text-gray-500">
+          <p className="text-sm text-text-secondary dark:text-text-secondary">
             � {new Date().getFullYear()} {companyName}. All rights reserved.
           </p>
         </motion.div>

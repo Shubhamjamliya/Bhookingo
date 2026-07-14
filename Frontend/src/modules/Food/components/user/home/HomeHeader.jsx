@@ -189,7 +189,7 @@ export default function HomeHeader({
                       className="object-cover"
                     />
                   )}
-                  <AvatarFallback className="bg-[#FFF5E6] text-[20px] font-black text-[#DC2626] leading-none tracking-tighter antialiased">
+                  <AvatarFallback className="bg-[#FFF5E6] text-[20px] font-black text-[var(--primary)] leading-none tracking-tighter antialiased">
                     {initials || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -201,10 +201,10 @@ export default function HomeHeader({
         {/* Row 2: Search Bar and Veg Toggle */}
         <div className="flex items-center gap-3">
           <div
-            className="flex-1 relative bg-white rounded-2xl flex items-center px-4 py-3 shadow-xl border border-black/5 cursor-pointer active:scale-[0.98] transition-all duration-300"
+            className="flex-1 relative bg-surface rounded-2xl flex items-center px-4 py-3 shadow-xl border border-black/5 cursor-pointer active:scale-[0.98] transition-all duration-300"
             onClick={handleSearchFocus}
           >
-            <Search className="h-5 w-5 text-[#DC2626] mr-2 shrink-0" strokeWidth={3} />
+            <Search className="h-5 w-5 text-[var(--primary)] mr-2 shrink-0" strokeWidth={3} />
 
             <div className="flex-1 overflow-hidden relative h-5">
               <AnimatePresence mode="wait">
@@ -214,16 +214,16 @@ export default function HomeHeader({
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -10, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute inset-0 text-[15px] font-bold text-gray-400 truncate flex items-center"
+                  className="absolute inset-0 text-[15px] font-bold text-text-secondary truncate flex items-center"
                 >
                   {placeholders?.[placeholderIndex] || 'Search'}
                 </motion.span>
               </AnimatePresence>
             </div>
 
-            <div className="flex items-center gap-3 pl-3 border-l border-gray-100 ml-1">
+            <div className="flex items-center gap-3 pl-3 border-l border-border ml-1">
               <Mic
-                className="h-5 w-5 text-gray-400"
+                className="h-5 w-5 text-text-secondary"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsVoiceOverlayOpen(true);
@@ -258,7 +258,7 @@ export default function HomeHeader({
               <motion.div
                 animate={{ x: vegMode ? 24 : 2 }}
                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-md"
+                className="absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow-md"
               />
             </div>
           </div>

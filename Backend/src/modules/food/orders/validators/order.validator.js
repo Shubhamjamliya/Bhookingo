@@ -73,7 +73,8 @@ export function validateCreateOrderDto(body) {
         sendCutlery: z.boolean().optional(),
         paymentMethod: z.enum(['cash', 'razorpay', 'razorpay_qr', 'card', 'wallet']),
         highwayId: z.string().nullable().optional(),
-        scheduledAt: z.string().datetime({ offset: true }).nullable().optional()
+        scheduledAt: z.string().datetime({ offset: true }).nullable().optional(),
+        orderType: z.enum(['delivery', 'takeaway', 'dining']).optional()
     });
     const result = schema.safeParse(body);
     if (!result.success) {

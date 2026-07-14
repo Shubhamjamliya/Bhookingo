@@ -19,6 +19,7 @@ import { getPublicEnvController } from '../modules/food/landing/controllers/publ
 import webhookRoutes from '../core/payments/routes/webhook.routes.js'; // ✅ NEW
 import searchRoutes from '../modules/food/search/routes/search.routes.js';
 import diningBookingRoutes from '../modules/food/dining/routes/diningBooking.routes.js';
+import drivingModeRoutes from '../modules/food/driving/routes/driving.routes.js';
 
 const router = express.Router();
 
@@ -48,6 +49,7 @@ router.use('/v1/food/admin', authMiddleware, requireRoles('ADMIN'), restaurantAd
 router.use('/v1/food/user', authMiddleware, requireRoles('USER'), userRoutes);
 router.use('/v1/food/notifications', authMiddleware, requireRoles('USER', 'RESTAURANT'), notificationRoutes);
 router.use('/v1/food/orders', authMiddleware, requireRoles('USER'), orderUserRoutes);
+router.use('/v1/food/driving-mode', authMiddleware, requireRoles('USER'), drivingModeRoutes);
 router.use('/v1/food/payments', authMiddleware, paymentRoutes);
 router.use('/v1/payments/webhook', webhookRoutes); // ✅ NEW: Public Webhook
 router.use('/v1/fcm-tokens', fcmRoutes);

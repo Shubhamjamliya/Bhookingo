@@ -1647,17 +1647,45 @@ export const getRestaurantComplaints = async (restaurantId, query = {}) => {
  * This collapses 50+ frontend requests into ONE optimized backend call.
  */
 export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 250) => {
-    const highwayIdRaw = String(query.highwayId || '').trim();
-    if (!highwayIdRaw || !mongoose.Types.ObjectId.isValid(highwayIdRaw)) {
-        throw new ValidationError('Valid highwayId is required for Under 250 fetching');
-    }
+    const lat = query.lat ? parseFloat(query.lat) : null;
+    const lng = query.lng ? parseFloat(query.lng) : null;
+    const radiusKm = query.radiusKm ? parseFloat(query.radiusKm) : 50;
 
-    // 1. Find all approved restaurants in the specified zone first (Zone Filter first)
+    const refLat = lat !== null ? lat : 22.7196;
+    const refLng = lng !== null ? lng : 75.8577;
+
+    const getDistance = (lat1, lon1, lat2, lon2) => {
+        const R = 6371000; // meters
+        const phi1 = (lat1 * Math.PI) / 180;
+        const phi2 = (lat2 * Math.PI) / 180;
+        const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+        const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+        const a =
+            Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+            Math.cos(phi1) *
+                Math.cos(phi2) *
+                Math.sin(deltaLambda / 2) *
+                Math.sin(deltaLambda / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    };
+
+    let filter = { status: 'approved' };
+
     const restaurantsInZone = await FoodRestaurant.find({
-        highwayId: new mongoose.Types.ObjectId(highwayIdRaw),
-        status: 'approved'
-    })
-    .lean();
+        ...filter,
+        location: {
+            $near: {
+                $geometry: {
+                    type: 'Point',
+                    coordinates: [refLng, refLat]
+                },
+                $maxDistance: radiusKm * 1000 // In meters
+            }
+        }
+    }).lean();
 
     if (restaurantsInZone.length === 0) {
         return { restaurants: [], total: 0 };
@@ -1714,6 +1742,13 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
         const rid = String(r._id);
         const items = restaurantItemsMap[rid] || [];
         const timings = timingsMap[rid] || [];
+
+        const restLat = r.location?.coordinates?.[1] ?? r.location?.latitude;
+        const restLng = r.location?.coordinates?.[0] ?? r.location?.longitude;
+        let distanceKm = 0;
+        if (restLat !== undefined && restLng !== undefined) {
+            distanceKm = getDistance(refLat, refLng, restLat, restLng) / 1000;
+        }
         
         return {
             ...r,
@@ -1721,7 +1756,8 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
             restaurantId: rid,
             name: r.restaurantName,
             menuItems: items,
-            outletTimings: { timings }
+            outletTimings: { timings },
+            distanceKm: parseFloat(distanceKm.toFixed(2))
         };
     });
 

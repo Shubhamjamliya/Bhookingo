@@ -77,7 +77,7 @@ export default function Gourmet() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
+    <div className="min-h-screen bg-surface dark:bg-[#0a0a0a]">
       {/* Banner Section */}
       <div className="relative w-full overflow-hidden h-[30vh] sm:h-[35vh] md:h-[40vh] shadow-2xl">
         {/* Back Button */}
@@ -101,7 +101,7 @@ export default function Gourmet() {
         {/* Banner Text Overlay */}
         <div className="absolute bottom-8 left-6 md:left-10 z-10 space-y-2">
           <div className="flex items-center gap-2">
-            <span className="w-8 h-[2px] bg-[#DC2626]" />
+            <span className="w-8 h-[2px] bg-[var(--primary)]" />
             <span className="text-[10px] font-black tracking-[0.3em] text-white/80 uppercase">Experience Excellence</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-black text-white drop-shadow-2xl">Gourmet Dining</h1>
@@ -114,13 +114,13 @@ export default function Gourmet() {
         <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
 
           {/* Restaurant Count */}
-          <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-zinc-800">
-            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 tracking-[0.2em] uppercase">
+          <div className="flex items-center justify-between pb-2 border-b border-border dark:border-zinc-800">
+            <p className="text-[10px] font-black text-text-secondary dark:text-text-secondary tracking-[0.2em] uppercase">
               {showGourmetSkeleton ? '...' : gourmetRestaurants.length} PREMIER ESTABLISHMENTS
             </p>
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[10px] font-bold text-gray-500 uppercase">Live Deals Available</span>
+              <span className="text-[10px] font-bold text-text-secondary uppercase">Live Deals Available</span>
             </div>
           </div>
 
@@ -130,7 +130,7 @@ export default function Gourmet() {
           {/* Error State */}
           {error && !loading && (
             <div className="flex flex-col items-center justify-center py-20">
-              <p className="text-red-500 dark:text-red-400 text-center">{error}</p>
+              <p className="text-red-500 dark:text-primary-light text-center">{error}</p>
               <Button onClick={() => window.location.reload()} className="mt-4">Retry</Button>
             </div>
           )}
@@ -140,7 +140,7 @@ export default function Gourmet() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {gourmetRestaurants.length === 0 ? (
                 <div className="col-span-full text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400">No Gourmet restaurants available at the moment</p>
+                  <p className="text-text-secondary dark:text-text-secondary">No Gourmet restaurants available at the moment</p>
                 </div>
               ) : (
                 gourmetRestaurants.map((item) => {
@@ -195,7 +195,7 @@ export default function Gourmet() {
 
                   return (
                     <Link key={restaurantId} to={`/user/restaurants/${restaurantSlug}`}>
-                      <Card className="overflow-hidden cursor-pointer border-0 group bg-white dark:bg-[#1a1a1a] shadow-xl shadow-gray-200/20 dark:shadow-none hover:shadow-2xl hover:shadow-[#DC2626]/5 transition-all duration-500 py-0 rounded-[32px] mb-4 group active:scale-[0.98]">
+                      <Card className="overflow-hidden cursor-pointer border-0 group bg-surface dark:bg-[#1a1a1a] shadow-xl shadow-gray-200/20 dark:shadow-none hover:shadow-2xl hover:shadow-[var(--primary)]/5 transition-all duration-500 py-0 rounded-[32px] mb-4 group active:scale-[0.98]">
                         {/* Image Section */}
                         <div className="relative h-48 sm:h-56 md:h-60 w-full overflow-hidden rounded-t-[32px]">
                           {restaurantImage ? (
@@ -230,8 +230,8 @@ export default function Gourmet() {
                           
                           {/* Rating Badge Overlay */}
                           <div className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-2xl shadow-2xl">
-                             <span className="text-sm font-black text-gray-900">{restaurant.rating?.toFixed(1) || '4.0'}</span>
-                             <Star className="h-3.5 w-3.5 fill-[#DC2626] text-[#DC2626]" />
+                             <span className="text-sm font-black text-text-primary">{restaurant.rating?.toFixed(1) || '4.0'}</span>
+                             <Star className="h-3.5 w-3.5 fill-[var(--primary)] text-[var(--primary)]" />
                           </div>
                         </div>
 
@@ -239,29 +239,29 @@ export default function Gourmet() {
                         <CardContent className="p-5">
                           {/* Restaurant Name */}
                           <div className="flex items-center justify-between gap-2 mb-3">
-                            <h3 className="text-xl font-black text-gray-900 dark:text-gray-100 truncate group-hover:text-[#DC2626] transition-colors">
+                            <h3 className="text-xl font-black text-text-primary dark:text-gray-100 truncate group-hover:text-[var(--primary)] transition-colors">
                               {restaurant.restaurantName || restaurant.name}
                             </h3>
                           </div>
 
-                          <div className="flex items-center gap-4 text-[12px] text-gray-500 dark:text-gray-400 mb-4 font-bold uppercase tracking-tight">
+                          <div className="flex items-center gap-4 text-[12px] text-text-secondary dark:text-text-secondary mb-4 font-bold uppercase tracking-tight">
                             <div className="flex items-center gap-1.5">
-                              <Clock className="h-4 w-4 text-[#DC2626]" strokeWidth={2.5} />
+                              <Clock className="h-4 w-4 text-[var(--primary)]" strokeWidth={2.5} />
                             </div>
                             <span className="text-gray-200">•</span>
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[#F87171] font-black">{distanceStr} away</span>
+                              <span className="text-[var(--primary-light)] font-black">{distanceStr} away</span>
                             </div>
                           </div>
 
                           {/* Offer Badge */}
                           {restaurant.offer ? (
-                            <div className="flex items-center gap-2.5 px-3 py-2 bg-[#DC2626]/5 dark:bg-[#DC2626]/10 rounded-2xl w-fit">
-                              <BadgePercent className="h-4 w-4 text-[#DC2626]" strokeWidth={3} />
-                              <span className="text-[10px] font-black text-[#DC2626] uppercase tracking-wider">{restaurant.offer}</span>
+                            <div className="flex items-center gap-2.5 px-3 py-2 bg-[var(--primary)]/5 dark:bg-[var(--primary)]/10 rounded-2xl w-fit">
+                              <BadgePercent className="h-4 w-4 text-[var(--primary)]" strokeWidth={3} />
+                              <span className="text-[10px] font-black text-[var(--primary)] uppercase tracking-wider">{restaurant.offer}</span>
                             </div>
                           ) : (
-                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 dark:bg-zinc-900 px-3 py-2 rounded-2xl w-fit">
+                            <div className="text-[10px] font-black text-text-secondary uppercase tracking-widest bg-gray-50 dark:bg-zinc-900 px-3 py-2 rounded-2xl w-fit">
                               Elite Selection
                             </div>
                           )}

@@ -22,6 +22,10 @@ import {
     updateHighwayController
 } from '../controllers/highway.controller.js';
 import { upload } from '../../../../middleware/upload.js';
+import {
+    getDrivingModeSettingsController,
+    updateDrivingModeSettingsController
+} from '../../driving/controllers/driving.controller.js';
 
 const router = express.Router();
 
@@ -168,6 +172,10 @@ router.get('/highways/:id', getHighwayByIdController);
 router.put('/highways/:id', updateHighwayController);
 router.delete('/highways/:id', deleteHighwayController);
 router.patch('/highways/:id/toggle', toggleHighwayStatusController);
+
+// ----- Driving Mode -----
+router.get('/driving-mode/settings', getDrivingModeSettingsController);
+router.patch('/driving-mode/settings', updateDrivingModeSettingsController);
 
 // ----- Dining -----
 router.get('/dining/categories', diningAdminController.getDiningCategories);

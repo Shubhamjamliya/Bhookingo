@@ -11,13 +11,13 @@ import collectionsBanner from "@food/assets/collectionspagebanner.png"
 // Gradient colors for collection cards
 const gradientColors = [
   "bg-gradient-to-br from-red-400 to-red-600",
-  "bg-gradient-to-br from-orange-400 to-#991B1B",
+  "bg-gradient-to-br from-orange-400 to-var(--primary-dark)",
   "bg-gradient-to-br from-purple-500 to-pink-600",
   "bg-gradient-to-br from-green-400 to-emerald-600",
   "bg-gradient-to-br from-orange-400 to-red-500",
   "bg-gradient-to-br from-amber-400 to-yellow-600",
   "bg-gradient-to-br from-pink-400 to-rose-600",
-  "bg-gradient-to-br from-amber-400 to-#991B1B",
+  "bg-gradient-to-br from-amber-400 to-var(--primary-dark)",
 ]
 
 export default function Collections() {
@@ -54,7 +54,7 @@ export default function Collections() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
+    <div className="min-h-screen bg-surface dark:bg-[#0a0a0a]">
       {/* Back Button */}
       <button
         onClick={goBack}
@@ -75,17 +75,17 @@ export default function Collections() {
       </div>
 
       {/* Tabs */}
-      <div className="sticky top-0 bg-white dark:bg-[#1a1a1a] z-10 border-b dark:border-gray-800">
+      <div className="sticky top-0 bg-surface dark:bg-[#1a1a1a] z-10 border-b dark:border-gray-800">
         <div className="flex">
 
           <button
             onClick={() => setActiveTab("dining")}
-            className={`flex-1 py-4 text-center font-semibold transition-colors relative ${activeTab === "dining" ? "text-gray-900 dark:text-gray-100" : "text-gray-400 dark:text-gray-500"
+            className={`flex-1 py-4 text-center font-semibold transition-colors relative ${activeTab === "dining" ? "text-text-primary dark:text-gray-100" : "text-text-secondary dark:text-text-secondary"
               }`}
           >
             Dining
             {activeTab === "dining" && (
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-[#DC2626] rounded-full" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-[var(--primary)] rounded-full" />
             )}
           </button>
         </div>
@@ -118,7 +118,7 @@ export default function Collections() {
                   <div className="absolute inset-0 flex items-center justify-center pb-10">
                     <div className="relative w-32 h-24">
                       {/* Left card - Food */}
-                      <div className="absolute left-0 top-2 w-14 h-11 bg-white rounded-lg shadow-lg transform -rotate-12 overflow-hidden">
+                      <div className="absolute left-0 top-2 w-14 h-11 bg-surface rounded-lg shadow-lg transform -rotate-12 overflow-hidden">
                         <div className="w-full h-full bg-gray-50 flex items-center justify-center p-1">
                           <div className="w-8 h-8 bg-amber-400 rounded-full flex items-center justify-center">
                             <UtensilsCrossed className="h-4 w-4 text-white" />
@@ -129,9 +129,9 @@ export default function Collections() {
                       </div>
 
                       {/* Right card - Restaurant */}
-                      <div className="absolute right-0 top-0 w-14 h-11 bg-white rounded-lg shadow-lg transform rotate-12 overflow-hidden">
+                      <div className="absolute right-0 top-0 w-14 h-11 bg-surface rounded-lg shadow-lg transform rotate-12 overflow-hidden">
                         <div className="w-full h-full bg-gray-50 flex items-center justify-center p-1">
-                          <Store className="h-6 w-6 text-[#DC2626]" />
+                          <Store className="h-6 w-6 text-[var(--primary)]" />
                         </div>
                         {/* Striped awning */}
                         <div className="absolute -top-0.5 left-0 right-0 h-2 bg-gradient-to-r from-orange-400 via-white to-orange-400"
@@ -155,10 +155,10 @@ export default function Collections() {
             {/* Create New Collection Card */}
             <button
               onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-white dark:bg-[#1a1a1a] border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-4 h-48 flex flex-col items-center justify-center gap-3 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="bg-surface dark:bg-[#1a1a1a] border-2 border-dashed border-border dark:border-gray-700 rounded-2xl p-4 h-48 flex flex-col items-center justify-center gap-3 hover:border-border dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              <div className="w-12 h-12 rounded-full bg-[#F9F9FB] dark:bg-[#DC2626]/20 flex items-center justify-center border-2 border-[#DC2626]/30 dark:border-[#DC2626]/40">
-                <Plus className="h-6 w-6 text-[#DC2626] dark:text-[#DC2626]" />
+              <div className="w-12 h-12 rounded-full bg-background dark:bg-[var(--primary)]/20 flex items-center justify-center border-2 border-[var(--primary)]/30 dark:border-[var(--primary)]/40">
+                <Plus className="h-6 w-6 text-[var(--primary)] dark:text-[var(--primary)]" />
               </div>
               <div className="text-center">
                 <p className="text-gray-700 dark:text-gray-300 font-semibold">Create a new</p>
@@ -182,10 +182,10 @@ export default function Collections() {
           />
 
           {/* Modal */}
-          <div className="relative bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-[90%] max-w-sm mx-4 overflow-hidden animate-[slideUp_0.3s_ease-out]">
+          <div className="relative bg-surface dark:bg-[#1a1a1a] rounded-2xl shadow-2xl w-[90%] max-w-sm mx-4 overflow-hidden animate-[slideUp_0.3s_ease-out]">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b dark:border-gray-800">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Create New Collection</h2>
+              <h2 className="text-lg font-bold text-text-primary dark:text-gray-100">Create New Collection</h2>
               <button
                 onClick={() => {
                   setIsCreateDialogOpen(false)
@@ -193,13 +193,13 @@ export default function Collections() {
                 }}
                 className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition-colors"
               >
-                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <X className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
               </button>
             </div>
 
             {/* Body */}
             <div className="p-4 space-y-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Give your collection a unique name</p>
+              <p className="text-sm text-text-secondary dark:text-text-secondary">Give your collection a unique name</p>
               <Input
                 placeholder="e.g., Weekend Favorites"
                 value={newCollectionName}
@@ -209,14 +209,14 @@ export default function Collections() {
                     handleCreateCollection()
                   }
                 }}
-                className="w-full h-12 text-base border-2 border-gray-200 dark:border-gray-700 focus:border-[#DC2626] dark:focus:border-[#DC2626] rounded-xl bg-white dark:bg-[#2a2a2a] text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                className="w-full h-12 text-base border-2 border-border dark:border-gray-700 focus:border-[var(--primary)] dark:focus:border-[var(--primary)] rounded-xl bg-surface dark:bg-[#2a2a2a] text-text-primary dark:text-white placeholder:text-text-secondary dark:placeholder:text-text-secondary"
                 autoFocus
               />
 
               {/* Preview */}
               {newCollectionName.trim() && (
                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Preview</p>
+                  <p className="text-xs text-text-secondary dark:text-text-secondary mb-1">Preview</p>
                   <p className="font-semibold text-gray-800 dark:text-gray-200">{newCollectionName.trim()}</p>
                 </div>
               )}
@@ -230,14 +230,14 @@ export default function Collections() {
                   setIsCreateDialogOpen(false)
                   setNewCollectionName("")
                 }}
-                className="flex-1 h-11 rounded-xl font-semibold border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="flex-1 h-11 rounded-xl font-semibold border-border dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleCreateCollection}
                 disabled={!newCollectionName.trim()}
-                className="flex-1 h-11 bg-[#DC2626] hover:bg-[#991B1B] text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 h-11 bg-[var(--primary)] hover:bg-primary-dark text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Create Collection
               </Button>

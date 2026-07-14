@@ -23,9 +23,9 @@
   --card-foreground: #1a0505;
   --popover: #ffffff;
   --popover-foreground: #3c0f3d;
-  --primary: #f50022;
+  --primary: #DC2626;
   --primary-foreground: #ffffff;
-  --secondary: #f50022;
+  --secondary: #DC2626;
   --secondary-foreground: #ffffff;
   --muted: #f1f5f9;
   --muted-foreground: #fca5a5;
@@ -34,15 +34,35 @@
   --destructive: #ef4444;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #f50022;
+  --ring: #DC2626;
   --sidebar: #ffffff;
   --sidebar-foreground: #1a0505;
-  --sidebar-primary: #f50022;
+  --sidebar-primary: #DC2626;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f50022;
+  --sidebar-accent: #DC2626;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #e2e8f0;
-  --sidebar-ring: #f50022;
+  --sidebar-ring: #DC2626;
+}
+
+.user-app-theme {
+  --primary: #F55B08;
+  --primary-light: #FF7A00;
+  --primary-dark: #813D13;
+
+  --background: #F4F4F2;
+  --surface: #FDFDFD;
+
+  --text-primary: #0D0A0B;
+  --text-secondary: #606665;
+
+  --success: #159447;
+  --ev-green: #2AA84A;
+  --info: #1B66C9;
+  --rating: #E08D35;
+
+  --border: #E6E6E6;
+  --ring: #F55B08;
 }
 
 @theme inline {
@@ -77,8 +97,18 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-surface: var(--surface);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-success: var(--success);
+  --color-ev-green: var(--ev-green);
+  --color-info: var(--info);
+  --color-rating: var(--rating);
+
   --color-page-bg: #F9F9FB;
-  --color-primary-orange: #f50022;
+  --color-primary-orange: #DC2626;
   --font-poppins: var(--font-poppins);
   --font-outfit: var(--font-outfit);
 }

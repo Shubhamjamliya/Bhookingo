@@ -153,22 +153,22 @@ export default function Checkout() {
                   <CardTitle className="flex items-center gap-2">
                     {orderType === "takeaway" ? (
                       <>
-                        <ShoppingBag className="h-5 w-5 text-[#DC2626]" />
+                        <ShoppingBag className="h-5 w-5 text-[var(--primary)]" />
                         Pickup Information
                       </>
                     ) : (
                       <>
-                        <MapPin className="h-5 w-5 text-[#DC2626]" />
+                        <MapPin className="h-5 w-5 text-[var(--primary)]" />
                       </>
                     )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {orderType === "takeaway" ? (
-                    <div className="border-2 border-[#DC2626] bg-orange-50 rounded-lg p-4">
+                    <div className="border-2 border-[var(--primary)] bg-orange-50 rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-2 mb-2">
-                          <ShoppingBag className="h-4 w-4 text-[#DC2626]" />
+                          <ShoppingBag className="h-4 w-4 text-[var(--primary)]" />
                           <span className="font-semibold text-orange-900">Self-Pickup</span>
                         </div>
                       </div>
@@ -180,7 +180,7 @@ export default function Checkout() {
                         <p className="text-sm text-gray-700 mt-1 font-medium">
                           {cart[0]?.restaurant || "Selected Restaurant"}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-text-secondary mt-1">
                           Collect your order once it's marked as ready.
                         </p>
                       </div>
@@ -200,8 +200,8 @@ export default function Checkout() {
                           <div
                             key={addressId || `${address.label}-${address.street}-${address.city}`}
                             className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${isSelected
-                                ? "border-[#DC2626] bg-orange-50"
-                                : "border-gray-200 hover:border-orange-300"
+                                ? "border-[var(--primary)] bg-orange-50"
+                                : "border-border hover:border-orange-300"
                               }`}
                             onClick={() => {
                               setSelectedAddressId(addressId)
@@ -211,12 +211,12 @@ export default function Checkout() {
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 {address.isDefault && (
-                                  <Badge className="mb-2 bg-[#DC2626] text-white">Default</Badge>
+                                  <Badge className="mb-2 bg-[var(--primary)] text-white">Default</Badge>
                                 )}
                                 <p className="text-sm font-medium">{addressString}</p>
                               </div>
                               {isSelected && (
-                                <CheckCircle className="h-5 w-5 text-[#DC2626]" />
+                                <CheckCircle className="h-5 w-5 text-[var(--primary)]" />
                               )}
                             </div>
                           </div>
@@ -244,7 +244,7 @@ export default function Checkout() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-[#DC2626]" />
+                    <CreditCard className="h-5 w-5 text-[var(--primary)]" />
                     Payment Method
                   </CardTitle>
                 </CardHeader>
@@ -253,20 +253,20 @@ export default function Checkout() {
                     {(orderType !== "takeaway" || isTakeawayCodEnabled) && (
                       <div
                         className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${selectedPayment === "cod"
-                            ? "border-[#DC2626] bg-orange-50"
-                            : "border-gray-200 hover:border-orange-300"
+                            ? "border-[var(--primary)] bg-orange-50"
+                            : "border-border hover:border-orange-300"
                           }`}
                         onClick={() => setSelectedPayment("cod")}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <CreditCard className="h-5 w-5 text-gray-500" />
+                            <CreditCard className="h-5 w-5 text-text-secondary" />
                             <div>
                               <p className="text-xs text-muted-foreground">Pay when you {orderType === "takeaway" ? "pickup" : "receive"} your order</p>
                             </div>
                           </div>
                           {selectedPayment === "cod" && (
-                            <CheckCircle className="h-5 w-5 text-[#DC2626]" />
+                            <CheckCircle className="h-5 w-5 text-[var(--primary)]" />
                           )}
                         </div>
                       </div>
@@ -280,8 +280,8 @@ export default function Checkout() {
                         <div
                           key={payment.id}
                           className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${isSelected
-                              ? "border-[#DC2626] bg-orange-50"
-                              : "border-gray-200 hover:border-orange-300"
+                              ? "border-[var(--primary)] bg-orange-50"
+                              : "border-border hover:border-orange-300"
                             }`}
                           onClick={() => setSelectedPayment(payment.id)}
                         >
@@ -289,7 +289,7 @@ export default function Checkout() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
                                 {payment.isDefault && (
-                                  <Badge className="bg-[#DC2626] text-white">Default</Badge>
+                                  <Badge className="bg-[var(--primary)] text-white">Default</Badge>
                                 )}
                                 <Badge variant="outline" className="capitalize">
                                   {payment.type}
@@ -301,7 +301,7 @@ export default function Checkout() {
                               </p>
                             </div>
                             {isSelected && (
-                              <CheckCircle className="h-5 w-5 text-[#DC2626]" />
+                              <CheckCircle className="h-5 w-5 text-[var(--primary)]" />
                             )}
                           </div>
                         </div>
@@ -323,7 +323,7 @@ export default function Checkout() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-[#DC2626]" />
+                    <MessageSquare className="h-5 w-5 text-[var(--primary)]" />
                     Add note for restaurant
                   </CardTitle>
                 </CardHeader>
@@ -385,12 +385,12 @@ export default function Checkout() {
                     </div>
                     <div className="flex justify-between font-bold text-lg md:text-xl lg:text-2xl pt-2 md:pt-3 border-t dark:border-gray-700">
                       <span className="dark:text-white">Total</span>
-                      <span className="text-[#DC2626] dark:text-orange-400">₹{total.toFixed(0)}</span>
+                      <span className="text-[var(--primary)] dark:text-orange-400">₹{total.toFixed(0)}</span>
                     </div>
                   </div>
 
                   <Button
-                    className="w-full bg-[#DC2626] hover:bg-[#991B1B] text-white mt-4 md:mt-6 h-11 md:h-12 text-sm md:text-base border-none"
+                    className="w-full bg-[var(--primary)] hover:bg-primary-dark text-white mt-4 md:mt-6 h-11 md:h-12 text-sm md:text-base border-none"
                     onClick={handlePlaceOrder}
                     disabled={isPlacingOrder || (orderType !== "takeaway" && !selectedAddress) || !selectedPayment}
                   >

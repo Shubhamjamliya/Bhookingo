@@ -128,22 +128,22 @@ export default function ReportSafetyEmergency() {
   }
 
   return (
-    <AnimatedPage className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] pb-24 md:pb-0">
+    <AnimatedPage className="min-h-screen bg-background dark:bg-[#0a0a0a] pb-24 md:pb-0">
       <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 lg:py-8">
         {/* Header */}
         <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6 lg:mb-8">
           <Button variant="ghost" size="icon" onClick={goBack} className="h-8 w-8 md:h-10 md:w-10 p-0">
-            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 text-black dark:text-white" />
+            <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 text-text-primary dark:text-white" />
           </Button>
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-black dark:text-white">Report a safety emergency</h1>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-text-primary dark:text-white">Report a safety emergency</h1>
         </div>
 
         {/* Emergency Contact Card */}
-        <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 rounded-xl shadow-sm mb-4 md:mb-5 lg:mb-6">
+        <Card className="bg-primary-light/10 dark:bg-red-900/20 border-red-200 dark:border-red-800 rounded-xl shadow-sm mb-4 md:mb-5 lg:mb-6">
           <CardContent className="p-4 md:p-5 lg:p-6">
             <div className="flex items-start gap-3 md:gap-4">
               <div className="bg-red-100 dark:bg-red-900/40 rounded-full p-2 md:p-3 mt-0.5">
-                <Phone className="h-5 w-5 md:h-6 md:w-6 text-red-600 dark:text-red-400" />
+                <Phone className="h-5 w-5 md:h-6 md:w-6 text-primary dark:text-primary-light" />
               </div>
               <div className="flex-1">
                 <h3 className="text-base md:text-lg lg:text-xl font-semibold text-red-900 dark:text-red-200 mb-1 md:mb-2">
@@ -154,7 +154,7 @@ export default function ReportSafetyEmergency() {
                 </p>
                 <a
                   href="tel:100"
-                  className="text-red-600 dark:text-red-400 font-semibold text-base md:text-lg lg:text-xl hover:underline"
+                  className="text-primary dark:text-primary-light font-semibold text-base md:text-lg lg:text-xl hover:underline"
                 >
                   Emergency: 100
                 </a>
@@ -166,17 +166,17 @@ export default function ReportSafetyEmergency() {
         {!isSubmitted ? (
           <>
             {/* Info Card */}
-            <Card className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800 mb-4 md:mb-5 lg:mb-6">
+            <Card className="bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800 mb-4 md:mb-5 lg:mb-6">
               <CardContent className="p-4 md:p-5 lg:p-6">
                 <div className="flex items-start gap-3 md:gap-4">
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-2 md:p-3 mt-0.5">
                     <Shield className="h-5 w-5 md:h-6 md:w-6 text-gray-700 dark:text-gray-300" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-base md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1 md:mb-2">
+                    <h3 className="text-base md:text-lg lg:text-xl font-semibold text-text-primary dark:text-white mb-1 md:mb-2">
                       Safety is our priority
                     </h3>
-                    <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
+                    <p className="text-sm md:text-base text-text-secondary dark:text-text-secondary">
                     </p>
                   </div>
                 </div>
@@ -184,9 +184,9 @@ export default function ReportSafetyEmergency() {
             </Card>
 
             {/* Report Form */}
-            <Card className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800 mb-4 md:mb-5 lg:mb-6">
+            <Card className="bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800 mb-4 md:mb-5 lg:mb-6">
               <CardContent className="p-4 md:p-5 lg:p-6">
-                <label className="block text-sm md:text-base font-medium text-gray-900 dark:text-white mb-2 md:mb-3">
+                <label className="block text-sm md:text-base font-medium text-text-primary dark:text-white mb-2 md:mb-3">
                   Describe the safety concern or emergency
                 </label>
                 <Textarea
@@ -203,7 +203,7 @@ export default function ReportSafetyEmergency() {
                     maxWidth: '100%'
                   }}
                 />
-                <p className={`text-xs md:text-sm mt-2 flex justify-between ${report.trim().length < 10 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                <p className={`text-xs md:text-sm mt-2 flex justify-between ${report.trim().length < 10 ? 'text-red-500' : 'text-text-secondary dark:text-text-secondary'}`}>
                   <span>{report.length} characters</span>
                   <span>Min 10 characters</span>
                 </p>
@@ -214,7 +214,7 @@ export default function ReportSafetyEmergency() {
             <Button
               onClick={handleSubmit}
               disabled={report.trim().length < 10 || isSubmitting}
-              className="w-full bg-red-600 hover:bg-red-700 text-white text-sm md:text-base h-10 md:h-12 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-primary hover:bg-primary-dark text-white text-sm md:text-base h-10 md:h-12 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
@@ -227,10 +227,10 @@ export default function ReportSafetyEmergency() {
             </Button>
 
             {/* History */}
-            <Card className="bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800 mt-5 md:mt-6">
+            <Card className="bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800 mt-5 md:mt-6">
               <CardContent className="p-4 md:p-5 lg:p-6">
                 <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-base md:text-lg font-semibold text-text-primary dark:text-white">
                     Your report history
                   </h3>
                   <Button
@@ -252,11 +252,11 @@ export default function ReportSafetyEmergency() {
                 </div>
 
                 {historyLoading && historySorted.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                  <p className="text-sm text-text-secondary dark:text-text-secondary mt-4">
                     Loading your reports...
                   </p>
                 ) : historySorted.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                  <p className="text-sm text-text-secondary dark:text-text-secondary mt-4">
                     No reports yet.
                   </p>
                 ) : (
@@ -266,14 +266,14 @@ export default function ReportSafetyEmergency() {
                         type="button"
                         key={item?._id || item?.id || `${item?.createdAt}-${item?.message?.slice?.(0, 12)}`}
                         onClick={() => handleOpenHistoryDetails(item)}
-                        className="w-full text-left rounded-xl border border-gray-200 dark:border-gray-800 p-3 md:p-4 bg-gray-50 dark:bg-[#101010] hover:bg-gray-100 dark:hover:bg-[#141414] transition-colors"
+                        className="w-full text-left rounded-xl border border-border dark:border-gray-800 p-3 md:p-4 bg-gray-50 dark:bg-[#101010] hover:bg-gray-100 dark:hover:bg-[#141414] transition-colors"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm md:text-base font-medium text-gray-900 dark:text-white truncate">
+                            <p className="text-sm md:text-base font-medium text-text-primary dark:text-white truncate">
                               {item?.message || "—"}
                             </p>
-                            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            <p className="text-xs md:text-sm text-text-secondary dark:text-text-secondary mt-1">
                               {formatDateTime(item?.createdAt)}
                             </p>
                           </div>
@@ -293,7 +293,7 @@ export default function ReportSafetyEmergency() {
               <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                    <AlertTriangle className="h-5 w-5 text-primary" />
                     Report Details
                   </DialogTitle>
                   <DialogDescription>
@@ -307,13 +307,13 @@ export default function ReportSafetyEmergency() {
                       {getStatusPill(selectedHistoryItem?.status)}
                       {selectedHistoryItem?.priority ? getPriorityPill(selectedHistoryItem?.priority) : null}
                       {selectedHistoryItem?.createdAt ? (
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-xs text-text-secondary dark:text-text-secondary">
                           {formatDateTime(selectedHistoryItem.createdAt)}
                         </span>
                       ) : null}
                     </div>
 
-                    <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f0f0f] p-4">
+                    <div className="rounded-lg border border-border dark:border-gray-800 bg-surface dark:bg-[#0f0f0f] p-4">
                       <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
                         {selectedHistoryItem?.message || "—"}
                       </p>
@@ -341,16 +341,16 @@ export default function ReportSafetyEmergency() {
           </>
         ) : (
           /* Success State */
-          <Card className="bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-md border-0 dark:border-gray-800 overflow-hidden">
+          <Card className="bg-surface dark:bg-[#1a1a1a] rounded-2xl shadow-md border-0 dark:border-gray-800 overflow-hidden">
             <CardContent className="p-6 md:p-8 lg:p-10 text-center">
               <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-5 lg:mb-6">
-                <AlertTriangle className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-red-600 dark:text-red-400" />
+                <AlertTriangle className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-primary dark:text-primary-light" />
               </div>
-              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2 md:mb-3">Report Submitted</h2>
-              <p className="text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-400 mb-3 md:mb-4">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-text-primary dark:text-white mb-2 md:mb-3">Report Submitted</h2>
+              <p className="text-sm md:text-base lg:text-lg text-text-secondary dark:text-text-secondary mb-3 md:mb-4">
                 Your safety report has been submitted. Our team will review it immediately and take appropriate action.
               </p>
-              <p className="text-xs md:text-sm text-red-600 dark:text-red-400 font-medium">
+              <p className="text-xs md:text-sm text-primary dark:text-primary-light font-medium">
                 If this is a life-threatening emergency, please call 100 immediately.
               </p>
             </CardContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Link, useLocation } from "react-router-dom"
 import {
   Search,
@@ -108,6 +108,7 @@ const iconMap = {
 
 export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange }) {
   const location = useLocation()
+  const itemRefs = useRef({})
   const [searchQuery, setSearchQuery] = useState("")
   const [badges, setBadges] = useState({})
 
@@ -369,6 +370,65 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
     return matchesPath(targetPath)
   }
 
+  // Auto scroll and auto expand sidebar sections on route change
+  useEffect(() => {
+    // 1. Identify which expandable parent section should be expanded
+    let expandedUpdated = false
+    const newExpanded = { ...expandedSections }
+
+    adminSidebarMenu.forEach((item) => {
+      if (item.type === "section") {
+        item.items.forEach((subItem) => {
+          if (subItem.type === "expandable" && subItem.subItems) {
+            const sectionKey = subItem.label.toLowerCase().replace(/\s+/g, "")
+            const allSubPaths = subItem.subItems.map((si) => si.path)
+
+            // Check if any sub-item is active
+            const hasActiveSub = subItem.subItems.some((si) => isActive(si.path, allSubPaths))
+            if (hasActiveSub && !newExpanded[sectionKey]) {
+              newExpanded[sectionKey] = true
+              expandedUpdated = true
+            }
+          }
+        })
+      }
+    })
+
+    if (expandedUpdated) {
+      setExpandedSections(newExpanded)
+    }
+
+    // 2. Perform smooth scroll after a short delay to allow accordion expanding transition to complete
+    const timer = setTimeout(() => {
+      // Find the active path in refs.
+      const activePathKey = Object.keys(itemRefs.current).find((path) => {
+        let allSubPaths = []
+        adminSidebarMenu.forEach((item) => {
+          if (item.type === "section") {
+            item.items.forEach((subItem) => {
+              if (subItem.type === "expandable" && subItem.subItems) {
+                if (subItem.subItems.some(si => si.path === path)) {
+                  allSubPaths = subItem.subItems.map(si => si.path)
+                }
+              }
+            })
+          }
+        })
+
+        return isActive(path, allSubPaths)
+      })
+
+      if (activePathKey && itemRefs.current[activePathKey]) {
+        itemRefs.current[activePathKey].scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        })
+      }
+    }, 150) // 150ms is perfect to allow css max-height animation to complete
+
+    return () => clearTimeout(timer)
+  }, [location.pathname])
+
   useEffect(() => {
     try {
       const currentState = JSON.parse(localStorage.getItem('admin_sidebar_state') || '{}')
@@ -410,6 +470,13 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
         <Link
           key={index}
           to={item.path}
+          ref={(el) => {
+            if (el) {
+              itemRefs.current[item.path] = el
+            } else {
+              delete itemRefs.current[item.path]
+            }
+          }}
           onClick={() => {
             if (window.innerWidth < 1024 && onClose) {
               onClose()
@@ -419,7 +486,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-300 ease-out menu-item-animate text-left relative",
             isInSection ? "text-sm font-semibold" : "text-sm",
             isActive(item.path)
-              ? "bg-white text-[#f50022] shadow-md shadow-black/10 font-semibold"
+              ? "bg-white text-[#DC2626] shadow-md shadow-black/10 font-semibold"
               : "text-white/95 hover:bg-white/10 hover:text-white",
             isCollapsed && "justify-center px-2"
           )}
@@ -429,7 +496,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
           <Icon className={cn(
             "shrink-0 transition-all duration-300 text-left",
             isInSection ? "w-4 h-4" : "w-4 h-4",
-            isActive(item.path) ? "text-[#f50022] scale-110" : "text-white/90"
+            isActive(item.path) ? "text-[#DC2626] scale-110" : "text-white/90"
           )} />
           {!isCollapsed && (
             <div className="flex-1 flex items-center justify-between overflow-hidden">
@@ -500,13 +567,20 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             </div>
           </button>
           {isExpanded && item.subItems && (
-            <div className="ml-5 mt-1 space-y-1 border-[#d6001d]/40 pl-3 submenu-animate overflow-hidden">
+            <div className="ml-5 mt-1 space-y-1 border-[#B91C1C]/40 pl-3 submenu-animate overflow-hidden">
               {item.subItems.map((subItem, subIndex) => {
                 const allSubPaths = item.subItems.map(si => si.path)
                 return (
                   <Link
                     key={subIndex}
                     to={subItem.path}
+                    ref={(el) => {
+                      if (el) {
+                        itemRefs.current[subItem.path] = el
+                      } else {
+                        delete itemRefs.current[subItem.path]
+                      }
+                    }}
                     onClick={() => {
                       if (window.innerWidth < 1024 && onClose) {
                         onClose()
@@ -614,7 +688,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
       `}</style>
       <div
         className={cn(
-          "bg-[#f50022] border-r border-[#d6001d]/30 h-screen fixed left-0 top-0 z-50 flex flex-col overflow-hidden",
+          "bg-[#DC2626] border-r border-[#B91C1C]/30 h-screen fixed left-0 top-0 z-50 flex flex-col overflow-hidden",
           "transform transition-all duration-300 ease-in-out",
           "lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
@@ -622,7 +696,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
         )}
       >
         {/* Header with Logo and Brand */}
-        <div className="shrink-0 px-3 py-3 border-b border-[#b30018]/40 bg-[#d6001d] animate-[fadeIn_0.4s_ease-out]">
+        <div className="shrink-0 px-3 py-3 border-b border-[#991B1B]/40 bg-[#B91C1C] animate-[fadeIn_0.4s_ease-out]">
           <div className="flex items-center justify-between mb-3">
             {!isCollapsed && (
               <div className="flex items-center gap-2 animate-[slideIn_0.3s_ease-out]">
@@ -745,7 +819,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                   <div
                     key={index}
                     className={cn(
-                      index > 0 ? "mt-4 pt-4 border-t border-[#d6001d]/30" : "",
+                      index > 0 ? "mt-4 pt-4 border-t border-[#B91C1C]/30" : "",
                       "animate-[fadeIn_0.4s_ease-out]"
                     )}
                     style={{ animationDelay: `${index * 0.1}s` }}

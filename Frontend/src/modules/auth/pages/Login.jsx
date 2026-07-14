@@ -466,7 +466,7 @@ export default function UnifiedOTPFastLogin() {
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
   }
 
-  const primaryColor = "#DC2626" // Rebranded Red color
+  const primaryColor = "var(--primary)" // Rebranded Red color
 
   return (
     <div className="h-[100dvh] overflow-hidden lg:h-auto lg:min-h-screen lg:overflow-y-auto w-full flex flex-col justify-between items-center relative font-['Poppins'] select-none bg-[#0f0b09] lg:bg-white lg:bg-gradient-to-br lg:from-rose-50/70 lg:via-white lg:to-red-50/50">
@@ -545,7 +545,7 @@ export default function UnifiedOTPFastLogin() {
       <div className="fixed -inset-y-1 inset-x-0 bg-black/15 z-0 lg:hidden pointer-events-none" />
 
       {/* Top Navbar (Desktop View) */}
-      <nav className="hidden sm:flex w-full h-[68px] bg-white/85 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 px-6 items-center select-none">
+      <nav className="hidden sm:flex w-full h-[68px] bg-white/85 backdrop-blur-md border-b border-border sticky top-0 z-50 px-6 items-center select-none">
         <div className="w-full max-w-[1440px] mx-auto flex items-center justify-center">
           <Link to="/food/user" className="flex items-center">
             <img
@@ -572,7 +572,7 @@ export default function UnifiedOTPFastLogin() {
             {/* Top Brand & Title */}
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 mb-6">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#CB202D] animate-pulse" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[var(--primary)] animate-pulse" />
                 <span className="text-xs font-bold tracking-wider uppercase text-white/90">Highway Dining Partner</span>
               </div>
               <h1 className="text-4xl xl:text-5xl font-black tracking-tight leading-tight mb-4 drop-shadow-md">
@@ -590,38 +590,38 @@ export default function UnifiedOTPFastLogin() {
               <div className="grid grid-cols-4 gap-4 relative">
                 {/* Step 1 */}
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 rounded-full bg-transparent border border-white/20 flex items-center justify-center text-[#CB202D] mb-2.5">
+                  <div className="w-12 h-12 rounded-full bg-transparent border border-white/20 flex items-center justify-center text-[var(--primary)] mb-2.5">
                     <Smartphone className="w-5 h-5" strokeWidth={2.2} />
                   </div>
                   <span className="text-xs font-bold text-gray-350 uppercase tracking-wider">Pre-Book</span>
-                  <p className="text-[10px] text-gray-400 font-semibold mt-1">Choose restaurant & items</p>
+                  <p className="text-[10px] text-text-secondary font-semibold mt-1">Choose restaurant & items</p>
                 </div>
 
                 {/* Step 2 */}
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 rounded-full bg-transparent border border-white/20 flex items-center justify-center text-[#CB202D] mb-2.5">
+                  <div className="w-12 h-12 rounded-full bg-transparent border border-white/20 flex items-center justify-center text-[var(--primary)] mb-2.5">
                     <Car className="w-5 h-5" strokeWidth={2.2} />
                   </div>
                   <span className="text-xs font-bold text-gray-350 uppercase tracking-wider">Drive</span>
-                  <p className="text-[10px] text-gray-400 font-semibold mt-1">Head towards outlet</p>
+                  <p className="text-[10px] text-text-secondary font-semibold mt-1">Head towards outlet</p>
                 </div>
 
                 {/* Step 3 */}
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 rounded-full bg-transparent border border-white/20 flex items-center justify-center text-[#CB202D] mb-2.5">
+                  <div className="w-12 h-12 rounded-full bg-transparent border border-white/20 flex items-center justify-center text-[var(--primary)] mb-2.5">
                     <ShoppingBag className="w-5 h-5" strokeWidth={2.2} />
                   </div>
                   <span className="text-xs font-bold text-gray-350 uppercase tracking-wider">Pick Up</span>
-                  <p className="text-[10px] text-gray-400 font-semibold mt-1">Collect hot, fresh food</p>
+                  <p className="text-[10px] text-text-secondary font-semibold mt-1">Collect hot, fresh food</p>
                 </div>
 
                 {/* Step 4 */}
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 rounded-full bg-transparent border border-white/20 flex items-center justify-center text-[#CB202D] mb-2.5">
+                  <div className="w-12 h-12 rounded-full bg-transparent border border-white/20 flex items-center justify-center text-[var(--primary)] mb-2.5">
                     <Smile className="w-5 h-5" strokeWidth={2.2} />
                   </div>
                   <span className="text-xs font-bold text-gray-350 uppercase tracking-wider">Enjoy</span>
-                  <p className="text-[10px] text-gray-400 font-semibold mt-1">Eat in car or dine-in</p>
+                  <p className="text-[10px] text-text-secondary font-semibold mt-1">Eat in car or dine-in</p>
                 </div>
               </div>
             </div>
@@ -631,7 +631,7 @@ export default function UnifiedOTPFastLogin() {
 
         {/* Right Side (Auth Form Column) */}
         <div className="w-full lg:w-2/5 flex flex-col items-center justify-center">
-          <div className="w-full max-w-[325px] lg:max-w-[380px] bg-white/75 text-gray-900 rounded-[30px] shadow-2xl px-5 pt-4 pb-6 border border-white/50 flex flex-col flex-initial overflow-y-auto overflow-x-hidden max-h-[95dvh] backdrop-blur-md my-4 mobile-card-padding">
+          <div className="w-full max-w-[325px] lg:max-w-[380px] bg-white/75 text-text-primary rounded-[30px] shadow-2xl px-5 pt-4 pb-6 border border-white/50 flex flex-col flex-initial overflow-y-auto overflow-x-hidden max-h-[95dvh] backdrop-blur-md my-4 mobile-card-padding">
 
             {/* Logo Section */}
             <div className="flex justify-center mb-1">
@@ -643,63 +643,63 @@ export default function UnifiedOTPFastLogin() {
             </div>
             {/* Heading Description */}
             <div className="text-center mb-1.5 lg:hidden mobile-header-hide">
-              <h1 className="text-[21px] font-black text-gray-900 tracking-tight leading-tight">
+              <h1 className="text-[21px] font-black text-text-primary tracking-tight leading-tight">
                 Pre-Book Food <br />
-                <span className="text-[#CB202D]">on Highways</span>
+                <span className="text-[var(--primary)]">on Highways</span>
               </h1>
-              <p className="text-[9px] font-bold text-gray-500 tracking-wide mt-0.5">
+              <p className="text-[9px] font-bold text-text-secondary tracking-wide mt-0.5">
                 Skip Waiting. Order Ahead. Pick Up Fresh.
               </p>
             </div>
 
             {/* Process Flow */}
-            <div className="flex items-center justify-between px-1 py-1 border-b border-gray-100 lg:hidden select-none mb-1.5 mobile-flow-hide">
+            <div className="flex items-center justify-between px-1 py-1 border-b border-border lg:hidden select-none mb-1.5 mobile-flow-hide">
               {/* Step 1 */}
               <div className="flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full border border-gray-250 flex items-center justify-center bg-white text-[#CB202D]">
+                <div className="w-8 h-8 rounded-full border border-gray-250 flex items-center justify-center bg-white text-[var(--primary)]">
                   <Smartphone className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[8px] font-bold text-gray-900 uppercase tracking-tight mt-0.5">Pre-Book</span>
+                <span className="text-[8px] font-bold text-text-primary uppercase tracking-tight mt-0.5">Pre-Book</span>
               </div>
 
-              <span className="text-gray-400 font-bold text-xs -mt-2.5">→</span>
+              <span className="text-text-secondary font-bold text-xs -mt-2.5">→</span>
 
               {/* Step 2 */}
               <div className="flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full border border-gray-250 flex items-center justify-center bg-white text-[#CB202D]">
+                <div className="w-8 h-8 rounded-full border border-gray-250 flex items-center justify-center bg-white text-[var(--primary)]">
                   <Car className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[8px] font-bold text-gray-900 uppercase tracking-tight mt-0.5">Drive</span>
+                <span className="text-[8px] font-bold text-text-primary uppercase tracking-tight mt-0.5">Drive</span>
               </div>
 
-              <span className="text-gray-400 font-bold text-xs -mt-2.5">→</span>
+              <span className="text-text-secondary font-bold text-xs -mt-2.5">→</span>
 
               {/* Step 3 */}
               <div className="flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full border border-gray-250 flex items-center justify-center bg-white text-[#CB202D]">
+                <div className="w-8 h-8 rounded-full border border-gray-250 flex items-center justify-center bg-white text-[var(--primary)]">
                   <ShoppingBag className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[8px] font-bold text-gray-900 uppercase tracking-tight mt-0.5">Pick Up</span>
+                <span className="text-[8px] font-bold text-text-primary uppercase tracking-tight mt-0.5">Pick Up</span>
               </div>
 
-              <span className="text-gray-400 font-bold text-xs -mt-2.5">→</span>
+              <span className="text-text-secondary font-bold text-xs -mt-2.5">→</span>
 
               {/* Step 4 */}
               <div className="flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full border border-gray-250 flex items-center justify-center bg-white text-[#CB202D]">
+                <div className="w-8 h-8 rounded-full border border-gray-250 flex items-center justify-center bg-white text-[var(--primary)]">
                   <Smile className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[8px] font-bold text-gray-900 uppercase tracking-tight mt-0.5">Enjoy</span>
+                <span className="text-[8px] font-bold text-text-primary uppercase tracking-tight mt-0.5">Enjoy</span>
               </div>
             </div>
 
             {/* Takeaway / Dine In Tab Switcher */}
-            <div className="grid grid-cols-2 mt-1 mb-3 border-b border-gray-200 relative select-none mobile-switcher-spacing">
-              <div className="flex flex-col items-center pb-2 cursor-pointer text-[#CB202D] transition-all">
+            <div className="grid grid-cols-2 mt-1 mb-3 border-b border-border relative select-none mobile-switcher-spacing">
+              <div className="flex flex-col items-center pb-2 cursor-pointer text-[var(--primary)] transition-all">
                 <ShoppingBag className="w-4 h-4 mb-0.5" />
                 <span className="text-[9px] font-bold tracking-wider uppercase">Takeaway</span>
               </div>
-              <div className="flex flex-col items-center pb-2 cursor-not-allowed text-[#CB202D] transition-all">
+              <div className="flex flex-col items-center pb-2 cursor-not-allowed text-[var(--primary)] transition-all">
                 <svg className="w-5 h-5 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 4l1 8h3" />
                   <path d="M5 12l-1 8" />
@@ -718,13 +718,13 @@ export default function UnifiedOTPFastLogin() {
 
             {/* Welcome Text */}
             <div className="text-center mb-3 lg:mb-6 mobile-welcome-spacing" style={{ fontFamily: "'Outfit', sans-serif" }}>
-              <h3 className="text-lg md:text-xl font-bold text-gray-900 leading-tight tracking-tight" style={{ fontWeight: 700 }}>
+              <h3 className="text-lg md:text-xl font-bold text-text-primary leading-tight tracking-tight" style={{ fontWeight: 700 }}>
                 Welcome to
               </h3>
-              <h2 className="text-[32px] md:text-4xl font-black text-[#CB202D] leading-none mt-0.5" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 1000, letterSpacing: '-0.02em' }}>
+              <h2 className="text-[32px] md:text-4xl font-black text-[var(--primary)] leading-none mt-0.5" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 1000, letterSpacing: '-0.02em' }}>
                 bhookingo!
               </h2>
-              <p className="text-[10px] font-semibold text-gray-500 mt-1.5">
+              <p className="text-[10px] font-semibold text-text-secondary mt-1.5">
                 {step === 1 ? (
                   "Login / Signup to continue"
                 ) : (
@@ -732,7 +732,7 @@ export default function UnifiedOTPFastLogin() {
                     <span>We've sent a code to +91 {phoneNumber}</span>
                     <button
                       onClick={handleEditNumber}
-                      className="p-0.5 ml-1 bg-red-50 hover:bg-red-100 rounded text-[#CB202D] transition-all cursor-pointer inline-flex items-center justify-center align-middle"
+                      className="p-0.5 ml-1 bg-primary-light/10 hover:bg-red-100 rounded text-[var(--primary)] transition-all cursor-pointer inline-flex items-center justify-center align-middle"
                       aria-label="Edit phone number"
                     >
                       <Pencil className="w-2.5 h-2.5" strokeWidth={2.5} />
@@ -747,10 +747,10 @@ export default function UnifiedOTPFastLogin() {
               {step === 1 ? (
                 <form onSubmit={handleSendOTP} className="mobile-gap-spacing">
                   {/* Phone Input Box */}
-                  <div className="flex items-center border border-gray-250 focus-within:border-[#CB202D] focus-within:ring-2 focus-within:ring-[#CB202D]/10 rounded-xl px-3.5 py-2.5 bg-white shadow-sm transition-all duration-200 mobile-input-padding">
-                    <div className="flex items-center gap-1.5 pr-2.5 border-r border-gray-200 text-xs font-bold text-gray-700 select-none">
+                  <div className="flex items-center border border-gray-250 focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/10 rounded-xl px-3.5 py-2.5 bg-surface shadow-sm transition-all duration-200 mobile-input-padding">
+                    <div className="flex items-center gap-1.5 pr-2.5 border-r border-border text-xs font-bold text-gray-700 select-none">
                       <span>+91</span>
-                      <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                      <ChevronDown className="w-3.5 h-3.5 text-text-secondary" />
                     </div>
                     <input
                       type="tel"
@@ -773,7 +773,7 @@ export default function UnifiedOTPFastLogin() {
                   <button
                     type="submit"
                     disabled={loading || phoneNumber.length < 10}
-                    className="w-full py-2.5 bg-[#CB202D] hover:bg-[#A31621] disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer mobile-button-padding"
+                    className="w-full py-2.5 bg-[var(--primary)] hover:bg-primary-dark disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer mobile-button-padding"
                   >
                     {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "GET OTP"}
                   </button>
@@ -795,9 +795,9 @@ export default function UnifiedOTPFastLogin() {
                     {/* Apple Sign In */}
                     <button
                       type="button"
-                      className="w-full py-2.5 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl flex items-center justify-center gap-2.5 font-bold text-gray-700 text-xs shadow-sm cursor-pointer transition-colors mobile-button-padding"
+                      className="w-full py-2.5 bg-surface border border-border hover:bg-gray-50 rounded-xl flex items-center justify-center gap-2.5 font-bold text-gray-700 text-xs shadow-sm cursor-pointer transition-colors mobile-button-padding"
                     >
-                      <svg className="w-5 h-5 text-black" viewBox="0 0 24 24" fill="currentColor">
+                      <svg className="w-5 h-5 text-text-primary" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C3.8 16.32 3.98 9.58 8.1 9.28c1.37.1 2.2.78 3.03.8.84-.02 1.86-.8 3.42-.65 1.64.16 2.82.88 3.5 1.95-3.22 1.88-2.69 6.08.28 7.3-.7 1.76-1.52 3.48-3.28 3.6zM12.03 9.25c-.15-2.23 1.66-4.14 3.75-4.25.2 2.52-2.1 4.54-3.75 4.25z" />
                       </svg>
                       <span>Continue with Apple</span>
@@ -813,7 +813,7 @@ export default function UnifiedOTPFastLogin() {
                         clearSessionData();
                         navigate("/food/user");
                       }}
-                      className="w-full py-2.5 bg-white border border-[#CB202D]/35 hover:bg-red-50/50 rounded-xl flex items-center justify-center font-bold text-[#CB202D] text-xs transition-colors cursor-pointer mobile-button-padding"
+                      className="w-full py-2.5 bg-surface border border-[var(--primary)]/35 hover:bg-primary-light/10/50 rounded-xl flex items-center justify-center font-bold text-[var(--primary)] text-xs transition-colors cursor-pointer mobile-button-padding"
                     >
                       Skip for now
                     </button>
@@ -822,7 +822,7 @@ export default function UnifiedOTPFastLogin() {
               ) : (
                 <form onSubmit={handleVerifyOTP} className="mobile-gap-spacing">
                   {otpError && (
-                    <div className="text-red-600 text-[10px] font-bold text-center tracking-wide">
+                    <div className="text-primary text-[10px] font-bold text-center tracking-wide">
                       {otpError}
                     </div>
                   )}
@@ -869,7 +869,7 @@ export default function UnifiedOTPFastLogin() {
                             }
                           }
                         }}
-                        className={`w-12 h-12 text-center text-lg font-bold border border-gray-300 shadow-sm rounded-xl outline-none transition-all duration-300 text-gray-900 focus:border-[#CB202D] focus:ring-2 focus:ring-[#CB202D]/10 hover:border-gray-400 ${blockTimer > 0 ? "opacity-50 cursor-not-allowed border-red-350 bg-red-50 text-red-800" : ""
+                        className={`w-12 h-12 text-center text-lg font-bold border border-border shadow-sm rounded-xl outline-none transition-all duration-300 text-text-primary focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/10 hover:border-gray-400 ${blockTimer > 0 ? "opacity-50 cursor-not-allowed border-red-350 bg-primary-light/10 text-red-800" : ""
                           }`}
                         placeholder="•"
                       />
@@ -880,14 +880,14 @@ export default function UnifiedOTPFastLogin() {
                   <div className="flex flex-col items-center gap-1.5 py-1">
                     <div className="flex items-center gap-1.5 text-[11px] font-semibold">
                       {blockTimer > 0 ? (
-                        <span className="text-gray-400 uppercase tracking-wider">Resend SMS</span>
+                        <span className="text-text-secondary uppercase tracking-wider">Resend SMS</span>
                       ) : resendTimer > 0 ? (
-                        <span className="text-gray-400">Resend SMS in <span className="text-gray-800 font-bold">{formatResendTimer(resendTimer)}</span></span>
+                        <span className="text-text-secondary">Resend SMS in <span className="text-gray-800 font-bold">{formatResendTimer(resendTimer)}</span></span>
                       ) : (
                         <button
                           type="button"
                           onClick={handleResendOTP}
-                          className="text-gray-800 hover:text-[#CB202D] hover:underline cursor-pointer font-bold"
+                          className="text-gray-800 hover:text-[var(--primary)] hover:underline cursor-pointer font-bold"
                         >
                           Didn't receive SMS? Resend SMS
                         </button>
@@ -899,7 +899,7 @@ export default function UnifiedOTPFastLogin() {
                   <button
                     type="submit"
                     disabled={loading || otp.length < 4 || blockTimer > 0}
-                    className="w-full py-2.5 bg-[#CB202D] hover:bg-[#A31621] disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer mobile-button-padding"
+                    className="w-full py-2.5 bg-[var(--primary)] hover:bg-primary-dark disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer mobile-button-padding"
                   >
                     {loading ? (
                       <span className="flex items-center gap-1.5">
@@ -912,11 +912,11 @@ export default function UnifiedOTPFastLogin() {
                   </button>
 
                   {blockTimer > 0 && (
-                    <div className="text-center w-fit mx-auto px-4 py-2 bg-red-50 rounded-xl border border-red-100 mt-3">
-                      <p className="text-[9px] font-bold text-[#CB202D] uppercase tracking-wider">
+                    <div className="text-center w-fit mx-auto px-4 py-2 bg-primary-light/10 rounded-xl border border-red-100 mt-3">
+                      <p className="text-[9px] font-bold text-[var(--primary)] uppercase tracking-wider">
                         Too many failed attempts
                       </p>
-                      <p className="text-[11px] font-bold text-[#CB202D] mt-0.5">
+                      <p className="text-[11px] font-bold text-[var(--primary)] mt-0.5">
                         Try again after {Math.floor((blockTimer - 1) / 60)}:{String((blockTimer - 1) % 60).padStart(2, '0')}
                       </p>
                     </div>
@@ -926,16 +926,16 @@ export default function UnifiedOTPFastLogin() {
             </div>
 
             {/* Privacy & Terms Header Agreement */}
-            <div className="flex items-start justify-center gap-2 mt-2 text-[10px] font-semibold text-gray-500 leading-normal text-center select-none mobile-footer-spacing">
+            <div className="flex items-start justify-center gap-2 mt-2 text-[10px] font-semibold text-text-secondary leading-normal text-center select-none mobile-footer-spacing">
               <Lock className="w-3.5 h-3.5 text-gray-450 mt-0.5 shrink-0" />
               <div className="text-center">
                 <span>By continuing, you agree to</span>
                 <br />
-                <Link to="/user/profile/terms" state={{ from: "/user/auth/login" }} className="text-[#CB202D] hover:underline font-bold">Terms</Link>
+                <Link to="/user/profile/terms" state={{ from: "/user/auth/login" }} className="text-[var(--primary)] hover:underline font-bold">Terms</Link>
                 {", "}
-                <Link to="/user/profile/privacy" state={{ from: "/user/auth/login" }} className="text-[#CB202D] hover:underline font-bold">Privacy Policy</Link>
+                <Link to="/user/profile/privacy" state={{ from: "/user/auth/login" }} className="text-[var(--primary)] hover:underline font-bold">Privacy Policy</Link>
                 {" & "}
-                <Link to="/food/user" className="text-[#CB202D] hover:underline font-bold">Support</Link>
+                <Link to="/food/user" className="text-[var(--primary)] hover:underline font-bold">Support</Link>
               </div>
             </div>
 
@@ -958,7 +958,7 @@ export default function UnifiedOTPFastLogin() {
           className="sm:max-w-[425px] rounded-3xl border-none p-0 overflow-hidden bg-white"
           showCloseButton={false}
         >
-          <div className="bg-gradient-to-br from-[#CB202D] to-[#8C141E] p-8 text-center relative">
+          <div className="bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] p-8 text-center relative">
             <button
               onClick={handleEditNumber}
               className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl text-white transition-all active:scale-95 z-20 cursor-pointer"
@@ -988,7 +988,7 @@ export default function UnifiedOTPFastLogin() {
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="Enter your name"
-                  className="pl-4 h-14 bg-gray-50 border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#CB202D] transition-all group-hover:border-[#CB202D]/30"
+                  className="pl-4 h-14 bg-gray-50 border-border rounded-2xl focus:ring-2 focus:ring-[var(--primary)] transition-all group-hover:border-[var(--primary)]/30"
                   autoFocus
                 />
               </div>
@@ -998,7 +998,7 @@ export default function UnifiedOTPFastLogin() {
               <Button
                 type="submit"
                 disabled={isUpdatingName}
-                className="w-full h-14 bg-gradient-to-r from-[#CB202D] to-[#8C141E] text-white rounded-2xl font-bold text-lg shadow-lg shadow-[#CB202D]/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="w-full h-14 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white rounded-2xl font-bold text-lg shadow-lg shadow-[var(--primary)]/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
                 {isUpdatingName ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -1013,12 +1013,12 @@ export default function UnifiedOTPFastLogin() {
                     setShowNameModal(false)
                     navigate("/user/auth/portal", { replace: true })
                   }}
-                  className="text-sm text-gray-400 hover:text-gray-600 transition-colors py-2 cursor-pointer"
+                  className="text-sm text-text-secondary hover:text-text-secondary transition-colors py-2 cursor-pointer"
                 >
                   Skip for now
                 </button>
               ) : (
-                <p className="text-xs text-gray-400 text-center">Name is required to complete signup.</p>
+                <p className="text-xs text-text-secondary text-center">Name is required to complete signup.</p>
               )}
             </div>
           </form>
@@ -1033,24 +1033,24 @@ export default function UnifiedOTPFastLogin() {
             onClick={handleEditNumber}
           />
           <div
-            className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden p-8 text-center border border-gray-100 relative z-10"
+            className="w-full max-w-sm bg-surface rounded-3xl shadow-2xl overflow-hidden p-8 text-center border border-border relative z-10"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={handleEditNumber}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition-all active:scale-95 cursor-pointer"
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-xl text-text-secondary hover:text-text-secondary transition-all active:scale-95 cursor-pointer"
               aria-label="Close and return to login"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-20 h-20 bg-[#CB202D]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Phone className="h-10 w-10 text-[#CB202D]" />
+            <div className="w-20 h-20 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Phone className="h-10 w-10 text-[var(--primary)]" />
             </div>
 
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">Account Found!</h3>
-            <p className="text-gray-500 mb-8 leading-relaxed text-sm">
-              A deleted account for <span className="font-bold text-gray-900">+91 {phoneNumber}</span> was found.
+            <h3 className="text-2xl font-bold text-text-primary mb-3">Account Found!</h3>
+            <p className="text-text-secondary mb-8 leading-relaxed text-sm">
+              A deleted account for <span className="font-bold text-text-primary">+91 {phoneNumber}</span> was found.
               Do you want to restore your old data or start fresh with a new account?
             </p>
 
@@ -1060,7 +1060,7 @@ export default function UnifiedOTPFastLogin() {
                   await processVerify(phoneNumber, otp, "restore");
                   setShowRestorePopup(false);
                 }}
-                className="w-full h-14 bg-[#CB202D] hover:bg-[#A31621] text-white font-bold rounded-2xl shadow-xl shadow-[#CB202D]/20 transition-all active:scale-[0.98] cursor-pointer"
+                className="w-full h-14 bg-[var(--primary)] hover:bg-primary-dark text-white font-bold rounded-2xl shadow-xl shadow-[var(--primary)]/20 transition-all active:scale-[0.98] cursor-pointer"
               >
                 Restore My Account
               </button>
@@ -1069,7 +1069,7 @@ export default function UnifiedOTPFastLogin() {
                   await processVerify(phoneNumber, otp, "new");
                   setShowRestorePopup(false);
                 }}
-                className="w-full h-14 border border-gray-200 text-gray-700 font-bold rounded-2xl hover:bg-gray-50 transition-all active:scale-[0.98] cursor-pointer"
+                className="w-full h-14 border border-border text-gray-700 font-bold rounded-2xl hover:bg-gray-50 transition-all active:scale-[0.98] cursor-pointer"
               >
                 Create New Account
               </button>

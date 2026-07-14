@@ -379,7 +379,7 @@ export default function AddToCartAnimation({
       {removedProduct && (
         <div
           ref={removedThumbnailRef}
-          className="w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-white flex-shrink-0 shadow-lg"
+          className="w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-surface flex-shrink-0 shadow-lg"
           style={{
             borderRadius: '50%',
             objectFit: 'cover',
@@ -403,7 +403,7 @@ export default function AddToCartAnimation({
       {flyingProduct && (
         <div
           ref={flyingThumbnailRef}
-          className="w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-white flex-shrink-0 shadow-lg"
+          className="w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-surface flex-shrink-0 shadow-lg"
           style={{
             borderRadius: '50%',
             objectFit: 'cover',
@@ -454,7 +454,7 @@ export default function AddToCartAnimation({
                 debugLog('View cart clicked, navigating to:', linkTo);
                 navigate(linkTo, { state: { from: location.pathname } });
               }}
-              className={`bg-gradient-to-r from-[#991b1b] via-[#DC2626] to-[#991b1b] text-white rounded-full shadow-xl shadow-[#DC2626]/30 px-3 py-2 flex items-center gap-2 hover:from-[#991b1b] hover:via-[#DC2626] hover:to-[#991b1b] transition-all duration-300 pointer-events-auto border border-[#DC2626]/30 backdrop-blur-sm cursor-pointer ${pillClassName}`}
+              className={`bg-gradient-to-r from-[var(--primary-dark)] via-[var(--primary)] to-[var(--primary-dark)] text-white rounded-full shadow-xl shadow-[var(--primary)]/30 px-3 py-2 flex items-center gap-2 hover:from-[var(--primary-dark)] hover:via-[var(--primary)] hover:to-[var(--primary-dark)] transition-all duration-300 pointer-events-auto border border-[var(--primary)]/30 backdrop-blur-sm cursor-pointer ${pillClassName}`}
             >
               {/* Left: Product thumbnails */}
               <div className="flex items-center -space-x-4">
@@ -469,7 +469,7 @@ export default function AddToCartAnimation({
                       stiffness: 500,
                       damping: 25,
                     }}
-                    className="w-7 h-7 rounded-full border-2 border-white/90 overflow-hidden bg-white flex-shrink-0 shadow-md"
+                    className="w-7 h-7 rounded-full border-2 border-white/90 overflow-hidden bg-surface flex-shrink-0 shadow-md"
                   >
                     {item?.product?.imageUrl ? (
                       <img

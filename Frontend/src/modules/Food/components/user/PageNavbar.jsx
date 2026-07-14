@@ -1013,8 +1013,8 @@ export default function PageNavbar({
 
   const isReddish = variant === "reddish"
   const isTransparent = variant === "transparent"
-  const finalTextColorClass = (isReddish || isTransparent) ? "text-[#1a1a1a]" : (textColor === "white" ? "text-white" : "text-[#DC2626]")
-  const finalIconColor = (isReddish || isTransparent) ? "text-[#1a1a1a]" : (textColor === "white" ? "text-white" : "text-[#DC2626]")
+  const finalTextColorClass = (isReddish || isTransparent) ? "text-[#1a1a1a]" : (textColor === "white" ? "text-white" : "text-[var(--primary)]")
+  const finalIconColor = (isReddish || isTransparent) ? "text-[#1a1a1a]" : (textColor === "white" ? "text-white" : "text-[var(--primary)]")
   
   const initials = useMemo(() => {
     if (!userProfile) return ""
@@ -1026,7 +1026,7 @@ export default function PageNavbar({
 
   return (
     <nav
-      className={`relative ${zIndexClass} w-full px-3 sm:px-4 md:px-6 lg:px-8 py-0.5 sm:py-1 transition-all duration-300 ${isReddish ? "bg-gradient-to-r from-white via-[#f8fafc] to-white shadow-sm border-b border-gray-100" : (variant === "transparent" ? "bg-transparent shadow-none" : "bg-transparent shadow-none")} border-0`}
+      className={`relative ${zIndexClass} w-full px-3 sm:px-4 md:px-6 lg:px-8 py-0.5 sm:py-1 transition-all duration-300 ${isReddish ? "bg-gradient-to-r from-white via-[#f8fafc] to-white shadow-sm border-b border-border" : (variant === "transparent" ? "bg-transparent shadow-none" : "bg-transparent shadow-none")} border-0`}
       onClick={onNavClick}
     >
       <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -1079,7 +1079,7 @@ export default function PageNavbar({
                   <ChevronDown className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${finalIconColor} flex-shrink-0`} strokeWidth={3.5} />
                 </div>
                 {(displayAddress || displayCity) && (
-                  <span className={`text-[10px] sm:text-[12px] font-bold text-gray-500 truncate max-w-[140px] sm:max-w-[200px] ${(isReddish || isTransparent) ? "text-left" : "text-center"} leading-tight mt-0.5`}>
+                  <span className={`text-[10px] sm:text-[12px] font-bold text-text-secondary truncate max-w-[140px] sm:max-w-[200px] ${(isReddish || isTransparent) ? "text-left" : "text-center"} leading-tight mt-0.5`}>
                     {displayAddress}{displayAddress && displayCity ? ", " : ""}{displayCity}
                   </span>
                 )}
@@ -1107,7 +1107,7 @@ export default function PageNavbar({
                 className="h-8 w-8 sm:h-9 sm:w-9 rounded-full p-0 hover:opacity-80 transition-opacity"
                 title="Wallet"
               >
-                <div className={`h-full w-full rounded-full ${(isReddish || isTransparent) ? (isTransparent ? "bg-gradient-to-br from-[#FF4D4D] via-[#DC2626] to-[#991B1B] shadow-sm" : "bg-white shadow-sm") : "bg-white/10"} flex items-center justify-center border ${(isReddish || isTransparent) ? (isTransparent ? "border-white/10" : "border-gray-200/50") : "border-white/20"}`}>
+                <div className={`h-full w-full rounded-full ${(isReddish || isTransparent) ? (isTransparent ? "bg-gradient-to-br from-[var(--primary-light)] via-[var(--primary)] to-[var(--primary-dark)] shadow-sm" : "bg-surface shadow-sm") : "bg-white/10"} flex items-center justify-center border ${(isReddish || isTransparent) ? (isTransparent ? "border-white/10" : "border-border/50") : "border-white/20"}`}>
                   <Wallet className={`h-4.5 w-4.5 sm:h-5 sm:w-5 ${isTransparent ? "text-white" : finalIconColor}`} strokeWidth={2.5} />
                 </div>
               </Button>
@@ -1122,11 +1122,11 @@ export default function PageNavbar({
                 className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full p-0 hover:opacity-80 transition-opacity"
                 title="Cart"
               >
-                <div className={`h-full w-full rounded-full ${(isReddish || isTransparent) ? "bg-white shadow-sm" : "bg-white/10"} flex items-center justify-center border ${(isReddish || isTransparent) ? "border-gray-200/50" : "border-white/20"}`}>
+                <div className={`h-full w-full rounded-full ${(isReddish || isTransparent) ? "bg-surface shadow-sm" : "bg-white/10"} flex items-center justify-center border ${(isReddish || isTransparent) ? "border-border/50" : "border-white/20"}`}>
                   <ShoppingCart className={`h-5 w-5 sm:h-6 sm:w-6 ${finalIconColor}`} strokeWidth={2.5} />
                 </div>
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#DC2626] text-white text-[10px] font-bold h-4 w-4 sm:h-5 sm:w-5 rounded-full flex items-center justify-center border-2 border-white dark:border-[#1a1a1a]">
+                  <span className="absolute -top-1 -right-1 bg-[var(--primary)] text-white text-[10px] font-bold h-4 w-4 sm:h-5 sm:w-5 rounded-full flex items-center justify-center border-2 border-white dark:border-[#1a1a1a]">
                     {cartCount > 99 ? "99+" : cartCount}
                   </span>
                 )}
@@ -1151,7 +1151,7 @@ export default function PageNavbar({
                   alt="Profile" 
                   className="object-cover"
                 />
-                <AvatarFallback className="bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white font-bold text-sm uppercase">
+                <AvatarFallback className="bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] text-white font-bold text-sm uppercase">
                   {(userProfile?.name || "U").charAt(0)}
                 </AvatarFallback>
               </Avatar>

@@ -117,7 +117,7 @@ export default function Coffee() {
       <div className="mb-8">
         {/* Section Header */}
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide text-center">
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide text-center">
             {sectionTitle}
           </h3>
         </div>
@@ -134,7 +134,7 @@ export default function Coffee() {
                 to={`/user/restaurants/${storeSlug}`}
                 className="block"
               >
-                <div className={`flex items-start gap-4 py-4 ${index !== stores.length - 1 ? 'border-b border-gray-200' : ''}`}>
+                <div className={`flex items-start gap-4 py-4 ${index !== stores.length - 1 ? 'border-b border-border' : ''}`}>
                   {/* Logo - Circular */}
                   <div className="flex-shrink-0">
                     <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
@@ -149,7 +149,7 @@ export default function Coffee() {
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-400 text-xs font-semibold">
+                          <span className="text-text-secondary text-xs font-semibold">
                             {store.name.charAt(0)}
                           </span>
                         </div>
@@ -160,7 +160,7 @@ export default function Coffee() {
                   {/* Store Info */}
                   <div className="flex-1 min-w-0">
                     {/* Location Name */}
-                    <h4 className="text-base font-bold text-gray-900 mb-2">
+                    <h4 className="text-base font-bold text-text-primary mb-2">
                       {store.location}
                     </h4>
 
@@ -168,7 +168,7 @@ export default function Coffee() {
                     <div className="mb-2">
                       <div className={`inline-flex items-center gap-1 px-2 py-1 rounded ${isHighRating
                           ? 'bg-green-600 text-white'
-                          : 'bg-[#DC2626] text-white'
+                          : 'bg-[var(--primary)] text-white'
                         }`}>
                         <span className="text-sm font-semibold">{store.rating}</span>
                         <Star className={`h-3 w-3 ${isHighRating ? 'fill-white text-white' : 'fill-white text-white'}`} />
@@ -176,7 +176,7 @@ export default function Coffee() {
                     </div>
 
                     {/* Distance */}
-                    <p className="text-sm text-gray-500 mb-1">
+                    <p className="text-sm text-text-secondary mb-1">
                       {store.distance}
                     </p>
 
@@ -186,7 +186,7 @@ export default function Coffee() {
                         {store.price}
                       </p>
                       {store.offer && (
-                        <span className="text-sm font-medium text-[#DC2626]">
+                        <span className="text-sm font-medium text-[var(--primary)]">
                           {store.offer}
                         </span>
                       )}
@@ -250,10 +250,10 @@ export default function Coffee() {
         <div className="max-w-4xl mx-auto">
           {/* Header Section */}
           <div className="mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-text-primary mb-2">
               Starbucks Coffee
             </h1>
-            <p className="text-sm sm:text-base text-gray-500">
+            <p className="text-sm sm:text-base text-text-secondary">
               Cafe, Coffee, Beverages
             </p>
             <div className="h-px bg-gray-200 mt-4"></div>

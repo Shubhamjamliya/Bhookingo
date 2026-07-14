@@ -18,7 +18,7 @@ const DEFAULT_NOTIFICATIONS = [
     timestamp: Date.now() - 120000,
     read: false,
     icon: "CheckCircle2",
-    iconColor: "text-[#DC2626]"
+    iconColor: "text-[var(--primary)]"
   },
   {
     id: "2",
@@ -29,7 +29,7 @@ const DEFAULT_NOTIFICATIONS = [
     timestamp: Date.now() - 3600000,
     read: false,
     icon: "Tag",
-    iconColor: "text-[#DC2626]"
+    iconColor: "text-[var(--primary)]"
   }
 ]
 
@@ -76,7 +76,7 @@ export default function Notifications() {
         timestamp: Date.now(),
         read: false,
         icon: isCancelled ? "AlertCircle" : "CheckCircle2",
-        iconColor: isCancelled ? "text-red-600" : "text-[#DC2626]"
+        iconColor: isCancelled ? "text-primary" : "text-[var(--primary)]"
       }
       setNotificationsList(prev => [newNotification, ...prev])
     }
@@ -145,7 +145,7 @@ export default function Notifications() {
   }
 
   return (
-    <AnimatedPage className="min-h-screen bg-white dark:bg-[#0a0a0a]">
+    <AnimatedPage className="min-h-screen bg-surface dark:bg-[#0a0a0a]">
       <div className="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         {/* Header */}
         <div className="flex items-center gap-3 sm:gap-4 mb-4 md:mb-6 lg:mb-8">
@@ -155,10 +155,10 @@ export default function Notifications() {
             </Button>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3 flex-1">
-            <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-[#DC2626] fill-[#DC2626]" />
+            <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--primary)] fill-[var(--primary)]" />
             <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white">Notifications</h1>
             {unreadCount > 0 && (
-              <Badge className="bg-[#DC2626] text-white text-xs md:text-sm">
+              <Badge className="bg-[var(--primary)] text-white text-xs md:text-sm">
                 {unreadCount}
               </Badge>
             )}
@@ -168,7 +168,7 @@ export default function Notifications() {
               variant="ghost" 
               size="sm" 
               onClick={handleClearAll}
-              className="text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1.5 px-2 md:px-3"
+              className="text-text-secondary hover:text-red-500 transition-colors flex items-center gap-1.5 px-2 md:px-3"
             >
               <Trash2 className="h-4 w-4" />
               <span className="text-xs md:text-sm font-medium">Clear All</span>
@@ -184,12 +184,12 @@ export default function Notifications() {
               <Card
                 key={notification.id}
                 onClick={() => handleMarkAsRead(notification.id, notification.source)}
-                className={`relative cursor-pointer transition-all duration-200 py-1 hover:shadow-md ${!notification.read ? "bg-red-50/50 dark:bg-red-900/20 border-red-200 dark:border-red-800" : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                className={`relative cursor-pointer transition-all duration-200 py-1 hover:shadow-md ${!notification.read ? "bg-primary-light/10/50 dark:bg-red-900/20 border-red-200 dark:border-red-800" : "bg-surface dark:bg-gray-800 border-border dark:border-gray-700"
                   }`}
               >
                 {/* Unread Dot - Top Right */}
                 {!notification.read && (
-                  <div className="absolute top-2 right-2 w-2.5 h-2.5 md:w-3 md:h-3 bg-[#DC2626] rounded-full" />
+                  <div className="absolute top-2 right-2 w-2.5 h-2.5 md:w-3 md:h-3 bg-[var(--primary)] rounded-full" />
                 )}
 
                 <CardContent className="p-3 md:p-4 lg:p-5">
@@ -206,7 +206,7 @@ export default function Notifications() {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1 md:mb-2">
-                        <h3 className={`text-sm sm:text-base md:text-lg font-semibold ${!notification.read ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"
+                        <h3 className={`text-sm sm:text-base md:text-lg font-semibold ${!notification.read ? "text-text-primary dark:text-white" : "text-gray-700 dark:text-gray-300"
                           }`}>
                           {notification.title}
                         </h3>
@@ -217,15 +217,15 @@ export default function Notifications() {
                             e.stopPropagation()
                             handleDeleteOne(notification.id, notification.source)
                           }}
-                          className="flex-shrink-0 rounded-full p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          className="flex-shrink-0 rounded-full p-1 text-text-secondary hover:text-red-500 hover:bg-primary-light/10 dark:hover:bg-red-900/20 transition-colors"
                         >
                           <X className="h-4 w-4" />
                         </button>
                       </div>
-                      <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 mb-2 md:mb-3 line-clamp-2">
+                      <p className="text-xs sm:text-sm md:text-base text-text-secondary dark:text-text-secondary mb-2 md:mb-3 line-clamp-2">
                         {notification.message}
                       </p>
-                      <div className="flex items-center gap-1 text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-1 text-xs md:text-sm text-text-secondary dark:text-text-secondary">
                         <Clock className="h-3 w-3 md:h-4 md:w-4" />
                         <span>{notification.time}</span>
                       </div>
@@ -240,9 +240,9 @@ export default function Notifications() {
         {/* Empty State (if no notifications) */}
         {mergedNotifications.length === 0 && (
           <div className="text-center py-12 md:py-16 lg:py-20">
-            <Bell className="h-16 w-16 md:h-20 md:w-20 lg:h-24 lg:w-24 text-gray-300 dark:text-gray-600 mx-auto mb-4 md:mb-5 lg:mb-6" />
+            <Bell className="h-16 w-16 md:h-20 md:w-20 lg:h-24 lg:w-24 text-gray-300 dark:text-text-secondary mx-auto mb-4 md:mb-5 lg:mb-6" />
             <h3 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2 md:mb-3">No notifications</h3>
-            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400">You're all caught up!</p>
+            <p className="text-sm md:text-base text-text-secondary dark:text-text-secondary">You're all caught up!</p>
           </div>
         )}
       </div>

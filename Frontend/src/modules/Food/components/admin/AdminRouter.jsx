@@ -106,6 +106,7 @@ const DiningManagement = lazy(() => import("@food/pages/admin/system/DiningManag
 const DiningList = lazy(() => import("@food/pages/admin/system/DiningList"));
 const DiningRequests = lazy(() => import("@food/pages/admin/system/DiningRequests"));
 const CustomizationSettings = lazy(() => import("@food/pages/admin/system/CustomizationSettings"));
+const DrivingModeSettings = lazy(() => import("@food/pages/admin/system/DrivingModeSettings"));
 const ArchivedAccounts = lazy(() => import("@food/pages/admin/system/ArchivedAccounts"));
 const EditRestaurant = lazy(() => import("@food/pages/admin/restaurant/EditRestaurant"));
 const AdminLogin = lazy(() => import("@food/pages/admin/auth/AdminLogin"));
@@ -264,6 +265,7 @@ export default function AdminRouter() {
             <Route path="dining-list" element={<DiningList />} />
             <Route path="dining-requests" element={<DiningRequests />} />
             <Route path="customization-settings" element={<CustomizationSettings />} />
+            <Route path="driving-mode-settings" element={<DrivingModeSettings />} />
             <Route path="archived-accounts" element={<ArchivedAccounts />} />
           </Route>
 

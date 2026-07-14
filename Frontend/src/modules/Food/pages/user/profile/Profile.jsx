@@ -473,7 +473,7 @@ export default function Profile() {
   };
 
   return (
-    <AnimatedPage className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a]">
+    <AnimatedPage className="min-h-screen bg-background dark:bg-[#0a0a0a]">
       <div className="max-w-md md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 sm:py-6 md:py-8 lg:py-10 pb-20 sm:pb-24">
         {/* Header: Back Arrow */}
         <div className="flex items-center mb-5">
@@ -481,16 +481,16 @@ export default function Profile() {
             onClick={() => navigate(-1)}
             className="h-11 w-11 flex items-center justify-center bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-md rounded-full shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:bg-white/90 dark:hover:bg-[#222]/90 active:scale-95 transition-all outline-none border border-black/10 dark:border-white/10"
           >
-            <ArrowLeft className="h-6 w-6 text-black dark:text-white" />
+            <ArrowLeft className="h-6 w-6 text-text-primary dark:text-white" />
           </button>
         </div>
 
         {/* Profile Info Card */}
-        <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-[20px] shadow-[0_4px_16px_rgba(0,0,0,0.02)] mb-0 border-0 dark:border-gray-800 overflow-hidden">
+        <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-[20px] shadow-[0_4px_16px_rgba(0,0,0,0.02)] mb-0 border-0 dark:border-gray-800 overflow-hidden">
           <CardContent className="p-4 py-2.3">
             <div className="flex items-center gap-4">
               <div className="relative">
-                <Avatar className="h-16 w-16 border border-gray-100 dark:border-gray-800 shadow-sm bg-transparent">
+                <Avatar className="h-16 w-16 border border-border dark:border-gray-800 shadow-sm bg-transparent">
                   {(userProfile?.localImagePreview || (userProfile?.profileImage && typeof userProfile.profileImage === "string" && userProfile.profileImage.trim() !== "" && userProfile.profileImage !== "null" && userProfile.profileImage !== "undefined")) ? (
                     <img
                       src={userProfile?.localImagePreview || normalizeImageUrl(userProfile.profileImage)}
@@ -508,30 +508,30 @@ export default function Profile() {
                 </Avatar>
               </div>
               <div className="flex-1">
-                <h2 className="text-[19px] font-bold text-gray-900 dark:text-white leading-tight capitalize">
+                <h2 className="text-[19px] font-bold text-text-primary dark:text-white leading-tight capitalize">
                   {displayName}
                 </h2>
                 {hasValidEmail && (
-                  <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  <p className="text-[13px] text-text-secondary dark:text-text-secondary mt-0.5">
                     {userProfile.email}
                   </p>
                 )}
                 {userProfile?.phone && (
-                  <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  <p className="text-[13px] text-text-secondary dark:text-text-secondary mt-0.5">
                     {userProfile.phone}
                   </p>
                 )}
                 {!hasValidEmail && !userProfile?.phone && (
-                  <p className="text-[13px] text-gray-400 mt-0.5">
+                  <p className="text-[13px] text-text-secondary mt-0.5">
                     Not available
                   </p>
                 )}
                 <Link
                   to="/user/profile/edit"
-                  className="inline-flex items-center text-[13px] font-medium text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white mt-1 transition-colors"
+                  className="inline-flex items-center text-[13px] font-medium text-gray-700 dark:text-gray-300 hover:text-text-primary dark:hover:text-white mt-1 transition-colors"
                 >
                   <span>Edit profile</span>
-                  <span className="text-[9px] ml-1 leading-none text-gray-500 dark:text-gray-400">▶</span>
+                  <span className="text-[9px] ml-1 leading-none text-text-secondary dark:text-text-secondary">▶</span>
                 </Link>
               </div>
             </div>
@@ -544,7 +544,7 @@ export default function Profile() {
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}
               transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-              <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
+              <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <motion.div
@@ -553,7 +553,7 @@ export default function Profile() {
                       transition={{ duration: 0.3 }}>
                       <Wallet className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                     </motion.div>
-                    <span className="text-base font-medium text-gray-900 dark:text-white">
+                    <span className="text-base font-medium text-text-primary dark:text-white">
                       {companyName} Money
                     </span>
                   </div>
@@ -564,7 +564,7 @@ export default function Profile() {
                     <motion.div
                       whileHover={{ x: 4 }}
                       transition={{ duration: 0.2 }}>
-                      <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                     </motion.div>
                   </div>
                 </CardContent>
@@ -576,7 +576,7 @@ export default function Profile() {
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}
               transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-              <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
+              <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <motion.div
@@ -585,14 +585,14 @@ export default function Profile() {
                       transition={{ duration: 0.3 }}>
                       <Tag className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                     </motion.div>
-                    <span className="text-base font-medium text-gray-900 dark:text-white">
+                    <span className="text-base font-medium text-text-primary dark:text-white">
                       Your coupons
                     </span>
                   </div>
                   <motion.div
                     whileHover={{ x: 4 }}
                     transition={{ duration: 0.2 }}>
-                    <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </motion.div>
                 </CardContent>
               </Card>
@@ -603,7 +603,7 @@ export default function Profile() {
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}
               transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-              <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
+              <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <motion.div
@@ -612,14 +612,14 @@ export default function Profile() {
                       transition={{ duration: 0.3 }}>
                       <ShoppingCart className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                     </motion.div>
-                    <span className="text-base font-medium text-gray-900 dark:text-white">
+                    <span className="text-base font-medium text-text-primary dark:text-white">
                       Your cart
                     </span>
                   </div>
                   <motion.div
                     whileHover={{ x: 4 }}
                     transition={{ duration: 0.2 }}>
-                    <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </motion.div>
                 </CardContent>
               </Card>
@@ -630,7 +630,7 @@ export default function Profile() {
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}
               transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-              <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800">
+              <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
@@ -640,7 +640,7 @@ export default function Profile() {
                         transition={{ duration: 0.3 }}>
                         <Tag className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                       </motion.div>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
+                      <span className="text-base font-medium text-text-primary dark:text-white">
                         Refer & Earn
                       </span>
                     </div>
@@ -651,7 +651,7 @@ export default function Profile() {
                     )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-text-secondary dark:text-text-secondary">
                       Invite a friend. Reward is added to your wallet when they
                       sign up.
                     </p>
@@ -662,7 +662,7 @@ export default function Profile() {
                         e.stopPropagation();
                         handleShareReferral();
                       }}
-                      className="inline-flex items-center gap-1 text-xs text-[#DC2626] font-medium ml-2 px-2 py-1 rounded-md"
+                      className="inline-flex items-center gap-1 text-xs text-[var(--primary)] font-medium ml-2 px-2 py-1 rounded-md"
                       disabled={!referralLink}>
                       <Share2 className="h-3.5 w-3.5" />
                       Refer
@@ -677,7 +677,7 @@ export default function Profile() {
             whileHover={{ x: 4, scale: 1.01 }}
             transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
             <Card
-              className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer"
+              className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer"
               onClick={openLocationSelector}>
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
@@ -688,10 +688,10 @@ export default function Profile() {
                     <MapPin className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                   </motion.div>
                   <div className="min-w-0">
-                    <p className="text-base font-medium text-gray-900 dark:text-white">
+                    <p className="text-base font-medium text-text-primary dark:text-white">
                       Saved addresses
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    <p className="text-xs text-text-secondary dark:text-text-secondary truncate">
                       {savedAddressSummary}
                     </p>
                   </div>
@@ -703,7 +703,7 @@ export default function Profile() {
                   <motion.div
                     whileHover={{ x: 4 }}
                     transition={{ duration: 0.2 }}>
-                    <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </motion.div>
                 </div>
               </CardContent>
@@ -715,7 +715,7 @@ export default function Profile() {
             whileHover={{ x: 4, scale: 1.01 }}
             transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
             <Card
-              className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer"
+              className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer"
               onClick={() => setVegModeOpen(true)}>
               <CardContent className="p-4  flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -725,13 +725,13 @@ export default function Profile() {
                     transition={{ duration: 0.3 }}>
                     <Leaf className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                   </motion.div>
-                  <span className="text-base font-medium text-gray-900 dark:text-white">
+                  <span className="text-base font-medium text-text-primary dark:text-white">
                     Veg Mode
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <motion.span
-                    className="text-base font-medium text-gray-900 dark:text-white"
+                    className="text-base font-medium text-text-primary dark:text-white"
                     whileHover={{ scale: 1.1 }}
                     transition={{ duration: 0.2 }}>
                     {vegMode ? "ON" : "OFF"}
@@ -739,7 +739,7 @@ export default function Profile() {
                   <motion.div
                     whileHover={{ x: 4 }}
                     transition={{ duration: 0.2 }}>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                    <ChevronRight className="h-5 w-5 text-text-secondary" />
                   </motion.div>
                 </div>
               </CardContent>
@@ -750,7 +750,7 @@ export default function Profile() {
             whileHover={{ x: 4, scale: 1.01 }}
             transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
             <Card
-              className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer"
+              className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer"
               onClick={() => setAppearanceOpen(true)}>
               <CardContent className="p-4  flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -760,13 +760,13 @@ export default function Profile() {
                     transition={{ duration: 0.3 }}>
                     <Palette className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                   </motion.div>
-                  <span className="text-base font-medium text-gray-900 dark:text-white">
+                  <span className="text-base font-medium text-text-primary dark:text-white">
                     Appearance
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <motion.span
-                    className="text-base font-medium text-gray-900 dark:text-white capitalize"
+                    className="text-base font-medium text-text-primary dark:text-white capitalize"
                     whileHover={{ scale: 1.1 }}
                     transition={{ duration: 0.2 }}>
                     {appearance}
@@ -774,7 +774,7 @@ export default function Profile() {
                   <motion.div
                     whileHover={{ x: 4 }}
                     transition={{ duration: 0.2 }}>
-                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                    <ChevronRight className="h-5 w-5 text-text-secondary" />
                   </motion.div>
                 </div>
               </CardContent>
@@ -785,8 +785,8 @@ export default function Profile() {
         {/* Collections Section */}
         <div className="mb-3">
           <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-1 h-4 bg-[#DC2626] rounded"></div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+            <div className="w-1 h-4 bg-[var(--primary)] rounded"></div>
+            <h3 className="text-base font-semibold text-text-primary dark:text-white">
               Collections
             </h3>
           </div>
@@ -794,7 +794,7 @@ export default function Profile() {
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}
               transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-              <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
+              <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
                 <CardContent className="p-4  flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <motion.div
@@ -803,14 +803,14 @@ export default function Profile() {
                       transition={{ duration: 0.3 }}>
                       <Bookmark className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                     </motion.div>
-                    <span className="text-base font-medium text-gray-900 dark:text-white">
+                    <span className="text-base font-medium text-text-primary dark:text-white">
                       Your collections
                     </span>
                   </div>
                   <motion.div
                     whileHover={{ x: 4 }}
                     transition={{ duration: 0.2 }}>
-                    <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </motion.div>
                 </CardContent>
               </Card>
@@ -821,8 +821,8 @@ export default function Profile() {
         {/* Dining Section */}
         <div className="mb-3">
           <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-1 h-4 bg-[#DC2626] rounded"></div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+            <div className="w-1 h-4 bg-[var(--primary)] rounded"></div>
+            <h3 className="text-base font-semibold text-text-primary dark:text-white">
               Dining Bookings
             </h3>
           </div>
@@ -830,7 +830,7 @@ export default function Profile() {
             <motion.div
               whileHover={{ x: 4, scale: 1.01 }}
               transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-              <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
+              <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <motion.div
@@ -840,16 +840,16 @@ export default function Profile() {
                       <Utensils className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                     </motion.div>
                     <div className="flex flex-col">
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
+                      <span className="text-base font-medium text-text-primary dark:text-white">
                         Your reservations
                       </span>
-                      <span className="text-[10px] text-gray-500">View table booking status</span>
+                      <span className="text-[10px] text-text-secondary">View table booking status</span>
                     </div>
                   </div>
                   <motion.div
                     whileHover={{ x: 4 }}
                     transition={{ duration: 0.2 }}>
-                    <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </motion.div>
                 </CardContent>
               </Card>
@@ -860,8 +860,8 @@ export default function Profile() {
         {/* Food Orders Section */}
         <div className="mb-3">
           <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-1 h-4 bg-[#DC2626] rounded"></div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+            <div className="w-1 h-4 bg-[var(--primary)] rounded"></div>
+            <h3 className="text-base font-semibold text-text-primary dark:text-white">
               Food Orders
             </h3>
           </div>
@@ -870,7 +870,7 @@ export default function Profile() {
               <motion.div
                 whileHover={{ x: 4, scale: 1.01 }}
                 transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-                <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
+                <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <motion.div
@@ -879,14 +879,14 @@ export default function Profile() {
                         transition={{ duration: 0.3 }}>
                         <Building2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                       </motion.div>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
+                      <span className="text-base font-medium text-text-primary dark:text-white">
                         Your orders
                       </span>
                     </div>
                     <motion.div
                       whileHover={{ x: 4 }}
                       transition={{ duration: 0.2 }}>
-                      <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                     </motion.div>
                   </CardContent>
                 </Card>
@@ -898,8 +898,8 @@ export default function Profile() {
         {/* More Section */}
         <div className="mb-8 pb-8">
           <div className="flex items-center gap-2 mb-2 px-1">
-            <div className="w-1 h-4 bg-[#DC2626] rounded"></div>
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+            <div className="w-1 h-4 bg-[var(--primary)] rounded"></div>
+            <h3 className="text-base font-semibold text-text-primary dark:text-white">
               More
             </h3>
           </div>
@@ -908,7 +908,7 @@ export default function Profile() {
               <motion.div
                 whileHover={{ x: 4, scale: 1.01 }}
                 transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-                <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
+                <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <motion.div
@@ -917,14 +917,14 @@ export default function Profile() {
                         transition={{ duration: 0.3 }}>
                         <LifeBuoy className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                       </motion.div>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
+                      <span className="text-base font-medium text-text-primary dark:text-white">
                         Help & Support
                       </span>
                     </div>
                     <motion.div
                       whileHover={{ x: 4 }}
                       transition={{ duration: 0.2 }}>
-                      <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                     </motion.div>
                   </CardContent>
                 </Card>
@@ -935,7 +935,7 @@ export default function Profile() {
               <motion.div
                 whileHover={{ x: 4, scale: 1.01 }}
                 transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-                <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
+                <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <motion.div
@@ -944,14 +944,14 @@ export default function Profile() {
                         transition={{ duration: 0.3 }}>
                         <Info className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                       </motion.div>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
+                      <span className="text-base font-medium text-text-primary dark:text-white">
                         About
                       </span>
                     </div>
                     <motion.div
                       whileHover={{ x: 4 }}
                       transition={{ duration: 0.2 }}>
-                      <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                     </motion.div>
                   </CardContent>
                 </Card>
@@ -962,7 +962,7 @@ export default function Profile() {
               <motion.div
                 whileHover={{ x: 4, scale: 1.01 }}
                 transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-                <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
+                <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <motion.div
@@ -971,14 +971,14 @@ export default function Profile() {
                         transition={{ duration: 0.3 }}>
                         <AlertTriangle className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                       </motion.div>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
+                      <span className="text-base font-medium text-text-primary dark:text-white">
                         Report a safety emergency
                       </span>
                     </div>
                     <motion.div
                       whileHover={{ x: 4 }}
                       transition={{ duration: 0.2 }}>
-                      <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                     </motion.div>
                   </CardContent>
                 </Card>
@@ -989,7 +989,7 @@ export default function Profile() {
               <motion.div
                 whileHover={{ x: 4, scale: 1.01 }}
                 transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
-                <Card className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
+                <Card className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer">
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <motion.div
@@ -998,14 +998,14 @@ export default function Profile() {
                         transition={{ duration: 0.3 }}>
                         <SettingsIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                       </motion.div>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
+                      <span className="text-base font-medium text-text-primary dark:text-white">
                         Settings
                       </span>
                     </div>
                     <motion.div
                       whileHover={{ x: 4 }}
                       transition={{ duration: 0.2 }}>
-                      <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                     </motion.div>
                   </CardContent>
                 </Card>
@@ -1016,7 +1016,7 @@ export default function Profile() {
               whileHover={{ x: 4, scale: 1.01 }}
               transition={{ duration: 0.2, type: "spring", stiffness: 300 }}>
               <Card
-                className="bg-white dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-surface dark:bg-[#1a1a1a] py-0 rounded-xl shadow-sm border-0 dark:border-gray-800 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleLogoutClick}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -1025,17 +1025,17 @@ export default function Profile() {
                       whileHover={{ rotate: 15, scale: 1.1 }}
                       transition={{ duration: 0.3 }}>
                       <Power
-                        className={`h-5 w-5 text-gray-900 dark:text-white ${isLoggingOut ? "animate-pulse" : ""}`}
+                        className={`h-5 w-5 text-text-primary dark:text-white ${isLoggingOut ? "animate-pulse" : ""}`}
                       />
                     </motion.div>
-                    <span className="text-base font-bold text-gray-900 dark:text-white">
+                    <span className="text-base font-bold text-text-primary dark:text-white">
                       {isLoggingOut ? "Logging out..." : "Log out"}
                     </span>
                   </div>
                   <motion.div
                     whileHover={{ x: 4 }}
                     transition={{ duration: 0.2 }}>
-                    <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                    <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                   </motion.div>
                 </CardContent>
               </Card>
@@ -1048,10 +1048,10 @@ export default function Profile() {
       <Dialog open={vegModeOpen} onOpenChange={setVegModeOpen}>
         <DialogContent className="max-w-sm md:max-w-md lg:max-w-lg w-[calc(100%-2rem)] rounded-2xl p-0 overflow-hidden">
           <DialogHeader className="p-5 pb-3">
-            <DialogTitle className="text-lg font-bold text-gray-900">
+            <DialogTitle className="text-lg font-bold text-text-primary">
               Veg Mode
             </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500">
+            <DialogDescription className="text-sm text-text-secondary">
               Filter restaurants and dishes based on your dietary preferences
             </DialogDescription>
           </DialogHeader>
@@ -1063,27 +1063,27 @@ export default function Profile() {
               }}
               className={`w-full p-3 rounded-xl border-2 transition-all flex items-center justify-between ${vegMode
                 ? "border-green-600 bg-green-50"
-                : "border-gray-200 bg-white hover:border-gray-300"
+                : "border-border bg-white hover:border-border"
                 }`}>
               <div className="flex items-center gap-3">
                 <div
                   className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${vegMode
                     ? "border-green-600 bg-green-600"
-                    : "border-gray-300"
+                    : "border-border"
                     }`}>
                   {vegMode && <Check className="h-3 w-3 text-white" />}
                 </div>
                 <div className="text-left">
-                  <p className="font-medium text-gray-900 text-sm">
+                  <p className="font-medium text-text-primary text-sm">
                     Veg Mode ON
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-text-secondary">
                     Show only vegetarian options
                   </p>
                 </div>
               </div>
               <Leaf
-                className={`h-5 w-5 ${vegMode ? "text-green-600" : "text-gray-400"}`}
+                className={`h-5 w-5 ${vegMode ? "text-green-600" : "text-text-secondary"}`}
               />
             </button>
             <button
@@ -1092,20 +1092,20 @@ export default function Profile() {
                 setVegModeOpen(false);
               }}
               className={`w-full p-3 rounded-xl border-2 transition-all flex items-center justify-between ${!vegMode
-                ? "border-[#991B1B] bg-[#fdfafc] dark:bg-[#7F1D1D]/10"
-                : "border-gray-200 dark:border-gray-800 bg-white hover:border-gray-300"
+                ? "border-[var(--primary-dark)] bg-[#fdfafc] dark:bg-[#7F1D1D]/10"
+                : "border-border dark:border-gray-800 bg-white hover:border-border"
                 }`}>
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${!vegMode ? "border-[#991B1B] bg-[#991B1B]" : "border-gray-300"
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${!vegMode ? "border-[var(--primary-dark)] bg-[var(--primary-dark)]" : "border-border"
                     }`}>
                   {!vegMode && <Check className="h-3 w-3 text-white" />}
                 </div>
                 <div className="text-left">
-                  <p className="font-medium text-gray-900 text-sm">
+                  <p className="font-medium text-text-primary text-sm">
                     Veg Mode OFF
                   </p>
-                  <p className="text-xs text-gray-500">Show all options</p>
+                  <p className="text-xs text-text-secondary">Show all options</p>
                 </div>
               </div>
             </button>
@@ -1123,15 +1123,15 @@ export default function Profile() {
               className="w-full max-w-sm rounded-2xl bg-white/75 dark:bg-[#1a1a1a]/75 backdrop-blur-md shadow-2xl border border-white/20 dark:border-white/10 overflow-hidden p-6 text-center">
 
               <div className="flex flex-col items-center mb-4">
-                <div className="w-14 h-14 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center mb-3">
+                <div className="w-14 h-14 rounded-full bg-primary-light/10 dark:bg-red-950/30 flex items-center justify-center mb-3">
                   <Power className="h-7 w-7 text-[#FF3131]" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                <h3 className="text-xl font-bold text-text-primary dark:text-white">
                   Log out?
                 </h3>
               </div>
 
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+              <p className="text-sm text-text-secondary dark:text-text-secondary mb-6 leading-relaxed">
                 Are you sure you want to log out?
               </p>
 
@@ -1140,7 +1140,7 @@ export default function Profile() {
                   type="button"
                   onClick={() => setLogoutConfirmOpen(false)}
                   disabled={isLoggingOut}
-                  className="flex-1 h-12 rounded-xl text-md font-bold border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#262626] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#333] transition-colors outline-none"
+                  className="flex-1 h-12 rounded-xl text-md font-bold border border-border dark:border-gray-800 bg-surface dark:bg-[#262626] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#333] transition-colors outline-none"
                 >
                   No
                 </button>
@@ -1163,12 +1163,12 @@ export default function Profile() {
 
       {/* Appearance Popup */}
       <Dialog open={appearanceOpen} onOpenChange={setAppearanceOpen}>
-        <DialogContent className="max-w-sm md:max-w-md lg:max-w-lg w-[calc(100%-2rem)] rounded-2xl p-0 overflow-hidden bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-800">
+        <DialogContent className="max-w-sm md:max-w-md lg:max-w-lg w-[calc(100%-2rem)] rounded-2xl p-0 overflow-hidden bg-surface dark:bg-[#1a1a1a] border-border dark:border-gray-800">
           <DialogHeader className="p-5 pb-3">
-            <DialogTitle className="text-lg font-bold text-gray-900 dark:text-white">
+            <DialogTitle className="text-lg font-bold text-text-primary dark:text-white">
               Appearance
             </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
+            <DialogDescription className="text-sm text-text-secondary dark:text-text-secondary">
               Choose your preferred theme
             </DialogDescription>
           </DialogHeader>
@@ -1179,13 +1179,13 @@ export default function Profile() {
                 setAppearanceOpen(false);
               }}
               className={`w-full p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${appearance === "light"
-                ? "border-[#DC2626] bg-[#fdfafc] dark:border-[#FEE2E2] dark:bg-[#7F1D1D]/20"
-                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+                ? "border-[var(--primary)] bg-[#fdfafc] dark:border-[#FEE2E2] dark:bg-[#7F1D1D]/20"
+                : "border-border dark:border-gray-700 bg-surface dark:bg-gray-800 hover:border-border dark:hover:border-gray-600"
                 }`}>
               <div
                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${appearance === "light"
-                  ? "border-[#DC2626] bg-[#DC2626] dark:border-[#FEE2E2] dark:bg-[#FEE2E2]"
-                  : "border-gray-300 dark:border-gray-600"
+                  ? "border-[var(--primary)] bg-[var(--primary)] dark:border-[#FEE2E2] dark:bg-[#FEE2E2]"
+                  : "border-border dark:border-gray-600"
                   }`}>
                 {appearance === "light" && (
                   <Check className="h-3 w-3 text-white" />
@@ -1193,10 +1193,10 @@ export default function Profile() {
               </div>
               <Sun className="h-5 w-5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" />
               <div className="text-left">
-                <p className="font-medium text-gray-900 dark:text-white text-sm">
+                <p className="font-medium text-text-primary dark:text-white text-sm">
                   Light
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-text-secondary dark:text-text-secondary">
                   Default light theme
                 </p>
               </div>
@@ -1207,24 +1207,24 @@ export default function Profile() {
                 setAppearanceOpen(false);
               }}
               className={`w-full p-3 rounded-xl border-2 transition-all flex items-center gap-3 ${appearance === "dark"
-                ? "border-[#DC2626] dark:border-[#FEE2E2] bg-[#fdfafc] dark:bg-[#7F1D1D]/20"
-                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+                ? "border-[var(--primary)] dark:border-[#FEE2E2] bg-[#fdfafc] dark:bg-[#7F1D1D]/20"
+                : "border-border dark:border-gray-700 bg-surface dark:bg-gray-800 hover:border-border dark:hover:border-gray-600"
                 }`}>
               <div
                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${appearance === "dark"
-                  ? "border-[#DC2626] bg-[#DC2626] dark:border-[#FEE2E2] dark:bg-[#FEE2E2]"
-                  : "border-gray-300 dark:border-gray-600"
+                  ? "border-[var(--primary)] bg-[var(--primary)] dark:border-[#FEE2E2] dark:bg-[#FEE2E2]"
+                  : "border-border dark:border-gray-600"
                   }`}>
                 {appearance === "dark" && (
                   <Check className="h-3 w-3 text-white" />
                 )}
               </div>
-              <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300 flex-shrink-0" />
+              <Moon className="h-5 w-5 text-text-secondary dark:text-gray-300 flex-shrink-0" />
               <div className="text-left">
-                <p className="font-medium text-gray-900 dark:text-white text-sm">
+                <p className="font-medium text-text-primary dark:text-white text-sm">
                   Dark
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-text-secondary dark:text-text-secondary">
                   Dark theme
                 </p>
               </div>
@@ -1239,22 +1239,22 @@ export default function Profile() {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white dark:bg-[#1a1a1a] w-full max-w-sm rounded-2xl shadow-2xl p-6"
+            className="bg-surface dark:bg-[#1a1a1a] w-full max-w-sm rounded-2xl shadow-2xl p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col items-center text-center mb-4">
               <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center mb-3">
                 <AlertTriangle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
               </div>
-              <h3 className="text-xl font-black text-gray-900 dark:text-white">Wait! Balance Found</h3>
+              <h3 className="text-xl font-black text-text-primary dark:text-white">Wait! Balance Found</h3>
             </div>
 
             <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 mb-5 text-center">
-              <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">{balanceData.type}</p>
-              <p className="text-3xl font-black text-black dark:text-white">₹{balanceData.balance.toLocaleString('en-IN')}</p>
+              <p className="text-[10px] text-text-secondary uppercase font-black tracking-widest mb-1">{balanceData.type}</p>
+              <p className="text-3xl font-black text-text-primary dark:text-white">₹{balanceData.balance.toLocaleString('en-IN')}</p>
             </div>
 
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-center leading-relaxed">
+            <p className="text-sm text-text-secondary dark:text-gray-300 mb-6 text-center leading-relaxed">
               You still have money in your wallet. Do you want to continue deleting your account or go back and withdraw?
             </p>
 
@@ -1271,7 +1271,7 @@ export default function Profile() {
               </button>
               <button
                 onClick={() => setShowBalanceWarning(false)}
-                className="w-full h-12 rounded-xl bg-black dark:bg-white text-white dark:text-black font-bold hover:bg-gray-900 dark:hover:bg-gray-100 transition-colors"
+                className="w-full h-12 rounded-xl bg-black dark:bg-white text-white dark:text-text-primary font-bold hover:bg-gray-900 dark:hover:bg-gray-100 transition-colors"
               >
                 Cancel & Withdraw
               </button>
@@ -1287,26 +1287,26 @@ export default function Profile() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#1a1a1a] shadow-2xl border border-red-100 dark:border-red-900/30 overflow-hidden p-6">
+              className="w-full max-w-sm rounded-2xl bg-surface dark:bg-[#1a1a1a] shadow-2xl border border-red-100 dark:border-red-900/30 overflow-hidden p-6">
 
               {/* Icon + Title centered */}
               <div className="flex flex-col items-center text-center mb-4">
                 <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-3">
-                  <Trash2 className="h-7 w-7 text-red-600 dark:text-red-400" />
+                  <Trash2 className="h-7 w-7 text-primary dark:text-primary-light" />
                 </div>
-                <h3 className="text-xl font-black text-gray-900 dark:text-white">
+                <h3 className="text-xl font-black text-text-primary dark:text-white">
                   Delete Your Account?
                 </h3>
               </div>
 
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed text-center">
+              <p className="text-sm text-text-secondary dark:text-gray-300 mb-4 leading-relaxed text-center">
                 Are you sure you want to delete your account?
               </p>
 
-              <div className="mb-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-r-xl p-3">
+              <div className="mb-4 bg-primary-light/10 dark:bg-red-900/20 border-l-4 border-red-500 rounded-r-xl p-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0" />
-                  <span className="text-sm font-bold text-red-700 dark:text-red-400">Warning</span>
+                  <AlertTriangle className="h-4 w-4 text-primary dark:text-primary-light flex-shrink-0" />
+                  <span className="text-sm font-bold text-red-700 dark:text-primary-light">Warning</span>
                 </div>
                 <p className="text-xs text-red-700 dark:text-red-300 leading-relaxed">
                   Your account will be Deleted. Admin will keep your historical records for revenue reporting.
@@ -1319,7 +1319,7 @@ export default function Profile() {
                   placeholder="Type DELETE to confirm"
                   value={deleteCaptcha}
                   onChange={(e) => setDeleteCaptcha(e.target.value.toUpperCase())}
-                  className="w-full h-12 px-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-transparent dark:text-white focus:border-red-500 focus:ring-4 focus:ring-red-50 dark:focus:ring-red-900/20 outline-none transition-all font-bold text-center tracking-widest placeholder:tracking-normal placeholder:font-medium placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  className="w-full h-12 px-4 rounded-xl border-2 border-border dark:border-gray-700 bg-transparent dark:text-white focus:border-red-500 focus:ring-4 focus:ring-red-50 dark:focus:ring-red-900/20 outline-none transition-all font-bold text-center tracking-widest placeholder:tracking-normal placeholder:font-medium placeholder:text-text-secondary dark:placeholder:text-text-secondary"
                 />
               </div>
 
@@ -1335,7 +1335,7 @@ export default function Profile() {
                 </Button>
                 <Button
                   type="button"
-                  className="flex-1 h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white text-md font-bold disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-red-600/20"
+                  className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary-dark text-white text-md font-bold disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-red-600/20"
                   onClick={handleDeleteAccount}
                   disabled={isDeleting || deleteCaptcha !== "DELETE"}
                 >

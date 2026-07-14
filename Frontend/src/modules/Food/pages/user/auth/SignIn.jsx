@@ -117,7 +117,7 @@ export default function SignIn() {
         <div className="absolute inset-0 bg-white/60 dark:bg-black/80" />
       </div>
 
-      <div className="w-full max-w-[450px] bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl relative z-10 overflow-hidden border border-gray-100 dark:border-gray-800">
+      <div className="w-full max-w-[450px] bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-2xl relative z-10 overflow-hidden border border-border dark:border-gray-800">
         {/* Banner (Mobile Only) */}
         <div className="md:hidden w-full h-[180px] relative">
           <img src={loginBanner} alt="Food Banner" className="w-full h-full object-cover" />
@@ -127,10 +127,10 @@ export default function SignIn() {
         <div className="p-6 sm:p-8 md:p-10 space-y-6 md:space-y-8">
           <div className="text-center space-y-2 md:space-y-3">
             <img src="/bhookingo-logo.png" alt="Bhookingo Logo" className="h-20 mx-auto object-contain mb-4 rounded-xl shadow-sm" />
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-text-primary dark:text-white leading-tight">
               Login or Signup
             </h2>
-            <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+            <p className="text-sm sm:text-base text-text-secondary dark:text-text-secondary">
               Enter your phone number to continue
             </p>
           </div>
@@ -138,7 +138,7 @@ export default function SignIn() {
           <form id="user-signin-form" onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <div className="relative flex items-center">
-                <div className="flex items-center px-4 h-12 md:h-14 border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-900 dark:text-white rounded-lg border-r-0 rounded-r-none font-medium">
+                <div className="flex items-center px-4 h-12 md:h-14 border border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-text-primary dark:text-white rounded-lg border-r-0 rounded-r-none font-medium">
                   <span>+91</span>
                 </div>
                 <Input
@@ -151,7 +151,7 @@ export default function SignIn() {
                   placeholder="Phone number"
                   value={formData.phone}
                   onChange={handleChange}
-                  className={`flex-1 h-12 md:h-14 text-lg bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white border-gray-300 dark:border-gray-700 rounded-lg rounded-l-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary ${error ? "border-red-500" : ""} transition-all`}
+                  className={`flex-1 h-12 md:h-14 text-lg bg-surface dark:bg-[#1a1a1a] text-text-primary dark:text-white border-border dark:border-gray-700 rounded-lg rounded-l-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary ${error ? "border-red-500" : ""} transition-all`}
                   aria-invalid={error ? "true" : "false"}
                 />
               </div>
@@ -167,7 +167,7 @@ export default function SignIn() {
             <Button
               type="submit"
               form="user-signin-form"
-              className="w-full h-12 md:h-14 bg-primary hover:bg-[#991B1B] text-white font-bold text-base md:text-lg rounded-lg transition-all hover:shadow-lg active:scale-[0.98]"
+              className="w-full h-12 md:h-14 bg-primary hover:bg-primary-dark text-white font-bold text-base md:text-lg rounded-lg transition-all hover:shadow-lg active:scale-[0.98]"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -184,10 +184,10 @@ export default function SignIn() {
           {/* Social login separator */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-200 dark:border-gray-800" />
+              <span className="w-full border-t border-border dark:border-gray-800" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white dark:bg-[#1a1a1a] px-3 text-gray-500 dark:text-gray-400 font-medium">
+              <span className="bg-surface dark:bg-[#1a1a1a] px-3 text-text-secondary dark:text-text-secondary font-medium">
                 or
               </span>
             </div>
@@ -198,20 +198,20 @@ export default function SignIn() {
             <GoogleLoginButton />
           </div>
 
-          <div className="text-center text-xs md:text-sm text-gray-500 dark:text-gray-400 pt-2">
-            <p className="mt-8 text-center text-xs text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+          <div className="text-center text-xs md:text-sm text-text-secondary dark:text-text-secondary pt-2">
+            <p className="mt-8 text-center text-xs text-text-secondary dark:text-text-secondary max-w-xs mx-auto">
               By continuing, you agree to our{" "}
-              <Link to="/user/profile/terms" className="underline hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+              <Link to="/user/profile/terms" className="underline hover:text-text-primary dark:hover:text-gray-100 transition-colors">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link to="/user/profile/privacy" className="underline hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+              <Link to="/user/profile/privacy" className="underline hover:text-text-primary dark:hover:text-gray-100 transition-colors">
                 Privacy Policy
               </Link>
             </p>
             <div className="flex justify-center gap-2 flex-wrap">
               <span className="text-gray-300 dark:text-gray-700">•</span>
-              <Link to="/profile/refund" className="underline hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+              <Link to="/profile/refund" className="underline hover:text-text-primary dark:hover:text-gray-100 transition-colors">
                 Content Policy
               </Link>
             </div>

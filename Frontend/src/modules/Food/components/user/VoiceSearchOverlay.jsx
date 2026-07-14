@@ -45,14 +45,14 @@ const VoiceSearchOverlay = ({ isOpen, onClose, onSearchResult }) => {
             initial={{ scale: 0.9, y: 20, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 20, opacity: 0 }}
-            className="w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-[2.5rem] p-10 flex flex-col items-center relative overflow-hidden shadow-2xl"
+            className="w-full max-w-sm bg-surface dark:bg-[#1a1a1a] rounded-[2.5rem] p-10 flex flex-col items-center relative overflow-hidden shadow-2xl"
           >
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-5 right-5 p-2 bg-red-50 dark:bg-red-950/30 rounded-full hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors z-20"
+              className="absolute top-5 right-5 p-2 bg-primary-light/10 dark:bg-red-950/30 rounded-full hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors z-20"
             >
-              <X className="h-5 w-5 text-red-500 dark:text-red-400" />
+              <X className="h-5 w-5 text-red-500 dark:text-primary-light" />
             </button>
 
             {/* Mic Animation Section */}
@@ -74,10 +74,10 @@ const VoiceSearchOverlay = ({ isOpen, onClose, onSearchResult }) => {
 
             {/* Text Section */}
             <div className="text-center z-10 space-y-2">
-              <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
+              <h2 className="text-2xl font-black text-text-primary dark:text-white uppercase tracking-tight">
                 {transcript ? `"${transcript}"` : "Listening..."}
               </h2>
-              <p className="text-gray-500 dark:text-gray-400 font-medium px-4">
+              <p className="text-text-secondary dark:text-text-secondary font-medium px-4">
                 {transcript ? "Processing search..." : "Say a dish or restaurant name"}
               </p>
             </div>

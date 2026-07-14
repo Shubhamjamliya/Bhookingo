@@ -44,7 +44,9 @@ const UserRouterWrapper = () => {
 
   return (
     <Suspense fallback={isPolicyPage ? <PageLoader /> : <AppShellSkeleton />}>
-      <UserRouter />
+      <div className="user-app-theme min-h-screen bg-background text-text-primary">
+        <UserRouter />
+      </div>
     </Suspense>
   )
 }

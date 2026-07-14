@@ -168,6 +168,10 @@ export const notificationAPI = {
 export const adminAPI = {
   getSidebarBadges: () =>
     apiClient.get("/food/admin/sidebar-badges", { contextModule: "admin" }),
+  getDrivingModeSettings: () =>
+    apiClient.get("/food/admin/driving-mode/settings", { contextModule: "admin" }),
+  updateDrivingModeSettings: (body) =>
+    apiClient.patch("/food/admin/driving-mode/settings", body, { contextModule: "admin" }),
   login: (email, password) => authService.adminLogin(email, password),
   /** POST /auth/admin/forgot-password/request-otp – only accepts registered admin email */
   requestForgotPasswordOtp: (email) =>
@@ -517,6 +521,21 @@ export const adminAPI = {
     apiClient.get("/food/admin/highways", {
       params: { limit: 500, ...params },
       contextModule: "admin",
+    }).then((res) => {
+      if (res.data?.success && res.data.data && Array.isArray(res.data.data.highways)) {
+        res.data.data.zones = res.data.data.highways;
+      }
+      return res;
+    }),
+  getZones: (params = {}) =>
+    apiClient.get("/food/admin/highways", {
+      params: { limit: 500, ...params },
+      contextModule: "admin",
+    }).then((res) => {
+      if (res.data?.success && res.data.data && Array.isArray(res.data.data.highways)) {
+        res.data.data.zones = res.data.data.highways;
+      }
+      return res;
     }),
   getHighwayById: (id) =>
     apiClient.get(`/food/admin/highways/${String(id)}`, { contextModule: "admin" }),
@@ -1464,6 +1483,10 @@ const getRestaurantCurrentOnce = () => {
 export const userAPI = {
   getCustomizationSettings: () =>
     apiClient.get("/food/public/customization-settings"),
+  getDrivingModeSettings: () =>
+    apiClient.get("/food/driving-mode/settings", { contextModule: "user" }),
+  getRestaurantsAhead: (params, config = {}) =>
+    apiClient.get("/food/driving-mode/restaurants", { params, contextModule: "user", ...config }),
   /** Get current user profile (Bearer USER). */
   getProfile: () =>
     getUserMeOnce().then((res) => {

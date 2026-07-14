@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom"
-import { ShoppingBag, Tag, Truck, UtensilsCrossed } from "lucide-react"
+import { ShoppingBag, Tag, Truck, CircleUser, Compass } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import api from "@food/api"
@@ -95,13 +95,14 @@ export default function BottomNavigation() {
   
   const isDining = normalizedPath === "/food/dining" || normalizedPath.startsWith("/food/user/dining");
   const isUnder250 = normalizedPath === "/food/under-250" || normalizedPath.startsWith("/food/user/under-250");
-  const isProfile = normalizedPath.startsWith("/food/profile") || normalizedPath.startsWith("/food/user/profile");
+  const isProfile = normalizedPath.startsWith("/food/profile") || normalizedPath.startsWith("/food/user/profile") || normalizedPath.startsWith("/user/profile");
+  const isDriving = normalizedPath === "/food/user/driving" || normalizedPath.startsWith("/food/user/driving");
   
   const isHomePaths = normalizedPath === "/food" || 
     normalizedPath === "/food/user" || 
     normalizedPath === "/user" ||
     normalizedPath === "/" ||
-    normalizedPath.startsWith("/food/user") && !isProfile && !isDining && !isUnder250 && !normalizedPath.startsWith("/food/user/takeaway") ||
+    normalizedPath.startsWith("/food/user") && !isProfile && !isDining && !isUnder250 && !isDriving && !normalizedPath.startsWith("/food/user/takeaway") ||
     normalizedPath.startsWith("/food/restaurants") ||
     normalizedPath.startsWith("/food/user/restaurants");
 
@@ -128,11 +129,18 @@ export default function BottomNavigation() {
       active: isUnder250
     },
     {
-      id: 'dining',
-      label: 'Dining',
-      icon: UtensilsCrossed,
-      to: '/food/user/dining',
-      active: isDining
+      id: 'driving',
+      label: 'Driving',
+      icon: Compass,
+      to: '/food/user/driving',
+      active: isDriving
+    },
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: CircleUser,
+      to: '/food/user/profile',
+      active: isProfile
     }
   ]
 
@@ -151,7 +159,7 @@ export default function BottomNavigation() {
           className="md:hidden fixed bottom-6 left-0 right-0 z-50 px-6 pointer-events-none"
         >
           <div 
-            className="max-w-md mx-auto h-18 bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-white/10 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.3)] flex items-center justify-around px-2 rounded-[2rem] overflow-hidden pointer-events-auto"
+            className="max-w-md mx-auto h-18 bg-surface dark:bg-[#1a1a1a] border border-border dark:border-white/10 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.3)] flex items-center justify-around px-2 rounded-[2rem] overflow-hidden pointer-events-auto"
           >
             {navItems.map((item) => (
               <Link
@@ -159,13 +167,13 @@ export default function BottomNavigation() {
                 to={item.to}
                 onClick={item.onClick}
                 className={`flex flex-col items-center justify-center gap-1 h-14 w-full relative transition-all duration-300 ${
-                  item.active ? "text-[#DC2626]" : "text-gray-600 dark:text-gray-400"
+                  item.active ? "text-[var(--primary)]" : "text-text-secondary dark:text-text-secondary"
                 }`}
               >
                 {item.active && (
                   <motion.div
                     layoutId="active-nav-bg"
-                    className="absolute inset-x-1 inset-y-1 bg-[#FFF5F5] dark:bg-[#DC2626]/10 rounded-[1.5rem] z-0"
+                    className="absolute inset-x-1 inset-y-1 bg-primary-light/15 dark:bg-[var(--primary)]/10 rounded-[1.5rem] z-0"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -175,7 +183,7 @@ export default function BottomNavigation() {
                     className={`h-5 w-5 transition-transform duration-300 ${item.active ? "scale-110" : ""}`} 
                     strokeWidth={item.active ? 2.5 : 2} 
                   />
-                  <span className={`text-[10px] font-black tracking-tight uppercase leading-none ${item.active ? "opacity-100" : "text-gray-900/70 dark:text-gray-300/60"}`}>
+                  <span className={`text-[10px] font-black tracking-tight uppercase leading-none ${item.active ? "opacity-100" : "text-text-primary/70 dark:text-gray-300/60"}`}>
                     {item.id === 'under250' ? 'Under 250' : item.label}
                   </span>
                 </div>

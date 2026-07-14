@@ -25,6 +25,7 @@ import {
 } from "recharts"
 import { Activity, ArrowUpRight, ShoppingBag, CreditCard, Truck, Receipt, DollarSign, Store, UserCheck, Package, UserCircle, Clock, CheckCircle, Plus, XCircle } from "lucide-react"
 import { adminAPI } from "@food/api"
+import DashboardSkeleton from "@food/components/admin/DashboardSkeleton"
 const debugLog = () => {}
 const debugError = () => {}
 
@@ -44,6 +45,7 @@ export default function AdminHome() {
   const [isLoading, setIsLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState(null)
   const [highways, setHighways] = useState([])
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   // Fetch highway list for filter
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function AdminHome() {
     }
 
     fetchDashboardStats()
-  }, [selectedHighway, selectedPeriod])
+  }, [selectedHighway, selectedPeriod, refreshTrigger])
 
   // Get order stats from real data
   const getOrderStats = () => {
@@ -124,6 +126,24 @@ export default function AdminHome() {
       revenue: item.revenue || 0,
       orders: item.orders || 0
     }))
+  }
+
+  if (isLoading && !dashboardData) {
+    return <DashboardSkeleton />
+  }
+
+  if (!isLoading && !dashboardData) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border border-neutral-200 shadow-md max-w-md mx-auto mt-20 text-center space-y-4">
+        <p className="text-lg font-semibold text-neutral-800">Unable to load dashboard data</p>
+        <button
+          onClick={() => setRefreshTrigger((prev) => prev + 1)}
+          className="px-6 py-2.5 bg-neutral-900 text-white rounded-xl text-sm font-semibold hover:bg-neutral-800 transition-colors shadow-sm active:scale-95 animate-pulse"
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
 
   const orderStats = getOrderStats()

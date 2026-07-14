@@ -108,3 +108,71 @@ export const slugify = (value) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+
+export const BOOKING_RADIUS_KM = 50;
+
+/**
+ * Checks if a restaurant is within the booking radius
+ * @param {object} restaurant The restaurant object
+ * @param {object} userLocation The user's coordinates (latitude, longitude)
+ * @returns {object} { bookable: boolean, distanceKm: number | null, message: string }
+ */
+export const checkRestaurantBookingEligibility = (restaurant, userLocation) => {
+  if (!restaurant) {
+    return { bookable: false, distanceKm: null, message: "Restaurant details not available." };
+  }
+
+  // 1. Get restaurant coordinates
+  const locationObj = restaurant.locationObject || restaurant.location || restaurant;
+  const restaurantLat = Number(
+    locationObj?.latitude ??
+    (Array.isArray(locationObj?.coordinates) ? locationObj.coordinates[1] : null)
+  );
+  const restaurantLng = Number(
+    locationObj?.longitude ??
+    (Array.isArray(locationObj?.coordinates) ? locationObj.coordinates[0] : null)
+  );
+
+  // 2. Get user coordinates
+  const userLat = Number(userLocation?.latitude);
+  const userLng = Number(userLocation?.longitude);
+
+  // 3. Compute distance if coordinates are valid
+  if (
+    Number.isFinite(userLat) &&
+    Number.isFinite(userLng) &&
+    Number.isFinite(restaurantLat) &&
+    Number.isFinite(restaurantLng)
+  ) {
+    const distanceKm = calculateDistance(userLat, userLng, restaurantLat, restaurantLng);
+    if (distanceKm !== null && distanceKm > BOOKING_RADIUS_KM) {
+      return {
+        bookable: false,
+        distanceKm,
+        message: `You are currently ${distanceKm.toFixed(1)} KM away from this restaurant. Ordering is available within ${BOOKING_RADIUS_KM} KM. You can continue exploring restaurants and menus, but you'll need to be closer before placing an order.`
+      };
+    }
+    return { bookable: true, distanceKm, message: "" };
+  }
+
+  // If distance is already calculated (string or number)
+  const preCalculatedDist = restaurant.distance;
+  if (preCalculatedDist !== undefined && preCalculatedDist !== null) {
+    let parsedKm = null;
+    if (typeof preCalculatedDist === "number") {
+      parsedKm = preCalculatedDist;
+    } else if (typeof preCalculatedDist === "string" && preCalculatedDist.includes("km")) {
+      parsedKm = parseFloat(preCalculatedDist);
+    }
+    if (Number.isFinite(parsedKm) && parsedKm > BOOKING_RADIUS_KM) {
+      return {
+        bookable: false,
+        distanceKm: parsedKm,
+        message: `You are currently ${parsedKm.toFixed(1)} KM away from this restaurant. Ordering is available within ${BOOKING_RADIUS_KM} KM. You can continue exploring restaurants and menus, but you'll need to be closer before placing an order.`
+      };
+    }
+  }
+
+  // Fallback: allow ordering if coordinates/distances are missing
+  return { bookable: true, distanceKm: null, message: "" };
+};

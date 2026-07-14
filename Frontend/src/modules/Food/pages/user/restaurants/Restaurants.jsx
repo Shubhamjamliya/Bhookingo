@@ -124,11 +124,11 @@ export default function Restaurants() {
           <div className="flex items-center gap-3 sm:gap-4 lg:gap-5 mb-4 lg:mb-6">
             <Link to="/">
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 hover:bg-gray-100 dark:hover:bg-gray-800">
-                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-gray-900 dark:text-gray-100" />
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-text-primary dark:text-gray-100" />
               </Button>
             </Link>
             <TextReveal className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-text-primary dark:text-white">
                 All Restaurants
               </h1>
             </TextReveal>
@@ -138,7 +138,7 @@ export default function Restaurants() {
         {showRestaurantsSkeleton ? (
           <RestaurantGridSkeleton count={4} />
         ) : !hasRestaurants ? (
-          <div className="py-16 text-center text-sm text-gray-500">No restaurants available right now.</div>
+          <div className="py-16 text-center text-sm text-text-secondary">No restaurants available right now.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 xl:gap-6 pt-2 sm:pt-3 lg:pt-4">
             {restaurants.map((restaurant, index) => {
@@ -165,17 +165,17 @@ export default function Restaurants() {
               return (
                 <ScrollReveal key={restaurant.id} delay={index * 0.05}>
                   <Link to={`/restaurants/${restaurant.slug}`} className="h-full flex">
-                    <Card className="overflow-hidden cursor-pointer border border-gray-200 dark:border-gray-800 group bg-white dark:bg-[#1a1a1a] hover:shadow-lg dark:hover:shadow-xl dark:hover:shadow-gray-900/50 pb-1 sm:pb-2 lg:pb-3 flex flex-col h-full w-full transition-all duration-300">
+                    <Card className="overflow-hidden cursor-pointer border border-border dark:border-gray-800 group bg-surface dark:bg-[#1a1a1a] hover:shadow-lg dark:hover:shadow-xl dark:hover:shadow-gray-900/50 pb-1 sm:pb-2 lg:pb-3 flex flex-col h-full w-full transition-all duration-300">
                       <div className="flex flex-row min-h-[120px] sm:min-h-[140px] md:min-h-[160px] lg:min-h-[180px] flex-1">
                         <CardContent className="flex-1 flex flex-col justify-between p-3 sm:p-4 md:p-5 lg:p-6 min-w-0 overflow-hidden">
                           <div className="flex-1 flex flex-col justify-between gap-2">
                             <div className="flex-shrink-0">
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <div className="flex-1 min-w-0 pr-2">
-                                  <CardTitle className="text-base sm:text-lg md:text-xl mb-1 line-clamp-2 text-gray-900 dark:text-white">
+                                  <CardTitle className="text-base sm:text-lg md:text-xl mb-1 line-clamp-2 text-text-primary dark:text-white">
                                     {restaurant.name}
                                   </CardTitle>
-                                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium mb-2 line-clamp-1">
+                                  <p className="text-xs sm:text-sm text-text-secondary dark:text-text-secondary font-medium mb-2 line-clamp-1">
                                     {restaurant.cuisine}
                                   </p>
                                   <div className="flex items-center gap-2 flex-wrap">
@@ -188,15 +188,15 @@ export default function Restaurants() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full flex-shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${favorite ? "text-red-500 dark:text-red-400" : "text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400"}`}
+                                  className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full flex-shrink-0 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${favorite ? "text-red-500 dark:text-primary-light" : "text-text-secondary dark:text-text-secondary hover:text-red-500 dark:hover:text-primary-light"}`}
                                   onClick={handleToggleFavorite}
                                 >
                                   <Heart className={`h-4 w-4 sm:h-5 sm:w-5 ${favorite ? "fill-red-500 dark:fill-red-400" : ""}`} />
                                 </Button>
                               </div>
                             </div>
-                            <div className="flex items-center justify-between gap-2 mt-auto pt-2 border-t border-gray-200 dark:border-gray-800 flex-shrink-0">
-                              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 flex-wrap">
+                            <div className="flex items-center justify-between gap-2 mt-auto pt-2 border-t border-border dark:border-gray-800 flex-shrink-0">
+                              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-text-secondary dark:text-text-secondary flex-wrap">
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
                                 </div>
@@ -205,7 +205,7 @@ export default function Restaurants() {
                                   <span className="font-medium whitespace-nowrap">{restaurant.distance}</span>
                                 </div>
                               </div>
-                              <Button className="bg-[#DC2626] hover:opacity-90 dark:hover:opacity-80 text-white text-xs sm:text-sm h-7 sm:h-8 px-3 sm:px-4 flex-shrink-0 transition-opacity">
+                              <Button className="bg-[var(--primary)] hover:opacity-90 dark:hover:opacity-80 text-white text-xs sm:text-sm h-7 sm:h-8 px-3 sm:px-4 flex-shrink-0 transition-opacity">
                                 Order Now
                               </Button>
                             </div>

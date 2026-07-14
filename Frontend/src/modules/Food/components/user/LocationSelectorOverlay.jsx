@@ -2202,9 +2202,9 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
   // If showing address form, render full-screen address form
   if (showAddressForm) {
     return (
-      <div className="fixed inset-0 z-[10000] bg-white dark:bg-[#0a0a0a] flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden">
+      <div className="fixed inset-0 z-[10000] bg-surface dark:bg-[#0a0a0a] flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden">
         {/* Header */}
-        <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+        <div className="flex-shrink-0 bg-surface dark:bg-[#1a1a1a] border-b border-border dark:border-gray-800 px-4 py-3">
           <div className="flex items-center gap-4">
             <Button
               type="button"
@@ -2239,7 +2239,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900 bg-opacity-75 z-20">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Loading map...</p>
+                <p className="text-sm text-text-secondary dark:text-text-secondary">Loading map...</p>
               </div>
             </div>
           )}
@@ -2248,9 +2248,9 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
           {!GOOGLE_MAPS_API_KEY && !mapLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900 z-20">
               <div className="text-center p-4">
-                <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 dark:text-gray-400">Google Maps API key not found</p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Please set VITE_GOOGLE_MAPS_API_KEY in .env file</p>
+                <MapPin className="h-12 w-12 text-text-secondary mx-auto mb-2" />
+                <p className="text-sm text-text-secondary dark:text-text-secondary">Google Maps API key not found</p>
+                <p className="text-xs text-text-secondary dark:text-text-secondary mt-1">Please set VITE_GOOGLE_MAPS_API_KEY in .env file</p>
               </div>
             </div>
           )}
@@ -2260,7 +2260,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             <Button
               onClick={handleUseCurrentLocationForAddress}
               disabled={mapLoading}
-              className="bg-white dark:bg-[#1a1a1a] border-2 border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 shadow-lg disabled:opacity-50 flex items-center gap-2 px-4 py-2"
+              className="bg-surface dark:bg-[#1a1a1a] border-2 border-green-600 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 shadow-lg disabled:opacity-50 flex items-center gap-2 px-4 py-2"
             >
               <Crosshair className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" strokeWidth={2.5} />
               <span className="text-green-600 dark:text-green-400 font-medium">Use current location</span>
@@ -2269,7 +2269,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         </div>
 
         {/* Form Section - Scrollable */}
-        <div className="flex-1 overflow-y-auto bg-white dark:bg-[#0a0a0a] min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex-1 overflow-y-auto bg-surface dark:bg-[#0a0a0a] min-h-0 overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="px-4 py-4 space-y-4 pb-48">
             {/* Autocomplete address selection */}
             <div>
@@ -2281,14 +2281,14 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                   value={addressAutocompleteValue}
                   onChange={(e) => setAddressAutocompleteValue(e.target.value)}
                   placeholder="Type a keyword (area, street, landmark)..."
-                  className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
+                  className="bg-surface dark:bg-[#1a1a1a] border-border dark:border-gray-700"
                 />
 
                 {addressAutocompleteValue.trim().length > 0 &&
                   (keywordAddressSuggestions.length > 0 || addressAutocompleteSuggestions.length > 0) && (
-                  <div className="absolute z-50 left-0 right-0 mt-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-xl overflow-hidden">
+                  <div className="absolute z-50 left-0 right-0 mt-2 rounded-xl border border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] shadow-xl overflow-hidden">
                     {isKeywordSearching && (
-                      <div className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400">
+                      <div className="px-4 py-3 text-xs text-text-secondary dark:text-text-secondary">
                         Searching…
                       </div>
                     )}
@@ -2340,12 +2340,12 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                             await handleMapMoveEnd(latitude, longitude)
                           } catch {}
                         }}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-border dark:border-gray-800 last:border-b-0"
                       >
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                        <p className="text-sm font-semibold text-text-primary dark:text-white truncate">
                           {p.display}
                         </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                        <p className="text-xs text-text-secondary dark:text-text-secondary truncate">
                           {p.address?.city || p.address?.town || p.address?.village || p.address?.state || " "}
                         </p>
                       </button>
@@ -2373,12 +2373,12 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                               setAddressAutocompleteValue("")
                               handleSelectSavedAddress(addr)
                             }}
-                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-border dark:border-gray-800 last:border-b-0"
                           >
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                            <p className="text-sm font-semibold text-text-primary dark:text-white truncate">
                               {title}
                             </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                            <p className="text-xs text-text-secondary dark:text-text-secondary truncate">
                               {subtitle}
                             </p>
                           </button>
@@ -2387,7 +2387,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                   </div>
                 )}
               </div>
-              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-2 text-xs text-text-secondary dark:text-text-secondary">
                 Search by keyword to get address suggestions; selecting one will pin it on the map.
               </p>
             </div>
@@ -2403,7 +2403,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                 placeholder="E.g. Floor, House no."
                 value={addressFormData.additionalDetails}
                 onChange={handleAddressFormChange}
-                className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
+                className="bg-surface dark:bg-[#1a1a1a] border-border dark:border-gray-700"
               />
             </div>
 
@@ -2412,14 +2412,14 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
               <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
                 Receiver details for this address
               </Label>
-              <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center gap-3">
-                <Phone className="h-5 w-5 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+              <div className="bg-surface dark:bg-[#1a1a1a] border border-border dark:border-gray-700 rounded-lg p-3 flex items-center gap-3">
+                <Phone className="h-5 w-5 text-text-secondary dark:text-text-secondary flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  <p className="text-sm font-medium text-text-primary dark:text-white">
                     {userProfile?.name || "User"}, {addressFormData.phone || userProfile?.phone || "Add phone"}
                   </p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                <ChevronRight className="h-5 w-5 text-text-secondary flex-shrink-0" />
               </div>
             </div>
 
@@ -2437,7 +2437,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                     variant={addressFormData.label === label ? "default" : "outline"}
                     className={`flex-1 ${addressFormData.label === label
                       ? "bg-green-600 hover:bg-green-700 text-white"
-                      : "bg-white dark:bg-[#1a1a1a]"
+                      : "bg-surface dark:bg-[#1a1a1a]"
                       }`}
                   >
                     {label}
@@ -2456,7 +2456,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                 placeholder="Street / Area *"
                 value={addressFormData.street}
                 onChange={handleAddressFormChange}
-                className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
+                className="bg-surface dark:bg-[#1a1a1a] border-border dark:border-gray-700"
                 required
               />
               <div className="grid grid-cols-2 gap-2">
@@ -2465,7 +2465,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                   placeholder="City *"
                   value={addressFormData.city}
                   onChange={handleAddressFormChange}
-                  className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
+                  className="bg-surface dark:bg-[#1a1a1a] border-border dark:border-gray-700"
                   required
                 />
                 <Input
@@ -2473,7 +2473,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                   placeholder="State *"
                   value={addressFormData.state}
                   onChange={handleAddressFormChange}
-                  className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
+                  className="bg-surface dark:bg-[#1a1a1a] border-border dark:border-gray-700"
                   required
                 />
               </div>
@@ -2482,9 +2482,9 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                 placeholder="Pincode (optional)"
                 value={addressFormData.zipCode || ""}
                 onChange={handleAddressFormChange}
-                className="bg-white dark:bg-[#1a1a1a] border-gray-200 dark:border-gray-700"
+                className="bg-surface dark:bg-[#1a1a1a] border-border dark:border-gray-700"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-text-secondary dark:text-text-secondary">
                 Tip: Use map/current location for auto-detection, or type details manually.
               </p>
             </div>
@@ -2492,7 +2492,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         </div>
 
         {/* Save Address Button */}
-        <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-t border-gray-200 dark:border-gray-800 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div className="flex-shrink-0 bg-surface dark:bg-[#1a1a1a] border-t border-border dark:border-gray-800 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <form onSubmit={handleAddressFormSubmit}>
             <Button
               type="submit"
@@ -2509,13 +2509,13 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col bg-white dark:bg-[#0a0a0a]"
+      className="fixed inset-0 z-[9999] flex flex-col bg-surface dark:bg-[#0a0a0a]"
       style={{
         animation: 'fadeIn 0.3s ease-out'
       }}
     >
       {/* Header */}
-      <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800 shadow-sm">
+      <div className="flex-shrink-0 bg-surface dark:bg-[#1a1a1a] border-b border-border dark:border-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <Button
@@ -2529,7 +2529,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
             >
               <ChevronLeft className="h-6 w-6 text-gray-700 dark:text-gray-300" />
             </Button>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Select a location</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white">Select a location</h1>
           </div>
         </div>
       </div>
@@ -2539,7 +2539,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
         <div className="max-w-7xl mx-auto w-full pb-6">
           {/* Use Current Location */}
           <div
-            className="px-4 sm:px-6 lg:px-8 py-2 bg-white dark:bg-[#1a1a1a]"
+            className="px-4 sm:px-6 lg:px-8 py-2 bg-surface dark:bg-[#1a1a1a]"
             style={{ animation: 'slideDown 0.3s ease-out 0.1s both' }}
           >
             <button
@@ -2553,18 +2553,18 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                 </div>
                 <div className="text-left">
                   <p className="font-semibold text-green-700 dark:text-green-400">Use current location</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-text-secondary dark:text-text-secondary">
                     {loading ? "Getting location..." : currentLocationText}
                   </p>
                 </div>
               </div>
-              <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+              <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
             </button>
 
             {/* Add Address */}
             <button
               onClick={handleAddAddress}
-              className="w-full flex items-center justify-between py-4 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group border-t border-gray-100 dark:border-gray-800"
+              className="w-full flex items-center justify-between py-4 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group border-t border-border dark:border-gray-800"
             >
               <div className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center group-hover:bg-green-100 dark:group-hover:bg-green-900/30 transition-colors">
@@ -2572,7 +2572,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                 </div>
                 <p className="font-semibold text-green-700 dark:text-green-400">Add Address</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+              <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
             </button>
           </div>
 
@@ -2583,11 +2583,11 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
               style={{ animation: 'slideDown 0.3s ease-out 0.2s both' }}
             >
               <div className="px-4 sm:px-6 lg:px-8 py-3">
-                <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 tracking-wider uppercase">
+                <h2 className="text-xs font-semibold text-text-secondary dark:text-text-secondary tracking-wider uppercase">
                   Saved Addresses
                 </h2>
               </div>
-              <div className="bg-white dark:bg-[#1a1a1a]">
+              <div className="bg-surface dark:bg-[#1a1a1a]">
                 {addresses
                   .filter((address, index, self) => {
                     // Filter out duplicate addresses with same label - keep only first occurrence
@@ -2603,7 +2603,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                         style={{ animation: `slideUp 0.3s ease-out ${0.25 + index * 0.05}s both` }}
                       >
                         <div
-                          className={`py-4 ${index !== 0 ? 'border-t border-gray-100 dark:border-gray-800' : ''}`}
+                          className={`py-4 ${index !== 0 ? 'border-t border-border dark:border-gray-800' : ''}`}
                         >
                           <button
                             onClick={() => handleSelectSavedAddress(address)}
@@ -2611,14 +2611,14 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                           >
                             <div className="flex flex-col items-center">
                               <div className="h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                <IconComponent className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                                <IconComponent className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                               </div>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-900 dark:text-white">
+                              <p className="font-semibold text-text-primary dark:text-white">
                                 {address.label || address.additionalDetails || "Home"}
                               </p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                              <p className="text-sm text-text-secondary dark:text-text-secondary">
                                 {[
                                   address.additionalDetails,
                                   address.street,
@@ -2627,7 +2627,7 @@ export default function LocationSelectorOverlay({ isOpen, onClose }) {
                                   address.zipCode
                                 ].filter(Boolean).join(", ")}
                               </p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                              <p className="text-sm text-text-secondary dark:text-text-secondary">
                                 Phone number: {address.phone || userProfile?.phone || "Not provided"}
                               </p>
                             </div>

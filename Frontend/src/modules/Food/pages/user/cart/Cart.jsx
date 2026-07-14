@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react"
 import { createPortal } from "react-dom"
 import { Link, useNavigate, useLocation } from "react-router-dom"
-import { Plus, Minus, ArrowLeft, ChevronRight, Clock, MapPin, Phone, FileText, Utensils, Tag, Percent, Share2, ChevronUp, ChevronDown, X, Check, Settings, CreditCard, Wallet, Building2, Sparkles, Banknote, Zap, CheckCircle2, MessageCircle, Send, Mail, Copy, ShoppingBag } from "lucide-react"
+import { Plus, Minus, ArrowLeft, ChevronRight, Clock, MapPin, Phone, FileText, Utensils, Tag, Percent, Share2, ChevronUp, ChevronDown, X, Check, Settings, CreditCard, Wallet, Building2, Sparkles, Banknote, Zap, CheckCircle2, MessageCircle, Send, Mail, Copy, ShoppingBag, AlertCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import confetti from "canvas-confetti"
 
@@ -18,7 +18,7 @@ import { API_BASE_URL } from "@food/api/config"
 import { initRazorpayPayment } from "@food/utils/razorpay"
 import { toast } from "sonner"
 import { getCompanyNameAsync } from "@food/utils/businessSettings"
-import { calculateDistance } from "@food/utils/common"
+import { calculateDistance, checkRestaurantBookingEligibility } from "@food/utils/common"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
@@ -97,15 +97,15 @@ export default function Cart() {
     debugError('? CartProvider not found. Make sure Cart component is rendered within UserLayout.');
     // Return early with error message
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] dark:bg-[#0a0a0a]">
+      <div className="min-h-screen flex items-center justify-center bg-background dark:bg-[#0a0a0a]">
         <div className="text-center p-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Cart Error</h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h2 className="text-2xl font-bold text-text-primary dark:text-gray-100 mb-4">Cart Error</h2>
+          <p className="text-text-secondary dark:text-text-secondary">
             Cart functionality is not available. Please refresh the page.
           </p>
           <button
             onClick={() => navigate('/')}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
           >
             Go to Home
           </button>
@@ -288,6 +288,9 @@ export default function Cart() {
 
   // Restaurant and pricing state
   const [restaurantData, setRestaurantData] = useState(null)
+  const bookingEligibility = useMemo(() => {
+    return checkRestaurantBookingEligibility(restaurantData, currentLocation)
+  }, [restaurantData, currentLocation])
   const [loadingRestaurant, setLoadingRestaurant] = useState(false)
   const [pricing, setPricing] = useState(null)
   const [loadingPricing, setLoadingPricing] = useState(false)
@@ -1505,6 +1508,11 @@ export default function Cart() {
       return
     }
 
+    if (!bookingEligibility.bookable) {
+      toast.error(bookingEligibility.message)
+      return
+    }
+
     if (isScheduled) {
       if (!scheduledDate || !scheduledTime) {
         toast.error("Please select both date and time to schedule your order")
@@ -2049,7 +2057,7 @@ export default function Cart() {
   if (cart.length === 0 && !showOrderSuccess && !showPlacingOrder && !showSavingsCongrats) {
     return (
       <AnimatedPage className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
-        <div className="bg-white dark:bg-[#1a1a1a] border-b dark:border-gray-800 sticky top-0 z-10">
+        <div className="bg-surface dark:bg-[#1a1a1a] border-b dark:border-gray-800 sticky top-0 z-10">
           <div className="flex items-center gap-3 px-4 py-3">
             <Button 
               variant="ghost" 
@@ -2064,12 +2072,12 @@ export default function Cart() {
         </div>
         <div className="flex flex-col items-center justify-center py-20 px-4">
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <Utensils className="h-10 w-10 text-gray-400" />
+            <Utensils className="h-10 w-10 text-text-secondary" />
           </div>
           <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">Your cart is empty</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">Add items from a restaurant to start a new order</p>
+          <p className="text-sm text-text-secondary dark:text-text-secondary mb-4 text-center">Add items from a restaurant to start a new order</p>
           <Link to="/user">
-            <Button className="bg-[#DC2626] hover:bg-[#991B1B] text-white">Browse Restaurants</Button>
+            <Button className="bg-[var(--primary)] hover:bg-primary-dark text-white">Browse Restaurants</Button>
           </Link>
         </div>
       </AnimatedPage>
@@ -2079,7 +2087,7 @@ export default function Cart() {
   return (
     <div className="relative min-h-screen bg-slate-50 dark:bg-[#0a0a0a]">
       {/* Header - Sticky at top */}
-      <div className="bg-white dark:bg-[#1a1a1a] border-b dark:border-gray-800 sticky top-0 z-20 flex-shrink-0">
+      <div className="bg-surface dark:bg-[#1a1a1a] border-b dark:border-gray-800 sticky top-0 z-20 flex-shrink-0">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between px-3 md:px-6 py-2 md:py-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -2092,7 +2100,7 @@ export default function Cart() {
                 <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
               </Button>
               <div className="min-w-0">
-                <p className="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 leading-none">{restaurantName}</p>
+                <p className="text-[11px] md:text-xs text-text-secondary dark:text-text-secondary leading-none">{restaurantName}</p>
                 {orderType === "takeaway" ? (
                   <div className="flex flex-col mt-0.5">
                     <div className="flex items-center gap-1.5">
@@ -2102,7 +2110,7 @@ export default function Cart() {
                   </div>
                 ) : (
                   <p className="text-sm md:text-base font-medium text-gray-800 dark:text-white truncate">
-                    <span className="text-gray-400 dark:text-gray-500 ml-1 text-xs md:text-sm">{defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || defaultAddress?.city || "Select address") : "Select address"}</span>
+                    <span className="text-text-secondary dark:text-text-secondary ml-1 text-xs md:text-sm">{defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || defaultAddress?.city || "Select address") : "Select address"}</span>
                   </p>
                 )}
               </div>
@@ -2137,20 +2145,20 @@ export default function Cart() {
             {/* Main Cart Content */}
             <div className="space-y-2 md:space-y-4">
               {/* Cart Items */}
-              <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-4 md:py-5 rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 dark:border-gray-800">
+              <div className="bg-surface dark:bg-[#1a1a1a] px-4 md:px-6 py-4 md:py-5 rounded-2xl md:rounded-3xl shadow-sm border border-border dark:border-gray-800">
                 <div className="space-y-3 md:space-y-4">
                   <div className="space-y-6">
                     {cart.map((item, index) => (
                       <div key={item.id}>
                         <div className="flex items-center gap-4">
                           {/* Veg/Non-veg indicator */}
-                          <div className={`w-4 h-4 border-2 ${item.isVeg === true || item.foodType === 'Veg' ? 'border-green-600' : 'border-red-600'} flex items-center justify-center flex-shrink-0 rounded-[2px]`}>
-                            <div className={`w-2 h-2 rounded-full ${item.isVeg === true || item.foodType === 'Veg' ? 'bg-green-600' : 'bg-red-600'}`} />
+                          <div className={`w-4 h-4 border-2 ${item.isVeg === true || item.foodType === 'Veg' ? 'border-green-600' : 'border-primary'} flex items-center justify-center flex-shrink-0 rounded-[2px]`}>
+                            <div className={`w-2 h-2 rounded-full ${item.isVeg === true || item.foodType === 'Veg' ? 'bg-green-600' : 'bg-primary'}`} />
                           </div>
 
                           <div className="flex-1 min-w-0 flex items-center gap-4">
                             {item.image && (
-                              <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800">
+                              <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-2xl overflow-hidden shadow-sm border border-border dark:border-gray-800">
                                 <img
                                   src={item.image}
                                   alt={item.name}
@@ -2162,9 +2170,9 @@ export default function Cart() {
                               </div>
                             )}
                             <div className="min-w-0 flex-1">
-                              <h3 className="text-sm md:text-base font-bold text-gray-900 dark:text-gray-100 leading-tight truncate">{item.name}</h3>
+                              <h3 className="text-sm md:text-base font-bold text-text-primary dark:text-gray-100 leading-tight truncate">{item.name}</h3>
                               {item.variantName ? (
-                                <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium bg-gray-50 dark:bg-gray-800/50 w-fit px-2 py-0.5 rounded-full">
+                                <p className="text-[10px] md:text-xs text-text-secondary dark:text-text-secondary mt-1 font-medium bg-gray-50 dark:bg-gray-800/50 w-fit px-2 py-0.5 rounded-full">
                                   {item.variantName}
                                 </p>
                               ) : null}
@@ -2172,30 +2180,30 @@ export default function Cart() {
                           </div>
 
                           <div className="flex flex-col items-end gap-2.5 flex-shrink-0">
-                            <div className="flex items-center border border-[#DC2626]/30 dark:border-[#DC2626]/40 rounded-lg overflow-hidden bg-white dark:bg-gray-900 shadow-sm">
+                            <div className="flex items-center border border-[var(--primary)]/30 dark:border-[var(--primary)]/40 rounded-lg overflow-hidden bg-surface dark:bg-gray-900 shadow-sm">
                               <button
                                 onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                className="px-2.5 py-1.5 hover:bg-[#DC2626]/5 text-[#DC2626] transition-colors"
+                                className="px-2.5 py-1.5 hover:bg-[var(--primary)]/5 text-[var(--primary)] transition-colors"
                               >
                                 <Minus className="w-3.5 h-3.5" />
                               </button>
-                              <span className="px-2 text-sm md:text-base font-black text-[#DC2626] min-w-[28px] text-center">
+                              <span className="px-2 text-sm md:text-base font-black text-[var(--primary)] min-w-[28px] text-center">
                                 {item.quantity}
                               </span>
                               <button
                                 onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                className="px-2.5 py-1.5 hover:bg-[#DC2626]/5 text-[#DC2626] transition-colors"
+                                className="px-2.5 py-1.5 hover:bg-[var(--primary)]/5 text-[var(--primary)] transition-colors"
                               >
                                 <Plus className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                            <p className="text-sm md:text-base font-black text-gray-900 dark:text-gray-100">
+                            <p className="text-sm md:text-base font-black text-text-primary dark:text-gray-100">
                               {RUPEE_SYMBOL}{((item.price || 0) * (item.quantity || 1)).toFixed(0)}
                             </p>
                           </div>
                         </div>
                         {index < cart.length - 1 && (
-                          <div className="mt-6 border-b border-gray-100 dark:border-gray-800/40 border-dashed" />
+                          <div className="mt-6 border-b border-border dark:border-gray-800/40 border-dashed" />
                         )}
                       </div>
                     ))}
@@ -2205,7 +2213,7 @@ export default function Cart() {
                 {/* Add more items */}
                 <button
                   onClick={handleBack}
-                  className="flex items-center gap-2 mt-4 md:mt-6 text-[#DC2626] dark:text-[#DC2626]"
+                  className="flex items-center gap-2 mt-4 md:mt-6 text-[var(--primary)] dark:text-[var(--primary)]"
                 >
                   <Plus className="h-4 w-4 md:h-5 md:w-5" />
                   <span className="text-sm md:text-base font-medium">Add more items</span>
@@ -2214,11 +2222,11 @@ export default function Cart() {
 
 
               {/* Note & Cutlery */}
-              <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-4 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800 flex flex-col sm:flex-row gap-3">
+              <div className="bg-surface dark:bg-[#1a1a1a] px-4 md:px-6 py-4 rounded-2xl shadow-sm border border-border dark:border-gray-800 flex flex-col sm:flex-row gap-3">
                 <div className="flex-1 flex flex-col gap-2">
                   <button
                     onClick={() => setShowRestaurantNoteInput(!showRestaurantNoteInput)}
-                    className="flex-1 flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border border-gray-200 dark:border-gray-700 rounded-lg md:rounded-xl text-sm md:text-base text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    className="flex-1 flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border border-border dark:border-gray-700 rounded-lg md:rounded-xl text-sm md:text-base text-text-secondary dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
                     <Utensils className="h-4 w-4 md:h-5 md:w-5" />
                     <span className="truncate">{restaurantNote || "Add note for restaurant"}</span>
@@ -2226,7 +2234,7 @@ export default function Cart() {
                 </div>
                 <button
                   onClick={() => setSendCutlery(!sendCutlery)}
-                  className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border rounded-lg md:rounded-xl text-sm md:text-base h-full ${sendCutlery ? 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300' : 'border-[#DC2626] dark:border-[#DC2626]/50 text-[#DC2626] dark:text-[#DC2626] bg-[#DC262605] dark:bg-[#DC262610]'}`}
+                  className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-3 border rounded-lg md:rounded-xl text-sm md:text-base h-full ${sendCutlery ? 'border-border dark:border-gray-700 text-text-secondary dark:text-gray-300' : 'border-[var(--primary)] dark:border-[var(--primary)]/50 text-[var(--primary)] dark:text-[var(--primary)] bg-[#DC262605] dark:bg-[#DC262610]'}`}
                 >
                   <Utensils className="h-4 w-4 md:h-5 md:w-5" />
                   <span className="whitespace-nowrap">
@@ -2237,22 +2245,22 @@ export default function Cart() {
 
               {/* Restaurant Note Input */}
               {showRestaurantNoteInput && (
-                <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl border border-slate-100 dark:border-gray-800">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                <div className="bg-surface dark:bg-[#1a1a1a] px-4 md:px-6 py-3 md:py-4 rounded-lg md:rounded-xl border border-border dark:border-gray-800">
+                  <p className="text-xs font-medium text-text-secondary dark:text-text-secondary mb-2">
                     Restaurant instructions
                   </p>
                   <textarea
                     value={restaurantNote}
                     onChange={(e) => setRestaurantNote(e.target.value)}
                     placeholder="Eg. Don't add onions, make it extra spicy, etc."
-                     className="w-full border border-gray-200 dark:border-gray-700 rounded-lg md:rounded-xl p-3 md:p-4 text-sm md:text-base resize-none h-20 md:h-24 focus:outline-none focus:border-[#DC2626] dark:focus:border-[#DC2626] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100"
+                     className="w-full border border-border dark:border-gray-700 rounded-lg md:rounded-xl p-3 md:p-4 text-sm md:text-base resize-none h-20 md:h-24 focus:outline-none focus:border-[var(--primary)] dark:focus:border-[var(--primary)] bg-surface dark:bg-[#0a0a0a] text-text-primary dark:text-gray-100"
                     maxLength={240}
                   />
                   <div className="mt-2 flex items-center justify-between gap-3">
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    <p className="text-[11px] text-text-secondary dark:text-text-secondary">
                       Note for restaurant.
                     </p>
-                    <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                    <span className="text-[11px] text-text-secondary dark:text-text-secondary whitespace-nowrap">
                       {restaurantNote.length}/240
                     </span>
                   </div>
@@ -2261,10 +2269,10 @@ export default function Cart() {
 
               {/* Complete your meal section - Approved Addons */}
               {addons.length > 0 && (
-                <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
+                <div className="bg-surface dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-border dark:border-gray-800">
                   <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
                     <div className="w-6 h-6 md:w-8 md:h-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
-                       <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-[#DC2626]" />
+                       <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-[var(--primary)]" />
                     </div>
                     <span className="text-sm md:text-base font-semibold text-gray-800 dark:text-gray-200">Complete your meal with</span>
                   </div>
@@ -2293,7 +2301,7 @@ export default function Cart() {
                               }}
                             />
                             <div className="absolute top-1 md:top-2 left-1 md:left-2">
-                              <div className="w-3.5 h-3.5 md:w-4 md:h-4 bg-white border border-green-600 flex items-center justify-center rounded">
+                              <div className="w-3.5 h-3.5 md:w-4 md:h-4 bg-surface border border-green-600 flex items-center justify-center rounded">
                                 <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-600" />
                               </div>
                             </div>
@@ -2326,14 +2334,14 @@ export default function Cart() {
                                   restaurantId: cartRestaurantId
                                 });
                               }}
-                               className="absolute bottom-1 md:bottom-2 right-1 md:right-2 w-6 h-6 md:w-7 md:h-7 bg-white border border-[#DC2626] rounded flex items-center justify-center shadow-sm hover:bg-[#DC262605] dark:hover:bg-[#DC262610] transition-colors"
+                               className="absolute bottom-1 md:bottom-2 right-1 md:right-2 w-6 h-6 md:w-7 md:h-7 bg-surface border border-[var(--primary)] rounded flex items-center justify-center shadow-sm hover:bg-[#DC262605] dark:hover:bg-[#DC262610] transition-colors"
                             >
-                               <Plus className="h-3.5 w-3.5 md:h-4 md:w-4 text-[#DC2626]" />
+                               <Plus className="h-3.5 w-3.5 md:h-4 md:w-4 text-[var(--primary)]" />
                             </button>
                           </div>
                           <p className="text-xs md:text-sm font-medium text-gray-800 dark:text-gray-200 mt-1.5 md:mt-2 line-clamp-2 leading-tight">{addon.name}</p>
                           {addon.description && (
-                            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{addon.description}</p>
+                            <p className="text-xs md:text-sm text-text-secondary dark:text-text-secondary mt-0.5 line-clamp-1">{addon.description}</p>
                           )}
                           <p className="text-xs md:text-sm text-gray-800 dark:text-gray-200 font-semibold mt-0.5">{RUPEE_SYMBOL}{addon.price}</p>
                         </div>
@@ -2344,16 +2352,16 @@ export default function Cart() {
               )}
 
               {/* Simplified Coupon Section */}
-              <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl overflow-hidden border border-slate-100 dark:border-gray-800 shadow-sm">
+              <div className="bg-surface dark:bg-[#1a1a1a] rounded-2xl overflow-hidden border border-border dark:border-gray-800 shadow-sm">
                 <button 
                   onClick={() => setShowCoupons(!showCoupons)}
                   className="w-full px-4 py-4 md:px-6 flex items-center justify-between group active:scale-[0.99] transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <Tag className="h-5 w-5 text-gray-400" />
+                    <Tag className="h-5 w-5 text-text-secondary" />
                     <span className="text-sm md:text-base font-bold text-gray-800 dark:text-gray-200">Offers & Coupons</span>
                   </div>
-                  <div className="flex items-center gap-1 text-[#DC2626] font-black text-xs md:text-sm tracking-wider">
+                  <div className="flex items-center gap-1 text-[var(--primary)] font-black text-xs md:text-sm tracking-wider">
                     {showCoupons ? "CLOSE" : "VIEW ALL"} <ChevronRight className={`h-4 w-4 transition-transform ${showCoupons ? 'rotate-90' : ''}`} />
                   </div>
                 </button>
@@ -2362,18 +2370,18 @@ export default function Cart() {
                 {showCoupons && !appliedCoupon && (
                   <div className="px-4 pb-5 md:px-6 md:pb-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-gray-50 dark:bg-gray-900 rounded-xl px-4 py-3 border border-transparent focus-within:border-[#DC2626] transition-all">
+                      <div className="flex-1 bg-gray-50 dark:bg-gray-900 rounded-xl px-4 py-3 border border-transparent focus-within:border-[var(--primary)] transition-all">
                         <input
                           type="text"
                           value={manualCouponCode}
                           onChange={(e) => setManualCouponCode(e.target.value.toUpperCase())}
                           placeholder="Coupon code"
-                          className="w-full bg-transparent text-sm md:text-base font-semibold text-gray-800 dark:text-gray-100 outline-none placeholder:text-gray-400"
+                          className="w-full bg-transparent text-sm md:text-base font-semibold text-gray-800 dark:text-gray-100 outline-none placeholder:text-text-secondary"
                         />
                       </div>
                       <button
                         onClick={handleApplyCouponCode}
-                        className="h-12 px-6 border border-[#DC2626] text-[#DC2626] rounded-xl text-xs md:text-sm font-black uppercase tracking-widest hover:bg-[#DC262605] active:scale-95 transition-all"
+                        className="h-12 px-6 border border-[var(--primary)] text-[var(--primary)] rounded-xl text-xs md:text-sm font-black uppercase tracking-widest hover:bg-[#DC262605] active:scale-95 transition-all"
                       >
                         APPLY
                       </button>
@@ -2381,16 +2389,16 @@ export default function Cart() {
 
                     {/* Quick Suggestions if any */}
                     {availableCoupons.length > 0 && (
-                      <div className="space-y-3 pt-2 border-t border-dashed border-gray-100 dark:border-gray-800">
+                      <div className="space-y-3 pt-2 border-t border-dashed border-border dark:border-gray-800">
                         {availableCoupons.slice(0, 2).map((coupon) => (
                           <div key={coupon.code} className="flex items-center justify-between group">
                             <div>
                               <p className="text-xs font-black text-gray-700 dark:text-gray-300 tracking-tight">USE {coupon.code}</p>
-                              <p className="text-[11px] text-gray-500 font-medium">{coupon.description || `Save ${RUPEE_SYMBOL}${coupon.discount}`}</p>
+                              <p className="text-[11px] text-text-secondary font-medium">{coupon.description || `Save ${RUPEE_SYMBOL}${coupon.discount}`}</p>
                             </div>
                             <button
                               onClick={() => handleApplyCoupon(coupon)}
-                              className="text-[10px] font-black text-[#DC2626] uppercase tracking-widest px-2 py-1 hover:bg-[#DC262605] rounded"
+                              className="text-[10px] font-black text-[var(--primary)] uppercase tracking-widest px-2 py-1 hover:bg-[#DC262605] rounded"
                             >
                               APPLY
                             </button>
@@ -2402,23 +2410,23 @@ export default function Cart() {
                 )}
 
                 {appliedCoupon && (
-                  <div className="px-4 py-3 md:px-6 bg-green-50/50 dark:bg-green-900/5 border-t border-dashed border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                  <div className="px-4 py-3 md:px-6 bg-green-50/50 dark:bg-green-900/5 border-t border-dashed border-border dark:border-gray-800 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                         <Check className="h-3.5 w-3.5 text-green-600" />
                       </div>
                       <div>
-                        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-tight">Applied: <span className="text-green-600">{appliedCoupon.code}</span></p>
+                        <p className="text-[11px] font-bold text-text-secondary uppercase tracking-tight">Applied: <span className="text-green-600">{appliedCoupon.code}</span></p>
                         <p className="text-xs font-black text-green-600">You saved {RUPEE_SYMBOL}{discount}</p>
                       </div>
                     </div>
-                    <button onClick={handleRemoveCoupon} className="text-gray-400 hover:text-red-500 text-[10px] font-bold uppercase tracking-widest px-2 py-1">REMOVE</button>
+                    <button onClick={handleRemoveCoupon} className="text-text-secondary hover:text-red-500 text-[10px] font-bold uppercase tracking-widest px-2 py-1">REMOVE</button>
                   </div>
                 )}
               </div>
 
               {orderType !== "takeaway" && (
-                <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
+                <div className="bg-surface dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-border dark:border-gray-800">
                   <div className="flex items-start gap-3 md:gap-4">
                     <div className="mt-0.5">
                       <Zap className="h-5 w-5 text-green-600 fill-green-600/20" />
@@ -2426,7 +2434,7 @@ export default function Cart() {
                     <div className="flex-1">
                       <p className="text-base text-gray-800 dark:text-gray-200">
                       </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-1">
+                      <p className="text-sm text-text-secondary dark:text-text-secondary mt-1 flex items-center gap-1">
                         Want this later?
                         <button onClick={() => {
                           const next = !isScheduled
@@ -2445,35 +2453,35 @@ export default function Cart() {
                   </div>
 
                   {isScheduled && (
-                    <div className="mt-5 flex flex-col sm:flex-row gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                    <div className="mt-5 flex flex-col sm:flex-row gap-3 pt-3 border-t border-border dark:border-gray-800">
                       <div className="flex-1">
-                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Date (Up to Tomorrow)</label>
+                        <label className="block text-xs text-text-secondary dark:text-text-secondary mb-1">Date (Up to Tomorrow)</label>
                         <input
                           type="date"
                           min={new Date().toLocaleDateString('en-CA')}
                           max={new Date(Date.now() + 86400000).toLocaleDateString('en-CA')}
                           value={scheduledDate}
                           onChange={(e) => setScheduledDate(e.target.value)}
-                          className="w-full text-sm p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-[#0a0a0a] text-gray-800 dark:text-gray-200 focus:outline-none focus:border-[#DC2626]"
+                          className="w-full text-sm p-2 border border-border dark:border-gray-700 rounded-md bg-surface dark:bg-[#0a0a0a] text-gray-800 dark:text-gray-200 focus:outline-none focus:border-[var(--primary)]"
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Time</label>
+                        <label className="block text-xs text-text-secondary dark:text-text-secondary mb-1">Time</label>
                         {availableTimeSlots.length > 0 ? (
                           <div className="relative">
                             <select
                               value={scheduledTime}
                               onChange={(e) => setScheduledTime(e.target.value)}
-                               className="w-full text-sm p-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-[#0a0a0a] text-gray-800 dark:text-gray-200 focus:outline-none focus:border-[#DC2626] appearance-none pr-8"
+                               className="w-full text-sm p-2 border border-border dark:border-gray-700 rounded-md bg-surface dark:bg-[#0a0a0a] text-gray-800 dark:text-gray-200 focus:outline-none focus:border-[var(--primary)] appearance-none pr-8"
                             >
                               {availableTimeSlots.map(slot => (
                                 <option key={slot.value} value={slot.value}>{slot.label}</option>
                               ))}
                             </select>
-                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary pointer-events-none" />
                           </div>
                         ) : (
-                          <div className="w-full text-sm p-2 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-md text-center border border-gray-200 dark:border-gray-700">
+                          <div className="w-full text-sm p-2 bg-gray-100 dark:bg-gray-800 text-text-secondary dark:text-text-secondary rounded-md text-center border border-border dark:border-gray-700">
                             {scheduledDate ? "No slots available" : "Select date first"}
                           </div>
                         )}
@@ -2483,18 +2491,18 @@ export default function Cart() {
                 </div>
               )}
 
-              <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
+              <div className="bg-surface dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-border dark:border-gray-800">
                 {orderType === "takeaway" ? (
                   <div className="flex items-start gap-4">
                     <div className="bg-[#DC262605] dark:bg-[#DC262610] p-3.5 rounded-2xl border border-[#DC262615] dark:border-[#DC262630]">
-                      <ShoppingBag className="h-6 w-6 text-[#DC2626]" />
+                      <ShoppingBag className="h-6 w-6 text-[var(--primary)]" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest leading-none">PICKUP FROM</h3>
-                      <p className="text-lg font-black text-gray-900 dark:text-white mt-1.5 leading-tight">
+                      <h3 className="text-xs font-black text-text-secondary uppercase tracking-widest leading-none">PICKUP FROM</h3>
+                      <p className="text-lg font-black text-text-primary dark:text-white mt-1.5 leading-tight">
                         {restaurantData?.name || cart[0]?.restaurant || "Restaurant"}
                       </p>
-                      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 font-medium">
+                      <p className="text-xs md:text-sm text-text-secondary dark:text-text-secondary mt-1 line-clamp-2 font-medium">
                         {restaurantData?.address || restaurantData?.location?.address || "Restaurant Address"}
                       </p>
                       <div className="mt-4 flex items-center gap-2">
@@ -2509,7 +2517,7 @@ export default function Cart() {
                   <div className="flex items-start justify-between w-full text-left">
                     <div className="flex items-start gap-4 flex-1">
                        <div className="bg-[#DC262605] dark:bg-[#DC262610] p-2 rounded-xl mt-0.5">
-                         <MapPin className="h-5 w-5 text-[#DC2626]" />
+                         <MapPin className="h-5 w-5 text-[var(--primary)]" />
                        </div>
                       <div className="flex-1">
                           <div className="flex flex-col">
@@ -2521,31 +2529,31 @@ export default function Cart() {
                                 {isCurrentLocation ? (
                                   <div className="mt-1">
                                     {currentLocationLoading || !currentLocationAddress ? (
-                                      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 animate-pulse">
+                                      <p className="text-xs md:text-sm text-text-secondary dark:text-text-secondary animate-pulse">
                                         Finding your current address...
                                       </p>
                                     ) : (
-                                      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                                      <p className="text-xs md:text-sm text-text-secondary dark:text-text-secondary line-clamp-2">
                                         {formatFullAddress(currentLocationAddress) ||
                                           currentLocationAddress?.formattedAddress ||
                                           currentLocationAddress?.address || "Location unavailable"}
                                       </p>
                                     )}
                                     <div className="mt-1 flex items-center gap-2">
-                                       <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] md:text-[11px] font-semibold bg-[#DC262605] text-[#DC2626] dark:bg-[#DC262610] dark:text-[#DC2626] border border-[#DC2626]/30">
+                                       <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] md:text-[11px] font-semibold bg-[#DC262605] text-[var(--primary)] dark:bg-[#DC262610] dark:text-[var(--primary)] border border-[var(--primary)]/30">
                                          GPS enabled
                                        </span>
                                     </div>
                                   </div>
                                 ) : (
-                                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 pr-4">
+                                  <p className="text-sm text-text-secondary dark:text-text-secondary mt-1 line-clamp-2 pr-4">
                                     {defaultAddress ? formatFullAddress(defaultAddress) : "No address selected"}
                                   </p>
                                 )}
                               </div>
                           </div>
                           {!hasSavedAddress && (
-                             <p className="text-sm text-[#DC2626] mt-2 font-medium">
+                             <p className="text-sm text-[var(--primary)] mt-2 font-medium">
                                Please select a location
                              </p>
                           )}
@@ -2565,7 +2573,7 @@ export default function Cart() {
                                   disabled={!addressExists}
                                   className={`text-xs px-4 py-1.5 rounded-full font-semibold transition-all ${addressExists
                                     ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300'
-                                    : 'bg-gray-50 text-gray-400 border border-gray-100 cursor-not-allowed dark:bg-gray-900'
+                                    : 'bg-gray-50 text-text-secondary border border-border cursor-not-allowed dark:bg-gray-900'
                                     }`}
                                 >
                                   {label}
@@ -2588,21 +2596,21 @@ export default function Cart() {
                                       handleSelectSavedAddress(address)
                                     }}
                                      className={`w-full text-left rounded-xl border-2 p-3 transition-colors ${isSelected
-                                       ? "border-[#DC2626] bg-[#DC262605] dark:bg-[#DC2626]/5"
-                                       : "border-slate-100 dark:border-gray-800 hover:border-slate-200"
+                                       ? "border-[var(--primary)] bg-[#DC262605] dark:bg-[var(--primary)]/5"
+                                       : "border-border dark:border-gray-800 hover:border-border"
                                        }`}
                                   >
                                     <div className="flex items-start justify-between gap-3">
                                       <div className="min-w-0">
-                                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                                        <p className="text-sm font-bold text-text-primary dark:text-gray-100">
                                           {getDisplayAddressLabel(address.label)}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
+                                        <p className="text-xs text-text-secondary dark:text-text-secondary line-clamp-2 mt-1">
                                           {formatFullAddress(address) || address.address || "Address details"}
                                         </p>
                                       </div>
                                       {isSelected && (
-                                         <span className="text-[10px] bg-[#DC2626] text-white px-2 py-0.5 rounded uppercase font-bold tracking-wider whitespace-nowrap">
+                                         <span className="text-[10px] bg-[var(--primary)] text-white px-2 py-0.5 rounded uppercase font-bold tracking-wider whitespace-nowrap">
                                            Selected
                                          </span>
                                       )}
@@ -2617,7 +2625,7 @@ export default function Cart() {
                     <button
                       type="button"
                        onClick={openLocationSelector}
-                       className="p-2 text-[#DC2626] bg-[#DC262605] rounded-full hover:bg-[#DC262610] transition-colors dark:bg-[#DC262615] dark:hover:bg-[#DC262620]"
+                       className="p-2 text-[var(--primary)] bg-[#DC262605] rounded-full hover:bg-[#DC262610] transition-colors dark:bg-[#DC262615] dark:hover:bg-[#DC262620]"
                        aria-label="Open location selector"
                      >
                        <ChevronRight className="h-5 w-5" />
@@ -2627,15 +2635,15 @@ export default function Cart() {
               </div>
 
               {/* Contact */}
-              <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-4 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
+              <div className="bg-surface dark:bg-[#1a1a1a] px-4 md:px-6 py-4 rounded-2xl shadow-sm border border-border dark:border-gray-800">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 md:gap-4 flex-1 min-w-0">
-                    <Phone className="h-4 w-4 md:h-5 md:w-5 text-gray-500 dark:text-gray-400 mt-0.5" />
+                    <Phone className="h-4 w-4 md:h-5 md:w-5 text-text-secondary dark:text-text-secondary mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm md:text-base text-gray-800 dark:text-gray-200 font-medium">
                         {recipientName}, <span className="font-semibold">{recipientPhone || "+91-XXXXXXXXXX"}</span>
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-text-secondary dark:text-text-secondary mt-1">
                         Order recipient details
                       </p>
                     </div>
@@ -2643,16 +2651,16 @@ export default function Cart() {
                   <button
                     type="button"
                     onClick={() => setIsEditingRecipient((prev) => !prev)}
-                     className="text-[#DC2626] text-xs md:text-sm font-semibold whitespace-nowrap"
+                     className="text-[var(--primary)] text-xs md:text-sm font-semibold whitespace-nowrap"
                   >
                     {isEditingRecipient ? "Done" : "Change"}
                   </button>
                 </div>
 
                 {isEditingRecipient && (
-                  <div className="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-gray-800 space-y-3">
+                  <div className="mt-4 pt-4 border-t border-dashed border-border dark:border-gray-800 space-y-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                      <label className="block text-xs font-medium text-text-secondary dark:text-text-secondary mb-1.5">
                         Name
                       </label>
                       <input
@@ -2665,11 +2673,11 @@ export default function Cart() {
                           }))
                         }
                         placeholder="Enter recipient name"
-                         className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111111] px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#DC2626]"
+                         className="w-full rounded-xl border border-border dark:border-gray-700 bg-surface dark:bg-[#111111] px-3 py-2.5 text-sm text-text-primary dark:text-gray-100 focus:outline-none focus:border-[var(--primary)]"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">
+                      <label className="block text-xs font-medium text-text-secondary dark:text-text-secondary mb-1.5">
                         Phone Number
                       </label>
                       <input
@@ -2682,55 +2690,55 @@ export default function Cart() {
                           }))
                         }
                         placeholder="Enter recipient phone"
-                         className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#111111] px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:border-[#DC2626]"
+                         className="w-full rounded-xl border border-border dark:border-gray-700 bg-surface dark:bg-[#111111] px-3 py-2.5 text-sm text-text-primary dark:text-gray-100 focus:outline-none focus:border-[var(--primary)]"
                       />
                     </div>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    <p className="text-[11px] text-text-secondary dark:text-text-secondary">
                       Agar aap kisi aur ke liye order kar rahe ho, to yahan uska naam aur phone save kar do.
                     </p>
                   </div>
                 )}
               </div>
 {/* Bill Details */}
-              <div className="bg-white dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-800">
+              <div className="bg-surface dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-border dark:border-gray-800">
                 <button
                   onClick={() => setShowBillDetails(!showBillDetails)}
                   className="flex items-center justify-between w-full"
                 >
                   <div className="flex items-center gap-3">
                     <FileText className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                    <span className="text-base text-gray-900 dark:text-gray-100 font-black tracking-tight">Bill Details</span>
+                    <span className="text-base text-text-primary dark:text-gray-100 font-black tracking-tight">Bill Details</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <p className="text-sm font-black text-gray-900 dark:text-white">
+                      <p className="text-sm font-black text-text-primary dark:text-white">
                         {RUPEE_SYMBOL}{total.toFixed(2)}
                       </p>
                     </div>
-                    <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${showBillDetails ? '' : '-rotate-90'}`} />
+                    <ChevronDown className={`h-5 w-5 text-text-secondary transition-transform ${showBillDetails ? '' : '-rotate-90'}`} />
                   </div>
                 </button>
 
                 {showBillDetails && (
-                  <div className="mt-4 pt-4 border-t border-dashed border-gray-200 dark:border-gray-800 space-y-3">
+                  <div className="mt-4 pt-4 border-t border-dashed border-border dark:border-gray-800 space-y-3">
                     
 
 
                     {/* Removed TAKEAWAY ORDER badge from here */}
                     {platformFee > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400 font-medium">Platform Fee</span>
+                        <span className="text-text-secondary dark:text-text-secondary font-medium">Platform Fee</span>
                         <span className="text-gray-800 dark:text-gray-200 font-bold">{RUPEE_SYMBOL}{platformFee.toFixed(2)}</span>
                       </div>
                     )}
                     {(packagingFee > 0 || gstCharges > 0) && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400 font-medium">GST and Restaurant Charges</span>
+                        <span className="text-text-secondary dark:text-text-secondary font-medium">GST and Restaurant Charges</span>
                         <span className="text-gray-800 dark:text-gray-200 font-bold">{RUPEE_SYMBOL}{(packagingFee + gstCharges).toFixed(2)}</span>
                       </div>
                     )}
                     {discount > 0 && (
-                       <div className="flex justify-between text-sm text-[#DC2626] font-medium">
+                       <div className="flex justify-between text-sm text-[var(--primary)] font-medium">
                          <span>Coupon Discount</span>
                          <span>-{RUPEE_SYMBOL}{discount.toFixed(2)}</span>
                        </div>
@@ -2738,15 +2746,15 @@ export default function Cart() {
 
                     {/* Platform Pricing Comparison - Bottom */}
                     {platformPricingSavings.hasPlatformPricing && (
-                      <div className="rounded-lg bg-gradient-to-r from-[#DC2626]/5 via-[#DC2626]/12 to-[#DC2626]/5 dark:from-[#DC2626]/10 dark:via-[#DC2626]/15 dark:to-[#DC2626]/10 border border-[#DC2626]/20 p-3 space-y-2 mt-2 shadow-sm animate-pulse">
+                      <div className="rounded-lg bg-gradient-to-r from-[var(--primary)]/5 via-[var(--primary)]/12 to-[var(--primary)]/5 dark:from-[var(--primary)]/10 dark:via-[var(--primary)]/15 dark:to-[var(--primary)]/10 border border-[var(--primary)]/20 p-3 space-y-2 mt-2 shadow-sm animate-pulse">
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-[#DC2626]" />
-                            <span className="font-semibold text-[#DC2626]">Other platform total</span>
+                            <Sparkles className="h-4 w-4 text-[var(--primary)]" />
+                            <span className="font-semibold text-[var(--primary)]">Other platform total</span>
                           </div>
                           <span className="text-gray-700 dark:text-gray-300 font-medium">{RUPEE_SYMBOL}{platformPricingSavings.totalPlatformPrice.toFixed(2)}</span>
                         </div>
-                        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center justify-between text-xs text-text-secondary dark:text-text-secondary">
                           <span>GST on other platforms</span>
                           <span className="font-medium">{RUPEE_SYMBOL}{platformPricingSavings.totalPlatformGst.toFixed(2)}</span>
                         </div>
@@ -2755,21 +2763,21 @@ export default function Cart() {
                           <span>{RUPEE_SYMBOL}{platformPricingSavings.totalPlatformPriceWithGst.toFixed(2)}</span>
                         </div>
                         {platformPricingSavings.items.length > 0 && (
-                          <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1 border-t border-[#DC2626]/15 pt-2">
+                          <div className="text-xs text-text-secondary dark:text-text-secondary space-y-1 border-t border-[var(--primary)]/15 pt-2">
                             {platformPricingSavings.items.slice(0, 2).map((item, idx) => (
                               <div key={idx} className="flex justify-between">
                                 <span>{item.name} x{item.quantity}</span>
-                                <span className="font-medium text-[#DC2626]">-{RUPEE_SYMBOL}{item.savings.toFixed(0)}</span>
+                                <span className="font-medium text-[var(--primary)]">-{RUPEE_SYMBOL}{item.savings.toFixed(0)}</span>
                               </div>
                             ))}
                             {platformPricingSavings.items.length > 2 && (
-                              <div className="text-center font-semibold text-[#DC2626]">
+                              <div className="text-center font-semibold text-[var(--primary)]">
                                 +{platformPricingSavings.items.length - 2} more items
                               </div>
                             )}
                           </div>
                         )}
-                        <div className="flex items-center justify-between text-xs font-bold text-white bg-[#DC2626] rounded px-2 py-1.5 -mx-3 -mb-3">
+                        <div className="flex items-center justify-between text-xs font-bold text-white bg-[var(--primary)] rounded px-2 py-1.5 -mx-3 -mb-3">
                           <span>You save approx</span>
                           <span>{RUPEE_SYMBOL}{platformPricingSavings.totalSavings.toFixed(0)} ({platformPricingSavings.savingsPercentage}%)</span>
                         </div>
@@ -2786,28 +2794,28 @@ export default function Cart() {
 
       {/* Bottom Sticky - Place Order */}
       <div
-        className="bg-white dark:bg-[#1a1a1a] border-t dark:border-gray-800 shadow-lg z-30 flex-shrink-0 fixed bottom-0 left-0 right-0"
+        className="bg-surface dark:bg-[#1a1a1a] border-t dark:border-gray-800 shadow-lg z-30 flex-shrink-0 fixed bottom-0 left-0 right-0"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
           <div className="w-full max-w-lg mx-auto space-y-3">
             {/* Pay Using - Slim Pro UI */}
             <div
-              className="flex items-center justify-between p-2 bg-gray-50 dark:bg-[#222222] rounded-xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#282828] active:scale-[0.98] transition-all duration-200 shadow-sm"
+              className="flex items-center justify-between p-2 bg-gray-50 dark:bg-[#222222] rounded-xl border border-border dark:border-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#282828] active:scale-[0.98] transition-all duration-200 shadow-sm"
               onClick={() => setShowPaymentSheet(true)}
             >
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-[#DC262610] dark:bg-[#DC262620] flex items-center justify-center flex-shrink-0">
                    {selectedPaymentMethod === "wallet" ? (
-                    <Wallet className="h-5 w-5 text-[#DC2626]" />
+                    <Wallet className="h-5 w-5 text-[var(--primary)]" />
                   ) : selectedPaymentMethod === "razorpay" ? (
-                    <Zap className="h-5 w-5 text-[#DC2626]" />
+                    <Zap className="h-5 w-5 text-[var(--primary)]" />
                   ) : (
-                    <Banknote className="h-5 w-5 text-[#DC2626]" />
+                    <Banknote className="h-5 w-5 text-[var(--primary)]" />
                   )}
                 </div>
                 <div className="leading-tight">
-                  <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold opacity-80">
+                  <p className="text-[10px] uppercase tracking-wider text-text-secondary dark:text-text-secondary font-bold opacity-80">
                     PAYING WITH
                   </p>
                   <div className="flex items-center gap-1.5">
@@ -2823,16 +2831,29 @@ export default function Cart() {
                 </div>
               </div>
 
-               <div className="flex items-center gap-0.5 text-[#DC2626] font-bold text-[11px] uppercase tracking-widest bg-[#DC262605] dark:bg-[#DC262610] px-2.5 py-1 rounded-lg">
+               <div className="flex items-center gap-0.5 text-[var(--primary)] font-bold text-[11px] uppercase tracking-widest bg-[#DC262605] dark:bg-[#DC262610] px-2.5 py-1 rounded-lg">
                 CHANGE <ChevronRight className="h-3.5 w-3.5" />
               </div>
             </div>
 
+             {/* Distance Warning Banner */}
+            {!bookingEligibility.bookable && (
+              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 rounded-2xl p-4 mb-4 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                <div className="text-left">
+                  <h4 className="font-bold text-sm text-red-800 dark:text-red-200">Ordering Restricted</h4>
+                  <p className="text-xs text-red-700 dark:text-red-300 mt-0.5 leading-relaxed">
+                    {bookingEligibility.message}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Place Order Button */}
             <button
               onClick={handlePlaceOrder}
-              disabled={isPlacingOrder || (selectedPaymentMethod === "wallet" && walletBalance < total)}
-              className="w-full bg-gradient-to-r from-[#DC2626] to-[#991B1B] hover:from-[#991B1B] hover:to-[#7F1D1D] text-white px-6 h-12 md:h-14 rounded-2xl font-black shadow-lg shadow-[#DC2626]/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between transition-all active:scale-[0.98] border-b-4 border-red-900/30"
+              disabled={isPlacingOrder || (selectedPaymentMethod === "wallet" && walletBalance < total) || !bookingEligibility.bookable}
+              className="w-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] hover:from-[var(--primary-dark)] hover:to-[#7F1D1D] text-white px-6 h-12 md:h-14 rounded-2xl font-black shadow-lg shadow-[var(--primary)]/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between transition-all active:scale-[0.98] border-b-4 border-red-900/30"
             >
               {(selectedPaymentMethod === "razorpay" || selectedPaymentMethod === "wallet" || selectedPaymentMethod === "cash") && (
                 <div className="text-left flex flex-col justify-center border-r-[1.5px] border-white/20 pr-4">
@@ -2843,9 +2864,11 @@ export default function Cart() {
               <div className="flex items-center gap-1 mx-auto text-sm md:text-lg tracking-wide">
                 {isPlacingOrder
                   ? "Processing..."
-                  : (orderType !== "takeaway" && !hasSavedAddress)
-                    ? "Select Address"
-                    : "Place Order"}
+                  : !bookingEligibility.bookable
+                    ? "Too Far to Order"
+                    : (orderType !== "takeaway" && !hasSavedAddress)
+                      ? "Select Address"
+                      : "Place Order"}
                 <div className="flex align-center h-full">
                   <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
                 </div>
@@ -2863,22 +2886,22 @@ export default function Cart() {
 
               {/* Modal Sheet */}
               <div
-                className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl overflow-hidden"
+                className="absolute bottom-0 left-0 right-0 bg-surface rounded-t-3xl shadow-2xl overflow-hidden"
                 style={{ animation: 'slideUpModal 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}
               >
                 <div className="px-6 py-8">
                   {/* Title */}
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  <h2 className="text-2xl font-bold text-text-primary mb-6">
                     {orderType === "takeaway" ? "Placing takeaway order" : "Placing your order"}
                   </h2>
 
                   {/* Payment Info */}
                   <div className="flex items-center gap-4 mb-5">
-                    <div className="w-14 h-14 rounded-xl border border-gray-200 flex items-center justify-center bg-white shadow-sm">
-                      <CreditCard className="w-6 h-6 text-gray-600" />
+                    <div className="w-14 h-14 rounded-xl border border-border flex items-center justify-center bg-surface shadow-sm">
+                      <CreditCard className="w-6 h-6 text-text-secondary" />
                     </div>
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="text-lg font-semibold text-text-primary">
                         {selectedPaymentMethod === "razorpay"
                           ? `Pay ${RUPEE_SYMBOL}${total.toFixed(2)} online (Razorpay)`
                           : selectedPaymentMethod === "wallet"
@@ -2889,22 +2912,22 @@ export default function Cart() {
                   </div>
 
                   <div className="flex items-center gap-4 mb-8">
-                    <div className="w-14 h-14 rounded-xl border border-gray-200 flex items-center justify-center bg-gray-50">
-                      <svg className="w-7 h-7 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <div className="w-14 h-14 rounded-xl border border-border flex items-center justify-center bg-gray-50">
+                      <svg className="w-7 h-7 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                         <path d="M9 22V12h6v10" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-lg font-semibold text-gray-900">
+                      <p className="text-lg font-semibold text-text-primary">
                         {orderType === "takeaway" ? "Picking up from Restaurant" : "Delivering to Location"}
                       </p>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-text-secondary mt-1">
                         {orderType === "takeaway" 
                           ? (restaurantData?.name || cart[0]?.restaurant || "Restaurant")
                           : (defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Address") : "Add address")}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-text-secondary">
                         {orderType === "takeaway"
                           ? (restaurantData?.address || restaurantData?.location?.address || "Restaurant Address")
                           : (defaultAddress ? (formatFullAddress(defaultAddress) || "Address") : "Address")}
@@ -2916,7 +2939,7 @@ export default function Cart() {
                   <div className="relative mb-6">
                     <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
                       <div
-                         className="h-full bg-gradient-to-r from-[#DC2626] to-[#991B1B] rounded-full transition-all duration-100 ease-linear"
+                         className="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] rounded-full transition-all duration-100 ease-linear"
                         style={{
                            width: `${orderProgress}%`,
                            boxShadow: '0 0 10px rgba(126, 56, 102, 0.5)'
@@ -2942,7 +2965,7 @@ export default function Cart() {
                     }}
                     className="w-full text-right"
                   >
-                    <span className="text-[#DC2626] font-semibold text-base hover:text-[#991B1B] transition-colors">
+                    <span className="text-[var(--primary)] font-semibold text-base hover:text-[var(--primary-dark)] transition-colors">
                       CANCEL
                     </span>
                   </button>
@@ -2987,29 +3010,29 @@ export default function Cart() {
                 </div>
 
                 {/* Congratulations Text */}
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 text-center">
+                <h1 className="text-4xl md:text-5xl font-bold text-text-primary dark:text-white mb-4 text-center">
                   Congratulations!
                 </h1>
 
                 {/* Savings Amount */}
                 <div className="text-center">
-                  <p className="text-gray-600 dark:text-gray-300 text-lg mb-2">You saved approx</p>
+                  <p className="text-text-secondary dark:text-gray-300 text-lg mb-2">You saved approx</p>
                   <div className="text-5xl md:text-6xl font-bold text-green-600 dark:text-green-400 mb-4">
                     {RUPEE_SYMBOL}{congratsSavingsAmount.toFixed(0)}
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 text-base">
+                  <p className="text-text-secondary dark:text-text-secondary text-base">
                     {congratsSavingsPercentage}% cheaper than other platforms
                   </p>
                 </div>
 
                 {/* Items breakdown */}
                 {congratsSavingsItems.length > 0 && (
-                  <div className="mt-8 max-w-sm bg-white dark:bg-[#1a1a1a] rounded-lg p-4 border border-green-200 dark:border-green-900/50">
+                  <div className="mt-8 max-w-sm bg-surface dark:bg-[#1a1a1a] rounded-lg p-4 border border-green-200 dark:border-green-900/50">
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">Savings on your items:</p>
                     <div className="space-y-2">
                       {congratsSavingsItems.slice(0, 3).map((item, idx) => (
                         <div key={idx} className="flex justify-between text-sm">
-                          <span className="text-gray-600 dark:text-gray-400">{item.name}</span>
+                          <span className="text-text-secondary dark:text-text-secondary">{item.name}</span>
                           <span className="font-semibold text-green-600 dark:text-green-400">-{RUPEE_SYMBOL}{item.savings.toFixed(0)}</span>
                         </div>
                       ))}
@@ -3023,7 +3046,7 @@ export default function Cart() {
           {/* Order Success Celebration Page */}
           {showOrderSuccess && (
             <div
-              className="fixed inset-0 z-[70] bg-white dark:bg-[#0a0a0a] flex flex-col items-center justify-center h-screen w-screen overflow-hidden"
+              className="fixed inset-0 z-[70] bg-surface dark:bg-[#0a0a0a] flex flex-col items-center justify-center h-screen w-screen overflow-hidden"
               style={{ animation: 'fadeIn 0.3s ease-out' }}
             >
               {/* Confetti Background */}
@@ -3036,7 +3059,7 @@ export default function Cart() {
                     style={{
                       left: `${Math.random() * 100}%`,
                       top: `-10%`,
-                      backgroundColor: ['#DC2626', '#3b82f6', '#f59e0b', '#ef4444', '#991B1B', '#ec4899'][Math.floor(Math.random() * 6)],
+                      backgroundColor: ['var(--primary)', '#3b82f6', '#f59e0b', '#ef4444', 'var(--primary-dark)', '#ec4899'][Math.floor(Math.random() * 6)],
                       animation: `confettiFall ${2 + Math.random() * 2}s linear ${Math.random() * 2}s infinite`,
                       transform: `rotate(${Math.random() * 360}deg)`,
                     }}
@@ -3095,16 +3118,16 @@ export default function Cart() {
                   style={{ animation: 'slideUp 0.5s ease-out 0.6s both' }}
                 >
                   <div className="flex items-center justify-center gap-2 mb-2">
-                    <div className="w-5 h-5 text-red-500 dark:text-red-400">
+                    <div className="w-5 h-5 text-red-500 dark:text-primary-light">
                       <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                       </svg>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h2 className="text-2xl font-bold text-text-primary dark:text-white">
                       {defaultAddress?.city || "Your Location"}
                     </h2>
                   </div>
-                  <p className="text-gray-500 dark:text-gray-400 text-base">
+                  <p className="text-text-secondary dark:text-text-secondary text-base">
                   </p>
                 </div>
 
@@ -3113,10 +3136,10 @@ export default function Cart() {
                   className="mt-12 text-center"
                   style={{ animation: 'slideUp 0.5s ease-out 0.8s both' }}
                 >
-                  <h3 className="text-3xl font-bold text-[#DC2626] dark:text-[#a65d8a] mb-2">Order Placed!</h3>
-                  <p className="text-gray-600 dark:text-gray-300">Your delicious food is on its way</p>
+                  <h3 className="text-3xl font-bold text-[var(--primary)] dark:text-[#a65d8a] mb-2">Order Placed!</h3>
+                  <p className="text-text-secondary dark:text-gray-300">Your delicious food is on its way</p>
                   {orderSuccessSavingsAmount > 0 && (
-                    <p className="mt-2 text-sm text-[#DC2626] dark:text-[#a65d8a]">
+                    <p className="mt-2 text-sm text-[var(--primary)] dark:text-[#a65d8a]">
                       You save approx {RUPEE_SYMBOL}{orderSuccessSavingsAmount.toFixed(0)} on this order
                     </p>
                   )}
@@ -3125,23 +3148,23 @@ export default function Cart() {
                 {/* Platform Pricing Savings Celebration */}
                 {platformPricingSavings.hasPlatformPricing && platformPricingSavings.totalSavings > 0 && (
                   <motion.div
-                    className="mt-8 w-full max-w-sm bg-gradient-to-br from-[#DC2626]/10 to-[#DC2626]/5 dark:from-[#DC2626]/20 dark:to-[#DC2626]/10 border border-[#DC2626]/30 rounded-2xl p-4"
+                    className="mt-8 w-full max-w-sm bg-gradient-to-br from-[var(--primary)]/10 to-[var(--primary)]/5 dark:from-[var(--primary)]/20 dark:to-[var(--primary)]/10 border border-[var(--primary)]/30 rounded-2xl p-4"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.6, delay: 1.0 }}
                   >
                     <div className="flex items-center justify-center gap-2 mb-3">
-                      <Sparkles className="h-5 w-5 text-[#DC2626]" />
-                      <span className="font-bold text-[#DC2626]">You Saved on this Order</span>
+                      <Sparkles className="h-5 w-5 text-[var(--primary)]" />
+                      <span className="font-bold text-[var(--primary)]">You Saved on this Order</span>
                     </div>
                     <div className="text-center space-y-1">
-                      <div className="text-4xl font-black text-[#DC2626]">
+                      <div className="text-4xl font-black text-[var(--primary)]">
                         {RUPEE_SYMBOL}{platformPricingSavings.totalSavings.toFixed(0)}
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-text-secondary dark:text-text-secondary">
                         {platformPricingSavings.savingsPercentage}% cheaper than other platforms
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+                      <p className="text-xs text-text-secondary dark:text-text-secondary mt-2">
                         By ordering with us instead of Swiggy, Zomato, & others
                       </p>
                     </div>
@@ -3151,7 +3174,7 @@ export default function Cart() {
                 {/* Action Button */}
                  <button
                   onClick={handleGoToOrders}
-                  className="mt-10 bg-[#DC2626] hover:bg-[#991B1B] text-white font-semibold py-4 px-12 rounded-xl shadow-lg shadow-[#DC2626]/20 dark:shadow-[#DC2626]/40 transition-all hover:shadow-xl hover:scale-105"
+                  className="mt-10 bg-[var(--primary)] hover:bg-primary-dark text-white font-semibold py-4 px-12 rounded-xl shadow-lg shadow-[var(--primary)]/20 dark:shadow-[var(--primary)]/40 transition-all hover:shadow-xl hover:scale-105"
                   style={{ animation: 'slideUp 0.5s ease-out 1s both' }}
                 >
                   Track Your Order
@@ -3176,7 +3199,7 @@ export default function Cart() {
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
                   transition={{ type: "spring", damping: 30, stiffness: 350 }}
-                  className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1a1a1a] rounded-t-[2rem] z-[101] shadow-2xl overflow-hidden max-h-[82vh] md:max-h-[60vh] flex flex-col"
+                  className="fixed bottom-0 left-0 right-0 bg-surface dark:bg-[#1a1a1a] rounded-t-[2rem] z-[101] shadow-2xl overflow-hidden max-h-[82vh] md:max-h-[60vh] flex flex-col"
                   style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
                 >
                   <div className="p-5 md:p-6 flex flex-col h-full min-h-0">
@@ -3185,14 +3208,14 @@ export default function Cart() {
 
                     <div className="flex items-center justify-between mb-5">
                       <div>
-                        <h2 className="text-xl font-extrabold text-gray-900 dark:text-white leading-none">Payment Method</h2>
-                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter mt-1">Select how you want to pay</p>
+                        <h2 className="text-xl font-extrabold text-text-primary dark:text-white leading-none">Payment Method</h2>
+                        <p className="text-[11px] font-bold text-text-secondary uppercase tracking-tighter mt-1">Select how you want to pay</p>
                       </div>
                       <button
                         onClick={() => setShowPaymentSheet(false)}
                         className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                       >
-                        <X className="w-4 h-4 text-gray-500" />
+                        <X className="w-4 h-4 text-text-secondary" />
                       </button>
                     </div>
 
@@ -3224,8 +3247,8 @@ export default function Cart() {
                           id: 'cash',
                           description: 'Pay when order arrives',
                           icon: <Banknote className="w-5 h-5" />,
-                          color: 'bg-orange-50 text-#991B1B dark:bg-orange-900/40 dark:text-orange-400',
-                          selectedColor: 'bg-[#DC2626] text-white',
+                          color: 'bg-orange-50 text-var(--primary-dark) dark:bg-orange-900/40 dark:text-orange-400',
+                          selectedColor: 'bg-[var(--primary)] text-white',
                           disabled: !isPaymentMethodEnabled("cash"),
                           disabledText: 'COD Disabled'
                         }
@@ -3239,8 +3262,8 @@ export default function Cart() {
                             }
                           }}
                            className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all duration-300 group ${selectedPaymentMethod === option.id
-                               ? 'border-[#DC2626] bg-[#DC2626] shadow-lg shadow-[#DC2626]/30'
-                               : 'border-gray-100 dark:border-gray-800/80 bg-white dark:bg-[#222222] hover:border-[#DC2626]/30 dark:hover:border-[#DC2626]/30 shadow-sm'
+                               ? 'border-[var(--primary)] bg-[var(--primary)] shadow-lg shadow-[var(--primary)]/30'
+                               : 'border-border dark:border-gray-800/80 bg-surface dark:bg-[#222222] hover:border-[var(--primary)]/30 dark:hover:border-[var(--primary)]/30 shadow-sm'
                              } ${option.disabled ? 'opacity-40 grayscale-[0.8] cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}`}
                         >
                           <div className="flex items-center gap-4">
@@ -3252,7 +3275,7 @@ export default function Cart() {
                             </div>
                             <div className="text-left">
                               <div className="flex items-center gap-2">
-                                <span className={`text-sm font-black tracking-tight leading-none transition-colors ${selectedPaymentMethod === option.id ? 'text-white' : 'text-gray-900 dark:text-gray-100'
+                                <span className={`text-sm font-black tracking-tight leading-none transition-colors ${selectedPaymentMethod === option.id ? 'text-white' : 'text-text-primary dark:text-gray-100'
                                   }`}>
                                   {option.name}
                                 </span>
@@ -3266,7 +3289,7 @@ export default function Cart() {
                                 )}
                               </div>
                               <div className="flex items-center gap-1.5 mt-1">
-                                <p className={`text-[11px] font-bold transition-colors ${selectedPaymentMethod === option.id ? 'text-white/80' : 'text-gray-400'
+                                <p className={`text-[11px] font-bold transition-colors ${selectedPaymentMethod === option.id ? 'text-white/80' : 'text-text-secondary'
                                   }`}>
                                   {option.description}
                                 </p>
@@ -3290,26 +3313,26 @@ export default function Cart() {
                           </div>
 
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${selectedPaymentMethod === option.id
-                              ? 'bg-white border-white'
-                              : 'border-gray-200 dark:border-gray-700'
+                              ? 'bg-surface border-white'
+                              : 'border-border dark:border-gray-700'
                             }`}>
-                             {selectedPaymentMethod === option.id && <Check className="w-3.5 h-3.5 text-[#DC2626]" strokeWidth={4} />}
+                             {selectedPaymentMethod === option.id && <Check className="w-3.5 h-3.5 text-[var(--primary)]" strokeWidth={4} />}
                            </div>
                         </button>
                       ))}
                     </div>
 
                     <div
-                      className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center gap-4 bg-white dark:bg-[#1a1a1a]"
+                      className="mt-auto pt-4 border-t border-border dark:border-gray-800 flex items-center gap-4 bg-surface dark:bg-[#1a1a1a]"
                       style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0px))" }}
                     >
                       <div className="flex-shrink-0">
-                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Total Pay</p>
-                         <p className="text-xl font-black text-[#DC2626] tabular-nums">{RUPEE_SYMBOL}{total.toFixed(0)}</p>
+                         <p className="text-[10px] font-bold text-text-secondary uppercase tracking-widest leading-none mb-1">Total Pay</p>
+                         <p className="text-xl font-black text-[var(--primary)] tabular-nums">{RUPEE_SYMBOL}{total.toFixed(0)}</p>
                        </div>
                        <Button
                         onClick={() => setShowPaymentSheet(false)}
-                        className="flex-1 bg-[#DC2626] hover:bg-[#991B1B] text-white h-11 rounded-xl text-sm font-bold shadow-lg shadow-[#DC2626]/20 transition-all active:scale-[0.98]"
+                        className="flex-1 bg-[var(--primary)] hover:bg-primary-dark text-white h-11 rounded-xl text-sm font-bold shadow-lg shadow-[var(--primary)]/20 transition-all active:scale-[0.98]"
                       >
                         Confirm Order
                       </Button>
@@ -3417,61 +3440,61 @@ export default function Cart() {
                   onClick={() => setShowShareModal(false)}
                 />
                 <motion.div
-                  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[10021] w-[92vw] max-w-md bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl"
+                  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[10021] w-[92vw] max-w-md bg-surface dark:bg-[#1a1a1a] rounded-2xl shadow-2xl"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.16 }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="px-5 pt-5 pb-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Share</h3>
+                  <div className="px-5 pt-5 pb-3 border-b border-border dark:border-gray-800 flex items-center justify-between gap-3">
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white truncate">Share</h3>
                     <button
                       className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
                       onClick={() => setShowShareModal(false)}
                       aria-label="Close share modal"
                     >
-                      <X className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                      <X className="h-4 w-4 text-text-secondary dark:text-gray-300" />
                     </button>
                   </div>
 
                   <div className="px-5 py-4 space-y-2">
                     {typeof navigator !== "undefined" && navigator.share && (
                       <button
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
                         onClick={handleSystemShareFromModal}
                       >
                         <Share2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">Share via system apps</span>
+                        <span className="text-sm font-medium text-text-primary dark:text-white">Share via system apps</span>
                       </button>
                     )}
                     <button
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
                       onClick={() => openShareTarget("whatsapp")}
                     >
                       <MessageCircle className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">WhatsApp</span>
+                      <span className="text-sm font-medium text-text-primary dark:text-white">WhatsApp</span>
                     </button>
                     <button
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
                       onClick={() => openShareTarget("telegram")}
                     >
                       <Send className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">Telegram</span>
+                      <span className="text-sm font-medium text-text-primary dark:text-white">Telegram</span>
                     </button>
                     <button
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
                       onClick={() => openShareTarget("email")}
                     >
                       <Mail className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">Email</span>
+                      <span className="text-sm font-medium text-text-primary dark:text-white">Email</span>
                     </button>
                     <button
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
                       onClick={copyShareLink}
                     >
                       <Copy className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">Copy link</span>
+                      <span className="text-sm font-medium text-text-primary dark:text-white">Copy link</span>
                     </button>
                   </div>
                 </motion.div>

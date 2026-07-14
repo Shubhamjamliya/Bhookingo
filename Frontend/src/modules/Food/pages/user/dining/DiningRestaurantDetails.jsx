@@ -257,7 +257,7 @@ export default function DiningRestaurantDetails() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f6f7fb]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#DC2626]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
       </div>
     )
   }
@@ -422,12 +422,12 @@ export default function DiningRestaurantDetails() {
                 </div>
               </div>
 
-              <div className="mb-1 shrink-0 rounded-[18px] bg-white dark:bg-slate-800 px-3 py-2 text-center text-[#1f2328] dark:text-slate-100 shadow-xl border border-white/20">
+              <div className="mb-1 shrink-0 rounded-[18px] bg-surface dark:bg-slate-800 px-3 py-2 text-center text-[#1f2328] dark:text-slate-100 shadow-xl border border-white/20">
                 <div className="flex items-center justify-center gap-1 text-[31px] font-black leading-none">
                   <span>{rating}</span>
                   <span className="text-[18px] text-[#18b54f]">★</span>
                 </div>
-                <p className="mt-1 text-[13px] leading-4 text-[#6e7481] dark:text-slate-400">{reviewCount} Reviews</p>
+                <p className="mt-1 text-[13px] leading-4 text-[#6e7481] dark:text-text-secondary">{reviewCount} Reviews</p>
               </div>
             </div>
           </div>
@@ -440,11 +440,11 @@ export default function DiningRestaurantDetails() {
                 disabled={!isDiningEnabled}
                 className={`flex h-[52px] w-full items-center justify-center gap-2 rounded-full border px-3 text-[15px] font-medium shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition-all ${
                   isDiningEnabled
-                    ? "border-[#f1ebee] dark:border-slate-800 bg-white dark:bg-slate-900 text-[#2b2118] dark:text-slate-100"
+                    ? "border-[#f1ebee] dark:border-slate-800 bg-surface dark:bg-slate-900 text-[#2b2118] dark:text-slate-100"
                     : "cursor-not-allowed border-[#f2d7da] dark:border-red-900/30 bg-[#fff5f6] dark:bg-red-950/20 text-[#c06a79] opacity-80"
                 }`}
               >
-              <Ticket className="h-[15px] w-[15px] text-[#DC2626]" />
+              <Ticket className="h-[15px] w-[15px] text-[var(--primary)]" />
               <span>{isDiningEnabled ? "Book a table" : "Dining paused"}</span>
               </button>
             </div>
@@ -470,8 +470,8 @@ export default function DiningRestaurantDetails() {
                 }}
                 className={`shrink-0 rounded-full border px-4 py-2 text-sm transition-colors ${
                   activeTab === tab.id
-                    ? "border-[#DC2626] bg-white dark:bg-slate-900 text-[#2a2018] dark:text-slate-100"
-                    : "border-[#ece9e1] dark:border-slate-800 bg-[#fafafa] dark:bg-slate-900 text-[#8b8881] dark:text-slate-400"
+                    ? "border-[var(--primary)] bg-surface dark:bg-slate-900 text-[#2a2018] dark:text-slate-100"
+                    : "border-[#ece9e1] dark:border-slate-800 bg-[#fafafa] dark:bg-slate-900 text-[#8b8881] dark:text-text-secondary"
                 }`}
               >
                 {tab.label}
@@ -485,7 +485,7 @@ export default function DiningRestaurantDetails() {
         <section id="restaurant-prebook">
           <div>
             <h2 className="text-[29px] font-black leading-none text-[#23180f] dark:text-slate-100">Pre-book offers</h2>
-            <p className="mt-1 text-[15px] text-[#DC2626] dark:text-purple-400">Limited slots with extra offers</p>
+            <p className="mt-1 text-[15px] text-[var(--primary)] dark:text-purple-400">Limited slots with extra offers</p>
           </div>
 
           <div className="mt-3 overflow-hidden rounded-[18px] bg-[linear-gradient(135deg,#0f4a87,#0b2954_70%)] text-white shadow-[0_10px_26px_rgba(8,52,95,0.25)]">
@@ -524,19 +524,19 @@ export default function DiningRestaurantDetails() {
                   { id: "food", title: "Food", pages: 16 },
                   { id: "beverages", title: "Beverages", pages: 10 },
                 ]).map((section, index) => (
-              <div key={section.id} className="overflow-hidden rounded-[18px] border border-[#ede8dd] dark:border-slate-800 bg-white dark:bg-slate-900">
+              <div key={section.id} className="overflow-hidden rounded-[18px] border border-[#ede8dd] dark:border-slate-800 bg-surface dark:bg-slate-900">
                 <div className="aspect-[0.88] bg-[#f7f1e7] dark:bg-slate-800">
                   {menuPreviewImages[index] ? (
                     <img src={menuPreviewImages[index]} alt={section.title} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,#fff3e0,#f3eadf)] dark:bg-slate-800 text-sm font-medium text-[#a28868] dark:text-slate-400">
+                    <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,#fff3e0,#f3eadf)] dark:bg-slate-800 text-sm font-medium text-[#a28868] dark:text-text-secondary">
                       Menu preview
                     </div>
                   )}
                 </div>
                 <div className="px-2 pb-3 pt-2 text-center">
                   <p className="text-[16px] font-medium leading-tight text-[#2b2218] dark:text-slate-100">{section.title}</p>
-                  <p className="mt-1 text-[12px] text-[#7f7a73] dark:text-slate-400">{section.pages} pages</p>
+                  <p className="mt-1 text-[12px] text-[#7f7a73] dark:text-text-secondary">{section.pages} pages</p>
                 </div>
               </div>
             ))}
@@ -556,7 +556,7 @@ export default function DiningRestaurantDetails() {
                 {image ? (
                   <img src={image} alt={`${restaurantName} ${index + 1}`} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-[#a28868] dark:text-slate-400">Photo coming soon</div>
+                  <div className="flex h-full items-center justify-center text-sm text-[#a28868] dark:text-text-secondary">Photo coming soon</div>
                 )}
               </div>
             ))}
@@ -566,7 +566,7 @@ export default function DiningRestaurantDetails() {
         <section id="restaurant-about" className="mt-5 border-t border-[#e8e8ef] dark:border-slate-800 pt-4">
           <h2 className="text-[28px] font-black leading-none text-[#23180f] dark:text-slate-100">About the restaurant</h2>
           <div className="mt-4 rounded-[18px] border border-[#ececf4] dark:border-slate-800 bg-[#fafbff] dark:bg-slate-900 p-4 transition-colors">
-            <div className="space-y-4 text-[14px] text-[#5f6474] dark:text-slate-400">
+            <div className="space-y-4 text-[14px] text-[#5f6474] dark:text-text-secondary">
               <div className="flex items-start gap-3">
                 <IndianRupee className="mt-0.5 h-4 w-4 shrink-0 text-[#f0b500]" />
                 <p>{costForTwo}</p>
@@ -578,19 +578,19 @@ export default function DiningRestaurantDetails() {
               </div>
 
               <div className="flex items-start gap-3">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#DC2626]" />
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--primary)]" />
                 <p>{address}</p>
               </div>
             </div>
 
             <div className="mt-5 border-t border-[#e8e8ef] dark:border-slate-800 pt-4">
               <h3 className="text-[20px] font-semibold text-[#23180f] dark:text-slate-100">Featured In</h3>
-              <div className="mt-3 overflow-hidden rounded-[16px] bg-white dark:bg-slate-800 shadow-sm">
+              <div className="mt-3 overflow-hidden rounded-[16px] bg-surface dark:bg-slate-800 shadow-sm">
                 <div className="aspect-[1.2] bg-[#efe8df] dark:bg-slate-700">
                   {heroImage ? (
                     <img src={heroImage} alt={restaurantName} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-[#a28868] dark:text-slate-400">Featured image</div>
+                    <div className="flex h-full items-center justify-center text-sm text-[#a28868] dark:text-text-secondary">Featured image</div>
                   )}
                 </div>
                 <div className="-mt-14 bg-[linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,0.72))] p-3 pt-10 text-sm font-medium text-white">
@@ -603,7 +603,7 @@ export default function DiningRestaurantDetails() {
               <h3 className="text-[20px] font-semibold text-[#23180f] dark:text-slate-100">Facilities</h3>
               <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
                 {facilities.slice(0, 6).map((facility) => (
-                  <div key={facility} className="flex items-center gap-2 text-[14px] text-[#5f6474] dark:text-slate-400">
+                  <div key={facility} className="flex items-center gap-2 text-[14px] text-[#5f6474] dark:text-text-secondary">
                     <span className="inline-block h-[7px] w-[7px] rounded-full border border-[#8a8f9d]" />
                     <span>{facility}</span>
                   </div>
@@ -621,8 +621,8 @@ export default function DiningRestaurantDetails() {
             disabled={!isDiningEnabled}
             className={`h-12 w-full rounded-2xl border text-[17px] font-medium transition-all ${
               isDiningEnabled
-                ? "border-[#FEE2E2] bg-white dark:bg-slate-900 text-[#DC2626] dark:text-purple-400 hover:bg-[#fdfafc] dark:hover:bg-slate-800"
-                : "cursor-not-allowed border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 text-gray-400 dark:text-slate-600 opacity-80"
+                ? "border-[#FEE2E2] bg-surface dark:bg-slate-900 text-[var(--primary)] dark:text-purple-400 hover:bg-[#fdfafc] dark:hover:bg-slate-800"
+                : "cursor-not-allowed border-border dark:border-slate-800 bg-gray-50 dark:bg-slate-900 text-text-secondary dark:text-text-secondary opacity-80"
             }`}
           >
             {isDiningEnabled ? "Book a table" : "Dining paused"}
@@ -638,13 +638,13 @@ export default function DiningRestaurantDetails() {
             onClick={() => setIsBookingSheetOpen(false)}
           />
 
-          <div className="absolute bottom-0 left-0 right-0 rounded-t-[28px] bg-white dark:bg-slate-900 px-4 pb-6 pt-4 shadow-[0_-20px_60px_rgba(15,23,42,0.18)] border-t border-white/5 transition-colors">
+          <div className="absolute bottom-0 left-0 right-0 rounded-t-[28px] bg-surface dark:bg-slate-900 px-4 pb-6 pt-4 shadow-[0_-20px_60px_rgba(15,23,42,0.18)] border-t border-white/5 transition-colors">
             <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-[#e7e5e4] dark:bg-slate-700" />
 
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-xl font-black text-[#23180f] dark:text-slate-100">Select number of guests</h3>
-                <p className="mt-1 text-sm text-[#7b6651] dark:text-slate-400">
+                <p className="mt-1 text-sm text-[#7b6651] dark:text-text-secondary">
                     {remainingSeats > 0 
                         ? `Only ${remainingSeats} out of ${maxCapacity} seats available now.` 
                         : "Fully booked for now. Try later!"}
@@ -652,7 +652,7 @@ export default function DiningRestaurantDetails() {
               </div>
               <button
                 onClick={() => setIsBookingSheetOpen(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f5f5f5] dark:bg-slate-800 text-[#5b5b5b] dark:text-slate-300"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-background dark:bg-slate-800 text-[#5b5b5b] dark:text-slate-300"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -671,12 +671,12 @@ export default function DiningRestaurantDetails() {
                       onClick={() => setSelectedGuests(count)}
                       className={`relative rounded-2xl border px-3 py-4 text-sm font-bold transition-all ${
                           selectedGuests === count
-                            ? "border-[#DC2626] bg-[#fdfafc] dark:bg-purple-950/30 text-[#DC2626] scale-[1.02] shadow-sm"
+                            ? "border-[var(--primary)] bg-[#fdfafc] dark:bg-purple-950/30 text-[var(--primary)] scale-[1.02] shadow-sm"
                             : isBooked
-                              ? "border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 text-red-400 cursor-not-allowed opacity-70"
+                              ? "border-red-100 dark:border-red-900/30 bg-primary-light/10 dark:bg-red-950/20 text-primary-light cursor-not-allowed opacity-70"
                               : isTooLarge
-                                ? "border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-950 text-gray-300 dark:text-slate-600 cursor-not-allowed"
-                                : "border-[#ece7de] dark:border-slate-800 bg-white dark:bg-slate-800 text-[#23180f] dark:text-slate-100 hover:border-[#DC2626]/30"
+                                ? "border-border dark:border-slate-800 bg-gray-50 dark:bg-slate-950 text-gray-300 dark:text-text-secondary cursor-not-allowed"
+                                : "border-[#ece7de] dark:border-slate-800 bg-surface dark:bg-slate-800 text-[#23180f] dark:text-slate-100 hover:border-[var(--primary)]/30"
                       }`}
                     >
                       {isBooked ? (
@@ -695,7 +695,7 @@ export default function DiningRestaurantDetails() {
             <Button
               onClick={handleContinueBooking}
               disabled={remainingSeats === 0 || selectedGuests > remainingSeats}
-              className="mt-6 h-12 w-full rounded-2xl bg-[#DC2626] text-base font-bold text-white hover:bg-[#991B1B] disabled:bg-gray-200 disabled:text-gray-400"
+              className="mt-6 h-12 w-full rounded-2xl bg-[var(--primary)] text-base font-bold text-white hover:bg-primary-dark disabled:bg-gray-200 disabled:text-text-secondary"
             >
               {remainingSeats === 0 ? "Fully Booked" : "Continue"}
             </Button>

@@ -86,9 +86,9 @@ export default function CMSPage({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-white dark:bg-[#0a0a0a]">
-        <Loader2 className="h-10 w-10 animate-spin text-[#CB202D]" />
-        <p className="mt-4 text-gray-500 font-bold uppercase tracking-widest text-[10px]">
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-surface dark:bg-[#0a0a0a]">
+        <Loader2 className="h-10 w-10 animate-spin text-[var(--primary)]" />
+        <p className="mt-4 text-text-secondary font-bold uppercase tracking-widest text-[10px]">
           Loading...
         </p>
       </div>
@@ -96,9 +96,9 @@ export default function CMSPage({
   }
 
   return (
-    <AnimatedPage className="min-h-screen bg-white dark:bg-[#0a0a0a] pb-10">
+    <AnimatedPage className="min-h-screen bg-surface dark:bg-[#0a0a0a] pb-10">
       {/* Premium Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-gray-100 dark:border-gray-900">
+      <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-border dark:border-gray-900">
         <div className="max-w-4xl mx-auto px-4 h-16 md:h-20 flex items-center gap-4">
           <button
             onClick={handleBack}
@@ -108,10 +108,10 @@ export default function CMSPage({
             <ArrowLeft className="h-6 w-6 text-gray-800 dark:text-gray-200" />
           </button>
           <div className="flex-1">
-            <h1 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none">
+            <h1 className="text-xl md:text-2xl font-black text-text-primary dark:text-white tracking-tight leading-none">
               {pageData.title || defaultTitle}
             </h1>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Bhookingo Information</p>
+            <p className="text-[10px] text-text-secondary font-bold uppercase tracking-widest mt-1">Bhookingo Information</p>
           </div>
         </div>
       </div>
@@ -120,41 +120,41 @@ export default function CMSPage({
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-[#111] rounded-[2rem] p-6 md:p-10 shadow-sm border border-gray-50 dark:border-gray-900"
+          className="bg-surface dark:bg-[#111] rounded-[2rem] p-6 md:p-10 shadow-sm border border-gray-50 dark:border-gray-900"
         >
           {/* Support Contact Cards */}
           {isSupport && (
             <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${hasActualContent ? "mb-10" : "mb-0"}`}>
-              <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center group transition-all hover:border-[#CB202D]/30">
-                <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                  <Mail className="w-6 h-6 text-[#CB202D]" />
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl border border-border dark:border-gray-800 flex flex-col items-center text-center group transition-all hover:border-[var(--primary)]/30">
+                <div className="w-12 h-12 bg-surface dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                  <Mail className="w-6 h-6 text-[var(--primary)]" />
                 </div>
-                <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider mb-2">
+                <h3 className="text-sm font-black text-text-primary dark:text-white uppercase tracking-wider mb-2">
                   Email Us
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                <p className="text-text-secondary dark:text-text-secondary text-sm font-medium">
                   {pageData.email || "support@bhookingo.com"}
                 </p>
                 <a
                   href={`mailto:${pageData.email || "support@bhookingo.com"}`}
-                  className="mt-4 text-xs font-black text-[#CB202D] uppercase tracking-widest hover:underline"
+                  className="mt-4 text-xs font-black text-[var(--primary)] uppercase tracking-widest hover:underline"
                 >
                   Send Message
                 </a>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 flex flex-col items-center text-center group transition-all hover:border-[#CB202D]/30">
-                <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                  <Phone className="w-6 h-6 text-[#CB202D]" />
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl border border-border dark:border-gray-800 flex flex-col items-center text-center group transition-all hover:border-[var(--primary)]/30">
+                <div className="w-12 h-12 bg-surface dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                  <Phone className="w-6 h-6 text-[var(--primary)]" />
                 </div>
-                <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider mb-2">
+                <h3 className="text-sm font-black text-text-primary dark:text-white uppercase tracking-wider mb-2">
                   Call Us
                 </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+                <p className="text-text-secondary dark:text-text-secondary text-sm font-medium">
                   {pageData.mobile || "+91 00000 00000"}
                 </p>
                 <a
                   href={`tel:${pageData.mobile}`}
-                  className="mt-4 text-xs font-black text-[#CB202D] uppercase tracking-widest hover:underline"
+                  className="mt-4 text-xs font-black text-[var(--primary)] uppercase tracking-widest hover:underline"
                 >
                   Call Now
                 </a>
@@ -166,26 +166,26 @@ export default function CMSPage({
           {hasActualContent ? (
             <div
               className="prose prose-slate dark:prose-invert max-w-none
-                prose-headings:font-black prose-headings:text-gray-900 dark:prose-headings:text-white
-                prose-p:text-base prose-p:font-medium prose-p:text-gray-600 dark:prose-p:text-gray-300 prose-p:leading-relaxed
-                prose-strong:font-black prose-strong:text-gray-900 dark:prose-strong:text-white
-                prose-a:text-[#CB202D] dark:prose-a:text-[#DC2626]
-                prose-li:text-base prose-li:font-medium prose-li:text-gray-600 dark:prose-li:text-gray-300"
+                prose-headings:font-black prose-headings:text-text-primary dark:prose-headings:text-white
+                prose-p:text-base prose-p:font-medium prose-p:text-text-secondary dark:prose-p:text-gray-300 prose-p:leading-relaxed
+                prose-strong:font-black prose-strong:text-text-primary dark:prose-strong:text-white
+                prose-a:text-[var(--primary)] dark:prose-a:text-[var(--primary)]
+                prose-li:text-base prose-li:font-medium prose-li:text-text-secondary dark:prose-li:text-gray-300"
               dangerouslySetInnerHTML={{ __html: pageData.content }}
             />
           ) : (
             !isSupport && (
               <div className="text-center py-20">
                 <Lock className="w-16 h-16 text-gray-100 dark:text-gray-800 mx-auto mb-4" />
-                <p className="text-gray-400 font-medium">No additional content available at the moment.</p>
+                <p className="text-text-secondary font-medium">No additional content available at the moment.</p>
               </div>
             )
           )}
 
           {/* FAQ + Info Cards — Support pages only */}
           {isSupport && (
-            <div className={`${hasActualContent ? "mt-12" : "mt-0"} pt-10 border-t border-gray-100 dark:border-gray-900`}>
-              <h2 className="text-xl font-black text-gray-900 dark:text-white mb-8 tracking-tight">
+            <div className={`${hasActualContent ? "mt-12" : "mt-0"} pt-10 border-t border-border dark:border-gray-900`}>
+              <h2 className="text-xl font-black text-text-primary dark:text-white mb-8 tracking-tight">
                 Frequently Asked Questions
               </h2>
               <div className="grid gap-4">
@@ -227,14 +227,14 @@ export default function CMSPage({
                   return faqsToRender.map((faq, idx) => (
                     <div
                       key={idx}
-                      className="flex items-start gap-4 p-5 rounded-3xl bg-gray-50 dark:bg-gray-900/30 border border-gray-100/50 dark:border-gray-800/50"
+                      className="flex items-start gap-4 p-5 rounded-3xl bg-gray-50 dark:bg-gray-900/30 border border-border/50 dark:border-gray-800/50"
                     >
-                      <MessageSquare className="w-5 h-5 text-[#CB202D] shrink-0 mt-0.5" />
+                      <MessageSquare className="w-5 h-5 text-[var(--primary)] shrink-0 mt-0.5" />
                       <div className="space-y-1">
-                        <h4 className="text-xs md:text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                        <h4 className="text-xs md:text-sm font-black text-text-primary dark:text-white uppercase tracking-wider">
                           {faq.q}
                         </h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+                        <p className="text-xs text-text-secondary dark:text-text-secondary font-medium leading-relaxed">
                           {faq.a}
                         </p>
                       </div>
@@ -261,24 +261,24 @@ export default function CMSPage({
 
                   return (
                     <>
-                      <div className="flex items-start gap-4 p-5 rounded-3xl bg-gray-50 dark:bg-gray-900/30 border border-gray-100/50 dark:border-gray-800/50">
-                        <Clock className="w-5 h-5 text-[#CB202D] shrink-0 mt-0.5" />
+                      <div className="flex items-start gap-4 p-5 rounded-3xl bg-gray-50 dark:bg-gray-900/30 border border-border/50 dark:border-gray-800/50">
+                        <Clock className="w-5 h-5 text-[var(--primary)] shrink-0 mt-0.5" />
                         <div className="space-y-1">
-                          <h4 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                          <h4 className="text-xs font-black text-text-primary dark:text-white uppercase tracking-wider">
                             Operational Hours
                           </h4>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+                          <p className="text-xs text-text-secondary dark:text-text-secondary font-medium leading-relaxed">
                             {hoursText}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-4 p-5 rounded-3xl bg-gray-50 dark:bg-gray-900/30 border border-gray-100/50 dark:border-gray-800/50">
-                        <ShieldCheck className="w-5 h-5 text-[#CB202D] shrink-0 mt-0.5" />
+                      <div className="flex items-start gap-4 p-5 rounded-3xl bg-gray-50 dark:bg-gray-900/30 border border-border/50 dark:border-gray-800/50">
+                        <ShieldCheck className="w-5 h-5 text-[var(--primary)] shrink-0 mt-0.5" />
                         <div className="space-y-1">
-                          <h4 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">
+                          <h4 className="text-xs font-black text-text-primary dark:text-white uppercase tracking-wider">
                             Data Privacy
                           </h4>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+                          <p className="text-xs text-text-secondary dark:text-text-secondary font-medium leading-relaxed">
                             {privacyText}
                           </p>
                         </div>
@@ -291,7 +291,7 @@ export default function CMSPage({
           )}
           </motion.div>
 
-        <p className="text-center mt-10 text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] leading-relaxed">
+        <p className="text-center mt-10 text-[10px] text-text-secondary font-black uppercase tracking-[0.2em] leading-relaxed">
           Last updated: {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}{" "}
           <br />
           © {new Date().getFullYear()} Bhookingo. All Rights Reserved.

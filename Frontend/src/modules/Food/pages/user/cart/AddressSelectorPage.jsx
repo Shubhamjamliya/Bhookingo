@@ -505,9 +505,9 @@ export default function AddressSelectorPage() {
     const mapHeight = baseMapHeight 
     return (
       <AnimatedPage
-        className="fixed inset-0 z-50 bg-white dark:bg-[#0a0a0a] flex flex-col h-screen overflow-hidden"
+        className="fixed inset-0 z-50 bg-surface dark:bg-[#0a0a0a] flex flex-col h-screen overflow-hidden"
       >
-        <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-4">
+        <div className="flex-shrink-0 bg-surface dark:bg-[#1a1a1a] border-b border-border dark:border-gray-800 px-4 py-3 flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={handleCancelAddressForm} className="rounded-full">
             <ChevronLeft className="h-6 w-6" />
           </Button>
@@ -533,13 +533,13 @@ export default function AddressSelectorPage() {
             <div className="absolute top-4 left-4 right-4 z-20">
               <div className="relative group shadow-2xl">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-[#DC2626]" />
+                  <Search className="h-5 w-5 text-[var(--primary)]" />
                 </div>
                 <Input
                   value={addressAutocompleteValue}
                   onChange={(e) => setAddressAutocompleteValue(e.target.value)}
                   placeholder="Search area, street, landmark..."
-                  className="pl-12 pr-10 h-14 bg-white dark:bg-[#1a1a1a] border-2 border-zinc-300 dark:border-zinc-700 rounded-2xl focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-zinc-500 dark:focus:border-zinc-500 text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 font-medium text-sm transition-all shadow-sm w-full"
+                  className="pl-12 pr-10 h-14 bg-surface dark:bg-[#1a1a1a] border-2 border-zinc-300 dark:border-zinc-700 rounded-2xl focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-zinc-500 dark:focus:border-zinc-500 text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 font-medium text-sm transition-all shadow-sm w-full"
                 />
                 {addressAutocompleteValue && (
                   <button 
@@ -551,13 +551,13 @@ export default function AddressSelectorPage() {
                 )}
                 {isKeywordSearching && (
                   <div className="absolute right-10 top-1/2 -translate-y-1/2">
-                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#DC2626] border-t-transparent" />
+                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--primary)] border-t-transparent" />
                   </div>
                 )}
 
                 {keywordAddressSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 dark:bg-gray-800/50">Suggestions</p>
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-2xl border border-border dark:border-gray-800 overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-text-secondary bg-gray-50 dark:bg-gray-800/50">Suggestions</p>
                     {keywordAddressSuggestions.map((s) => (
                       <button
                         key={s.id}
@@ -581,12 +581,12 @@ export default function AddressSelectorPage() {
                           }))
                           setKeywordAddressSuggestions([])
                         }}
-                        className="w-full px-4 py-3 flex items-start gap-3 hover:bg-[#DC2626]/5 dark:hover:bg-[#DC2626]/10 transition-colors text-left border-b border-gray-50 dark:border-gray-800 last:border-none"
+                        className="w-full px-4 py-3 flex items-start gap-3 hover:bg-[var(--primary)]/5 dark:hover:bg-[var(--primary)]/10 transition-colors text-left border-b border-gray-50 dark:border-gray-800 last:border-none"
                       >
-                        <MapPin className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
+                        <MapPin className="h-4 w-4 text-text-secondary mt-1 flex-shrink-0" />
                         <div className="min-w-0">
-                           <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{s.display}</p>
-                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{s.address?.city || s.address?.state}</p>
+                           <p className="text-sm font-semibold text-text-primary dark:text-white truncate">{s.display}</p>
+                           <p className="text-xs text-text-secondary dark:text-text-secondary truncate">{s.address?.city || s.address?.state}</p>
                         </div>
                       </button>
                     ))}
@@ -611,25 +611,25 @@ export default function AddressSelectorPage() {
 
             {mapLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#DC2626]" />
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)]" />
               </div>
             )}
             
             <div className="absolute bottom-10 right-4 z-10">
               <Button 
                   onClick={handleUseCurrentLocation} 
-                  className="bg-white text-black hover:bg-gray-100 shadow-xl border border-gray-200 rounded-full h-12 px-6"
+                  className="bg-white text-text-primary hover:bg-gray-100 shadow-xl border border-border rounded-full h-12 px-6"
               >
-                <Navigation className="h-4 w-4 mr-2 text-[#DC2626]" /> Use My Location
+                <Navigation className="h-4 w-4 mr-2 text-[var(--primary)]" /> Use My Location
               </Button>
             </div>
           </div>
 
-          <div className="relative bg-white dark:bg-[#0a0a0a] rounded-t-[32px] -mt-8 z-10 p-4 space-y-6 shadow-[0_-12px_24px_-10px_rgba(0,0,0,0.1)]">
-            <div className="bg-[#DC2626]/5 dark:bg-[#DC2626]/10 border border-[#DC2626]/10 dark:border-[#DC2626]/20 rounded-xl p-4 flex gap-3">
-               <MapPin className="h-5 w-5 text-[#DC2626] mt-0.5" />
+          <div className="relative bg-surface dark:bg-[#0a0a0a] rounded-t-[32px] -mt-8 z-10 p-4 space-y-6 shadow-[0_-12px_24px_-10px_rgba(0,0,0,0.1)]">
+            <div className="bg-[var(--primary)]/5 dark:bg-[var(--primary)]/10 border border-[var(--primary)]/10 dark:border-[var(--primary)]/20 rounded-xl p-4 flex gap-3">
+               <MapPin className="h-5 w-5 text-[var(--primary)] mt-0.5" />
                <div className="min-w-0">
-                  <p className="text-xs font-bold text-[#DC2626] dark:text-[#DC2626]/80 uppercase mb-1">Pinnned Location</p>
+                  <p className="text-xs font-bold text-[var(--primary)] dark:text-[var(--primary)]/80 uppercase mb-1">Pinnned Location</p>
                   <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{currentAddress || "Select a location on map"}</p>
                </div>
             </div>
@@ -653,7 +653,7 @@ export default function AddressSelectorPage() {
                 onChange={e => setAddressFormData({...addressFormData, additionalDetails: e.target.value})}
                 onFocus={() => scrollFieldIntoView("additionalDetails")}
                 ref={(el) => { manualFieldRefs.current.additionalDetails = el }}
-                className="h-12 rounded-xl border-gray-200 dark:border-gray-800 focus:ring-[#DC2626]"
+                className="h-12 rounded-xl border-border dark:border-gray-800 focus:ring-[var(--primary)]"
               />
             </div>
 
@@ -703,7 +703,7 @@ export default function AddressSelectorPage() {
                      variant={addressFormData.label === l ? "default" : "outline"}
                      onClick={() => setAddressFormData({...addressFormData, label: l})}
                      className="flex-1"
-                     style={addressFormData.label === l ? {backgroundColor: '#DC2626', color: 'white'} : {}}
+                     style={addressFormData.label === l ? {backgroundColor: 'var(--primary)', color: 'white'} : {}}
                    >
                      {l}
                    </Button>
@@ -714,12 +714,12 @@ export default function AddressSelectorPage() {
         </div>
 
         <div
-          className="fixed left-0 right-0 p-4 bg-white dark:bg-[#1a1a1a] border-t dark:border-gray-800 transition-[bottom] duration-150"
+          className="fixed left-0 right-0 p-4 bg-surface dark:bg-[#1a1a1a] border-t dark:border-gray-800 transition-[bottom] duration-150"
           style={{ bottom: `${keyboardInset}px` }}
         >
           <Button 
             className="w-full h-12 text-white font-bold text-lg" 
-            style={{backgroundColor: '#DC2626'}}
+            style={{backgroundColor: 'var(--primary)'}}
             onClick={handleAddressFormSubmit}
             disabled={loadingAddress}
           >
@@ -731,8 +731,8 @@ export default function AddressSelectorPage() {
   }
 
   return (
-    <AnimatedPage className="min-h-screen bg-white dark:bg-[#0a0a0a] flex flex-col">
-      <div className="flex-shrink-0 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800 px-4 py-4 flex items-center gap-4">
+    <AnimatedPage className="min-h-screen bg-surface dark:bg-[#0a0a0a] flex flex-col">
+      <div className="flex-shrink-0 bg-surface dark:bg-[#1a1a1a] border-b border-border dark:border-gray-800 px-4 py-4 flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full">
           <ChevronLeft className="h-6 w-6" />
         </Button>
@@ -741,16 +741,16 @@ export default function AddressSelectorPage() {
 
       <div className="flex-1 overflow-y-auto pb-10">
         {/* Search Bar */}
-        <div className="p-4 bg-white dark:bg-[#0a0a0a] border-b dark:border-gray-800/10">
+        <div className="p-4 bg-surface dark:bg-[#0a0a0a] border-b dark:border-gray-800/10">
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-[#DC2626]" />
+              <Search className="h-5 w-5 text-[var(--primary)]" />
             </div>
             <Input
               value={addressAutocompleteValue}
               onChange={(e) => setAddressAutocompleteValue(e.target.value)}
               placeholder="Search for area, street name..."
-              className="pl-12 pr-10 h-14 bg-white dark:bg-[#1a1a1a] border-2 border-zinc-300 dark:border-zinc-700 rounded-2xl focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-zinc-500 dark:focus:border-zinc-500 text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 font-medium text-sm transition-all shadow-sm w-full"
+              className="pl-12 pr-10 h-14 bg-surface dark:bg-[#1a1a1a] border-2 border-zinc-300 dark:border-zinc-700 rounded-2xl focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-zinc-500 dark:focus:border-zinc-500 text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 font-medium text-sm transition-all shadow-sm w-full"
             />
             {addressAutocompleteValue && (
               <button 
@@ -765,7 +765,7 @@ export default function AddressSelectorPage() {
 
         {/* Search Suggestions List */}
         {keywordAddressSuggestions.length > 0 && (
-          <div className="mx-4 mt-2 mb-4 bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden divide-y divide-zinc-100 dark:divide-zinc-850 z-50 animate-in fade-in duration-200">
+          <div className="mx-4 mt-2 mb-4 bg-surface dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden divide-y divide-zinc-100 dark:divide-zinc-850 z-50 animate-in fade-in duration-200">
             {keywordAddressSuggestions.map((s) => {
               const title = s.display.split(",")[0] || s.display
               const subtitle = s.display.split(",").slice(1).join(",").trim() || s.display
@@ -773,10 +773,10 @@ export default function AddressSelectorPage() {
                 <button
                   key={s.id}
                   onClick={() => handleSelectOuterSuggestion(s)}
-                  className="w-full px-4 py-3.5 flex items-start gap-3.5 hover:bg-[#DC2626]/5 dark:hover:bg-[#DC2626]/10 transition-colors text-left"
+                  className="w-full px-4 py-3.5 flex items-start gap-3.5 hover:bg-[var(--primary)]/5 dark:hover:bg-[var(--primary)]/10 transition-colors text-left"
                 >
-                  <div className="h-9 w-9 rounded-full bg-red-50 dark:bg-red-950/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <MapPin className="h-4.5 w-4.5 text-[#DC2626]" />
+                  <div className="h-9 w-9 rounded-full bg-primary-light/10 dark:bg-red-950/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <MapPin className="h-4.5 w-4.5 text-[var(--primary)]" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-zinc-900 dark:text-zinc-50 truncate">{title}</p>
@@ -791,22 +791,22 @@ export default function AddressSelectorPage() {
 
         {isKeywordSearching && (
           <div className="mx-4 mt-2 mb-4 p-4 flex items-center justify-center gap-2 text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#DC2626] border-t-transparent" />
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--primary)] border-t-transparent" />
             Searching location...
           </div>
         )}
 
         {/* Action Rows: Use Current Location & Add Address */}
-        <div className="bg-white dark:bg-[#0a0a0a] border-b border-zinc-100 dark:border-zinc-800/60 divide-y divide-zinc-100 dark:divide-zinc-800/40">
+        <div className="bg-surface dark:bg-[#0a0a0a] border-b border-zinc-100 dark:border-zinc-800/60 divide-y divide-zinc-100 dark:divide-zinc-800/40">
           <button 
             onClick={handleUseCurrentLocation}
             className="w-full flex items-center gap-4 py-4 px-6 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-all text-left"
           >
-            <div className="h-10 w-10 rounded-full bg-red-50 dark:bg-red-950/10 flex items-center justify-center flex-shrink-0">
-              <Crosshair className="h-5 w-5 text-[#DC2626]" />
+            <div className="h-10 w-10 rounded-full bg-primary-light/10 dark:bg-red-950/10 flex items-center justify-center flex-shrink-0">
+              <Crosshair className="h-5 w-5 text-[var(--primary)]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-[#DC2626] text-[15px]">Use current location</p>
+              <p className="font-bold text-[var(--primary)] text-[15px]">Use current location</p>
               <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate mt-0.5">{currentAddress || "Enable GPS for accuracy"}</p>
             </div>
             <ChevronRight className="h-5 w-5 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
@@ -816,11 +816,11 @@ export default function AddressSelectorPage() {
             onClick={handleAddAddressClick}
             className="w-full flex items-center gap-4 py-4 px-6 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-all text-left"
           >
-            <div className="h-10 w-10 rounded-full bg-red-50 dark:bg-red-950/10 flex items-center justify-center flex-shrink-0">
-              <Plus className="h-5 w-5 text-[#DC2626]" />
+            <div className="h-10 w-10 rounded-full bg-primary-light/10 dark:bg-red-950/10 flex items-center justify-center flex-shrink-0">
+              <Plus className="h-5 w-5 text-[var(--primary)]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-[#DC2626] text-[15px]">Add Address</p>
+              <p className="font-bold text-[var(--primary)] text-[15px]">Add Address</p>
             </div>
             <ChevronRight className="h-5 w-5 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
           </button>
@@ -845,7 +845,7 @@ export default function AddressSelectorPage() {
               ))
             ) : addresses.length === 0 ? (
               <div className="text-center py-10 opacity-50">
-                 <MapPin className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                 <MapPin className="h-12 w-12 mx-auto mb-2 text-text-secondary" />
                  <p>No addresses saved yet</p>
               </div>
             ) : (
@@ -857,17 +857,17 @@ export default function AddressSelectorPage() {
                     onClick={() => handleSelectSavedAddress(addr)}
                     className="w-full flex items-start gap-4 p-4 bg-slate-50 dark:bg-[#1a1a1a] rounded-xl hover:bg-[#DC262610] dark:hover:bg-[#DC262620] transition-colors text-left group"
                   >
-                    <div className="h-10 w-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                      <Icon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <div className="h-10 w-10 rounded-full bg-surface dark:bg-gray-800 flex items-center justify-center shadow-sm">
+                      <Icon className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 dark:text-white capitalize">{addr.label || "Address"}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">
+                      <p className="font-bold text-text-primary dark:text-white capitalize">{addr.label || "Address"}</p>
+                      <p className="text-xs text-text-secondary dark:text-text-secondary line-clamp-2 mt-0.5">
                         {[addr.additionalDetails, addr.street, addr.city, addr.state].filter(Boolean).join(", ")}
                       </p>
                     </div>
-                    <div className="h-6 w-6 rounded-full border border-gray-200 dark:border-gray-700 mt-2 flex items-center justify-center group-hover:border-[#DC2626]">
-                       <ChevronRight className="h-3 w-3 text-gray-400 group-hover:text-[#DC2626]" />
+                    <div className="h-6 w-6 rounded-full border border-border dark:border-gray-700 mt-2 flex items-center justify-center group-hover:border-[var(--primary)]">
+                       <ChevronRight className="h-3 w-3 text-text-secondary group-hover:text-[var(--primary)]" />
                     </div>
                   </button>
                 )
@@ -889,8 +889,8 @@ export default function AddressSelectorPage() {
       {isFetchingLocationState && (
         <div className="fixed inset-0 z-[10000] bg-white/60 dark:bg-[#0a0a0a]/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300 pointer-events-auto">
           <div className="relative">
-            <div className="w-10 h-10 border-[3px] border-gray-100/30 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-10 h-10 border-[3px] border-[#DC2626] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-[3px] border-border/30 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-10 h-10 border-[3px] border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
           </div>
           <p className="mt-4 text-[13px] font-bold text-gray-800 dark:text-gray-200 tracking-tight animate-pulse">Fetching Location...</p>
         </div>

@@ -104,7 +104,9 @@ const AppRoutes = () => {
         {/* Auth Module */}
         <Route path="/user/auth/*" element={
           <Suspense fallback={<AppShellSkeleton />}>
-            <AuthApp />
+            <div className="user-app-theme min-h-screen bg-background text-text-primary">
+              <AuthApp />
+            </div>
           </Suspense>
         } />
 

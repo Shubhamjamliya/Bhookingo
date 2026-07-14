@@ -139,7 +139,7 @@ export default function SubmitComplaint() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600 text-sm">Loading...</p>
+        <p className="text-text-secondary text-sm">Loading...</p>
       </div>
     )
   }
@@ -151,7 +151,7 @@ export default function SubmitComplaint() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <div className="bg-white p-4 flex items-center sticky top-0 z-20 shadow-sm">
+      <div className="bg-surface p-4 flex items-center sticky top-0 z-20 shadow-sm">
         <button
           type="button"
           onClick={goBack}
@@ -163,7 +163,7 @@ export default function SubmitComplaint() {
         <button
           type="button"
           onClick={() => navigate("/user/profile/support")}
-          className="ml-auto text-sm font-semibold text-[#DC2626]"
+          className="ml-auto text-sm font-semibold text-[var(--primary)]"
         >
           View History
         </button>
@@ -173,18 +173,18 @@ export default function SubmitComplaint() {
       <div className="bg-white mx-4 mt-4 p-4 rounded-xl shadow-sm">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-            <FileText className="w-5 h-5 text-gray-600" />
+            <FileText className="w-5 h-5 text-text-secondary" />
           </div>
           <div>
             <p className="font-semibold text-gray-800">
               Order #{order.orderId || order._id}
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-text-secondary">
               {order.restaurantName || 'Restaurant'}
             </p>
           </div>
         </div>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-text-secondary">
           {new Date(order.createdAt).toLocaleDateString('en-IN', {
             day: 'numeric',
             month: 'short',
@@ -205,7 +205,7 @@ export default function SubmitComplaint() {
           <select
             value={formData.complaintType}
             onChange={(e) => setFormData({ ...formData, complaintType: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC2626] focus:border-transparent"
+            className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
             required
           >
             <option value="">Select complaint type</option>
@@ -227,7 +227,7 @@ export default function SubmitComplaint() {
             value={formData.subject}
             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
             placeholder="Brief description of your complaint"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC2626] focus:border-transparent"
+            className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
             required
             maxLength={200}
           />
@@ -243,11 +243,11 @@ export default function SubmitComplaint() {
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Please provide detailed information about your complaint..."
             rows={6}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC2626] focus:border-transparent resize-none"
+            className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none"
             required
             maxLength={1000}
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-text-secondary mt-1">
             {formData.description.length}/1000 characters
           </p>
         </div>
@@ -264,11 +264,11 @@ export default function SubmitComplaint() {
         </div>
 
         {/* Submit Button */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-20">
+        <div className="fixed bottom-0 left-0 right-0 bg-surface border-t border-border p-4 z-20">
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-[#DC2626] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-[#991B1B] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-[var(--primary)] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? (
               <>

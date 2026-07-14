@@ -170,17 +170,17 @@ export default function AddMoneyModal({ open, onOpenChange, onSuccess }) {
             type="button"
             onClick={handleClose}
             disabled={loading || processing}
-            className="absolute right-4 top-4 rounded-full p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="absolute right-4 top-4 rounded-full p-2 text-text-secondary hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
             aria-label="Close add money modal"
           >
             <X className="h-5 w-5" />
           </button>
 
           <DialogHeader className="pr-10 text-center">
-            <DialogTitle className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
+            <DialogTitle className="text-xl md:text-2xl font-bold text-text-primary dark:text-white">
               Add Money to Wallet
             </DialogTitle>
-            <DialogDescription className="text-sm md:text-base text-gray-600 dark:text-gray-400">
+            <DialogDescription className="text-sm md:text-base text-text-secondary dark:text-text-secondary">
               Enter the amount you want to add to your wallet
             </DialogDescription>
           </DialogHeader>
@@ -192,7 +192,7 @@ export default function AddMoneyModal({ open, onOpenChange, onSuccess }) {
               </label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                  <IndianRupee className="h-5 w-5 text-gray-400" />
+                  <IndianRupee className="h-5 w-5 text-text-secondary" />
                 </div>
                 <Input
                   type="text"
@@ -203,7 +203,7 @@ export default function AddMoneyModal({ open, onOpenChange, onSuccess }) {
                   disabled={loading || processing}
                 />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-text-secondary dark:text-text-secondary">
                 Minimum: {"\u20B9"}1 | Maximum: {"\u20B9"}50,000
               </p>
             </div>

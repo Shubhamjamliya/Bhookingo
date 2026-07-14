@@ -90,7 +90,7 @@ import {
 import { useLocation } from "@food/hooks/useLocation";
 import { useHighway as useZone } from "@food/hooks/useHighway";
 import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png";
-import homeBannerRed from "@food/assets/home-banner-red-clean.png";
+import homeBannerRed from "@food/assets/home-banner-orange-clean.png";
 if (typeof window !== 'undefined') {
   const link = document.createElement('link');
   link.rel = 'preload';
@@ -385,12 +385,12 @@ const RestaurantImageCarousel = React.memo(
             <div className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-2.5 shadow-xl border border-white/10">
               {!vegMode && (
                 currentSlide.dish.foodType === 'Veg' ? (
-                  <div className="flex-shrink-0 w-3 h-3 border border-green-600 bg-white rounded-[2px] flex items-center justify-center p-[1px]">
+                  <div className="flex-shrink-0 w-3 h-3 border border-green-600 bg-surface rounded-[2px] flex items-center justify-center p-[1px]">
                     <div className="w-full h-full bg-green-600 rounded-full" />
                   </div>
                 ) : (
-                  <div className="flex-shrink-0 w-3 h-3 border border-red-600 bg-white rounded-[2px] flex items-center justify-center p-[1px]">
-                    <div className="w-full h-full bg-red-600 rounded-full" />
+                  <div className="flex-shrink-0 w-3 h-3 border border-primary bg-surface rounded-[2px] flex items-center justify-center p-[1px]">
+                    <div className="w-full h-full bg-primary rounded-full" />
                   </div>
                 )
               )}
@@ -405,7 +405,7 @@ const RestaurantImageCarousel = React.memo(
 
         {isImageUnavailable && (
           <div className="absolute inset-0 z-[2] flex items-center justify-center bg-gray-100">
-            <span className="text-xs text-gray-500">Image unavailable</span>
+            <span className="text-xs text-text-secondary">Image unavailable</span>
           </div>
         )}
 
@@ -2229,11 +2229,11 @@ export default function Home() {
             className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95"
             onClick={() => navigate("/user/under-250")}
           >
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#DC2626] rounded-b-full rounded-t-sm shadow-md border-t-4 border-orange-200 flex flex-col items-center justify-center p-1">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[var(--primary)] rounded-b-full rounded-t-sm shadow-md border-t-4 border-orange-200 flex flex-col items-center justify-center p-1">
               <span className="text-[10px] sm:text-xs font-bold text-white text-center leading-tight">UNDER</span>
               <span className="text-sm sm:text-base font-extrabold text-white">₹200</span>
-              <div className="w-10 h-3.5 bg-white rounded-full mt-1 flex items-center justify-center">
-                <span className="text-[8px] font-bold text-[#DC2626]">Explore</span>
+              <div className="w-10 h-3.5 bg-surface rounded-full mt-1 flex items-center justify-center">
+                <span className="text-[8px] font-bold text-[var(--primary)]">Explore</span>
               </div>
             </div>
             <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Offers</span>
@@ -2249,7 +2249,7 @@ export default function Home() {
                 className="flex-shrink-0 flex flex-col items-center gap-2 group transition-all duration-300 hover:-translate-y-1"
                 style={{ animation: `fade-in-up 0.5s ease-out forwards ${index * 0.05}s`, opacity: 0 }}
               >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 group-hover:border-[#DC2626] transition-colors">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-sm border border-border dark:border-gray-800 group-hover:border-[var(--primary)] transition-colors">
                   <OptimizedImage
                     src={category.image}
                     alt={category.name}
@@ -2269,8 +2269,8 @@ export default function Home() {
               className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer group"
               onClick={() => navigate("/food/user/categories")}
             >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-orange-50 dark:bg-orange-950 flex items-center justify-center border border-orange-100 group-hover:border-[#DC2626] transition-all">
-                <Plus className="w-6 h-6 text-[#DC2626]" />
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-orange-50 dark:bg-orange-950 flex items-center justify-center border border-orange-100 group-hover:border-[var(--primary)] transition-all">
+                <Plus className="w-6 h-6 text-[var(--primary)]" />
               </div>
               <span className="text-xs font-medium text-gray-700">See All</span>
             </div>
@@ -2282,12 +2282,12 @@ export default function Home() {
 
   return (
 
-    <div className="relative min-h-screen bg-white dark:bg-[#0a0a0a] pb-16 md:pb-6 overflow-x-clip">
+    <div className="relative min-h-screen bg-surface dark:bg-[#0a0a0a] pb-16 md:pb-6 overflow-x-clip">
       <div className="transition-all duration-300">
         {/* Unified Background for Entire Page - Vibrant Food Theme */}
         <div className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none overflow-hidden z-0">
           {/* Main Background */}
-          <div className="absolute inset-0 bg-white dark:bg-[#0a0a0a]"></div>
+          <div className="absolute inset-0 bg-surface dark:bg-[#0a0a0a]"></div>
           {/* Background Elements - Reduced to 2 blobs with CSS animations for better performance */}
           <div className="absolute inset-0 overflow-hidden opacity-20">
             {/* Top right blob - CSS animation */}
@@ -2391,15 +2391,15 @@ export default function Home() {
             }
           }
           .red-header-bg {
-            background-color: #ef4f5f;
-            background-image: linear-gradient(180deg, #ef4f5f 0%, #e03546 100%);
+            background-color: var(--primary-light);
+            background-image: linear-gradient(180deg, var(--primary-light) 0%, var(--primary-light) 100%);
           }
         `}</style>
         </div>
 
-        <div className="md:hidden relative overflow-x-clip bg-white dark:bg-[#0a0a0a]">
+        <div className="md:hidden relative overflow-x-clip bg-surface dark:bg-[#0a0a0a]">
           {/* Brand Top Section (Red Theme) */}
-          <div className="relative overflow-hidden rounded-b-[2rem] shadow-lg mb-2 bg-[#ef4f5f]">
+          <div className="relative overflow-hidden rounded-b-[2rem] shadow-lg mb-2 bg-[var(--primary-light)]">
             {/* Background Image */}
             <div className="absolute inset-0 z-0">
               <img
@@ -2458,15 +2458,15 @@ export default function Home() {
                 className="bg-transparent dark:bg-transparent"
               >
                 {(orderType === "takeaway" || isTakeawayPage) && (
-                  <div className="px-4 pt-4 pb-2 bg-white dark:bg-[#0a0a0a]">
+                  <div className="px-4 pt-4 pb-2 bg-surface dark:bg-[#0a0a0a]">
                     <div className="flex flex-col gap-1">
-                      <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <h1 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white flex items-center gap-2">
                         <span className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
                           <ShoppingBag className="h-6 w-6 text-green-600" />
                         </span>
                         Pickup Restaurants
                       </h1>
-                      <p className="text-[13px] text-gray-500 font-medium flex items-center gap-1.5 ml-1">
+                      <p className="text-[13px] text-text-secondary font-medium flex items-center gap-1.5 ml-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
                         Order online, skip the queue & pickup yourself
                       </p>
@@ -2478,7 +2478,7 @@ export default function Home() {
                 {orderType !== "takeaway" && !isTakeawayPage && (
                   <div
                     id="categories-section"
-                    className="px-4 py-2.5 space-y-3 bg-white dark:bg-[#0a0a0a]"
+                    className="px-4 py-2.5 space-y-3 bg-surface dark:bg-[#0a0a0a]"
                   >
 
 
@@ -2491,7 +2491,7 @@ export default function Home() {
                           state={{ from: '/food/user' }}
                           className="flex-shrink-0 flex flex-col items-center gap-2.5 group w-[92px]"
                         >
-                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shadow-md border-2 border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] group-active:scale-95 transition-all duration-300">
+                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shadow-md border-2 border-border dark:border-gray-800 bg-surface dark:bg-[#1a1a1a] group-active:scale-95 transition-all duration-300">
                             {/* Shining Glint Effect */}
                             <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
                               <motion.div
@@ -2514,7 +2514,7 @@ export default function Home() {
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                             />
                           </div>
-                          <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300 text-center leading-tight line-clamp-1 w-full px-0.5">
+                          <span className="text-[10px] font-bold text-text-secondary dark:text-gray-300 text-center leading-tight line-clamp-1 w-full px-0.5">
                             {category.name}
                           </span>
                         </Link>
@@ -2527,10 +2527,10 @@ export default function Home() {
                           state={{ from: '/food/user' }}
                           className="flex-shrink-0 flex flex-col items-center gap-2.5 group w-[92px]"
                         >
-                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shadow-md border-2 border-red-100 dark:border-red-950/30 bg-red-50 dark:bg-red-950/20 flex items-center justify-center group-active:scale-95 transition-all duration-300">
+                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shadow-md border-2 border-red-100 dark:border-red-950/30 bg-primary-light/10 dark:bg-red-950/20 flex items-center justify-center group-active:scale-95 transition-all duration-300">
                             <UtensilsCrossed className="w-8 h-8 sm:w-10 sm:h-10 text-red-500" />
                           </div>
-                          <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300 text-center leading-tight flex items-center justify-center gap-1 w-full px-0.5 group-hover:text-red-500 transition-colors">
+                          <span className="text-[10px] font-bold text-text-secondary dark:text-gray-300 text-center leading-tight flex items-center justify-center gap-1 w-full px-0.5 group-hover:text-red-500 transition-colors">
                             See all <span className="text-[7px] text-red-500">▼</span>
                           </span>
                         </Link>
@@ -2559,16 +2559,16 @@ export default function Home() {
                             className="px-4 pt-3 pb-2 flex items-center gap-3"
                           >
                             <div
-                              className="bg-white dark:bg-[#1a1a1a] flex-1 rounded-2xl flex items-center px-4 py-3 cursor-pointer border-2 border-[#DC2626]/30 dark:border-[#DC2626]/50 shadow-md"
+                              className="bg-surface dark:bg-[#1a1a1a] flex-1 rounded-2xl flex items-center px-4 py-3 cursor-pointer border-2 border-[var(--primary)]/30 dark:border-[var(--primary)]/50 shadow-md"
                               onClick={handleSearchFocus}
                             >
-                              <Search className="h-5 w-5 text-[#DC2626] dark:text-[#a14b84] mr-3" strokeWidth={2.5} />
+                              <Search className="h-5 w-5 text-[var(--primary)] dark:text-[#a14b84] mr-3" strokeWidth={2.5} />
                               <div className="flex-1 relative h-5 overflow-hidden">
-                                <span className="absolute inset-0 text-base text-gray-400 font-medium">Search "biryani"</span>
+                                <span className="absolute inset-0 text-base text-text-secondary font-medium">Search "biryani"</span>
                               </div>
                               <div className="h-5 w-[1px] bg-gray-200 dark:bg-white/10 mx-2" />
                               <Mic
-                                className="h-5 w-5 text-[#DC2626] dark:text-[#a14b84]"
+                                className="h-5 w-5 text-[var(--primary)] dark:text-[#a14b84]"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setIsVoiceOverlayOpen(true);
@@ -2581,9 +2581,9 @@ export default function Home() {
                               ref={vegModeToggleRef}
                               className="flex flex-col items-center gap-1 shrink-0 antialiased"
                             >
-                              <span className="text-[8px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.1em] leading-none">Veg Mode</span>
+                              <span className="text-[8px] font-black text-text-secondary dark:text-text-secondary uppercase tracking-[0.1em] leading-none">Veg Mode</span>
                               <div
-                                className={`w-10 h-4.5 rounded-full relative transition-all duration-500 cursor-pointer border border-gray-200 dark:border-white/10 shadow-sm ${vegMode ? 'bg-[#48c479]' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                className={`w-10 h-4.5 rounded-full relative transition-all duration-500 cursor-pointer border border-border dark:border-white/10 shadow-sm ${vegMode ? 'bg-[#48c479]' : 'bg-gray-300 dark:bg-gray-700'}`}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleVegModeChange(!vegMode);
@@ -2592,7 +2592,7 @@ export default function Home() {
                                 <motion.div
                                   animate={{ x: vegMode ? 22 : 2 }}
                                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                  className="absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow-sm"
+                                  className="absolute top-0.5 w-3.5 h-3.5 bg-surface rounded-full shadow-sm"
                                 />
                               </div>
                             </div>
@@ -2608,7 +2608,7 @@ export default function Home() {
                             to={`/food/user/category/${category.slug}`}
                             className="flex-shrink-0 flex flex-col items-center gap-1.5 group w-[74px]"
                           >
-                            <div className="w-18 h-18 rounded-full overflow-hidden border-2 border-gray-100 dark:border-white/10 shadow-md bg-white dark:bg-white/5 transition-transform group-active:scale-95">
+                            <div className="w-18 h-18 rounded-full overflow-hidden border-2 border-border dark:border-white/10 shadow-md bg-surface dark:bg-white/5 transition-transform group-active:scale-95">
                               <OptimizedImage
                                 src={category.image}
                                 alt={category.name}
@@ -2628,7 +2628,7 @@ export default function Home() {
                             state={{ from: '/food/user' }}
                             className="flex-shrink-0 flex flex-col items-center gap-1.5 group w-[74px]"
                           >
-                            <div className="w-18 h-18 rounded-full overflow-hidden border-2 border-red-100 dark:border-red-950/30 bg-red-50 dark:bg-red-950/20 flex items-center justify-center transition-transform group-active:scale-95">
+                            <div className="w-18 h-18 rounded-full overflow-hidden border-2 border-red-100 dark:border-red-950/30 bg-primary-light/10 dark:bg-red-950/20 flex items-center justify-center transition-transform group-active:scale-95">
                               <UtensilsCrossed className="w-7 h-7 text-red-500" />
                             </div>
                             <span className="text-[9px] font-bold text-gray-700 dark:text-gray-300 text-center truncate w-full uppercase tracking-tighter flex items-center justify-center gap-0.5 group-hover:text-red-500 transition-colors">
@@ -2648,7 +2648,7 @@ export default function Home() {
 
                 {/* Filters Sticky Sidebar Header - Hidden for takeaway as per request */}
                 {orderType !== "takeaway" && !isTakeawayPage && (
-                  <section className="py-2.5 px-4 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md sticky top-0 z-[40] -mx-4 w-[calc(100%+2rem)] border-b border-gray-100 dark:border-white/5 shadow-sm transition-colors duration-300">
+                  <section className="py-2.5 px-4 bg-white/95 dark:bg-[#0a0a0a]/95 backdrop-blur-md sticky top-0 z-[40] -mx-4 w-[calc(100%+2rem)] border-b border-border dark:border-white/5 shadow-sm transition-colors duration-300">
                     <div
                       className="flex items-center gap-2 overflow-x-auto scrollbar-hide px-4"
                       style={{
@@ -2659,10 +2659,10 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setIsFilterOpen(true)}
-                        className="h-9 px-4 rounded-full flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 font-bold transition-all bg-white dark:bg-[#1a1a1a] border border-gray-200 shadow-sm active:scale-95"
+                        className="h-9 px-4 rounded-full flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 font-bold transition-all bg-surface dark:bg-[#1a1a1a] border border-border shadow-sm active:scale-95"
                       >
-                        <SlidersHorizontal className="h-4 w-4 text-black" />
-                        <span className="text-xs font-bold text-black dark:text-white uppercase tracking-tight">
+                        <SlidersHorizontal className="h-4 w-4 text-text-primary" />
+                        <span className="text-xs font-bold text-text-primary dark:text-white uppercase tracking-tight">
                           Filters
                         </span>
                       </button>
@@ -2692,8 +2692,8 @@ export default function Home() {
                               );
                             }}
                             className={`h-9 px-4 rounded-full flex items-center gap-2 whitespace-nowrap flex-shrink-0 transition-all font-bold shadow-sm active:scale-95 ${isActive
-                              ? "bg-[#DC2626] text-white border border-[#DC2626] hover:bg-orange-700"
-                              : "bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                              ? "bg-[var(--primary)] text-white border border-[var(--primary)] hover:bg-orange-700"
+                              : "bg-surface dark:bg-[#1a1a1a] border border-border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                               }`}
                           >
                             {Icon && (
@@ -2731,7 +2731,7 @@ export default function Home() {
             className="content-auto pt-1 sm:pt-2"
             initial={false}
             animate={{ opacity: 1, y: 0 }}>
-            <h2 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-2 sm:mb-3 px-4">
+            <h2 className="text-xs sm:text-sm lg:text-base font-semibold text-text-secondary dark:text-text-secondary tracking-widest uppercase mb-2 sm:mb-3 px-4">
               Recommended For You
             </h2>
 
@@ -2749,7 +2749,7 @@ export default function Home() {
                     transition={{ duration: 0.35, delay: index * 0.05 }}>
                     <Link
                       to={`/user/restaurants/${restaurantSlug}`}
-                      className="block rounded-[20px] overflow-hidden border border-gray-200/70 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] shadow-md hover:shadow-lg transition-all duration-300">
+                      className="block rounded-[20px] overflow-hidden border border-border/70 dark:border-gray-800 bg-surface dark:bg-[#1a1a1a] shadow-md hover:shadow-lg transition-all duration-300">
                       <div className="relative h-24 sm:h-28 md:h-32 bg-gray-50">
                         <RestaurantImageCarousel
                           restaurant={restaurant}
@@ -2757,16 +2757,16 @@ export default function Home() {
                           className="h-24 sm:h-28 md:h-32"
                           roundedClass="rounded-t-[20px]"
                         />
-                        <div className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-lg ${Number(restaurant.rating) > 0 ? "bg-black/80 backdrop-blur-md text-white font-medium" : "bg-gray-200/90 text-gray-600 font-medium"} text-[10px] shadow-lg border border-white/10`}>
+                        <div className={`absolute bottom-2 left-2 px-2 py-0.5 rounded-lg ${Number(restaurant.rating) > 0 ? "bg-black/80 backdrop-blur-md text-white font-medium" : "bg-gray-200/90 text-text-secondary font-medium"} text-[10px] shadow-lg border border-white/10`}>
                           {Number(restaurant.rating) > 0 ? Number(restaurant.rating).toFixed(1) : "NEW"}
                         </div>
                       </div>
                       <div className="p-2.5">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate tracking-tight">
+                        <p className="text-sm font-semibold text-text-primary dark:text-white truncate tracking-tight">
                           {restaurant.name}
                         </p>
-                        <p className="text-[10px] text-[#DC2626] font-bold mt-1 flex items-center gap-1 uppercase tracking-wider">
-                          <Flame className="w-3.5 h-3.5 fill-[#DC2626]" />
+                        <p className="text-[10px] text-[var(--primary)] font-bold mt-1 flex items-center gap-1 uppercase tracking-wider">
+                          <Flame className="w-3.5 h-3.5 fill-[var(--primary)]" />
                           Near & Fast
                         </p>
                       </div>
@@ -2785,7 +2785,7 @@ export default function Home() {
             initial={false}
             animate={{ opacity: 1, y: 0 }}>
             <div className="px-4 mb-3 flex items-center gap-2">
-              <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-widest leading-tight">
+              <h2 className="text-[11px] font-black text-text-secondary uppercase tracking-widest leading-tight">
                 {exploreMoreHeading}
               </h2>
               <div className="h-[1px] bg-gray-100 dark:bg-gray-800 flex-1"></div>
@@ -2812,9 +2812,9 @@ export default function Home() {
                         state={{ from: '/food/user' }}
                         className="block">
                         <div className="flex flex-col items-center gap-1.5 group">
-                          <div className="relative aspect-square w-full rounded-2xl sm:rounded-[24px] bg-white dark:bg-[#1a1a1a] flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-500 overflow-hidden border border-gray-100 dark:border-gray-800 p-1 group-hover:border-[#DC2626]/40">
+                          <div className="relative aspect-square w-full rounded-2xl sm:rounded-[24px] bg-surface dark:bg-[#1a1a1a] flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-500 overflow-hidden border border-border dark:border-gray-800 p-1 group-hover:border-[var(--primary)]/40">
                             {/* Colorful Glow Background */}
-                            <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${index % 3 === 0 ? 'from-[#DC2626] to-rose-500' : index % 3 === 1 ? 'from-indigo-500 to-purple-500' : 'from-teal-500 to-emerald-500'} z-20 pointer-events-none`} />
+                            <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${index % 3 === 0 ? 'from-[var(--primary)] to-rose-500' : index % 3 === 1 ? 'from-indigo-500 to-purple-500' : 'from-teal-500 to-emerald-500'} z-20 pointer-events-none`} />
 
                             <OptimizedImage
                               src={item.image}
@@ -2823,7 +2823,7 @@ export default function Home() {
                               className="w-full h-full relative z-10 transition-transform duration-500 group-hover:scale-110 drop-shadow-sm rounded-xl"
                             />
                           </div>
-                          <span className="text-[9px] sm:text-[10px] font-bold text-gray-500 dark:text-gray-400 group-hover:text-[#DC2626] transition-colors text-center tracking-tighter leading-tight uppercase truncate w-full px-0.5">
+                          <span className="text-[9px] sm:text-[10px] font-bold text-text-secondary dark:text-text-secondary group-hover:text-[var(--primary)] transition-colors text-center tracking-tighter leading-tight uppercase truncate w-full px-0.5">
                             {item.label}
                           </span>
                         </div>
@@ -2952,7 +2952,7 @@ export default function Home() {
                         to={`/user/restaurants/${restaurantSlug}`}
                         className="h-full flex">
                         <Card
-                          className={`overflow-hidden gap-0 cursor-pointer border border-gray-200/70 dark:border-gray-800/80 group bg-white dark:bg-[#1a1a1a] transition-all duration-500 py-0 rounded-[28px] flex flex-col h-full w-full relative shadow-md hover:shadow-2xl ${isOutOfService || !availability.isOpen
+                          className={`overflow-hidden gap-0 cursor-pointer border border-border/70 dark:border-gray-800/80 group bg-surface dark:bg-[#1a1a1a] transition-all duration-500 py-0 rounded-[28px] flex flex-col h-full w-full relative shadow-md hover:shadow-2xl ${!availability.isOpen
                             ? "grayscale opacity-75"
                             : ""
                             }`}>
@@ -3021,7 +3021,7 @@ export default function Home() {
                                     </span>
                                   </div>
                                   {Number(restaurant.rating) > 0 && (
-                                    <span className="text-[9px] font-bold text-gray-400 tracking-tight">
+                                    <span className="text-[9px] font-bold text-text-secondary tracking-tight">
                                       By {Math.floor(Math.random() * 5 + 1)}K+
                                     </span>
                                   )}
@@ -3029,7 +3029,7 @@ export default function Home() {
                               </div>
 
                               {/* Closes in / Opening time badge moved here */}
-                              <div className="flex items-center gap-1 text-sm lg:text-base text-gray-500 mb-2 lg:mb-3">
+                              <div className="flex items-center gap-1 text-sm lg:text-base text-text-secondary mb-2 lg:mb-3">
                                 {availability.isOpen &&
                                   availability.closingCountdownLabel && (
                                     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 text-[10px] font-black uppercase tracking-widest transition-all duration-300 hover:bg-indigo-50 hover:border-indigo-200">
@@ -3038,7 +3038,7 @@ export default function Home() {
                                     </div>
                                   )}
                                 {!availability.isOpen && availability.openingTime && (
-                                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700 text-[10px] font-black uppercase tracking-widest">
+                                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-text-secondary border border-border dark:border-gray-700 text-[10px] font-black uppercase tracking-widest">
                                     <Clock className="h-3 w-3 flex-shrink-0" />
                                     <span>Opens at {availability.openingTime}</span>
                                   </div>
@@ -3049,10 +3049,10 @@ export default function Home() {
                               {restaurant.offer && (
                                 <div className="flex items-center gap-2 text-sm lg:text-base mt-auto transform transition-transform duration-300 group-hover:translate-x-1">
                                   <BadgePercent
-                                    className="h-4 w-4 lg:h-5 lg:w-5 text-[#DC2626]"
+                                    className="h-4 w-4 lg:h-5 lg:w-5 text-[var(--primary)]"
                                     strokeWidth={3}
                                   />
-                                  <span className="text-[#DC2626] dark:text-[#F87171] font-black uppercase text-[10px] tracking-wider">
+                                  <span className="text-[var(--primary)] dark:text-[var(--primary-light)] font-black uppercase text-[10px] tracking-wider">
                                     {restaurant.offer}
                                   </span>
                                 </div>
@@ -3061,7 +3061,7 @@ export default function Home() {
                           </div>
 
                           {/* Border Glow Effect */}
-                          <div className="absolute inset-0 rounded-md pointer-events-none z-0 transition-all duration-300 border border-transparent group-hover:border-[#DC2626]/30 group-hover:shadow-[inset_0_0_0_1px_rgba(235,89,14,0.2)]" />
+                          <div className="absolute inset-0 rounded-md pointer-events-none z-0 transition-all duration-300 border border-transparent group-hover:border-[var(--primary)]/30 group-hover:shadow-[inset_0_0_0_1px_rgba(235,89,14,0.2)]" />
                         </Card>
                       </Link>
                     </div>
@@ -3075,7 +3075,7 @@ export default function Home() {
               <Button
                 variant="outline"
                 onClick={loadMoreRestaurants}
-                className="text-sm font-medium border-gray-300 hover:border-gray-400">
+                className="text-sm font-medium border-border hover:border-gray-400">
                 Load more restaurants
               </Button>
             )}
@@ -3112,7 +3112,7 @@ export default function Home() {
 
             {/* Modal Content */}
             <motion.div
-              className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#1a1a1a] rounded-t-3xl max-h-[85vh] flex flex-col"
+              className="absolute bottom-0 left-0 right-0 bg-surface dark:bg-[#1a1a1a] rounded-t-3xl max-h-[85vh] flex flex-col"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
@@ -3124,7 +3124,7 @@ export default function Home() {
               }}>
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-4 border-b dark:border-gray-800">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                <h2 className="text-lg font-bold text-text-primary dark:text-white">
                   Filters and sorting
                 </h2>
                 <button
@@ -3133,7 +3133,7 @@ export default function Home() {
                     setSortBy(null);
                     setSelectedCuisine(null);
                   }}
-                  className="text-[#DC2626] font-medium text-sm">
+                  className="text-[var(--primary)] font-medium text-sm">
                   Clear all
                 </button>
               </div>
@@ -3169,11 +3169,11 @@ export default function Home() {
                           }
                         }}
                         className={`flex flex-col items-center gap-1 py-4 px-2 text-center relative transition-colors ${isActive
-                          ? "bg-white dark:bg-[#1a1a1a] text-[#DC2626]"
-                          : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                          ? "bg-surface dark:bg-[#1a1a1a] text-[var(--primary)]"
+                          : "text-text-secondary dark:text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800"
                           }`}>
                         {isActive && (
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626] rounded-r" />
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--primary)] rounded-r" />
                         )}
                         <Icon className="h-5 w-5" strokeWidth={1.5} />
                         <span className="text-xs font-medium leading-tight">
@@ -3193,7 +3193,7 @@ export default function Home() {
                     ref={(el) => (filterSectionRefs.current["sort"] = el)}
                     data-section-id="sort"
                     className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4">
                       Sort by
                     </h3>
                     <div className="flex flex-col gap-3">
@@ -3208,11 +3208,11 @@ export default function Home() {
                           key={option.id || "relevance"}
                           onClick={() => setSortBy(option.id)}
                           className={`px-4 py-3 rounded-xl border text-left transition-colors ${sortBy === option.id
-                            ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                            : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                            ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                            : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                             }`}>
                           <span
-                            className={`text-sm font-medium ${sortBy === option.id ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                            className={`text-sm font-medium ${sortBy === option.id ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                             {option.label}
                           </span>
                         </button>
@@ -3225,35 +3225,35 @@ export default function Home() {
                     ref={(el) => (filterSectionRefs.current["time"] = el)}
                     data-section-id="time"
                     className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4">
                       {(orderType === "takeaway" || isTakeawayPage) ? "Estimated Readiness" : "Estimated Time"}
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter("under-30-mins")}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("under-30-mins")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <Timer
                           strokeWidth={1.5}
-                          className={`w-6 h-6 ${activeFilters.has("under-30-mins") ? "text-[#DC2626]" : "text-gray-500"}`}
+                          className={`w-6 h-6 ${activeFilters.has("under-30-mins") ? "text-[var(--primary)]" : "text-text-secondary"}`}
                         />
-                        <span className={`text-sm font-medium ${activeFilters.has("under-30-mins") ? "text-[#DC2626]" : "text-gray-700"}`}>
+                        <span className={`text-sm font-medium ${activeFilters.has("under-30-mins") ? "text-[var(--primary)]" : "text-gray-700"}`}>
                           {(orderType === "takeaway" || isTakeawayPage) ? "Within 30 mins" : "Under 30 mins"}
                         </span>
                       </button>
                       <button
                         onClick={() => toggleFilter("under-45-mins")}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("under-45-mins")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <Timer
                           strokeWidth={1.5}
-                          className={`w-6 h-6 ${activeFilters.has("under-45-mins") ? "text-[#DC2626]" : "text-gray-500"}`}
+                          className={`w-6 h-6 ${activeFilters.has("under-45-mins") ? "text-[var(--primary)]" : "text-text-secondary"}`}
                         />
-                        <span className={`text-sm font-medium ${activeFilters.has("under-45-mins") ? "text-[#DC2626]" : "text-gray-700"}`}>
+                        <span className={`text-sm font-medium ${activeFilters.has("under-45-mins") ? "text-[var(--primary)]" : "text-gray-700"}`}>
                           {(orderType === "takeaway" || isTakeawayPage) ? "Within 45 mins" : "Under 45 mins"}
                         </span>
                       </button>
@@ -3265,49 +3265,49 @@ export default function Home() {
                     ref={(el) => (filterSectionRefs.current["rating"] = el)}
                     data-section-id="rating"
                     className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900  dark:text-white mb-4">
+                    <h3 className="text-lg font-semibold text-text-primary  dark:text-white mb-4">
                       Restaurant Rating
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter("rating-35-plus")}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("rating-35-plus")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <Star
-                          className={`h-6 w-6 ${activeFilters.has("rating-35-plus") ? "text-[#DC2626] fill-[#DC2626]" : "text-gray-400 dark:text-gray-500"}`}
+                          className={`h-6 w-6 ${activeFilters.has("rating-35-plus") ? "text-[var(--primary)] fill-[var(--primary)]" : "text-text-secondary dark:text-text-secondary"}`}
                         />
                         <span
-                          className={`text-sm font-medium ${activeFilters.has("rating-35-plus") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                          className={`text-sm font-medium ${activeFilters.has("rating-35-plus") ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                           Rated 3.5+
                         </span>
                       </button>
                       <button
                         onClick={() => toggleFilter("rating-4-plus")}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("rating-4-plus")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <Star
-                          className={`h-6 w-6 ${activeFilters.has("rating-4-plus") ? "text-[#DC2626] fill-[#DC2626]" : "text-gray-400 dark:text-gray-500"}`}
+                          className={`h-6 w-6 ${activeFilters.has("rating-4-plus") ? "text-[var(--primary)] fill-[var(--primary)]" : "text-text-secondary dark:text-text-secondary"}`}
                         />
                         <span
-                          className={`text-sm font-medium ${activeFilters.has("rating-4-plus") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                          className={`text-sm font-medium ${activeFilters.has("rating-4-plus") ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                           Rated 4.0+
                         </span>
                       </button>
                       <button
                         onClick={() => toggleFilter("rating-45-plus")}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("rating-45-plus")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <Star
-                          className={`h-6 w-6 ${activeFilters.has("rating-45-plus") ? "text-[#DC2626] fill-[#DC2626]" : "text-gray-400 dark:text-gray-500"}`}
+                          className={`h-6 w-6 ${activeFilters.has("rating-45-plus") ? "text-[var(--primary)] fill-[var(--primary)]" : "text-text-secondary dark:text-text-secondary"}`}
                         />
                         <span
-                          className={`text-sm font-medium ${activeFilters.has("rating-45-plus") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                          className={`text-sm font-medium ${activeFilters.has("rating-45-plus") ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                           Rated 4.5+
                         </span>
                       </button>
@@ -3319,37 +3319,37 @@ export default function Home() {
                     ref={(el) => (filterSectionRefs.current["distance"] = el)}
                     data-section-id="distance"
                     className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4">
                       Distance
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter("distance-under-1km")}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("distance-under-1km")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <MapPin
-                          className={`h-6 w-6 ${activeFilters.has("distance-under-1km") ? "text-[#DC2626]" : "text-gray-600 dark:text-gray-400"}`}
+                          className={`h-6 w-6 ${activeFilters.has("distance-under-1km") ? "text-[var(--primary)]" : "text-text-secondary dark:text-text-secondary"}`}
                           strokeWidth={1.5}
                         />
                         <span
-                          className={`text-sm font-medium ${activeFilters.has("distance-under-1km") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                          className={`text-sm font-medium ${activeFilters.has("distance-under-1km") ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                           Under 1 km
                         </span>
                       </button>
                       <button
                         onClick={() => toggleFilter("distance-under-2km")}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has("distance-under-2km")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <MapPin
-                          className={`h-6 w-6 ${activeFilters.has("distance-under-2km") ? "text-[#DC2626]" : "text-gray-600 dark:text-gray-400"}`}
+                          className={`h-6 w-6 ${activeFilters.has("distance-under-2km") ? "text-[var(--primary)]" : "text-text-secondary dark:text-text-secondary"}`}
                           strokeWidth={1.5}
                         />
                         <span
-                          className={`text-sm font-medium ${activeFilters.has("distance-under-2km") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                          className={`text-sm font-medium ${activeFilters.has("distance-under-2km") ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                           Under 2 km
                         </span>
                       </button>
@@ -3361,29 +3361,29 @@ export default function Home() {
                     ref={(el) => (filterSectionRefs.current["price"] = el)}
                     data-section-id="price"
                     className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4">
                       Dish Price
                     </h3>
                     <div className="flex flex-col gap-3">
                       <button
                         onClick={() => toggleFilter("price-under-200")}
                         className={`px-4 py-3 rounded-xl border text-left transition-colors ${activeFilters.has("price-under-200")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <span
-                          className={`text-sm font-medium ${activeFilters.has("price-under-200") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                          className={`text-sm font-medium ${activeFilters.has("price-under-200") ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                           Under ₹200
                         </span>
                       </button>
                       <button
                         onClick={() => toggleFilter("price-under-500")}
                         className={`px-4 py-3 rounded-xl border text-left transition-colors ${activeFilters.has("price-under-500")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <span
-                          className={`text-sm font-medium ${activeFilters.has("price-under-500") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                          className={`text-sm font-medium ${activeFilters.has("price-under-500") ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                           Under ₹500
                         </span>
                       </button>
@@ -3397,29 +3397,29 @@ export default function Home() {
                     ref={(el) => (filterSectionRefs.current["trust"] = el)}
                     data-section-id="trust"
                     className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4">
                       Trust Markers
                     </h3>
                     <div className="flex flex-col gap-3">
                       <button
                         onClick={() => toggleFilter("top-rated")}
                         className={`px-4 py-3 rounded-xl border text-left transition-colors ${activeFilters.has("top-rated")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <span
-                          className={`text-sm font-medium ${activeFilters.has("top-rated") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                          className={`text-sm font-medium ${activeFilters.has("top-rated") ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                           Top Rated
                         </span>
                       </button>
                       <button
                         onClick={() => toggleFilter("trusted")}
                         className={`px-4 py-3 rounded-xl border text-left transition-colors ${activeFilters.has("trusted")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <span
-                          className={`text-sm font-medium ${activeFilters.has("trusted") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                          className={`text-sm font-medium ${activeFilters.has("trusted") ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                           Trusted by 1000+ users
                         </span>
                       </button>
@@ -3431,18 +3431,18 @@ export default function Home() {
                     ref={(el) => (filterSectionRefs.current["offers"] = el)}
                     data-section-id="offers"
                     className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4">
                       Offers
                     </h3>
                     <div className="flex flex-col gap-3">
                       <button
                         onClick={() => toggleFilter("has-offers")}
                         className={`px-4 py-3 rounded-xl border text-left transition-colors ${activeFilters.has("has-offers")
-                          ? "border-[#DC2626] bg-[#F9F9FB] dark:bg-green-900/20"
-                          : "border-gray-200 dark:border-gray-800 hover:border-[#DC2626]"
+                          ? "border-[var(--primary)] bg-background dark:bg-green-900/20"
+                          : "border-border dark:border-gray-800 hover:border-[var(--primary)]"
                           }`}>
                         <span
-                          className={`text-sm font-medium ${activeFilters.has("has-offers") ? "text-[#DC2626]" : "text-gray-700 dark:text-gray-300"}`}>
+                          className={`text-sm font-medium ${activeFilters.has("has-offers") ? "text-[var(--primary)]" : "text-gray-700 dark:text-gray-300"}`}>
                           Restaurants with offers
                         </span>
                       </button>
@@ -3452,7 +3452,7 @@ export default function Home() {
               </div>
 
               {/* Footer */}
-              <div className="flex items-center gap-4 px-4 py-4 border-t dark:border-gray-800 bg-white dark:bg-[#1a1a1a]">
+              <div className="flex items-center gap-4 px-4 py-4 border-t dark:border-gray-800 bg-surface dark:bg-[#1a1a1a]">
                 <button
                   onClick={() => setIsFilterOpen(false)}
                   className="flex-1 py-3 text-center font-semibold text-gray-700 dark:text-gray-300">
@@ -3468,8 +3468,8 @@ export default function Home() {
                     );
                   }}
                   className={`flex-1 py-3 font-semibold rounded-xl transition-colors ${activeFilters.size > 0 || sortBy || selectedCuisine
-                    ? "bg-[#DC2626] text-white hover:bg-[#991B1B]"
-                    : "bg-gray-200 text-gray-500"
+                    ? "bg-[var(--primary)] text-white hover:bg-primary-dark"
+                    : "bg-gray-200 text-text-secondary"
                     }`}
                   disabled={isLoadingFilterResults}>
                   {isLoadingFilterResults
@@ -3516,7 +3516,7 @@ export default function Home() {
                     stiffness: 400,
                     mass: 0.8,
                   }}
-                  className="fixed z-[9999] bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl p-4 w-[calc(100%-2rem)] max-w-xs"
+                  className="fixed z-[9999] bg-surface dark:bg-[#1a1a1a] rounded-2xl shadow-2xl p-4 w-[calc(100%-2rem)] max-w-xs"
                   style={{
                     top: `${popupPosition.top}px`,
                     left: `${popupPosition.left}px`,
@@ -3525,7 +3525,7 @@ export default function Home() {
                   onClick={(e) => e.stopPropagation()}>
                   {/* Pointer Triangle */}
                   <div
-                    className="absolute -top-2 w-3 h-3 bg-white dark:bg-[#1a1a1a] transform rotate-45"
+                    className="absolute -top-2 w-3 h-3 bg-surface dark:bg-[#1a1a1a] transform rotate-45"
                     style={{
                       left: `${popupPosition.triangleLeft - 6}px`,
                       boxShadow: "-2px -2px 4px rgba(0,0,0,0.1)",
@@ -3533,7 +3533,7 @@ export default function Home() {
                   />
 
                   {/* Title */}
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white mb-3">
+                  <h3 className="text-base font-bold text-text-primary dark:text-white mb-3">
                     See veg dishes from
                   </h3>
 
@@ -3555,14 +3555,14 @@ export default function Home() {
                         <div
                           className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${vegModeOption === "all"
                             ? "border-green-600 dark:border-green-500 bg-green-600 dark:bg-green-500"
-                            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a]"
+                            : "border-border dark:border-gray-600 bg-surface dark:bg-[#2a2a2a]"
                             }`}>
                           {vegModeOption === "all" && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-white" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-surface dark:bg-white" />
                           )}
                         </div>
                       </div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      <span className="text-sm font-medium text-text-primary dark:text-white">
                         All restaurants
                       </span>
                     </label>
@@ -3583,14 +3583,14 @@ export default function Home() {
                         <div
                           className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${vegModeOption === "pure-veg"
                             ? "border-green-600 dark:border-green-500 bg-green-600 dark:bg-green-500"
-                            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2a2a2a]"
+                            : "border-border dark:border-gray-600 bg-surface dark:bg-[#2a2a2a]"
                             }`}>
                           {vegModeOption === "pure-veg" && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-white" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-surface dark:bg-white" />
                           )}
                         </div>
                       </div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      <span className="text-sm font-medium text-text-primary dark:text-white">
                         Pure Veg restaurants only
                       </span>
                     </label>
@@ -3609,7 +3609,7 @@ export default function Home() {
                         setIsApplyingVegMode(false);
                       }, 2000);
                     }}
-                    className="w-full bg-[#DC2626] text-white font-semibold py-2.5 rounded-xl hover:bg-[#991B1B] transition-colors mb-2 text-sm">
+                    className="w-full bg-[var(--primary)] text-white font-semibold py-2.5 rounded-xl hover:bg-primary-dark transition-colors mb-2 text-sm">
                     Apply
                   </button>
                 </motion.div>
@@ -3653,7 +3653,7 @@ export default function Home() {
                   }}
                   className="fixed inset-0 z-[9999] flex dark:bg-[#lalala] dark:text-white items-center justify-center p-4"
                   onClick={(e) => e.stopPropagation()}>
-                  <div className="bg-white dark:bg-[#lalala] dark:text-white rounded-2xl shadow-2xl w-[85%] max-w-sm p-6">
+                  <div className="bg-surface dark:bg-[#lalala] dark:text-white rounded-2xl shadow-2xl w-[85%] max-w-sm p-6">
                     {/* Warning Icon */}
                     <div className="flex justify-center mb-4">
                       <div className="w-20 h-20 rounded-full bg-pink-100 flex items-center justify-center">
@@ -3665,12 +3665,12 @@ export default function Home() {
                     </div>
 
                     {/* Title */}
-                    <h2 className="text-2xl font-bold text-gray-900  text-center mb-2">
+                    <h2 className="text-2xl font-bold text-text-primary  text-center mb-2">
                       Switch off Veg Mode?
                     </h2>
 
                     {/* Description */}
-                    <p className="text-gray-600 text-center mb-6 text-sm">
+                    <p className="text-text-secondary text-center mb-6 text-sm">
                       You'll see all restaurants, including those serving non-veg
                       dishes
                     </p>
@@ -3689,7 +3689,7 @@ export default function Home() {
                             setPrevVegMode(false); // Set to false to match current state (veg mode is OFF)
                           }, 2000);
                         }}
-                        className="w-full bg-transparent text-red-600 font-normal py-1 text-normal rounded-xl hover:bg-red-50 transition-colors text-base">
+                        className="w-full bg-transparent text-primary font-normal py-1 text-normal rounded-xl hover:bg-primary-light/10 transition-colors text-base">
                         Switch off
                       </button>
 
@@ -3700,7 +3700,7 @@ export default function Home() {
                           setVegModeContext(true);
                           // prevVegMode stays true (from before), which is correct
                         }}
-                        className="w-full text-gray-900 font-normal py-1 text-center rounded-xl hover:bg-gray-200 transition-colors text-base">
+                        className="w-full text-text-primary font-normal py-1 text-center rounded-xl hover:bg-gray-200 transition-colors text-base">
                         Keep using this mode
                       </button>
                     </div>
@@ -3736,18 +3736,18 @@ export default function Home() {
                 damping: 30,
                 stiffness: 300,
               }}
-              className="fixed inset-x-0 bottom-0 top-12 sm:top-16 md:top-20 z-[9999] bg-white dark:bg-[#1a1a1a] rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
+              className="fixed inset-x-0 bottom-0 top-12 sm:top-16 md:top-20 z-[9999] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl shadow-2xl overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}>
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 sm:px-6 sm:py-5 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+              <div className="flex items-center justify-between px-5 py-4 sm:px-6 sm:py-5 border-b border-border dark:border-gray-800 flex-shrink-0">
+                <h2 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white">
                   All Categories
                 </h2>
                 <button
                   onClick={() => setShowAllCategoriesModal(false)}
                   className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   aria-label="Close">
-                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 dark:text-gray-400" />
+                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-text-secondary dark:text-text-secondary" />
                 </button>
               </div>
 
@@ -3781,7 +3781,7 @@ export default function Home() {
                               <OptimizedImage
                                 src={categoryData.image}
                                 alt={categoryData.name}
-                                className="w-full h-full bg-white rounded-full"
+                                className="w-full h-full bg-surface rounded-full"
                                 sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, 112px"
                                 objectFit="cover"
                                 placeholder="blur"
@@ -3810,7 +3810,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[10000] bg-white dark:bg-[#0a0a0a] flex items-center justify-center">
+            className="fixed inset-0 z-[10000] bg-surface dark:bg-[#0a0a0a] flex items-center justify-center">
             <div className="relative w-32 h-32 flex items-center justify-center w-full">
               {/* Animated circles - positioned absolutely at the center */}
               {[...Array(8)].map((_, i) => {
@@ -3852,7 +3852,7 @@ export default function Home() {
                   damping: 15,
                   delay: 0.1,
                 }}
-                className="absolute z-10 w-28 h-28 rounded-full border-2 border-green-600 dark:border-green-500 bg-white dark:bg-[#1a1a1a] flex flex-col items-center justify-center shadow-sm"
+                className="absolute z-10 w-28 h-28 rounded-full border-2 border-green-600 dark:border-green-500 bg-surface dark:bg-[#1a1a1a] flex flex-col items-center justify-center shadow-sm"
               >
                 <motion.div
                   className="flex flex-col items-center"
@@ -3889,7 +3889,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[10000] bg-white dark:bg-[#0a0a0a] flex items-center justify-center">
+            className="fixed inset-0 z-[10000] bg-surface dark:bg-[#0a0a0a] flex items-center justify-center">
             <div className="flex flex-col items-center gap-6">
               {/* Two Circles Spinning in Opposite Directions */}
               <motion.div
@@ -3991,7 +3991,7 @@ export default function Home() {
 
                 {/* Manage Collections Bottom Sheet */}
                 <motion.div
-                  className="fixed left-0 right-0 bottom-0 z-[10000] bg-white rounded-t-3xl shadow-2xl"
+                  className="fixed left-0 right-0 bottom-0 z-[10000] bg-surface rounded-t-3xl shadow-2xl"
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
@@ -4002,8 +4002,8 @@ export default function Home() {
                     stiffness: 400,
                   }}>
                   {/* Header */}
-                  <div className="flex items-center justify-between px-4 pt-6 pb-4 border-b border-gray-200">
-                    <h2 className="text-lg font-bold text-gray-900">
+                  <div className="flex items-center justify-between px-4 pt-6 pb-4 border-b border-border">
+                    <h2 className="text-lg font-bold text-text-primary">
                       Manage Collections
                     </h2>
                     <button
@@ -4027,7 +4027,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1 text-left">
                         <div className="flex items-center justify-between">
-                          <span className="text-base font-medium text-gray-900">
+                          <span className="text-base font-medium text-text-primary">
                             Bookmarks
                           </span>
                           {selectedRestaurantSlug && (
@@ -4051,7 +4051,7 @@ export default function Home() {
                             </div>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-text-secondary mt-1">
                           {getFavorites().length} restaurant
                           {getFavorites().length !== 1 ? "s" : ""}
                         </p>
@@ -4066,7 +4066,7 @@ export default function Home() {
                         <Plus className="h-6 w-6 text-red-500" />
                       </div>
                       <div className="flex-1 text-left">
-                        <span className="text-base font-medium text-gray-900">
+                        <span className="text-base font-medium text-text-primary">
                           Create new Collection
                         </span>
                       </div>
@@ -4074,7 +4074,7 @@ export default function Home() {
                   </div>
 
                   {/* Done Button */}
-                  <div className="border-t border-gray-200 px-4 py-4">
+                  <div className="border-t border-border px-4 py-4">
                     <Button
                       className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 rounded-lg font-medium"
                       onClick={() => {

@@ -28,32 +28,32 @@ export default function TableEditUserPage() {
     };
 
     return (
-        <AnimatedPage className="min-h-screen bg-[#f8f9fa] pb-20">
+        <AnimatedPage className="min-h-screen bg-background pb-20">
             {/* Header */}
-            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-100">
+            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-border">
                 <div className="max-w-lg mx-auto px-4 h-16 flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-900 active:scale-90 transition-all">
+                    <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-text-primary active:scale-90 transition-all">
                         <ArrowLeft className="w-6 h-6" />
                     </button>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase">Edit Details</h1>
+                    <h1 className="text-xl font-black text-text-primary tracking-tight uppercase">Edit Details</h1>
                 </div>
             </div>
 
             <div className="max-w-lg mx-auto px-4 py-8 space-y-8">
                 <div className="text-center space-y-2">
-                    <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-xl shadow-red-100">
+                    <div className="w-20 h-20 bg-primary-light/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-xl shadow-red-100">
                         <User className="w-10 h-10" />
                     </div>
-                    <h2 className="text-2xl font-black text-slate-900">Personalize Booking</h2>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-[0.2em]">Contact details for the restaurant</p>
+                    <h2 className="text-2xl font-black text-text-primary">Personalize Booking</h2>
+                    <p className="text-xs text-text-secondary font-bold uppercase tracking-[0.2em]">Contact details for the restaurant</p>
                 </div>
 
                 <div className="space-y-6">
                     {/* Name Input */}
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Full Name</label>
+                        <label className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] ml-2">Full Name</label>
                         <div className="relative">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary">
                                 <User className="w-5 h-5" />
                             </div>
                             <input 
@@ -61,16 +61,16 @@ export default function TableEditUserPage() {
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Enter your full name"
-                                className="w-full h-14 pl-12 pr-4 bg-white border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500 transition-all placeholder:text-slate-300 shadow-sm"
+                                className="w-full h-14 pl-12 pr-4 bg-surface border border-border rounded-2xl font-bold text-text-primary focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500 transition-all placeholder:text-slate-300 shadow-sm"
                             />
                         </div>
                     </div>
 
                     {/* Phone Input */}
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Mobile Number</label>
+                        <label className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] ml-2">Mobile Number</label>
                         <div className="relative">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary">
                                 <Phone className="w-5 h-5" />
                             </div>
                             <input 
@@ -78,7 +78,7 @@ export default function TableEditUserPage() {
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
                                 placeholder="Enter mobile number"
-                                className="w-full h-14 pl-12 pr-4 bg-white border border-slate-100 rounded-2xl font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500 transition-all placeholder:text-slate-300 shadow-sm"
+                                className="w-full h-14 pl-12 pr-4 bg-surface border border-border rounded-2xl font-bold text-text-primary focus:outline-none focus:ring-4 focus:ring-red-500/5 focus:border-red-500 transition-all placeholder:text-slate-300 shadow-sm"
                             />
                         </div>
                     </div>
@@ -94,7 +94,7 @@ export default function TableEditUserPage() {
                     </button>
                     <button 
                         onClick={() => navigate(-1)}
-                        className="w-full h-14 mt-4 bg-slate-100 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-sm active:scale-95 transition-all"
+                        className="w-full h-14 mt-4 bg-slate-100 text-text-secondary rounded-2xl font-black uppercase tracking-widest text-sm active:scale-95 transition-all"
                     >
                         Cancel
                     </button>

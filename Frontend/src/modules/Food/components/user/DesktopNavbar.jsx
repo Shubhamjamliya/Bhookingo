@@ -185,11 +185,11 @@ export default function DesktopNavbar({ showLogo = true }) {
             ref={navRef}
             className={`hidden md:flex flex-col fixed top-0 left-0 right-0 z-50 py-2 transition-all duration-300 ${(isBannerRoute && !hasScrolledPastBanner)
                 ? "bg-transparent !bg-transparent border-0 shadow-none"
-                : "bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 shadow-sm"
+                : "bg-surface dark:bg-[#1a1a1a] border-b border-border dark:border-gray-800 shadow-sm"
                 }`}
         >
             {/* Top Row: Location - Search - Icons */}
-            <div className={`w-full ${(isBannerRoute && !hasScrolledPastBanner) ? "border-b border-transparent" : "border-b border-gray-100 dark:border-gray-800"}`}>
+            <div className={`w-full ${(isBannerRoute && !hasScrolledPastBanner) ? "border-b border-transparent" : "border-b border-border dark:border-gray-800"}`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16 gap-4">
                         {/* Left: Logo & Location */}
@@ -222,28 +222,28 @@ export default function DesktopNavbar({ showLogo = true }) {
                                 className="h-auto px-0 py-0 hover:bg-transparent transition-colors flex-shrink-0"
                             >
                                 {locationLoading ? (
-                                    <span className="text-sm font-bold text-black dark:text-white">
+                                    <span className="text-sm font-bold text-text-primary dark:text-white">
                                         Loading...
                                     </span>
                                 ) : (
                                     <div className="flex flex-col items-start min-w-0">
                                         <div className="flex items-center gap-1.5 lg:gap-2">
                                             <FaLocationDot
-                                                className="h-5 w-5 lg:h-6 lg:w-6 text-black dark:text-white flex-shrink-0"
+                                                className="h-5 w-5 lg:h-6 lg:w-6 text-text-primary dark:text-white flex-shrink-0"
                                                 fill="currentColor"
                                                 strokeWidth={2}
                                             />
-                                            <span className="text-sm lg:text-base font-bold text-black dark:text-white whitespace-nowrap">
+                                            <span className="text-sm lg:text-base font-bold text-text-primary dark:text-white whitespace-nowrap">
                                                 {mainLocationName}
                                             </span>
-                                            <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5 text-black dark:text-white flex-shrink-0" strokeWidth={2.5} />
+                                            <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5 text-text-primary dark:text-white flex-shrink-0" strokeWidth={2.5} />
                                         </div>
                                         {baseAddress && (
-                                            <span className="text-[10px] lg:text-xs font-medium text-gray-500 dark:text-gray-400 truncate max-w-[200px]">
+                                            <span className="text-[10px] lg:text-xs font-medium text-text-secondary dark:text-text-secondary truncate max-w-[200px]">
                                                 {baseAddress}
                                             </span>
                                         )}
-                                        <span className="text-[9px] lg:text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">
+                                        <span className="text-[9px] lg:text-[10px] font-black text-text-secondary dark:text-text-secondary uppercase tracking-widest leading-none">
                                             {bottomCity}
                                         </span>
                                     </div>
@@ -255,9 +255,9 @@ export default function DesktopNavbar({ showLogo = true }) {
                         <div className="flex-1 max-w-3xl mx-4 flex items-center gap-4">
                             {/* Search Bar */}
                             <div className="relative flex-1">
-                                <div className="relative bg-gray-100 dark:bg-[#2a2a2a] rounded-lg transition-all duration-300 focus-within:ring-2 focus-within:ring-[#DC2626] focus-within:bg-white dark:focus-within:bg-[#1a1a1a] border border-transparent focus-within:border-[#DC2626]/20">
+                                <div className="relative bg-gray-100 dark:bg-[#2a2a2a] rounded-lg transition-all duration-300 focus-within:ring-2 focus-within:ring-[var(--primary)] focus-within:bg-white dark:focus-within:bg-[#1a1a1a] border border-transparent focus-within:border-[var(--primary)]/20">
                                     <div className="flex items-center px-3 py-2">
-                                        <Search className="h-4 w-4 text-gray-500 flex-shrink-0 mr-3" />
+                                        <Search className="h-4 w-4 text-text-secondary flex-shrink-0 mr-3" />
                                         <Input
                                             value={heroSearch}
                                             onChange={(e) => {
@@ -270,7 +270,7 @@ export default function DesktopNavbar({ showLogo = true }) {
                                                     navigate(`/food/search?q=${encodeURIComponent(heroSearch.trim())}`)
                                                 }
                                             }}
-                                            className="h-6 p-0 border-0 bg-transparent text-sm font-medium placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                            className="h-6 p-0 border-0 bg-transparent text-sm font-medium placeholder:text-text-secondary focus-visible:ring-0 focus-visible:ring-offset-0"
                                             placeholder="Search for restaurants, food..."
                                         />
                                         {heroSearch && (
@@ -292,7 +292,7 @@ export default function DesktopNavbar({ showLogo = true }) {
                             <div className="flex items-center gap-2 flex-shrink-0">
                                 <div className="flex flex-col items-end">
                                     <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300 leading-none">VEG</span>
-                                    <span className="text-[8px] font-bold text-gray-500 dark:text-gray-400 leading-none">MODE</span>
+                                    <span className="text-[8px] font-bold text-text-secondary dark:text-text-secondary leading-none">MODE</span>
                                 </div>
                                 <Switch
                                     checked={vegMode}
@@ -344,7 +344,7 @@ export default function DesktopNavbar({ showLogo = true }) {
             </div>
 
             {/* Bottom Row: Navigation Tabs & Veg Mode */}
-            <div className={`w-full pb-3 ${(isBannerRoute && !hasScrolledPastBanner) ? "bg-transparent !bg-transparent" : "bg-white dark:bg-[#1a1a1a]"}`}>
+            <div className={`w-full pb-3 ${(isBannerRoute && !hasScrolledPastBanner) ? "bg-transparent !bg-transparent" : "bg-surface dark:bg-[#1a1a1a]"}`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-center h-12">
                         {/* Navigation Tabs - Centered with spacing */}
@@ -352,15 +352,15 @@ export default function DesktopNavbar({ showLogo = true }) {
                             <Link
                                 to="/"
                                 className={`flex flex-col items-center gap-1 px-2 py-1 transition-colors relative group ${(location.pathname === '/' || location.pathname === '/food/user' || location.pathname === '/food')
-                                    ? "text-[#DC2626]"
-                                    : "text-gray-600 dark:text-gray-400 hover:text-[#DC2626]"
+                                    ? "text-[var(--primary)]"
+                                    : "text-text-secondary dark:text-text-secondary hover:text-[var(--primary)]"
                                     }`}
                             >
                                 <span className="text-sm font-bold tracking-wide uppercase">Order</span>
                                 {(location.pathname === '/' || location.pathname === '/food/user' || location.pathname === '/food') && (
                                     <motion.div
                                         layoutId="navIndicator"
-                                        className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[#DC2626]"
+                                        className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[var(--primary)]"
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 0.3 }}
@@ -372,15 +372,15 @@ export default function DesktopNavbar({ showLogo = true }) {
                             <Link
                                 to="/food/user/under-250"
                                 className={`flex flex-col items-center gap-1 px-2 py-1 transition-colors relative group ${isUnder250
-                                    ? "text-[#DC2626]"
-                                    : "text-gray-600 dark:text-gray-400 hover:text-[#DC2626]"
+                                    ? "text-[var(--primary)]"
+                                    : "text-text-secondary dark:text-text-secondary hover:text-[var(--primary)]"
                                     }`}
                             >
                                 <span className="text-sm font-bold tracking-wide uppercase">Under ₹{under250PriceLimit}</span>
                                 {isUnder250 && (
                                     <motion.div
                                         layoutId="navIndicator"
-                                        className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[#DC2626]"
+                                        className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[var(--primary)]"
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 0.3 }}
@@ -392,15 +392,15 @@ export default function DesktopNavbar({ showLogo = true }) {
                             <Link
                                 to="/food/user/dining"
                                 className={`flex flex-col items-center gap-1 px-2 py-1 transition-colors relative group ${isDining
-                                    ? "text-[#DC2626]"
-                                    : "text-gray-600 dark:text-gray-400 hover:text-[#DC2626]"
+                                    ? "text-[var(--primary)]"
+                                    : "text-text-secondary dark:text-text-secondary hover:text-[var(--primary)]"
                                     }`}
                             >
                                 <span className="text-sm font-bold tracking-wide uppercase">Dining</span>
                                 {isDining && (
                                     <motion.div
                                         layoutId="navIndicator"
-                                        className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[#DC2626]"
+                                        className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[var(--primary)]"
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 0.3 }}
@@ -418,15 +418,15 @@ export default function DesktopNavbar({ showLogo = true }) {
                                     }
                                 }}
                                 className={`flex flex-col items-center gap-1 px-2 py-1 transition-colors relative group ${isProfile
-                                    ? "text-[#DC2626]"
-                                    : "text-gray-600 dark:text-gray-400 hover:text-[#DC2626]"
+                                    ? "text-[var(--primary)]"
+                                    : "text-text-secondary dark:text-text-secondary hover:text-[var(--primary)]"
                                     }`}
                             >
                                 <span className="text-sm font-bold tracking-wide uppercase">Profile</span>
                                 {isProfile && (
                                     <motion.div
                                         layoutId="navIndicator"
-                                        className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[#DC2626]"
+                                        className="absolute -bottom-3 left-0 right-0 h-0.5 bg-[var(--primary)]"
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 0.3 }}

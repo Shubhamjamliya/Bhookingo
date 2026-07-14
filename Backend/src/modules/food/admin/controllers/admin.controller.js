@@ -849,6 +849,16 @@ export async function createRestaurant(req, res, next) {
             data: restaurant
         });
     } catch (error) {
+        if (error.highwayCheck === false) {
+            return res.status(400).json({
+                success: false,
+                message: 'Restaurant location is not within the allowed National Highway range.',
+                highwayCheck: false,
+                nearestHighway: error.nearestHighway,
+                distance: error.distance,
+                status: 'OUT_OF_SERVICE'
+            });
+        }
         next(error);
     }
 }

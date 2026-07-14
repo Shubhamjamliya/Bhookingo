@@ -28,7 +28,7 @@ const VegModePopups = ({
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="relative bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl overflow-hidden border border-green-100 dark:border-green-900/30"
+                className="relative bg-surface dark:bg-[#1a1a1a] rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl overflow-hidden border border-green-100 dark:border-green-900/30"
               >
                 {/* Decorative Elements */}
                 <div className="absolute -top-10 -right-10 w-32 h-32 bg-green-500/10 rounded-full blur-3xl" />
@@ -38,8 +38,8 @@ const VegModePopups = ({
                   <div className="w-20 h-20 bg-green-100 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-green-50 dark:ring-green-500/5">
                     <Leaf className="w-10 h-10 text-green-600 dark:text-green-400" />
                   </div>
-                  <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-3">Pure Veg Mode</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8">
+                  <h3 className="text-2xl font-black text-text-primary dark:text-white mb-3">Pure Veg Mode</h3>
+                  <p className="text-text-secondary dark:text-text-secondary text-sm leading-relaxed mb-8">
                     We've filtered your feed to show only 100% vegetarian restaurants. Enjoy your meat-free browsing!
                   </p>
                   <button
@@ -72,22 +72,22 @@ const VegModePopups = ({
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="relative bg-white dark:bg-[#1a1a1a] rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl overflow-hidden border border-[#DC2626]/10 dark:border-[#DC2626]/30"
+                className="relative bg-surface dark:bg-[#1a1a1a] rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl overflow-hidden border border-[var(--primary)]/10 dark:border-[var(--primary)]/30"
               >
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#DC2626]/10 rounded-full blur-3xl" />
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-[var(--primary)]/10 rounded-full blur-3xl" />
 
                 <div className="relative text-center">
-                  <div className="w-20 h-20 bg-[#DC2626]/5 dark:bg-[#DC2626]/20 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-[#DC2626]/5 dark:ring-[#DC2626]/5">
-                    <AlertCircle className="w-10 h-10 text-[#DC2626] dark:text-[#FEE2E2]" />
+                  <div className="w-20 h-20 bg-[var(--primary)]/5 dark:bg-[var(--primary)]/20 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-[var(--primary)]/5 dark:ring-[var(--primary)]/5">
+                    <AlertCircle className="w-10 h-10 text-[var(--primary)] dark:text-[#FEE2E2]" />
                   </div>
-                  <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-3">Switching Off?</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed mb-8">
+                  <h3 className="text-2xl font-black text-text-primary dark:text-white mb-3">Switching Off?</h3>
+                  <p className="text-text-secondary dark:text-text-secondary text-sm leading-relaxed mb-8">
                     This will re-enable non-vegetarian options in your feed. Are you sure you want to continue?
                   </p>
                   <div className="flex flex-col gap-3">
                     <button
                       onClick={onConfirmSwitchOff}
-                      className="w-full py-4 bg-[#DC2626] hover:bg-[#991B1B] text-white font-bold rounded-2xl shadow-lg shadow-[#DC2626]/25 transition-all duration-300 transform active:scale-95 flex items-center justify-center gap-2"
+                      className="w-full py-4 bg-[var(--primary)] hover:bg-primary-dark text-white font-bold rounded-2xl shadow-lg shadow-[var(--primary)]/25 transition-all duration-300 transform active:scale-95 flex items-center justify-center gap-2"
                     >
                       <RefreshCw className="w-4 h-4" />
                       Yes, Switch Off

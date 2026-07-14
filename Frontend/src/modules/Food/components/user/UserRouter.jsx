@@ -18,6 +18,7 @@ const DiningExplore50 = lazy(() => import("@food/pages/user/DiningExplore50"))
 const DiningExploreNear = lazy(() => import("@food/pages/user/DiningExploreNear"))
 const Coffee = lazy(() => import("@food/pages/user/Coffee"))
 const Under250 = lazy(() => import("@food/pages/user/Under250"))
+const DrivingMode = lazy(() => import("@food/pages/user/driving/DrivingMode"))
 const Categories = lazy(() => import("@food/pages/user/Categories"))
 const CategoryPage = lazy(() => import("@food/pages/user/CategoryPage"))
 const Restaurants = lazy(() => import("@food/pages/user/restaurants/Restaurants"))
@@ -101,9 +102,9 @@ import { AppShellSkeleton } from "@food/components/ui/loading-skeletons"
 import { Loader2 } from "lucide-react"
 
 const PageLoader = () => (
-  <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-white dark:bg-[#0a0a0a]">
-    <Loader2 className="h-10 w-10 animate-spin text-[#CB202D]" />
-    <p className="mt-4 text-gray-500 font-bold uppercase tracking-widest text-[10px]">
+  <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-surface dark:bg-[#0a0a0a]">
+    <Loader2 className="h-10 w-10 animate-spin text-[var(--primary)]" />
+    <p className="mt-4 text-text-secondary font-bold uppercase tracking-widest text-[10px]">
       Loading...
     </p>
   </div>
@@ -196,6 +197,7 @@ export default function UserRouter() {
           <Route path="dining/coffee" element={<Coffee />} />
           <Route path="dining/:diningType/:slug" element={<DiningRestaurantDetails />} />
           <Route path="under-250" element={<Under250 />} />
+          <Route path="driving" element={<DrivingMode />} />
           <Route path="categories" element={<Categories />} />
           <Route path="category/:category" element={<CategoryPage />} />
           <Route path="restaurants" element={<Restaurants />} />

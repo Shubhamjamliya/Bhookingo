@@ -20,7 +20,7 @@ export default function Carousel({ children, className = "" }) {
       <Button
         variant="ghost"
         size="icon"
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white rounded-full h-10 w-10"
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm shadow-lg hover:bg-surface rounded-full h-10 w-10"
         onClick={() => scroll("left")}
       >
         <ChevronLeft className="h-5 w-5" />
@@ -35,7 +35,7 @@ export default function Carousel({ children, className = "" }) {
       <Button
         variant="ghost"
         size="icon"
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white rounded-full h-10 w-10"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 backdrop-blur-sm shadow-lg hover:bg-surface rounded-full h-10 w-10"
         onClick={() => scroll("right")}
       >
         <ChevronRight className="h-5 w-5" />

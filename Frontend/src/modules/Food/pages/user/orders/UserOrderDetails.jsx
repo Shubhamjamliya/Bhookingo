@@ -97,7 +97,7 @@ export default function UserOrderDetails() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center">
-        <p className="text-gray-600 dark:text-gray-400 text-sm">Loading order details...</p>
+        <p className="text-text-secondary dark:text-text-secondary text-sm">Loading order details...</p>
       </div>
     )
   }
@@ -109,7 +109,7 @@ export default function UserOrderDetails() {
           <p className="text-gray-700 dark:text-gray-300 text-sm font-medium">Order not found</p>
           <button
             onClick={() => navigate("/user/orders")}
-            className="px-4 py-2 rounded-lg bg-[#DC2626] text-white text-sm font-semibold hover:bg-[#991B1B] transition-all active:scale-95 shadow-md"
+            className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-sm font-semibold hover:bg-primary-dark transition-all active:scale-95 shadow-md"
           >
             Back to Orders
           </button>
@@ -358,7 +358,7 @@ export default function UserOrderDetails() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-24 font-sans relative">
       {/* Header */}
-      <div className="bg-white dark:bg-[#121212] p-4 flex items-center sticky top-0 z-20 shadow-sm border-b dark:border-gray-800">
+      <div className="bg-surface dark:bg-[#121212] p-4 flex items-center sticky top-0 z-20 shadow-sm border-b dark:border-gray-800">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -374,9 +374,9 @@ export default function UserOrderDetails() {
       {/* Scrollable Content */}
       <div className="p-4 space-y-4">
         {/* Status Card */}
-        <div className="bg-white dark:bg-[#121212] p-4 rounded-xl flex items-center gap-3 shadow-sm border dark:border-gray-800">
+        <div className="bg-surface dark:bg-[#121212] p-4 rounded-xl flex items-center gap-3 shadow-sm border dark:border-gray-800">
           <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
-            <ShoppingBag className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            <ShoppingBag className="w-6 h-6 text-text-secondary dark:text-text-secondary" />
           </div>
           <div>
             <h2 className="font-semibold text-gray-800 dark:text-gray-100">
@@ -387,19 +387,19 @@ export default function UserOrderDetails() {
                   : "Order status: " + (order.status || "Processing")}
             </h2>
             {(order.status === "cancelled" || order.status === "cancelled_by_restaurant" || order.status === "restaurant_cancelled" || order.status?.includes('cancel')) && (
-              <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl">
-                  <p className="text-sm text-red-700 dark:text-red-400 font-bold mb-1">Cancellation Reason:</p>
-                  <p className="text-sm text-red-600 dark:text-red-300 font-medium">
+              <div className="mt-2 p-3 bg-primary-light/10 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl">
+                  <p className="text-sm text-red-700 dark:text-primary-light font-bold mb-1">Cancellation Reason:</p>
+                  <p className="text-sm text-primary dark:text-red-300 font-medium">
                     {order.cancellationReason || "The restaurant was unable to fulfill this order."}
                   </p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">Refund will be initiated to your source payment method.</p>
+                <p className="text-[10px] text-text-secondary dark:text-text-secondary mt-2">Refund will be initiated to your source payment method.</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Restaurant Info Card */}
-        <div className="bg-white dark:bg-[#121212] p-4 rounded-xl shadow-sm border dark:border-gray-800">
+        <div className="bg-surface dark:bg-[#121212] p-4 rounded-xl shadow-sm border dark:border-gray-800">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <img
@@ -416,25 +416,25 @@ export default function UserOrderDetails() {
               />
               <div>
                 <h3 className="font-semibold text-gray-800 dark:text-gray-100">{restaurantName}</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{restaurantLocation}</p>
+                <p className="text-xs text-text-secondary dark:text-text-secondary">{restaurantLocation}</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={handleCallRestaurant}
-              className="w-8 h-8 rounded-full border border-[#DC2626]/20 flex items-center justify-center text-[#DC2626] hover:bg-[#DC2626]/5"
+              className="w-8 h-8 rounded-full border border-[var(--primary)]/20 flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary)]/5"
             >
               <Phone className="w-4 h-4" />
             </button>
           </div>
 
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">
+            <span className="text-xs text-text-secondary dark:text-text-secondary uppercase tracking-wide font-medium">
               Order ID: #{orderIdDisplay}
             </span>
             <button type="button" onClick={handleCopyOrderId}>
-              <Copy className="w-3 h-3 text-gray-400 dark:text-gray-500 cursor-pointer" />
+              <Copy className="w-3 h-3 text-text-secondary dark:text-text-secondary cursor-pointer" />
             </button>
           </div>
 
@@ -454,14 +454,14 @@ export default function UserOrderDetails() {
             )}
           </div>
 
-          <div className="border-t border-dashed border-gray-200 dark:border-gray-800 my-3" />
+          <div className="border-t border-dashed border-border dark:border-gray-800 my-3" />
 
           {/* Items */}
           {items.map((item, idx) => (
             <div key={idx} className="flex justify-between items-start mt-4 first:mt-0">
               <div className="flex items-center gap-3">
                 {item.image && (
-                  <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800">
+                  <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-xl overflow-hidden shadow-sm border border-border dark:border-gray-800">
                     <img 
                       src={item.image} 
                       alt={item.name} 
@@ -473,11 +473,11 @@ export default function UserOrderDetails() {
                 <div>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`w-3 h-3 border ${item.isVeg === true || item.foodType === 'Veg' ? "border-green-600" : "border-red-600"
+                      className={`w-3 h-3 border ${item.isVeg === true || item.foodType === 'Veg' ? "border-green-600" : "border-primary"
                         } flex items-center justify-center p-[1px]`}
                     >
                       <div
-                        className={`w-full h-full rounded-full ${item.isVeg === true || item.foodType === 'Veg' ? "bg-green-600" : "bg-red-600"
+                        className={`w-full h-full rounded-full ${item.isVeg === true || item.foodType === 'Veg' ? "bg-green-600" : "bg-primary"
                           }`}
                       />
                     </div>
@@ -495,16 +495,16 @@ export default function UserOrderDetails() {
         </div>
 
         {/* Bill Summary Card */}
-        <div className="bg-white dark:bg-[#121212] rounded-xl shadow-sm overflow-hidden border dark:border-gray-800">
-          <div className="p-4 flex justify-between items-center border-b border-gray-100 dark:border-gray-800">
+        <div className="bg-surface dark:bg-[#121212] rounded-xl shadow-sm overflow-hidden border dark:border-gray-800">
+          <div className="p-4 flex justify-between items-center border-b border-border dark:border-gray-800">
             <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <FileText className="w-5 h-5 text-text-secondary dark:text-text-secondary" />
               <h3 className="font-semibold text-gray-800 dark:text-gray-100">Bill Summary</h3>
             </div>
             <button
               type="button"
               onClick={handleDownloadSummary}
-              className="w-7 h-7 rounded-full bg-[#DC2626]/10 flex items-center justify-center text-[#DC2626] hover:bg-[#DC2626]/20 transition-colors"
+              className="w-7 h-7 rounded-full bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary)]/20 transition-colors"
             >
               <Download className="w-4 h-4" />
             </button>
@@ -512,10 +512,10 @@ export default function UserOrderDetails() {
 
           <div className="p-4 space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Item total</span>
+              <span className="text-text-secondary dark:text-text-secondary">Item total</span>
               <div>
                 {pricing.originalItemTotal && (
-                  <span className="text-gray-400 dark:text-gray-500 line-through mr-1">
+                  <span className="text-text-secondary dark:text-text-secondary line-through mr-1">
                     ₹{Number(pricing.originalItemTotal).toFixed(2)}
                   </span>
                 )}
@@ -525,26 +525,26 @@ export default function UserOrderDetails() {
               </div>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">GST (govt. taxes)</span>
+              <span className="text-text-secondary dark:text-text-secondary">GST (govt. taxes)</span>
               <span className="text-gray-800 dark:text-gray-200">
                 ₹{Number(pricing.tax || 0).toFixed(2)}
               </span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Platform fee</span>
+              <span className="text-text-secondary dark:text-text-secondary">Platform fee</span>
               <span className="text-gray-800 dark:text-gray-200">
                 ₹{Number(pricing.platformFee || 0).toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Subscription / other fees</span>
+              <span className="text-text-secondary dark:text-text-secondary">Subscription / other fees</span>
               <span className="text-gray-800 dark:text-gray-200">
                 ₹{Number(pricing.subscriptionFee || 0).toFixed(2)}
               </span>
             </div>
 
-            <div className="border-t border-gray-100 dark:border-gray-800 my-2 pt-2 flex justify-between items-center">
+            <div className="border-t border-border dark:border-gray-800 my-2 pt-2 flex justify-between items-center">
               <span className="font-bold text-gray-800 dark:text-gray-100">Paid</span>
               <span className="font-bold text-gray-800 dark:text-gray-100">
                 ₹{Number(pricing.total || 0).toFixed(2)}
@@ -554,7 +554,7 @@ export default function UserOrderDetails() {
 
           {/* Savings Banner */}
           {savings > 0 && (
-            <div className="relative bg-[#DC2626]/5 p-3 pb-4 mt-2">
+            <div className="relative bg-[var(--primary)]/5 p-3 pb-4 mt-2">
               <div className="absolute -top-1.5 left-0 w-full overflow-hidden leading-none">
                 <svg
                   className="relative block w-[calc(100%+1.3px)] h-[8px]"
@@ -570,7 +570,7 @@ export default function UserOrderDetails() {
                 </svg>
               </div>
 
-              <div className="flex items-center justify-center gap-2 pt-1 text-[#DC2626] font-bold text-sm">
+              <div className="flex items-center justify-center gap-2 pt-1 text-[var(--primary)] font-bold text-sm">
                 <span></span>
                 <span>
                   You saved ₹{Number(savings).toFixed(2)} on this order!
@@ -580,30 +580,30 @@ export default function UserOrderDetails() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-[#121212] p-4 rounded-xl shadow-sm space-y-5 border dark:border-gray-800">
+        <div className="bg-surface dark:bg-[#121212] p-4 rounded-xl shadow-sm space-y-5 border dark:border-gray-800">
           {/* User */}
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-              <User className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <User className="w-5 h-5 text-text-secondary dark:text-text-secondary" />
             </div>
             <div>
               <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                 {userName || "Customer"}
               </h4>
-              <p className="text-gray-500 dark:text-gray-400 text-xs">{userPhone}</p>
+              <p className="text-text-secondary dark:text-text-secondary text-xs">{userPhone}</p>
             </div>
           </div>
 
           {/* Payment */}
           <div className="flex gap-3">
             <div className="mt-0.5">
-              <CreditCard className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <CreditCard className="w-5 h-5 text-text-secondary dark:text-text-secondary" />
             </div>
             <div>
               <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                 Payment method
               </h4>
-              <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+              <p className="text-text-secondary dark:text-text-secondary text-xs mt-0.5">
                 Paid via: {paymentMethod.toUpperCase()}
               </p>
             </div>
@@ -612,26 +612,26 @@ export default function UserOrderDetails() {
           {/* Date */}
           <div className="flex gap-3">
             <div className="mt-0.5">
-              <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <Calendar className="w-5 h-5 text-text-secondary dark:text-text-secondary" />
             </div>
             <div>
               <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                 Payment date
               </h4>
-              <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">{paymentDate}</p>
+              <p className="text-text-secondary dark:text-text-secondary text-xs mt-0.5">{paymentDate}</p>
             </div>
           </div>
 
           {/* Address */}
           <div className="flex gap-3">
             <div className="mt-0.5">
-              <MapPin className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <MapPin className="w-5 h-5 text-text-secondary dark:text-text-secondary" />
             </div>
             <div>
               <h4 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
                 Address
               </h4>
-              <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5 leading-relaxed">
+              <p className="text-text-secondary dark:text-text-secondary text-xs mt-0.5 leading-relaxed">
                 {addressText || "Address not available"}
               </p>
             </div>
@@ -640,11 +640,11 @@ export default function UserOrderDetails() {
       </div>
 
       {/* Fixed Bottom Buttons */}
-      <div className="fixed bottom-0 w-full bg-white dark:bg-[#121212] border-t border-gray-200 dark:border-gray-800 p-4 flex gap-3 z-20">
+      <div className="fixed bottom-0 w-full bg-surface dark:bg-[#121212] border-t border-border dark:border-gray-800 p-4 flex gap-3 z-20">
         <button
           type="button"
           onClick={() => handleReorder(order)}
-          className="flex-1 bg-[#DC2626] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-[#991B1B] transition-all active:scale-95 shadow-md"
+          className="flex-1 bg-[var(--primary)] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-primary-dark transition-all active:scale-95 shadow-md"
         >
           <RotateCcw className="w-4 h-4" />
           Reorder
@@ -652,7 +652,7 @@ export default function UserOrderDetails() {
         <button
           type="button"
           onClick={handleDownloadSummary}
-          className="flex-1 bg-white dark:bg-[#1a1a1a] border border-[#DC2626] text-[#DC2626] py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-[#DC2626]/5 transition-colors"
+          className="flex-1 bg-surface dark:bg-[#1a1a1a] border border-[var(--primary)] text-[var(--primary)] py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-[var(--primary)]/5 transition-colors"
         >
           <Download className="w-4 h-4" />
           Invoice
@@ -686,7 +686,7 @@ export default function UserOrderDetails() {
               debugLog("Navigating to complaint page with orderId:", orderIdString)
               navigate(`/user/complaints/submit/${encodeURIComponent(orderIdString)}`)
             }}
-            className="w-full bg-[#DC2626]/5 border border-[#DC2626]/20 text-[#DC2626] py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-[#DC2626]/10 transition-colors"
+            className="w-full bg-[var(--primary)]/5 border border-[var(--primary)]/20 text-[var(--primary)] py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-[var(--primary)]/10 transition-colors"
           >
             <FileText className="w-4 h-4" />
             Restaurant Complaint

@@ -92,7 +92,7 @@ export default function Navbar() {
   const userPoints = 99
 
   return (
-    <nav className="z-50 w-full backdrop-blur-md bg-white/70 border-b border-gray-100 shadow-sm">
+    <nav className="z-50 w-full backdrop-blur-md bg-white/70 border-b border-border shadow-sm">
       <div className="w-full px-4">
         <div className="flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-3">
           {/* Location Section */}
@@ -104,13 +104,13 @@ export default function Navbar() {
               disabled={loading}
             >
               {loading ? (
-                <span className="text-xs sm:text-sm font-semibold text-left text-black">
+                <span className="text-xs sm:text-sm font-semibold text-left text-text-primary">
                   Loading...
                 </span>
               ) : (
                 <div className="flex flex-col items-start w-full min-w-0">
                   <span className="text-xs sm:text-sm flex flex-row items-center gap-1 font-bold text-left text-foreground truncate w-full">
-                    <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-black flex-shrink-0" />
+                    <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-text-primary flex-shrink-0" />
                     {location?.area || location?.subLocality || location?.city || "Select Location"}
                   </span>
                   <span className="text-[10px] sm:text-xs text-muted-foreground pt-0.5 text-left truncate w-full">
@@ -134,7 +134,7 @@ export default function Navbar() {
                 }}
               />
             ) : companyName ? (
-              <span className="text-sm sm:text-base md:text-lg font-bold text-gray-900">
+              <span className="text-sm sm:text-base md:text-lg font-bold text-text-primary">
                 {companyName}
               </span>
             ) : (

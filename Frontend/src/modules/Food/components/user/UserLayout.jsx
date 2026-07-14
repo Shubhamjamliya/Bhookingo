@@ -287,8 +287,8 @@ function UserLayoutContent() {
       {showGlobalLoader && !isInitialChecking && !location.pathname.includes('/search') && (
         <div className="fixed inset-0 z-[1000] bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300 pointer-events-auto">
           <div className="relative">
-            <div className="w-10 h-10 border-[3px] border-gray-100/30 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-10 h-10 border-[3px] border-[#DC2626] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-[3px] border-border/30 rounded-full"></div>
+            <div className="absolute top-0 left-0 w-10 h-10 border-[3px] border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
           </div>
           <p className="mt-4 text-[13px] font-bold text-gray-800 tracking-tight">Fetching Location...</p>
         </div>
@@ -308,7 +308,7 @@ function UserLayoutContent() {
             {/* Location Icon with pulsing rings */}
             <div className="relative mb-6">
               <div className="absolute inset-0 rounded-full bg-red-500/25 animate-ping opacity-75"></div>
-              <div className="relative h-20 w-20 rounded-full bg-[#DC2626] flex items-center justify-center ring-8 ring-red-500/30">
+              <div className="relative h-20 w-20 rounded-full bg-[var(--primary)] flex items-center justify-center ring-8 ring-red-500/30">
                 <MapPin className="h-10 w-10 text-white" />
               </div>
             </div>
@@ -327,11 +327,11 @@ function UserLayoutContent() {
             {/* Instruction list */}
             <div className="w-full text-left space-y-3 mb-8 text-xs text-white/80">
               <div className="flex gap-2">
-                <span className="font-bold text-[#DC2626]">1.</span>
+                <span className="font-bold text-[var(--primary)]">1.</span>
                 <span>Click the **Allow** button in the browser popup when prompted.</span>
               </div>
               <div className="flex gap-2">
-                <span className="font-bold text-[#DC2626]">2.</span>
+                <span className="font-bold text-[var(--primary)]">2.</span>
                 <span>If blocked, check your browser settings and allow location permissions for this site.</span>
               </div>
             </div>
@@ -347,7 +347,7 @@ function UserLayoutContent() {
                     console.error("Retry location failed:", e);
                   }
                 }}
-                className="w-full h-12 rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold text-sm transition-all duration-200 shadow-lg shadow-red-600/20 active:scale-95"
+                className="w-full h-12 rounded-full bg-[var(--primary)] hover:bg-[#B91C1C] text-white font-bold text-sm transition-all duration-200 shadow-lg shadow-red-600/20 active:scale-95"
               >
                 Retry Requesting Location
               </button>
@@ -380,7 +380,7 @@ export default function UserLayout() {
   useUserNotifications()
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] transition-colors duration-200">
+    <div className="min-h-screen bg-background dark:bg-[#0a0a0a] transition-colors duration-200">
       <CartProvider>
         <ProfileProvider>
           <OrdersProvider>

@@ -197,7 +197,7 @@ export default function ProfessionalSearch() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-zinc-800 px-3 py-2 sm:px-4 sm:py-3">
+      <div className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-border dark:border-zinc-800 px-3 py-2 sm:px-4 sm:py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-3">
           <button 
             onClick={() => navigate(-1)} 
@@ -207,20 +207,20 @@ export default function ProfessionalSearch() {
           </button>
           
           <div className="flex-1 relative group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#DC2626] transition-transform group-focus-within:scale-110" strokeWidth={2.5} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--primary)] transition-transform group-focus-within:scale-110" strokeWidth={2.5} />
             <Input 
               autoFocus
               placeholder="Search dishes or restaurants" 
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-10 pr-12 h-10 sm:h-12 bg-gray-50 dark:bg-zinc-800/50 border-gray-100 dark:border-zinc-700 focus:border-[#DC2626] dark:focus:border-[#DC2626] focus:ring-4 focus:ring-[#DC2626]/5 rounded-2xl text-sm sm:text-base transition-all"
+              className="pl-10 pr-12 h-10 sm:h-12 bg-gray-50 dark:bg-zinc-800/50 border-border dark:border-zinc-700 focus:border-[var(--primary)] dark:focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/5 rounded-2xl text-sm sm:text-base transition-all"
             />
             
             <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
               {query && (
                 <button 
                   onClick={handleClear} 
-                  className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="p-1.5 text-text-secondary hover:text-text-secondary transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -228,7 +228,7 @@ export default function ProfessionalSearch() {
               <div className="w-[1px] h-4 bg-gray-200 dark:bg-zinc-700 mx-0.5" />
               <button 
                 onClick={handleVoiceSearch}
-                className={`p-1.5 rounded-xl transition-all active:scale-95 ${isListening ? 'bg-red-50 text-red-500 animate-pulse' : 'text-[#DC2626]'}`}
+                className={`p-1.5 rounded-xl transition-all active:scale-95 ${isListening ? 'bg-primary-light/10 text-red-500 animate-pulse' : 'text-[var(--primary)]'}`}
               >
                 <Mic className="w-5 h-5" />
               </button>
@@ -242,9 +242,9 @@ export default function ProfessionalSearch() {
         {!query && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-5 px-1">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Top Categories</h3>
+              <h3 className="text-xs font-black text-text-secondary uppercase tracking-widest">Top Categories</h3>
               {categories.length > 8 && (
-                <span className="text-[10px] font-bold text-[#DC2626] uppercase tracking-tighter">Swipe for more</span>
+                <span className="text-[10px] font-bold text-[var(--primary)] uppercase tracking-tighter">Swipe for more</span>
               )}
             </div>
             {categories.length === 0 ? (
@@ -264,7 +264,7 @@ export default function ProfessionalSearch() {
                     onClick={() => handleCategoryClick(cat._id)}
                     className="flex flex-col items-center group active:scale-95"
                   >
-                    <div className={`relative w-15 h-15 sm:w-16 sm:h-16 rounded-[22px] mb-2 shadow-sm border-2 transition-colors duration-150 ${selectedCategoryId === cat._id ? 'border-[#DC2626] shadow-md shadow-[#DC2626]/5' : 'border-gray-50 dark:border-zinc-800 bg-white dark:bg-zinc-900 group-hover:border-gray-200'}`}>
+                    <div className={`relative w-15 h-15 sm:w-16 sm:h-16 rounded-[22px] mb-2 shadow-sm border-2 transition-colors duration-150 ${selectedCategoryId === cat._id ? 'border-[var(--primary)] shadow-md shadow-[var(--primary)]/5' : 'border-gray-50 dark:border-zinc-800 bg-surface dark:bg-zinc-900 group-hover:border-border'}`}>
                       <div className="absolute inset-0 rounded-[20px] overflow-hidden">
                         {cat.image ? (
                           <OptimizedImage 
@@ -279,7 +279,7 @@ export default function ProfessionalSearch() {
                         )}
                       </div>
                     </div>
-                    <span className={`text-[10px] sm:text-[11px] font-bold text-center line-clamp-1 transition-colors duration-150 ${selectedCategoryId === cat._id ? 'text-[#DC2626]' : 'text-gray-500 dark:text-zinc-400 group-hover:text-gray-800'}`}>
+                    <span className={`text-[10px] sm:text-[11px] font-bold text-center line-clamp-1 transition-colors duration-150 ${selectedCategoryId === cat._id ? 'text-[var(--primary)]' : 'text-text-secondary dark:text-zinc-400 group-hover:text-gray-800'}`}>
                       {cat.name}
                     </span>
                   </button>
@@ -303,13 +303,13 @@ export default function ProfessionalSearch() {
         {/* Recent History */}
         {!query && !loading && history.length > 0 && (
           <div className="mb-8">
-             <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">Recently Searched</h3>
+             <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-2 px-1">Recently Searched</h3>
              <div className="flex flex-wrap gap-2">
                 {history.map((term, i) => (
                   <button 
                     key={i} 
                     onClick={() => setQuery(term)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-full text-sm text-slate-600 dark:text-zinc-400 hover:bg-slate-50 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-surface dark:bg-zinc-900 border border-border dark:border-zinc-800 rounded-full text-sm text-text-secondary dark:text-zinc-400 hover:bg-slate-50 transition-colors"
                   >
                     <History className="w-3 h-3" />
                     {term}
@@ -340,12 +340,12 @@ export default function ProfessionalSearch() {
             {results.dishes.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-5 px-1">
-                   <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest">Matched Dishes</h2>
-                   <span className="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full">{results.dishes.length} results</span>
+                   <h2 className="text-sm font-black text-text-secondary uppercase tracking-widest">Matched Dishes</h2>
+                   <span className="text-[10px] font-bold text-text-secondary bg-gray-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full">{results.dishes.length} results</span>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                   {results.dishes.map((r) => (
-                    <Link to={`/user/restaurants/${r.slug || r._id}${r.matchedDishId ? `?dish=${r.matchedDishId}` : ''}`} key={r._id} className="flex gap-4 p-3 bg-white dark:bg-zinc-900 rounded-[24px] shadow-sm border border-gray-100 dark:border-zinc-800 hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-none transition-all group overflow-hidden active:scale-[0.98]">
+                    <Link to={`/user/restaurants/${r.slug || r._id}${r.matchedDishId ? `?dish=${r.matchedDishId}` : ''}`} key={r._id} className="flex gap-4 p-3 bg-surface dark:bg-zinc-900 rounded-[24px] shadow-sm border border-border dark:border-zinc-800 hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-none transition-all group overflow-hidden active:scale-[0.98]">
                        <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-50 dark:bg-zinc-800 flex-shrink-0 relative">
                            <OptimizedImage 
                             src={getMediaUrl(r.matchedDishImage || r.profileImage || r.image || (Array.isArray(r.images) && r.images[0]))} 
@@ -353,20 +353,20 @@ export default function ProfessionalSearch() {
                             fallback="/placeholder-dish.jpg"
                           />
                           {r.pureVegRestaurant && (
-                            <div className="absolute top-1.5 left-1.5 w-4 h-4 border border-green-600 p-[1.5px] bg-white rounded-sm shadow-sm">
+                            <div className="absolute top-1.5 left-1.5 w-4 h-4 border border-green-600 p-[1.5px] bg-surface rounded-sm shadow-sm">
                                <div className="w-full h-full bg-green-600 rounded-full" />
                             </div>
                           )}
                        </div>
                        <div className="flex-1 min-w-0 py-1">
-                          <div className="text-[#F87171] text-[9px] font-black uppercase tracking-wider mb-1 px-2 py-0.5 bg-[#DC2626]/5 rounded-full w-fit">
+                          <div className="text-[var(--primary-light)] text-[9px] font-black uppercase tracking-wider mb-1 px-2 py-0.5 bg-[var(--primary)]/5 rounded-full w-fit">
                              {r.matchedDish || query}
                           </div>
-                          <h3 className="text-base font-black text-gray-900 dark:text-white line-clamp-1 group-hover:text-[#DC2626] transition-colors">{r.restaurantName}</h3>
-                          <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-zinc-400 mt-2 font-medium">
+                          <h3 className="text-base font-black text-text-primary dark:text-white line-clamp-1 group-hover:text-[var(--primary)] transition-colors">{r.restaurantName}</h3>
+                          <div className="flex items-center gap-3 text-[11px] text-text-secondary dark:text-zinc-400 mt-2 font-medium">
                              <div className="flex items-center gap-1">
-                                <Star className="w-3 h-3 text-[#DC2626] fill-[#DC2626]" />
-                                <span className="font-black text-gray-900 dark:text-white">{r.rating || "New"}</span>
+                                <Star className="w-3 h-3 text-[var(--primary)] fill-[var(--primary)]" />
+                                <span className="font-black text-text-primary dark:text-white">{r.rating || "New"}</span>
                              </div>
                              <span className="text-gray-200">•</span>
                              <div className="flex items-center gap-1">
@@ -386,8 +386,8 @@ export default function ProfessionalSearch() {
             {results.restaurants.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-5 px-1">
-                   <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest">Restaurants</h2>
-                   <span className="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full">{results.restaurants.length} stores</span>
+                   <h2 className="text-sm font-black text-text-secondary uppercase tracking-widest">Restaurants</h2>
+                   <span className="text-[10px] font-bold text-text-secondary bg-gray-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full">{results.restaurants.length} stores</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
                   {results.restaurants.map((r) => (
@@ -410,24 +410,24 @@ export default function ProfessionalSearch() {
                            </div>
                         </div>
                         {r.offer && (
-                           <div className="absolute top-5 left-0 bg-[#DC2626] text-white text-[10px] font-black px-4 py-2 rounded-r-2xl shadow-xl flex items-center gap-1.5 tracking-tighter uppercase whitespace-nowrap">
+                           <div className="absolute top-5 left-0 bg-[var(--primary)] text-white text-[10px] font-black px-4 py-2 rounded-r-2xl shadow-xl flex items-center gap-1.5 tracking-tighter uppercase whitespace-nowrap">
                               <BadgePercent className="w-3.5 h-3.5" />
                               {r.offer}
                            </div>
                         )}
                       </div>
                       <div className="flex items-center justify-between px-2">
-                         <div className="flex items-center gap-3 text-[12px] text-gray-500 dark:text-zinc-400 font-bold uppercase tracking-tight">
+                         <div className="flex items-center gap-3 text-[12px] text-text-secondary dark:text-zinc-400 font-bold uppercase tracking-tight">
                             <div className="flex items-center gap-1.5">
-                               <Clock className="w-3.5 h-3.5 text-[#DC2626]" />
+                               <Clock className="w-3.5 h-3.5 text-[var(--primary)]" />
                             </div>
                             <span className="text-gray-200">•</span>
                             <div className="flex items-center gap-1.5">
-                               <MapPin className="w-3.5 h-3.5 text-[#DC2626]" />
+                               <MapPin className="w-3.5 h-3.5 text-[var(--primary)]" />
                                {r.location?.area || "Nearby"}
                             </div>
                          </div>
-                         <div className="text-[10px] font-black text-white bg-gradient-to-r from-[#DC2626] to-[#F87171] px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg shadow-[#DC2626]/20">
+                         <div className="text-[10px] font-black text-white bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg shadow-[var(--primary)]/20">
                             View Menu
                          </div>
                       </div>
@@ -443,8 +443,8 @@ export default function ProfessionalSearch() {
                  <div className="w-20 h-20 bg-slate-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-4">
                     <Search className="w-8 h-8 text-slate-300" />
                  </div>
-                 <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">We couldn't find any results</h2>
-                 <p className="text-slate-500 text-sm max-w-xs">Maybe try searching for something else or check your spelling</p>
+                 <h2 className="text-xl font-bold text-text-primary dark:text-white mb-2">We couldn't find any results</h2>
+                 <p className="text-text-secondary text-sm max-w-xs">Maybe try searching for something else or check your spelling</p>
                  <Button variant="outline" onClick={handleClear} className="mt-6 rounded-xl border-rose-500 text-rose-500 hover:bg-rose-50">
                     Clear all filters
                  </Button>

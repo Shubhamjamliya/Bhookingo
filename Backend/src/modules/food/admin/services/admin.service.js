@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
-import { assignHighwayToRestaurant } from './highway.service.js';
+import { assignHighwayToRestaurant, detectHighwayAtPoint } from './highway.service.js';
 
 
 import { FoodHighway } from '../models/highway.model.js';
@@ -3209,6 +3209,21 @@ export async function createRestaurantByAdmin(body) {
     const latFromCoordinates = toFiniteNumber(coordinates[1]);
     const latitude = toFiniteNumber(loc.latitude ?? latFromCoordinates);
     const longitude = toFiniteNumber(loc.longitude ?? lngFromCoordinates);
+
+    if (latitude === null || longitude === null) {
+        throw new ValidationError('Latitude and longitude coordinates are required for highway proximity validation.');
+    }
+
+    const proximity = await detectHighwayAtPoint(latitude, longitude);
+    if (proximity.status !== 'IN_SERVICE') {
+        const error = new ValidationError('Restaurant location is not within the allowed National Highway range.');
+        error.highwayCheck = false;
+        error.nearestHighway = proximity.highwayRef || null;
+        error.distance = proximity.distanceMeters || null;
+        error.status = 'OUT_OF_SERVICE';
+        throw error;
+    }
+
     const menuUrls = Array.isArray(body.menuImages)
         ? body.menuImages.map((m) => toUrl(m)).filter(Boolean)
         : [];
@@ -3265,19 +3280,12 @@ export async function createRestaurantByAdmin(body) {
             }
             : undefined,
         status: 'approved',
-        approvedAt: new Date()
+        approvedAt: new Date(),
+        highwayId: proximity.highwayId,
+        highwayName: proximity.highwayName,
+        highwayRef: proximity.highwayRef,
+        isHighwayRestaurant: true
     };
-
-    if (body.highwayId !== undefined) {
-        const highwayId = String(body.highwayId || '').trim();
-        if (!highwayId) {
-            doc.highwayId = undefined;
-        } else if (!mongoose.Types.ObjectId.isValid(highwayId)) {
-            throw new ValidationError('Invalid highwayId');
-        } else {
-            doc.highwayId = new mongoose.Types.ObjectId(highwayId);
-        }
-    }
 
     if (latitude !== null && longitude !== null) {
         doc.location = {
@@ -3305,9 +3313,13 @@ export async function createRestaurantByAdmin(body) {
     }
 
     const restaurant = await FoodRestaurant.create(doc);
-    // Fire-and-forget highway assignment (non-blocking)
-    setImmediate(() => assignHighwayToRestaurant(restaurant._id).catch(() => {}));
-    return restaurant.toObject();
+    const resultObj = restaurant.toObject();
+    resultObj.highwayCheck = true;
+    resultObj.nearestHighway = proximity.highwayRef || null;
+    resultObj.distance = proximity.distanceMeters || null;
+    resultObj.status = 'AVAILABLE';
+
+    return resultObj;
 }
 
 export async function approveRestaurant(id) {

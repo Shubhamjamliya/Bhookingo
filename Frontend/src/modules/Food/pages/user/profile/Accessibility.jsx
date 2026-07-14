@@ -14,30 +14,30 @@ export default function Accessibility() {
   const [reduceMotion, setReduceMotion] = useState(false)
 
   return (
-    <AnimatedPage className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a]">
+    <AnimatedPage className="min-h-screen bg-background dark:bg-[#0a0a0a]">
       <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 lg:py-8">
         {/* Header */}
         <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6 lg:mb-8">
           <Link to="/user/profile">
             <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10 p-0">
-              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 text-black dark:text-white" />
+              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 text-text-primary dark:text-white" />
             </Button>
           </Link>
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-black dark:text-white">Accessibility</h1>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-text-primary dark:text-white">Accessibility</h1>
         </div>
 
         {/* Info Card */}
-        <Card className="py-0 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800 mb-4 md:mb-5 lg:mb-6">
+        <Card className="py-0 bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800 mb-4 md:mb-5 lg:mb-6">
           <CardContent className="p-4 md:p-5 lg:p-6">
             <div className="flex items-start gap-3 md:gap-4">
               <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-2 md:p-3 mt-0.5">
                 <AccessibilityIcon className="h-5 w-5 md:h-6 md:w-6 text-gray-700 dark:text-gray-300" />
               </div>
               <div className="flex-1">
-                <h3 className="text-base md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-1 md:mb-2">
+                <h3 className="text-base md:text-lg lg:text-xl font-semibold text-text-primary dark:text-white mb-1 md:mb-2">
                   Make the app more accessible
                 </h3>
-                <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
+                <p className="text-sm md:text-base text-text-secondary dark:text-text-secondary">
                   Customize your experience to better suit your needs and preferences.
                 </p>
               </div>
@@ -47,7 +47,7 @@ export default function Accessibility() {
 
         {/* Accessibility Options */}
         <div className="space-y-3 md:space-y-4 lg:space-y-5">
-          <Card className="py-0 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800">
+          <Card className="py-0 bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800">
             <CardContent className="p-4 md:p-5 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 md:gap-4 flex-1">
@@ -55,10 +55,10 @@ export default function Accessibility() {
                     <Eye className="h-5 w-5 md:h-6 md:w-6 text-gray-700 dark:text-gray-300" />
                   </div>
                   <div className="flex-1">
-                    <Label className="text-base md:text-lg font-medium text-gray-900 dark:text-white">
+                    <Label className="text-base md:text-lg font-medium text-text-primary dark:text-white">
                       Large Text
                     </Label>
-                    <p className="text-sm md:text-base text-gray-500 dark:text-gray-400">
+                    <p className="text-sm md:text-base text-text-secondary dark:text-text-secondary">
                       Increase text size for better readability
                     </p>
                   </div>
@@ -71,7 +71,7 @@ export default function Accessibility() {
             </CardContent>
           </Card>
 
-          <Card className="py-0 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800">
+          <Card className="py-0 bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800">
             <CardContent className="p-4 md:p-5 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 md:gap-4 flex-1">
@@ -79,10 +79,10 @@ export default function Accessibility() {
                     <Eye className="h-5 w-5 md:h-6 md:w-6 text-gray-700 dark:text-gray-300" />
                   </div>
                   <div className="flex-1">
-                    <Label className="text-base md:text-lg font-medium text-gray-900 dark:text-white">
+                    <Label className="text-base md:text-lg font-medium text-text-primary dark:text-white">
                       High Contrast
                     </Label>
-                    <p className="text-sm md:text-base text-gray-500 dark:text-gray-400">
+                    <p className="text-sm md:text-base text-text-secondary dark:text-text-secondary">
                       Enhance contrast for better visibility
                     </p>
                   </div>
@@ -95,7 +95,7 @@ export default function Accessibility() {
             </CardContent>
           </Card>
 
-          <Card className="py-0 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800">
+          <Card className="py-0 bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800">
             <CardContent className="p-4 md:p-5 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 md:gap-4 flex-1">
@@ -103,10 +103,10 @@ export default function Accessibility() {
                     <Volume2 className="h-5 w-5 md:h-6 md:w-6 text-gray-700 dark:text-gray-300" />
                   </div>
                   <div className="flex-1">
-                    <Label className="text-base md:text-lg font-medium text-gray-900 dark:text-white">
+                    <Label className="text-base md:text-lg font-medium text-text-primary dark:text-white">
                       Screen Reader Support
                     </Label>
-                    <p className="text-sm md:text-base text-gray-500 dark:text-gray-400">
+                    <p className="text-sm md:text-base text-text-secondary dark:text-text-secondary">
                       Optimize for screen readers
                     </p>
                   </div>
@@ -119,7 +119,7 @@ export default function Accessibility() {
             </CardContent>
           </Card>
 
-          <Card className="py-0 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800">
+          <Card className="py-0 bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800">
             <CardContent className="p-4 md:p-5 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 md:gap-4 flex-1">
@@ -127,10 +127,10 @@ export default function Accessibility() {
                     <MousePointerClick className="h-5 w-5 md:h-6 md:w-6 text-gray-700 dark:text-gray-300" />
                   </div>
                   <div className="flex-1">
-                    <Label className="text-base md:text-lg font-medium text-gray-900 dark:text-white">
+                    <Label className="text-base md:text-lg font-medium text-text-primary dark:text-white">
                       Reduce Motion
                     </Label>
-                    <p className="text-sm md:text-base text-gray-500 dark:text-gray-400">
+                    <p className="text-sm md:text-base text-text-secondary dark:text-text-secondary">
                       Minimize animations and transitions
                     </p>
                   </div>
@@ -145,12 +145,12 @@ export default function Accessibility() {
         </div>
 
         {/* Additional Info */}
-        <Card className="py-0 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800 mt-4 md:mt-5 lg:mt-6">
+        <Card className="py-0 bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm border-0 dark:border-gray-800 mt-4 md:mt-5 lg:mt-6">
           <CardContent className="p-4 md:p-5 lg:p-6">
-            <h3 className="text-base md:text-lg lg:text-xl font-semibold text-gray-900 dark:text-white mb-2 md:mb-3">
+            <h3 className="text-base md:text-lg lg:text-xl font-semibold text-text-primary dark:text-white mb-2 md:mb-3">
               Need more help?
             </h3>
-            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-3 md:mb-4">
+            <p className="text-sm md:text-base text-text-secondary dark:text-text-secondary mb-3 md:mb-4">
               If you need additional accessibility features or have suggestions, please contact our support team.
             </p>
             <Link to="/user/help">

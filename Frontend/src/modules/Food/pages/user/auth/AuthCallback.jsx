@@ -118,14 +118,14 @@ export default function AuthCallback() {
 
   return (
     <AnimatedPage className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50/30 via-white to-orange-100/20 dark:from-gray-900 dark:via-[#0a0a0a] dark:to-gray-900 p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12">
-      <Card className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl shadow-xl dark:shadow-2xl border-0 md:border md:border-gray-200 dark:md:border-gray-800">
+      <Card className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl shadow-xl dark:shadow-2xl border-0 md:border md:border-border dark:md:border-gray-800">
         <CardHeader className="text-center space-y-2 md:space-y-3 lg:space-y-4 p-6 md:p-8 lg:p-10">
-          <CardTitle className="text-2xl md:text-3xl lg:text-4xl font-bold text-black dark:text-white">
+          <CardTitle className="text-2xl md:text-3xl lg:text-4xl font-bold text-text-primary dark:text-white">
             {status === "loading" && "Authenticating..."}
             {status === "success" && "Authentication Successful!"}
             {status === "error" && "Authentication Failed"}
           </CardTitle>
-          <CardDescription className="text-base md:text-lg text-gray-600 dark:text-gray-400">
+          <CardDescription className="text-base md:text-lg text-text-secondary dark:text-text-secondary">
             {status === "loading" && `Signing you in with ${provider || "your account"}...`}
             {status === "success" && "You've been successfully signed in."}
             {status === "error" && "We couldn't complete the authentication process."}
@@ -134,7 +134,7 @@ export default function AuthCallback() {
         <CardContent className="space-y-6 md:space-y-8 p-6 md:p-8 lg:p-10 pt-0 md:pt-0 lg:pt-0">
           {status === "loading" && (
             <div className="flex flex-col items-center justify-center py-8 md:py-12 space-y-4 md:space-y-6">
-              <Loader2 className="h-12 w-12 md:h-16 md:w-16 text-[#DC2626] animate-spin" />
+              <Loader2 className="h-12 w-12 md:h-16 md:w-16 text-[var(--primary)] animate-spin" />
               <p className="text-sm md:text-base text-muted-foreground text-center">
                 Please wait while we verify your credentials...
               </p>
@@ -144,10 +144,10 @@ export default function AuthCallback() {
           {status === "success" && (
             <div className="flex flex-col items-center justify-center py-8 md:py-12 space-y-4 md:space-y-6">
               <div className="relative">
-                <CheckCircle2 className="h-16 w-16 md:h-20 md:w-20 lg:h-24 lg:w-24 text-[#DC2626] animate-in fade-in zoom-in duration-500" />
+                <CheckCircle2 className="h-16 w-16 md:h-20 md:w-20 lg:h-24 lg:w-24 text-[var(--primary)] animate-in fade-in zoom-in duration-500" />
               </div>
               <div className="text-center space-y-2 md:space-y-3">
-                <h3 className="text-xl md:text-2xl lg:text-3xl font-semibold text-[#DC2626] dark:text-[#DC2626]">
+                <h3 className="text-xl md:text-2xl lg:text-3xl font-semibold text-[var(--primary)] dark:text-[var(--primary)]">
                   Welcome!
                 </h3>
                 <p className="text-sm md:text-base text-muted-foreground">
@@ -163,11 +163,11 @@ export default function AuthCallback() {
                 <XCircle className="h-16 w-16 md:h-20 md:w-20 lg:h-24 lg:w-24 text-red-500 animate-in fade-in zoom-in duration-500" />
               </div>
               <div className="text-center space-y-2 md:space-y-3 w-full">
-                <h3 className="text-xl md:text-2xl lg:text-3xl font-semibold text-red-600 dark:text-red-400">
+                <h3 className="text-xl md:text-2xl lg:text-3xl font-semibold text-primary dark:text-primary-light">
                   Something went wrong
                 </h3>
                 {error && (
-                  <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 p-4 md:p-5 rounded-lg text-sm md:text-base text-red-700 dark:text-red-400 max-w-sm mx-auto border border-red-200 dark:border-red-800">
+                  <div className="flex items-start gap-2 bg-primary-light/10 dark:bg-red-900/20 p-4 md:p-5 rounded-lg text-sm md:text-base text-red-700 dark:text-primary-light max-w-sm mx-auto border border-red-200 dark:border-red-800">
                     <AlertCircle className="h-4 w-4 md:h-5 md:w-5 mt-0.5 flex-shrink-0" />
                     <p className="text-left">{error}</p>
                   </div>
@@ -186,7 +186,7 @@ export default function AuthCallback() {
                 </Button>
                 <Button
                   onClick={handleRetry}
-                  className="flex-1 h-11 md:h-12 text-base md:text-lg bg-[#DC2626] hover:bg-[#991B1B] text-white transition-all hover:shadow-lg active:scale-[0.98]"
+                  className="flex-1 h-11 md:h-12 text-base md:text-lg bg-[var(--primary)] hover:bg-primary-dark text-white transition-all hover:shadow-lg active:scale-[0.98]"
                 >
                   Try Again
                 </Button>
@@ -195,7 +195,7 @@ export default function AuthCallback() {
           )}
 
           {status === "loading" && (
-            <div className="text-center text-xs md:text-sm text-muted-foreground pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-800">
+            <div className="text-center text-xs md:text-sm text-muted-foreground pt-4 md:pt-6 border-t border-border dark:border-gray-800">
               <p>This may take a few seconds...</p>
             </div>
           )}

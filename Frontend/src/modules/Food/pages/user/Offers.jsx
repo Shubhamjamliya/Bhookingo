@@ -53,7 +53,7 @@ export default function Offers() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
+    <div className="min-h-screen bg-surface dark:bg-[#0a0a0a]">
       {/* Banner Section */}
       <div className="relative w-full overflow-hidden min-h-[25vh] md:min-h-[30vh]">
         {/* Back Button */}
@@ -83,7 +83,7 @@ export default function Offers() {
         {/* Error State */}
         {error && !loading && (
           <div className="flex flex-col items-center justify-center py-20">
-            <p className="text-red-500 dark:text-red-400 text-center">{error}</p>
+            <p className="text-red-500 dark:text-primary-light text-center">{error}</p>
             <Button onClick={() => window.location.reload()} className="mt-4">Retry</Button>
           </div>
         )}
@@ -94,7 +94,7 @@ export default function Offers() {
             {/* Grouped Offers Sections */}
             {Object.keys(groupedOffers).length > 0 && Object.entries(groupedOffers).map(([offerText, dishes]) => (
               <section key={offerText}>
-                <h2 className="text-2xl sm:text-3xl font-black text-red-500 dark:text-red-400 text-center mb-4 tracking-wide">
+                <h2 className="text-2xl sm:text-3xl font-black text-red-500 dark:text-primary-light text-center mb-4 tracking-wide">
                   {offerText}
                 </h2>
                 
@@ -131,13 +131,13 @@ export default function Offers() {
                         </div>
                         
                         {/* Restaurant Info */}
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm line-clamp-1">
+                        <h3 className="font-semibold text-text-primary dark:text-gray-100 text-sm line-clamp-1">
                           {dish.restaurantName}
                         </h3>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1 mb-1">
+                        <p className="text-xs text-text-secondary dark:text-text-secondary line-clamp-1 mb-1">
                           {dish.dishName} - ₹{dish.discountedPrice}
                         </p>
-                        <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-xs">
+                        <div className="flex items-center gap-1 text-text-secondary dark:text-text-secondary text-xs">
                           <Clock className="h-3 w-3" />
                         </div>
                       </div>
@@ -150,17 +150,17 @@ export default function Offers() {
             {/* Coupon-style offers (admin created) */}
             {Object.keys(groupedOffers).length === 0 && offers.length > 0 && (
               <section className="space-y-4">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <h2 className="text-xl sm:text-2xl font-bold text-text-primary dark:text-gray-100">
                   Available Coupons
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {offers.map((o) => (
-                    <Card key={o.id || o.offerId} className="border border-slate-200 shadow-sm">
+                    <Card key={o.id || o.offerId} className="border border-border shadow-sm">
                       <CardContent className="p-4 space-y-2">
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Coupon</p>
-                            <p className="text-lg font-extrabold text-slate-900 dark:text-slate-100 tracking-wide">
+                            <p className="text-xs text-text-secondary dark:text-text-secondary">Coupon</p>
+                            <p className="text-lg font-extrabold text-text-primary dark:text-slate-100 tracking-wide">
                               {o.couponCode || "-"}
                             </p>
                           </div>
@@ -173,7 +173,7 @@ export default function Offers() {
                           {o.restaurantName || "All Restaurants"}
                         </p>
                         {o.endDate && (
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                          <p className="text-xs text-text-secondary dark:text-text-secondary">
                             Valid till: {new Date(o.endDate).toLocaleDateString()}
                           </p>
                         )}
@@ -186,7 +186,7 @@ export default function Offers() {
 
             {offers.length === 0 && !loading && (
               <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">No offers available at the moment</p>
+                <p className="text-text-secondary dark:text-text-secondary">No offers available at the moment</p>
               </div>
             )}
           </>

@@ -1387,13 +1387,13 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
   }, [navType, selectedCategory, filteredRecommended.length, disableAutoScroll])
 
   return (
-    <div className={`min-h-screen bg-white dark:bg-[#0a0a0a] ${shouldShowGrayscale ? 'grayscale opacity-75' : ''}`}>
+    <div className={`min-h-screen bg-surface dark:bg-[#0a0a0a] ${shouldShowGrayscale ? 'grayscale opacity-75' : ''}`}>
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur supports-[backdrop-filter]:bg-white/90 shadow-sm">
         <div className="max-w-7xl mx-auto">
           {/* Search Bar with Back Button */}
           {!hideHeader && (
-            <div className="flex items-center gap-2 px-3 md:px-6 py-3 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center gap-2 px-3 md:px-6 py-3 border-b border-border dark:border-gray-800">
               <button
                 onClick={() => navigate('/user')}
                 className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors flex-shrink-0"
@@ -1402,12 +1402,12 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
               </button>
 
               <div className="flex-1 relative max-w-2xl">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary" />
                 <Input
                   placeholder="Restaurant name or a dish..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 h-11 md:h-12 rounded-lg border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-[#1a1a1a] focus:bg-white dark:focus:bg-[#2a2a2a] focus:border-gray-500 dark:focus:border-gray-600 text-sm md:text-base dark:text-white placeholder:text-gray-600 dark:placeholder:text-gray-400"
+                  className="pl-10 pr-4 h-11 md:h-12 rounded-lg border-border dark:border-gray-700 bg-gray-50 dark:bg-[#1a1a1a] focus:bg-white dark:focus:bg-[#2a2a2a] focus:border-gray-500 dark:focus:border-gray-600 text-sm md:text-base dark:text-white placeholder:text-text-secondary dark:placeholder:text-text-secondary"
                 />
               </div>
             </div>
@@ -1417,7 +1417,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
           {!hideCategoryCarousel && (
             <div
               ref={categoryScrollRef}
-              className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-4 md:px-6 py-3 bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800"
+              className="flex gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-4 md:px-6 py-3 bg-surface dark:bg-[#1a1a1a] border-b border-border dark:border-gray-800"
               style={{
                 scrollbarWidth: "none",
                 msOverflowStyle: "none",
@@ -1435,15 +1435,15 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                       key={cat.id}
                       onClick={() => handleCategorySelect(cat)}
                       data-category-selected={isSelected ? "true" : "false"}
-                      className={`flex flex-col items-center gap-1.5 flex-shrink-0 pb-2 transition-all ${isSelected ? 'border-b-2 border-[#DC2626]' : ''
+                      className={`flex flex-col items-center gap-1.5 flex-shrink-0 pb-2 transition-all ${isSelected ? 'border-b-2 border-[var(--primary)]' : ''
                         }`}
                     >
                       {isAllCategory ? (
-                        <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full border-2 transition-all flex items-center justify-center ${isSelected ? 'border-[#DC2626] shadow-lg bg-[#DC2626]/10 dark:bg-[#DC2626]/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-[#222222]'}`}>
-                          <Grid2x2 className={`h-6 w-6 md:h-7 md:w-7 ${isSelected ? 'text-[#DC2626]' : 'text-gray-500 dark:text-gray-400'}`} />
+                        <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full border-2 transition-all flex items-center justify-center ${isSelected ? 'border-[var(--primary)] shadow-lg bg-[var(--primary)]/10 dark:bg-[var(--primary)]/20' : 'border-border dark:border-gray-700 bg-surface dark:bg-[#222222]'}`}>
+                          <Grid2x2 className={`h-6 w-6 md:h-7 md:w-7 ${isSelected ? 'text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} />
                         </div>
                       ) : cat.image ? (
-                    <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 transition-all ${isSelected ? 'border-[#DC2626] shadow-lg' : 'border-transparent'
+                    <div className={`w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 transition-all ${isSelected ? 'border-[var(--primary)] shadow-lg' : 'border-transparent'
                           }`}>
                           <img
                             src={cat.image}
@@ -1457,16 +1457,16 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         </div>
                       ) : (
                         <div
-                          className={`w-16 h-16 md:w-20 md:h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center border-2 transition-all ${isSelected ? 'border-[#DC2626] shadow-lg bg-[#DC2626]/10 dark:bg-[#DC2626]/20' : 'border-transparent'
+                          className={`w-16 h-16 md:w-20 md:h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center border-2 transition-all ${isSelected ? 'border-[var(--primary)] shadow-lg bg-[var(--primary)]/10 dark:bg-[var(--primary)]/20' : 'border-transparent'
                             }`}
                           aria-label={`${cat.name} category`}
                         >
-                          <span className="text-sm md:text-base font-semibold text-gray-600 dark:text-gray-300">
+                          <span className="text-sm md:text-base font-semibold text-text-secondary dark:text-gray-300">
                             {String(cat.name || "?").trim().slice(0, 2).toUpperCase()}
                           </span>
                         </div>
                       )}
-                      <span className={`text-xs md:text-sm font-medium whitespace-nowrap ${isSelected ? 'text-[#DC2626] dark:text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'
+                      <span className={`text-xs md:text-sm font-medium whitespace-nowrap ${isSelected ? 'text-[var(--primary)] dark:text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'
                         }`}>
                         {cat.name}
                       </span>
@@ -1474,7 +1474,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                   )
                 }) : (
                   <div className="flex items-center justify-center py-4">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">No categories available</span>
+                    <span className="text-sm text-text-secondary dark:text-text-secondary">No categories available</span>
                   </div>
                 )
               )}
@@ -1495,10 +1495,10 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                 <Button
                   variant="outline"
                   onClick={() => setIsFilterOpen(true)}
-                  className="h-7 md:h-8 px-2.5 md:px-3 rounded-md flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="h-7 md:h-8 px-2.5 md:px-3 rounded-md flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all bg-surface dark:bg-[#1a1a1a] border border-border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <SlidersHorizontal className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                  <span className="text-xs md:text-sm font-bold text-black dark:text-white">Filters</span>
+                  <span className="text-xs md:text-sm font-bold text-text-primary dark:text-white">Filters</span>
                 </Button>
                 {[
                   { id: 'under-30-mins', label: 'Under 30 mins' },
@@ -1512,11 +1512,11 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                       variant="outline"
                       onClick={() => toggleFilter(filter.id)}
                       className={`h-7 md:h-8 px-2.5 md:px-3 rounded-md flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${isActive
-                        ? 'bg-[#DC2626] text-white border border-[#DC2626] hover:bg-[#991B1B]'
-                        : 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        ? 'bg-[var(--primary)] text-white border border-[var(--primary)] hover:bg-primary-dark'
+                        : 'bg-surface dark:bg-[#1a1a1a] border border-border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'
                         }`}
                     >
-                      <span className={`text-xs md:text-sm text-black dark:text-white font-bold ${isActive ? 'text-white' : 'text-black dark:text-white'}`}>{filter.label}</span>
+                      <span className={`text-xs md:text-sm text-text-primary dark:text-white font-bold ${isActive ? 'text-white' : 'text-text-primary dark:text-white'}`}>{filter.label}</span>
                     </Button>
                   )
                 })}
@@ -1544,12 +1544,12 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                       variant="outline"
                       onClick={() => toggleFilter(filter.id)}
                       className={`h-7 md:h-8 px-2.5 md:px-3 rounded-md flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${isActive
-                        ? 'bg-[#DC2626] text-white border border-[#DC2626] hover:bg-[#991B1B]'
-                        : 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        ? 'bg-[var(--primary)] text-white border border-[var(--primary)] hover:bg-primary-dark'
+                        : 'bg-surface dark:bg-[#1a1a1a] border border-border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'
                         }`}
                     >
-                      {Icon && <Icon className={`h-3.5 w-3.5 md:h-4 md:w-4 ${isActive ? 'text-white' : 'text-gray-900 dark:text-white'}`} />}
-                      <span className={`text-xs md:text-sm font-bold ${isActive ? 'text-white' : 'text-black dark:text-white'}`}>{filter.label}</span>
+                      {Icon && <Icon className={`h-3.5 w-3.5 md:h-4 md:w-4 ${isActive ? 'text-white' : 'text-text-primary dark:text-white'}`} />}
+                      <span className={`text-xs md:text-sm font-bold ${isActive ? 'text-white' : 'text-text-primary dark:text-white'}`}>{filter.label}</span>
                     </Button>
                   )
                 })}
@@ -1565,7 +1565,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
           {/* RECOMMENDED FOR YOU Section - Hide when "All" category is selected */}
           {filteredRecommended.length > 0 && selectedCategory !== 'all' && (
             <section ref={recommendedSectionRef}>
-              <h2 className="text-xs sm:text-sm md:text-base font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-4 md:mb-6">
+              <h2 className="text-xs sm:text-sm md:text-base font-semibold text-text-secondary dark:text-text-secondary tracking-widest uppercase mb-4 md:mb-6">
                 RECOMMENDED FOR YOU
               </h2>
 
@@ -1627,7 +1627,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
 
                           {/* Offer Badge */}
                           {restaurant.offer && (
-                            <div className="absolute top-1.5 left-1.5 bg-gradient-to-r from-[#DC2626] to-[#991B1B] text-white text-[10px] md:text-xs font-semibold px-1.5 py-0.5 rounded shadow-sm">
+                            <div className="absolute top-1.5 left-1.5 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white text-[10px] md:text-xs font-semibold px-1.5 py-0.5 rounded shadow-sm">
                               {restaurant.offer}
                             </div>
                           )}
@@ -1639,11 +1639,11 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                           </div>
                         </div>
 
-                        <h3 className="font-semibold text-gray-900 dark:text-white text-xs md:text-sm line-clamp-1">
+                        <h3 className="font-semibold text-text-primary dark:text-white text-xs md:text-sm line-clamp-1">
                           {isCategoryView ? (restaurant.categoryDishName || restaurant.featuredDish || restaurant.name) : restaurant.name}
                         </h3>
                         {isCategoryView && (
-                          <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                          <p className="text-[10px] md:text-xs text-text-secondary dark:text-text-secondary line-clamp-1">
                             {restaurant.name}
                           </p>
                         )}
@@ -1658,7 +1658,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
 
           {/* ALL RESTAURANTS Section */}
           <section className="relative">
-            <h2 className="text-xs sm:text-sm md:text-base font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase mb-4 md:mb-6">
+            <h2 className="text-xs sm:text-sm md:text-base font-semibold text-text-secondary dark:text-text-secondary tracking-widest uppercase mb-4 md:mb-6">
               ALL RESTAURANTS
             </h2>
 
@@ -1679,7 +1679,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
 
                 return (
                   <Link key={restaurant.id} to={`/user/restaurants/${restaurantSlug}${restaurant.dishId ? `?dish=${restaurant.dishId}` : ''}`} state={{ restaurantData: restaurant }} className="h-full flex">
-                    <Card className={`overflow-hidden cursor-pointer gap-0 border-0 dark:border-gray-800 group bg-white dark:bg-[#1a1a1a] shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-md h-full flex flex-col w-full ${shouldShowGrayscale ? 'grayscale opacity-75' : ''
+                    <Card className={`overflow-hidden cursor-pointer gap-0 border-0 dark:border-gray-800 group bg-surface dark:bg-[#1a1a1a] shadow-md hover:shadow-xl transition-all duration-300 py-0 rounded-md h-full flex flex-col w-full ${shouldShowGrayscale ? 'grayscale opacity-75' : ''
                       }`}>
                       {/* Image Section */}
                       <div className="relative h-44 sm:h-52 md:h-60 lg:h-64 xl:h-72 w-full overflow-hidden rounded-t-md flex-shrink-0">
@@ -1752,7 +1752,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                             toggleFavorite(restaurant.id)
                           }}
                         >
-                          <Bookmark className={`h-5 w-5 md:h-6 md:w-6 ${isFavorite ? "fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200" : "text-gray-600 dark:text-gray-400"}`} strokeWidth={2} />
+                          <Bookmark className={`h-5 w-5 md:h-6 md:w-6 ${isFavorite ? "fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200" : "text-text-secondary dark:text-text-secondary"}`} strokeWidth={2} />
                         </Button>
                       </div>
 
@@ -1761,11 +1761,11 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         {/* Restaurant Name & Rating */}
                         <div className="flex items-start justify-between gap-2 mb-2 lg:mb-3">
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-md md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white line-clamp-1 lg:line-clamp-2">
+                            <h3 className="text-md md:text-xl lg:text-2xl font-bold text-text-primary dark:text-white line-clamp-1 lg:line-clamp-2">
                               {isCategoryView ? (restaurant.categoryDishName || restaurant.featuredDish || restaurant.name) : restaurant.name}
                             </h3>
                             {isCategoryView && (
-                              <p className="mt-1 text-sm md:text-base text-gray-500 dark:text-gray-400 line-clamp-1">
+                              <p className="mt-1 text-sm md:text-base text-text-secondary dark:text-text-secondary line-clamp-1">
                                 {restaurant.name}
                               </p>
                             )}
@@ -1778,7 +1778,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
 
                         {/* Distance */}
                         {restaurant.distance && (
-                          <div className="flex items-center gap-1 text-sm md:text-base lg:text-lg text-gray-500 dark:text-gray-400 mb-2 lg:mb-3">
+                          <div className="flex items-center gap-1 text-sm md:text-base lg:text-lg text-text-secondary dark:text-text-secondary mb-2 lg:mb-3">
                             <Clock className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" strokeWidth={1.5} />
                             <span className="font-medium">{restaurant.distance}</span>
                           </div>
@@ -1787,7 +1787,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         {/* Offer Badge */}
                         {restaurant.offer && (
                           <div className="flex items-center gap-2 text-sm md:text-base lg:text-lg mt-auto">
-                            <BadgePercent className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-[#DC2626]" strokeWidth={2} />
+                            <BadgePercent className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 text-[var(--primary)]" strokeWidth={2} />
                             <span className="text-gray-700 dark:text-gray-300 font-medium">{restaurant.offer}</span>
                           </div>
                         )}
@@ -1801,7 +1801,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
             {/* Empty State */}
             {filteredAllRestaurants.length === 0 && !showRestaurantSkeleton && !loadingRestaurants && !loadingZone && !loadingCategories && !isEnrichingMenus && (
               <div className="text-center py-12 md:py-16">
-                <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
+                <p className="text-text-secondary dark:text-text-secondary text-sm md:text-base">
                   {searchQuery
                     ? `No restaurants found for "${searchQuery}"`
                     : "No restaurants found with selected filters"}
@@ -1841,10 +1841,10 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                 />
 
                 {/* Modal Content */}
-                <div className="absolute bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-4xl bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl max-h-[85vh] md:max-h-[90vh] flex flex-col animate-[slideUp_0.3s_ease-out]">
+                <div className="absolute bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-4xl bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl max-h-[85vh] md:max-h-[90vh] flex flex-col animate-[slideUp_0.3s_ease-out]">
                   {/* Header */}
-                  <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Filters and sorting</h2>
+                  <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-border dark:border-gray-800">
+                    <h2 className="text-lg md:text-xl font-bold text-text-primary dark:text-white">Filters and sorting</h2>
                     <button
                       onClick={() => {
                         setIsLoadingFilterResults(true)
@@ -1852,7 +1852,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         setSortBy(null)
                         setTimeout(() => setIsLoadingFilterResults(false), 500)
                       }}
-                      className="text-[#DC2626] font-medium text-sm md:text-base hover:underline"
+                      className="text-[var(--primary)] font-medium text-sm md:text-base hover:underline"
                     >
                       Clear all
                     </button>
@@ -1861,7 +1861,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                   {/* Body */}
                   <div className="flex flex-1 overflow-hidden">
                     {/* Left Sidebar - Tabs */}
-                    <div className="w-24 sm:w-28 md:w-32 bg-gray-50 dark:bg-[#0a0a0a] border-r border-gray-200 dark:border-gray-800 flex flex-col">
+                    <div className="w-24 sm:w-28 md:w-32 bg-gray-50 dark:bg-[#0a0a0a] border-r border-border dark:border-gray-800 flex flex-col">
                       {[
                         { id: 'sort', label: 'Sort By', icon: ArrowDownUp },
                         { id: 'time', label: 'Time', icon: Timer },
@@ -1883,11 +1883,11 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                                 section.scrollIntoView({ behavior: 'smooth', block: 'start' })
                               }
                             }}
-                            className={`flex flex-col items-center gap-1 py-4 px-2 text-center relative transition-colors ${isActive ? 'bg-white dark:bg-[#1a1a1a] text-[#DC2626]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            className={`flex flex-col items-center gap-1 py-4 px-2 text-center relative transition-colors ${isActive ? 'bg-surface dark:bg-[#1a1a1a] text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800'
                               }`}
                           >
                             {isActive && (
-                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626] rounded-r" />
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--primary)] rounded-r" />
                             )}
                             <Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.5} />
                             <span className="text-xs md:text-sm font-medium leading-tight">{tab.label}</span>
@@ -1904,7 +1904,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         data-section-id="sort"
                         className="space-y-4 mb-8"
                       >
-                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4">Sort by</h3>
+                        <h3 className="text-lg md:text-xl font-semibold text-text-primary dark:text-white mb-4">Sort by</h3>
                         <div className="flex flex-col gap-3">
                           {[
                             { id: null, label: 'Relevance' },
@@ -1917,8 +1917,8 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                               key={option.id || 'relevance'}
                               onClick={() => setSortBy(option.id)}
                               className={`px-4 md:px-5 py-3 md:py-4 rounded-xl border text-left transition-colors ${sortBy === option.id
-                                ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                                : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                                ? 'border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20'
+                                : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                                 }`}
                             >
                               <span className={`text-sm md:text-base font-medium ${sortBy === option.id ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
@@ -1935,17 +1935,17 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         data-section-id="time"
                         className="space-y-4 mb-8"
                       >
-                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4">Estimated Time</h3>
+                        <h3 className="text-lg md:text-xl font-semibold text-text-primary dark:text-white mb-4">Estimated Time</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                           <button
                             onClick={() => toggleFilter('under-30-mins')}
                             className={`flex flex-col items-center gap-2 p-4 md:p-5 rounded-xl border transition-colors ${activeFilters.has('under-30-mins')
-                              ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                              ? 'border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20'
+                              : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                               }`}
                           >
-                            <Timer className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('under-30-mins') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('under-30-mins') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under 30 mins</span>
+                            <Timer className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('under-30-mins') ? 'text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} strokeWidth={1.5} />
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('under-30-mins') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Under 30 mins</span>
                           </button>
 
                         </div>
@@ -1957,37 +1957,37 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         data-section-id="rating"
                         className="space-y-4 mb-8"
                       >
-                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4">Restaurant Rating</h3>
+                        <h3 className="text-lg md:text-xl font-semibold text-text-primary dark:text-white mb-4">Restaurant Rating</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                           <button
                             onClick={() => toggleFilter('rating-35-plus')}
                             className={`flex flex-col items-center gap-2 p-4 md:p-5 rounded-xl border transition-colors ${activeFilters.has('rating-35-plus')
-                              ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                              ? 'border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20'
+                              : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                               }`}
                           >
-                            <Star className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('rating-35-plus') ? 'text-[#DC2626] fill-[#DC2626]' : 'text-gray-400 dark:text-gray-500'}`} />
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('rating-35-plus') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 3.5+</span>
+                            <Star className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('rating-35-plus') ? 'text-[var(--primary)] fill-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} />
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('rating-35-plus') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 3.5+</span>
                           </button>
                           <button
                             onClick={() => toggleFilter('rating-4-plus')}
                             className={`flex flex-col items-center gap-2 p-4 md:p-5 rounded-xl border transition-colors ${activeFilters.has('rating-4-plus')
                               ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                              : 'border-border dark:border-gray-700 hover:border-green-600'
                               }`}
                           >
-                            <Star className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('rating-4-plus') ? 'text-[#DC2626] fill-[#DC2626]' : 'text-gray-400 dark:text-gray-500'}`} />
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('rating-4-plus') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 4.0+</span>
+                            <Star className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('rating-4-plus') ? 'text-[var(--primary)] fill-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} />
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('rating-4-plus') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 4.0+</span>
                           </button>
                           <button
                             onClick={() => toggleFilter('rating-45-plus')}
                             className={`flex flex-col items-center gap-2 p-4 md:p-5 rounded-xl border transition-colors ${activeFilters.has('rating-45-plus')
                               ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                              : 'border-border dark:border-gray-700 hover:border-green-600'
                               }`}
                           >
-                            <Star className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('rating-45-plus') ? 'text-[#DC2626] fill-[#DC2626]' : 'text-gray-400 dark:text-gray-500'}`} />
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('rating-45-plus') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 4.5+</span>
+                            <Star className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('rating-45-plus') ? 'text-[var(--primary)] fill-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} />
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('rating-45-plus') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 4.5+</span>
                           </button>
                         </div>
                       </div>
@@ -1998,27 +1998,27 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         data-section-id="distance"
                         className="space-y-4 mb-8"
                       >
-                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4">Distance</h3>
+                        <h3 className="text-lg md:text-xl font-semibold text-text-primary dark:text-white mb-4">Distance</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                           <button
                             onClick={() => toggleFilter('distance-under-1km')}
                             className={`flex flex-col items-center gap-2 p-4 md:p-5 rounded-xl border transition-colors ${activeFilters.has('distance-under-1km')
                               ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                              : 'border-border dark:border-gray-700 hover:border-green-600'
                               }`}
                           >
-                            <MapPin className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('distance-under-1km') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('distance-under-1km') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under 1 km</span>
+                            <MapPin className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('distance-under-1km') ? 'text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} strokeWidth={1.5} />
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('distance-under-1km') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Under 1 km</span>
                           </button>
                           <button
                             onClick={() => toggleFilter('distance-under-2km')}
                             className={`flex flex-col items-center gap-2 p-4 md:p-5 rounded-xl border transition-colors ${activeFilters.has('distance-under-2km')
                               ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                              : 'border-border dark:border-gray-700 hover:border-green-600'
                               }`}
                           >
-                            <MapPin className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('distance-under-2km') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('distance-under-2km') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under 2 km</span>
+                            <MapPin className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('distance-under-2km') ? 'text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} strokeWidth={1.5} />
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('distance-under-2km') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Under 2 km</span>
                           </button>
                         </div>
                       </div>
@@ -2029,34 +2029,34 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         data-section-id="price"
                         className="space-y-4 mb-8"
                       >
-                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4">Dish Price</h3>
+                        <h3 className="text-lg md:text-xl font-semibold text-text-primary dark:text-white mb-4">Dish Price</h3>
                         <div className="flex flex-col gap-3 md:gap-4">
                           <button
                             onClick={() => toggleFilter('price-under-200')}
                             className={`px-4 md:px-5 py-3 md:py-4 rounded-xl border text-left transition-colors ${activeFilters.has('price-under-200')
                               ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                              : 'border-border dark:border-gray-700 hover:border-green-600'
                               }`}
                           >
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('price-under-200') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹200</span>
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('price-under-200') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹200</span>
                           </button>
                           <button
                             onClick={() => toggleFilter('under-250')}
                             className={`px-4 md:px-5 py-3 md:py-4 rounded-xl border text-left transition-colors ${activeFilters.has('under-250')
                               ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                              : 'border-border dark:border-gray-700 hover:border-green-600'
                               }`}
                           >
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('under-250') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹250</span>
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('under-250') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹250</span>
                           </button>
                           <button
                             onClick={() => toggleFilter('price-under-500')}
                             className={`px-4 md:px-5 py-3 md:py-4 rounded-xl border text-left transition-colors ${activeFilters.has('price-under-500')
                               ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                              : 'border-border dark:border-gray-700 hover:border-green-600'
                               }`}
                           >
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('price-under-500') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹500</span>
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('price-under-500') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹500</span>
                           </button>
                         </div>
                       </div>
@@ -2067,27 +2067,27 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         data-section-id="offers"
                         className="space-y-4 mb-8"
                       >
-                        <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4">Offers</h3>
+                        <h3 className="text-lg md:text-xl font-semibold text-text-primary dark:text-white mb-4">Offers</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                           <button
                             onClick={() => toggleFilter('flat-50-off')}
                             className={`flex flex-col items-center gap-2 p-4 md:p-5 rounded-xl border transition-colors ${activeFilters.has('flat-50-off')
                               ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                              : 'border-border dark:border-gray-700 hover:border-green-600'
                               }`}
                           >
-                            <BadgePercent className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('flat-50-off') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('flat-50-off') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Flat 50% OFF</span>
+                            <BadgePercent className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('flat-50-off') ? 'text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} strokeWidth={1.5} />
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('flat-50-off') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Flat 50% OFF</span>
                           </button>
                           <button
                             onClick={() => toggleFilter('price-match')}
                             className={`flex flex-col items-center gap-2 p-4 md:p-5 rounded-xl border transition-colors ${activeFilters.has('price-match')
                               ? 'border-green-600 bg-green-50 dark:bg-green-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-green-600'
+                              : 'border-border dark:border-gray-700 hover:border-green-600'
                               }`}
                           >
-                            <BadgePercent className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('price-match') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
-                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('price-match') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Price Match</span>
+                            <BadgePercent className={`h-6 w-6 md:h-7 md:w-7 ${activeFilters.has('price-match') ? 'text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} strokeWidth={1.5} />
+                            <span className={`text-sm md:text-base font-medium ${activeFilters.has('price-match') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Price Match</span>
                           </button>
                         </div>
                       </div>
@@ -2095,12 +2095,12 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                       {/* Trust Markers Tab */}
                       {activeFilterTab === 'trust' && (
                         <div className="space-y-4">
-                          <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">Trust Markers</h3>
+                          <h3 className="text-lg md:text-xl font-semibold text-text-primary dark:text-white">Trust Markers</h3>
                           <div className="flex flex-col gap-3 md:gap-4">
-                            <button className="px-4 md:px-5 py-3 md:py-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-[#DC2626] text-left transition-colors">
+                            <button className="px-4 md:px-5 py-3 md:py-4 rounded-xl border border-border dark:border-gray-700 hover:border-[var(--primary)] text-left transition-colors">
                               <span className="text-sm md:text-base font-medium text-gray-700 dark:text-gray-300">Top Rated</span>
                             </button>
-                            <button className="px-4 md:px-5 py-3 md:py-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-[#DC2626] text-left transition-colors">
+                            <button className="px-4 md:px-5 py-3 md:py-4 rounded-xl border border-border dark:border-gray-700 hover:border-[var(--primary)] text-left transition-colors">
                               <span className="text-sm md:text-base font-medium text-gray-700 dark:text-gray-300">Trusted by 1000+ users</span>
                             </button>
                           </div>
@@ -2110,7 +2110,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-center gap-4 px-4 md:px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1a1a]">
+                  <div className="flex items-center gap-4 px-4 md:px-6 py-4 border-t border-border dark:border-gray-800 bg-surface dark:bg-[#1a1a1a]">
                     <button
                       onClick={() => setIsFilterOpen(false)}
                       className="flex-1 py-3 md:py-4 text-center font-semibold text-gray-700 dark:text-gray-300 text-sm md:text-base"
@@ -2127,8 +2127,8 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
                         }, 500)
                       }}
                       className={`flex-1 py-3 md:py-4 font-semibold rounded-xl transition-colors text-sm md:text-base ${activeFilters.size > 0 || sortBy
-                        ? 'bg-[#DC2626] text-white hover:bg-[#991B1B]'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                        ? 'bg-[var(--primary)] text-white hover:bg-primary-dark'
+                        : 'bg-gray-200 dark:bg-gray-700 text-text-secondary dark:text-text-secondary'
                         }`}
                     >
                       {activeFilters.size > 0 || sortBy

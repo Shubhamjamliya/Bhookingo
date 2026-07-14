@@ -343,10 +343,10 @@ export default function TableBooking() {
           </section>
         )}
 
-        <section className="rounded-[22px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+        <section className="rounded-[22px] bg-surface p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
           <div className="flex items-center justify-between gap-3 mb-4">
             <span className="text-sm font-medium text-[#2f3545]">Select number of guests</span>
-            <span className="text-xs font-bold text-[#DC2626] bg-[#fdfafc] px-2 py-1 rounded-lg">
+            <span className="text-xs font-bold text-[var(--primary)] bg-[#fdfafc] px-2 py-1 rounded-lg">
                 {remainingSeats} left
             </span>
           </div>
@@ -366,7 +366,7 @@ export default function TableBooking() {
                     selectedGuests === count
                       ? "border-[#ef8f98] bg-[#fffaf9] text-[#d64f63] shadow-sm"
                       : isBooked
-                        ? "border-red-50 bg-red-50 text-red-200 cursor-not-allowed"
+                        ? "border-red-50 bg-primary-light/10 text-red-200 cursor-not-allowed"
                         : isTooLarge
                           ? "border-gray-50 bg-gray-50 text-gray-200 cursor-not-allowed"
                           : "border-[#ececf2] bg-white text-[#444b5f] hover:border-[#ef8f98]/30"
@@ -379,7 +379,7 @@ export default function TableBooking() {
           </div>
         </section>
 
-        <section className="rounded-[22px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+        <section className="rounded-[22px] bg-surface p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
           <h3 className="text-sm font-medium text-[#2f3545]">Select date</h3>
 
           <div className="mt-4 grid grid-cols-3 gap-3">
@@ -407,7 +407,7 @@ export default function TableBooking() {
           </div>
         </section>
 
-        <section className="rounded-[22px] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+        <section className="rounded-[22px] bg-surface p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
           <h3 className="text-sm font-medium text-[#2f3545]">Select time of day</h3>
 
           <div className="mt-4 flex gap-2">

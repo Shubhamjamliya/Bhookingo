@@ -625,14 +625,14 @@ Order again from this restaurant in the ${companyName} app.`
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-10">
-        <div className="bg-white dark:bg-[#121212] p-4 flex items-center shadow-sm sticky top-0 z-10 border-b dark:border-gray-800">
+        <div className="bg-surface dark:bg-[#121212] p-4 flex items-center shadow-sm sticky top-0 z-10 border-b dark:border-gray-800">
           <Link to="/user">
             <ArrowLeft className="w-6 h-6 text-gray-700 dark:text-gray-300 cursor-pointer" />
           </Link>
           <h1 className="ml-4 text-xl font-semibold text-gray-800 dark:text-gray-100">Your Orders</h1>
         </div>
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-[#DC2626] animate-spin" />
+          <Loader2 className="w-8 h-8 text-[var(--primary)] animate-spin" />
         </div>
       </div>
     )
@@ -641,16 +641,16 @@ Order again from this restaurant in the ${companyName} app.`
   if (orders.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-10">
-        <div className="bg-white dark:bg-[#121212] p-4 flex items-center shadow-sm sticky top-0 z-10 border-b dark:border-gray-800">
+        <div className="bg-surface dark:bg-[#121212] p-4 flex items-center shadow-sm sticky top-0 z-10 border-b dark:border-gray-800">
           <Link to="/user">
             <ArrowLeft className="w-6 h-6 text-gray-700 dark:text-gray-300 cursor-pointer" />
           </Link>
           <h1 className="ml-4 text-xl font-semibold text-gray-800 dark:text-gray-100">Your Orders</h1>
         </div>
-        <div className="px-4 py-8 text-center text-gray-600 dark:text-gray-400">
+        <div className="px-4 py-8 text-center text-text-secondary dark:text-text-secondary">
           <p>You haven't placed any orders yet</p>
           <Link to="/user">
-            <button className="mt-4 text-[#DC2626] font-medium">Start Ordering</button>
+            <button className="mt-4 text-[var(--primary)] font-medium">Start Ordering</button>
           </Link>
         </div>
       </div>
@@ -660,7 +660,7 @@ Order again from this restaurant in the ${companyName} app.`
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-10 font-sans">
       {/* Header */}
-      <div className="bg-white dark:bg-[#121212] p-4 flex items-center shadow-sm sticky top-0 z-10 border-b dark:border-gray-800">
+      <div className="bg-surface dark:bg-[#121212] p-4 flex items-center shadow-sm sticky top-0 z-10 border-b dark:border-gray-800">
         <Link to="/user">
           <ArrowLeft className="w-6 h-6 text-gray-700 dark:text-gray-300 cursor-pointer" />
         </Link>
@@ -668,15 +668,15 @@ Order again from this restaurant in the ${companyName} app.`
       </div>
 
       {/* Search Bar */}
-      <div className="p-4 bg-white dark:bg-[#121212] mt-1 border-b dark:border-gray-800">
-        <div className="flex items-center bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 shadow-sm">
-          <Search className="w-5 h-5 text-[#DC2626]" />
+      <div className="p-4 bg-surface dark:bg-[#121212] mt-1 border-b dark:border-gray-800">
+        <div className="flex items-center bg-surface dark:bg-[#1a1a1a] border border-border dark:border-gray-800 rounded-lg px-3 py-2 shadow-sm">
+          <Search className="w-5 h-5 text-[var(--primary)]" />
           <input
             type="text"
             placeholder="Search by restaurant or dish"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 ml-3 bg-transparent outline-none text-gray-600 dark:text-gray-300 placeholder-gray-400"
+            className="flex-1 ml-3 bg-transparent outline-none text-text-secondary dark:text-gray-300 placeholder-gray-400"
           />
         </div>
       </div>
@@ -684,8 +684,8 @@ Order again from this restaurant in the ${companyName} app.`
       {/* Orders List */}
       <div className="px-4 py-2 space-y-4">
         {filteredOrders.length === 0 ? (
-          <div className="bg-white dark:bg-[#121212] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-8 text-center">
-            <p className="text-gray-600 dark:text-gray-400">No orders found matching your search</p>
+          <div className="bg-surface dark:bg-[#121212] rounded-xl shadow-sm border border-border dark:border-gray-800 p-8 text-center">
+            <p className="text-text-secondary dark:text-text-secondary">No orders found matching your search</p>
           </div>
         ) : (
           filteredOrders.map((order) => {
@@ -715,7 +715,7 @@ Order again from this restaurant in the ${companyName} app.`
             const location = order.restaurantLocation || `${order.address?.city || ''}, ${order.address?.state || ''}`.trim() || 'Location not available'
 
             return (
-              <div key={order.id} className="relative bg-white dark:bg-[#121212] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+              <div key={order.id} className="relative bg-surface dark:bg-[#121212] rounded-xl shadow-sm border border-border dark:border-gray-800 overflow-hidden">
                 {/* Card Header: Restaurant Info */}
                 <div className="flex items-start justify-between p-4 pb-2">
                   <div className="flex gap-3">
@@ -733,14 +733,14 @@ Order again from this restaurant in the ${companyName} app.`
 
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 dark:text-gray-100 text-base sm:text-lg leading-tight truncate">{order.restaurant}</h3>
-                      <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                      <p className="text-[10px] sm:text-[11px] text-text-secondary dark:text-text-secondary mt-0.5">
                         Order ID: <span className="font-semibold text-gray-700 dark:text-gray-300">{order.orderId || order.id}</span>
                       </p>
-                      <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{location}</p>
+                      <p className="text-[11px] sm:text-xs text-text-secondary dark:text-text-secondary mt-0.5 truncate">{location}</p>
 
                       {order.restaurantId && (
                         <Link to={`/user/restaurants/${order.restaurantId}`}>
-                          <button className="text-xs text-[#DC2626] font-medium flex items-center mt-1 hover:text-[#991B1B]">
+                          <button className="text-xs text-[var(--primary)] font-medium flex items-center mt-1 hover:text-[var(--primary-dark)]">
                             View menu <span className="ml-0.5">&gt;</span>
                           </button>
                         </Link>
@@ -753,13 +753,13 @@ Order again from this restaurant in the ${companyName} app.`
                     onClick={() => toggleMenuForOrder(order.id)}
                     className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                   >
-                    <MoreVertical className="w-5 h-5 text-gray-400" />
+                    <MoreVertical className="w-5 h-5 text-text-secondary" />
                   </button>
                 </div>
 
                 {/* Three-dots dropdown menu */}
                 {activeMenuOrderId === order.id && (
-                  <div className="absolute right-3 top-10 z-20 w-40 rounded-xl bg-white dark:bg-[#1a1a1a] shadow-lg border border-gray-100 dark:border-gray-800 py-1 text-xs">
+                  <div className="absolute right-3 top-10 z-20 w-40 rounded-xl bg-surface dark:bg-[#1a1a1a] shadow-lg border border-border dark:border-gray-800 py-1 text-xs">
                     <button
                       type="button"
                       onClick={() => handleShareRestaurant(order)}
@@ -778,7 +778,7 @@ Order again from this restaurant in the ${companyName} app.`
                 )}
 
                 {/* Separator */}
-                <div className="border-t border-dashed border-gray-200 dark:border-gray-800 mx-4 my-1"></div>
+                <div className="border-t border-dashed border-border dark:border-gray-800 mx-4 my-1"></div>
 
                 {/* Items List */}
                 <div className="px-4 py-2 space-y-2">
@@ -810,24 +810,24 @@ Order again from this restaurant in the ${companyName} app.`
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start gap-2">
                               {/* Veg/Non-Veg Icon */}
-                              <div className={`w-4 h-4 border ${isVeg ? 'border-green-600' : 'border-red-600'} flex items-center justify-center p-[2px] flex-shrink-0 mt-0.5`}>
-                                <div className={`w-full h-full rounded-full ${isVeg ? 'bg-green-600' : 'bg-red-600'}`}></div>
+                              <div className={`w-4 h-4 border ${isVeg ? 'border-green-600' : 'border-primary'} flex items-center justify-center p-[2px] flex-shrink-0 mt-0.5`}>
+                                <div className={`w-full h-full rounded-full ${isVeg ? 'bg-green-600' : 'bg-primary'}`}></div>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <span className="text-sm text-gray-800 dark:text-gray-200 font-medium block">
                                   {itemQuantity} x {itemName}
                                 </span>
                                 {item.variantName ? (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.variantName}</p>
+                                  <p className="text-xs text-text-secondary dark:text-text-secondary mt-0.5">{item.variantName}</p>
                                 ) : null}
                                 {item.description && (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{item.description}</p>
+                                  <p className="text-xs text-text-secondary dark:text-text-secondary mt-0.5 line-clamp-1">{item.description}</p>
                                 )}
                               </div>
                               <div className="text-right flex-shrink-0">
                                 <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100">{"\u20B9"}{itemTotal.toFixed(2)}</span>
                                 {itemQuantity > 1 && (
-                                  <p className="hidden sm:block text-[10px] text-gray-500 dark:text-gray-400">{"\u20B9"}{itemPrice.toFixed(2)} each</p>
+                                  <p className="hidden sm:block text-[10px] text-text-secondary dark:text-text-secondary">{"\u20B9"}{itemPrice.toFixed(2)} each</p>
                                 )}
                               </div>
                             </div>
@@ -836,7 +836,7 @@ Order again from this restaurant in the ${companyName} app.`
                       )
                     })
                   ) : (
-                    <p className="text-sm text-gray-500">No items found</p>
+                    <p className="text-sm text-text-secondary">No items found</p>
                   )}
                 </div>
 
@@ -845,14 +845,14 @@ Order again from this restaurant in the ${companyName} app.`
                   <div className="space-y-1">
                     {order.subtotal > 0 && (
                       <div className="hidden sm:flex justify-between text-xs">
-                        <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                        <span className="text-text-secondary dark:text-text-secondary">Subtotal</span>
                         <span className="text-gray-800 dark:text-gray-200 font-medium">{"\u20B9"}{order.subtotal.toFixed(2)}</span>
                       </div>
                     )}
 
                     {order.tax > 0 && (
                       <div className="hidden sm:flex justify-between text-xs">
-                        <span className="text-gray-600 dark:text-gray-400">Tax</span>
+                        <span className="text-text-secondary dark:text-text-secondary">Tax</span>
                         <span className="text-gray-800 dark:text-gray-200 font-medium">{"\u20B9"}{order.tax.toFixed(2)}</span>
                       </div>
                     )}
@@ -864,14 +864,14 @@ Order again from this restaurant in the ${companyName} app.`
                     )}
                     {order.pricing?.couponCode && (
                       <div className="hidden sm:flex justify-between text-xs">
-                        <span className="text-gray-600">Coupon</span>
+                        <span className="text-text-secondary">Coupon</span>
                         <span className="text-gray-800 font-medium">{order.pricing.couponCode}</span>
                       </div>
                     )}
-                    <div className="sm:border-t border-gray-200 dark:border-gray-700 sm:pt-1.5 sm:mt-1.5">
+                    <div className="sm:border-t border-border dark:border-gray-700 sm:pt-1.5 sm:mt-1.5">
                       <div className="flex justify-between items-center">
                         <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200">Total Bill</span>
-                        <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">{"\u20B9"}{order.total.toFixed(2)}</span>
+                        <span className="text-base sm:text-lg font-bold text-text-primary dark:text-gray-100">{"\u20B9"}{order.total.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -880,12 +880,12 @@ Order again from this restaurant in the ${companyName} app.`
                 {/* Date and Payment Info */}
                 <div className="px-4 py-2 flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Order placed on {formatDate(order.createdAt)}</p>
+                    <p className="text-xs text-text-secondary dark:text-text-secondary">Order placed on {formatDate(order.createdAt)}</p>
                     {order.deliveredAt && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Delivered on {formatDate(order.deliveredAt)}</p>
+                      <p className="text-xs text-text-secondary dark:text-text-secondary mt-0.5">Delivered on {formatDate(order.deliveredAt)}</p>
                     )}
                     {order.payment && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-text-secondary dark:text-text-secondary mt-1">
                         Payment: <span className="font-medium capitalize text-gray-800 dark:text-gray-200">
                             {order.payment.method === 'wallet' ? 'Wallet' :
                               order.payment.method === 'razorpay' ? 'Online' :
@@ -893,7 +893,7 @@ Order again from this restaurant in the ${companyName} app.`
                         </span>
                         {order.payment.status && (
                           <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium ${(order.payment.status === 'completed' || (isDelivered && isCodOrWallet)) ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                              order.payment.status === 'failed' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                              order.payment.status === 'failed' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-primary-light' :
                                 (order.payment.status === 'pending' || order.payment.status === 'cod_pending') ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
                                   'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                             }`}>
@@ -909,20 +909,20 @@ Order again from this restaurant in the ${companyName} app.`
                       <div className="flex flex-col gap-0.5">
                         <p className="text-xs font-medium text-red-500 mt-1">Restaurant Cancelled</p>
                         {order.cancellationReason && (
-                          <p className="text-[10px] text-red-400 italic">Reason: {order.cancellationReason}</p>
+                          <p className="text-[10px] text-primary-light italic">Reason: {order.cancellationReason}</p>
                         )}
                       </div>
                     )}
                     {isUserCancelled && (
-                      <p className="text-xs font-medium text-gray-500 mt-1">Cancelled by you</p>
+                      <p className="text-xs font-medium text-text-secondary mt-1">Cancelled by you</p>
                     )}
                     {isCancelled && !isRestaurantCancelled && !isUserCancelled && (
-                      <p className="text-xs font-medium text-gray-500 mt-1">Cancelled</p>
+                      <p className="text-xs font-medium text-text-secondary mt-1">Cancelled</p>
                     )}
                   </div>
                   <div className="flex items-center ml-4">
                     <Link to={(isDelivered || isCancelled) ? `/user/orders/${order.id}/details` : `/user/orders/${order.id}`}>
-                      <button className="text-xs text-[#DC2626] font-medium hover:text-[#991B1B] flex items-center gap-1">
+                      <button className="text-xs text-[var(--primary)] font-medium hover:text-[var(--primary-dark)] flex items-center gap-1">
                         View Details
                         <ChevronRight className="w-4 h-4" />
                       </button>
@@ -931,7 +931,7 @@ Order again from this restaurant in the ${companyName} app.`
                 </div>
 
                 {/* Separator */}
-                <div className="border-t border-gray-100 dark:border-gray-800 mx-4"></div>
+                <div className="border-t border-border dark:border-gray-800 mx-4"></div>
 
                 {/* Card Footer: Actions */}
                 <div className="px-4 py-3 flex items-center justify-between">
@@ -940,21 +940,21 @@ Order again from this restaurant in the ${companyName} app.`
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <div className="bg-red-100 dark:bg-red-900/30 p-1 rounded-full">
-                          <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
+                          <AlertCircle className="w-4 h-4 text-red-500 dark:text-primary-light" />
                         </div>
-                        <span className="text-xs font-semibold text-red-500 dark:text-red-400">Restaurant Cancelled</span>
+                        <span className="text-xs font-semibold text-red-500 dark:text-primary-light">Restaurant Cancelled</span>
                       </div>
                       {order.cancellationReason && (
-                        <p className="text-xs text-red-600 dark:text-red-400 font-medium ml-7 mb-1">Reason: {order.cancellationReason}</p>
+                        <p className="text-xs text-primary dark:text-primary-light font-medium ml-7 mb-1">Reason: {order.cancellationReason}</p>
                       )}
-                      <p className="text-xs text-gray-600 dark:text-gray-400 ml-7">Refund will be processed in 24-48 hours</p>
+                      <p className="text-xs text-text-secondary dark:text-text-secondary ml-7">Refund will be processed in 24-48 hours</p>
                     </div>
                   ) : paymentFailed ? (
                     <div className="flex items-center gap-2">
                       <div className="bg-red-100 dark:bg-red-900/30 p-1 rounded-full">
-                        <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
+                        <AlertCircle className="w-4 h-4 text-red-500 dark:text-primary-light" />
                       </div>
-                      <span className="text-xs font-semibold text-red-500 dark:text-red-400">Payment failed</span>
+                      <span className="text-xs font-semibold text-red-500 dark:text-primary-light">Payment failed</span>
                     </div>
                   ) : order.restaurantRating ? (
                     <div>
@@ -969,11 +969,11 @@ Order again from this restaurant in the ${companyName} app.`
                     </div>
                   ) : isDelivered ? (
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Order delivered</p>
+                      <p className="text-xs text-text-secondary dark:text-text-secondary">Order delivered</p>
                       <button
                         type="button"
                         onClick={() => handleOpenRating(order)}
-                        className="text-xs text-[#DC2626] font-medium mt-0.5 flex items-center"
+                        className="text-xs text-[var(--primary)] font-medium mt-0.5 flex items-center"
                       >
                       </button>
                     </div>
@@ -981,7 +981,7 @@ Order again from this restaurant in the ${companyName} app.`
                     <div>
                       {/* Countdown Timer */}
                       {countdowns[order.id] && countdowns[order.id] > 0 && (
-                        <div className="flex items-center gap-1 mt-1 text-xs text-[#DC2626] font-medium">
+                        <div className="flex items-center gap-1 mt-1 text-xs text-[var(--primary)] font-medium">
                           <Clock size={12} />
                           <span>{countdowns[order.id]} min{countdowns[order.id] !== 1 ? 's' : ''} remaining</span>
                         </div>
@@ -993,7 +993,7 @@ Order again from this restaurant in the ${companyName} app.`
                   {isDelivered && !paymentFailed && (
                     <button
                       onClick={() => handleReorder(order)}
-                      className="bg-[#DC2626] hover:bg-[#991B1B] text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 shadow-sm transition-colors"
+                      className="bg-[var(--primary)] hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 shadow-sm transition-colors"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       Reorder
@@ -1014,9 +1014,9 @@ Order again from this restaurant in the ${companyName} app.`
       {/* Rating & Feedback Modal */}
       {ratingModal.open && ratingModal.order && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-[#121212] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border dark:border-gray-800">
+          <div className="w-full max-w-md rounded-3xl bg-surface dark:bg-[#121212] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border dark:border-gray-800">
             {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-[#DC2626] to-[#991B1B] px-6 py-5">
+            <div className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] px-6 py-5">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <Star className="w-5 h-5 fill-white" />
@@ -1034,7 +1034,7 @@ Order again from this restaurant in the ${companyName} app.`
 
             <div className="px-6 py-6 font-sans">
               <div className="mb-6">
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                <p className="text-sm font-semibold text-text-primary dark:text-gray-100 mb-3">
                   Restaurant rating (out of 5)
                 </p>
                 <div className="flex items-center justify-center gap-2 mb-3">
@@ -1061,7 +1061,7 @@ Order again from this restaurant in the ${companyName} app.`
                   rows={2}
                   value={restaurantFeedbackText}
                   onChange={(e) => setRestaurantFeedbackText(e.target.value)}
-                  className="w-full rounded-xl border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] px-4 py-2 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#DC2626] focus:border-[#DC2626] resize-none transition-all"
+                  className="w-full rounded-xl border-2 border-border dark:border-gray-800 bg-surface dark:bg-[#1a1a1a] px-4 py-2 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] resize-none transition-all"
                   placeholder="Restaurant feedback (optional)"
                 />
               </div>
@@ -1073,7 +1073,7 @@ Order again from this restaurant in the ${companyName} app.`
                 type="button"
                 disabled={ratingSubmitDisabled}
                 onClick={handleSubmitRating}
-                className="w-full rounded-xl bg-gradient-to-r from-[#DC2626] to-[#991B1B] text-white text-base font-bold py-3.5 hover:from-[#991B1B] hover:to-[#C44409] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[#DC2626]/30 flex items-center justify-center gap-2"
+                className="w-full rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white text-base font-bold py-3.5 hover:from-[var(--primary-dark)] hover:to-[#C44409] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[var(--primary)]/30 flex items-center justify-center gap-2"
               >
                 {submittingRating ? (
                   <>
@@ -1098,16 +1098,16 @@ Order again from this restaurant in the ${companyName} app.`
 
       {showShareModal && sharePayload && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm px-4 pb-4 pt-10 sm:items-center">
-          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#121212] shadow-2xl overflow-hidden border dark:border-gray-800">
-            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
+          <div className="w-full max-w-sm rounded-3xl bg-surface dark:bg-[#121212] shadow-2xl overflow-hidden border dark:border-gray-800">
+            <div className="flex items-center justify-between border-b border-border dark:border-gray-800 px-5 py-4">
               <div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Share restaurant</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Choose an app to share this restaurant</p>
+                <h3 className="text-base font-semibold text-text-primary dark:text-gray-100">Share restaurant</h3>
+                <p className="text-xs text-text-secondary dark:text-text-secondary mt-0.5">Choose an app to share this restaurant</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowShareModal(false)}
-                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="rounded-full p-2 text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800"
                 aria-label="Close share modal"
               >
                 <X className="w-4 h-4" />
@@ -1119,7 +1119,7 @@ Order again from this restaurant in the ${companyName} app.`
                 <button
                   type="button"
                   onClick={handleSystemShareFromModal}
-                  className="w-full rounded-2xl bg-[#DC2626] px-4 py-3 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-[#991B1B] transition-colors"
+                  className="w-full rounded-2xl bg-[var(--primary)] px-4 py-3 text-sm font-semibold text-white flex items-center justify-center gap-2 hover:bg-primary-dark transition-colors"
                 >
                   <Share2 className="w-4 h-4" />
                   Share via apps
@@ -1130,7 +1130,7 @@ Order again from this restaurant in the ${companyName} app.`
                 <button
                   type="button"
                   onClick={() => openShareTarget("whatsapp")}
-                  className="rounded-2xl border border-gray-200 dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="rounded-2xl border border-border dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <MessageCircle className="w-5 h-5 text-green-600" />
                   WhatsApp
@@ -1138,7 +1138,7 @@ Order again from this restaurant in the ${companyName} app.`
                 <button
                   type="button"
                   onClick={() => openShareTarget("telegram")}
-                  className="rounded-2xl border border-gray-200 dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="rounded-2xl border border-border dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <Send className="w-5 h-5 text-sky-500" />
                   Telegram
@@ -1146,7 +1146,7 @@ Order again from this restaurant in the ${companyName} app.`
                 <button
                   type="button"
                   onClick={() => openShareTarget("email")}
-                  className="rounded-2xl border border-gray-200 dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="rounded-2xl border border-border dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <Mail className="w-5 h-5 text-rose-500" />
                   Email
@@ -1154,7 +1154,7 @@ Order again from this restaurant in the ${companyName} app.`
                 <button
                   type="button"
                   onClick={() => openShareTarget("sms")}
-                  className="rounded-2xl border border-gray-200 dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="rounded-2xl border border-border dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <MessagesSquare className="w-5 h-5 text-violet-500" />
                   SMS
@@ -1162,7 +1162,7 @@ Order again from this restaurant in the ${companyName} app.`
                 <button
                   type="button"
                   onClick={() => openShareTarget("facebook")}
-                  className="rounded-2xl border border-gray-200 dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="rounded-2xl border border-border dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <Share2 className="w-5 h-5 text-blue-600" />
                   Facebook
@@ -1170,15 +1170,15 @@ Order again from this restaurant in the ${companyName} app.`
                 <button
                   type="button"
                   onClick={() => openShareTarget("x")}
-                  className="rounded-2xl border border-gray-200 dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="rounded-2xl border border-border dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
-                  <Link2 className="w-5 h-5 text-gray-900 dark:text-gray-100" />
+                  <Link2 className="w-5 h-5 text-text-primary dark:text-gray-100" />
                   X
                 </button>
                 <button
                   type="button"
                   onClick={() => openShareTarget("linkedin")}
-                  className="rounded-2xl border border-gray-200 dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="rounded-2xl border border-border dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <Share2 className="w-5 h-5 text-blue-700" />
                   LinkedIn
@@ -1186,9 +1186,9 @@ Order again from this restaurant in the ${companyName} app.`
                 <button
                   type="button"
                   onClick={copyShareLink}
-                  className="rounded-2xl border border-gray-200 dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="rounded-2xl border border-border dark:border-gray-800 px-3 py-4 text-xs font-medium text-gray-700 dark:text-gray-200 flex flex-col items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
-                  <Copy className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <Copy className="w-5 h-5 text-text-secondary dark:text-text-secondary" />
                   Copy link
                 </button>
               </div>

@@ -43,6 +43,7 @@ import AnimatedPage from "@food/components/user/AnimatedPage"
 import { useCart } from "@food/context/CartContext"
 import { useProfile } from "@food/context/ProfileContext"
 import AddToCartAnimation from "@food/components/user/AddToCartAnimation"
+import { checkRestaurantBookingEligibility } from "@food/utils/common"
 import { getCompanyNameAsync } from "@food/utils/businessSettings"
 import { isModuleAuthenticated } from "@food/utils/auth"
 import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
@@ -84,7 +85,7 @@ const DishImage = ({ src, alt, className }) => (
         }}
       />
     ) : (
-      <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs text-gray-400">
+      <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs text-text-secondary">
         No image
       </div>
     )}
@@ -566,6 +567,7 @@ function RestaurantDetailsContent() {
             rating: actualRestaurant?.rating || apiRestaurant?.rating || actualRestaurant?.averageRating || apiRestaurant?.averageRating || 0,
             reviews: actualRestaurant?.totalRatings || apiRestaurant?.totalRatings || actualRestaurant?.reviewCount || apiRestaurant?.reviewCount || actualRestaurant?.reviews?.length || apiRestaurant?.reviews?.length || 0,
             distance: calculatedDistance || actualRestaurant?.distance || apiRestaurant?.distance || actualRestaurant?.distanceFromUser || apiRestaurant?.distanceFromUser || "1.2 km",
+            distanceInKm: distanceInKm,
             location: formattedAddress,
             locationObject: locationObj, // Store full location object for reference
             image: normalizedCoverImages?.[0]?.url
@@ -1056,10 +1058,11 @@ function RestaurantDetailsContent() {
       return
     }
 
-    // CRITICAL: Check if user is in service zone or restaurant is available
-    if (isOutOfService) {
-      toast.error('You are outside the service zone. Please select a location within the service area.');
-      return;
+    // Check booking radius eligibility using shared utility
+    const eligibility = checkRestaurantBookingEligibility(restaurant, userLocation)
+    if (!eligibility.bookable) {
+      toast.error(eligibility.message)
+      return
     }
 
     const availability = getRestaurantAvailabilityStatus(restaurant)
@@ -1913,14 +1916,14 @@ function RestaurantDetailsContent() {
       <AnimatedPage>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
           <div className="flex flex-col items-center gap-4 text-center">
-            <AlertCircle className={`h-12 w-12 ${isNetworkError ? 'text-[#DC2626]' : 'text-red-500'}`} />
+            <AlertCircle className={`h-12 w-12 ${isNetworkError ? 'text-[var(--primary)]' : 'text-red-500'}`} />
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+              <h2 className="text-lg font-semibold text-text-primary dark:text-white mb-1">
                 {isNetworkError ? 'Connection Error' : isNotFoundError ? 'Restaurant not found' : 'Error'}
               </h2>
-              <p className="text-sm text-gray-600 mb-4 max-w-md">{restaurantError}</p>
+              <p className="text-sm text-text-secondary mb-4 max-w-md">{restaurantError}</p>
               {isNetworkError && (
-                <p className="text-xs text-gray-500 mb-4">
+                <p className="text-xs text-text-secondary mb-4">
                   Make sure the backend server is running at {API_BASE_URL.replace('/api', '')}
                 </p>
               )}
@@ -1941,7 +1944,7 @@ function RestaurantDetailsContent() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <AlertCircle className="h-12 w-12 text-red-500" />
-            <span className="text-sm text-gray-600">Restaurant not found</span>
+            <span className="text-sm text-text-secondary">Restaurant not found</span>
             <Button onClick={goBack} variant="outline">
               Go Back
             </Button>
@@ -1953,25 +1956,25 @@ function RestaurantDetailsContent() {
 
   const availabilityStatus = getRestaurantAvailabilityStatus(restaurant, new Date(availabilityTick))
   const isRestaurantOffline = !availabilityStatus.isOpen
-  const shouldShowGrayscale = isOutOfService || isRestaurantOffline
+  const shouldShowGrayscale = isRestaurantOffline
 
   return (
     <AnimatedPage
       id="scrollingelement"
-      className={`min-h-screen bg-white dark:bg-[#0a0a0a] flex flex-col transition-all duration-300 ${shouldShowGrayscale ? 'grayscale opacity-75' : ''
+      className={`min-h-screen bg-surface dark:bg-[#0a0a0a] flex flex-col transition-all duration-300 ${shouldShowGrayscale ? 'grayscale opacity-75' : ''
         }`}
     >
       {/* Header - Back, Search, Menu (like reference image) */}
-      <div className="px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-3 md:pt-4 lg:pt-5 pb-2 md:pb-3 bg-white dark:bg-[#0a0a0a]">
+      <div className="px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-3 md:pt-4 lg:pt-5 pb-2 md:pb-3 bg-surface dark:bg-[#0a0a0a]">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Back Button */}
           <Button
             variant="outline"
             size="icon"
-            className="rounded-full h-10 w-10 border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-[#1a1a1a]"
+            className="rounded-full h-10 w-10 border-border dark:border-gray-800 shadow-sm bg-surface dark:bg-[#1a1a1a]"
             onClick={goBack}
           >
-            <ArrowLeft className="h-5 w-5 text-gray-900 dark:text-white" />
+            <ArrowLeft className="h-5 w-5 text-text-primary dark:text-white" />
           </Button>
 
           {/* Right side: Search pill + menu */}
@@ -1979,7 +1982,7 @@ function RestaurantDetailsContent() {
             {!showSearch ? (
               <Button
                 variant="outline"
-                className="rounded-full h-10 px-4 border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-[#1a1a1a] flex items-center gap-2 text-gray-900 dark:text-white"
+                className="rounded-full h-10 px-4 border-border dark:border-gray-800 shadow-sm bg-surface dark:bg-[#1a1a1a] flex items-center gap-2 text-text-primary dark:text-white"
                 onClick={() => setShowSearch(true)}
               >
                 <Search className="h-4 w-4" />
@@ -1988,13 +1991,13 @@ function RestaurantDetailsContent() {
             ) : (
               <div className="flex items-center gap-2 flex-1 max-w-md">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary" />
                   <input
                     type="text"
                     placeholder="Search for dishes..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-[#1a1a1a] text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-[#DC2626] focus:border-transparent"
+                    className="w-full pl-10 pr-10 py-2 rounded-full border border-border dark:border-gray-800 shadow-sm bg-surface dark:bg-[#1a1a1a] text-sm dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
                     autoFocus
                     onBlur={() => {
                       if (!searchQuery) {
@@ -2008,7 +2011,7 @@ function RestaurantDetailsContent() {
                         setSearchQuery("")
                         setShowSearch(false)
                       }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-secondary"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -2019,26 +2022,26 @@ function RestaurantDetailsContent() {
             <Button
               variant="outline"
               size="icon"
-              className="rounded-full h-10 w-10 border-gray-200 dark:border-gray-800 shadow-sm bg-white dark:bg-[#1a1a1a]"
+              className="rounded-full h-10 w-10 border-border dark:border-gray-800 shadow-sm bg-surface dark:bg-[#1a1a1a]"
               onClick={() => setShowMenuOptionsSheet(true)}
             >
-              <MoreVertical className="h-5 w-5 text-gray-900 dark:text-white" />
+              <MoreVertical className="h-5 w-5 text-text-primary dark:text-white" />
             </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content Card */}
-      <div className="bg-white dark:bg-[#0a0a0a] rounded-t-3xl relative z-10 min-h-[40vh]">
+      <div className="bg-surface dark:bg-[#0a0a0a] rounded-t-3xl relative z-10 min-h-[40vh]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 sm:py-5 md:py-6 lg:py-8 space-y-3 md:space-y-4 lg:space-y-5 pb-0">
           {/* Restaurant Summary */}
           <div className="relative">
-            <div className="relative rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-[#1a1a1a] shadow-[0_16px_40px_rgba(15,23,42,0.08)] p-4 sm:p-5 space-y-4 overflow-hidden">
-              <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[#DC2626] via-[#8a4b77] to-[#b36b8f]" />
+            <div className="relative rounded-3xl border border-border dark:border-gray-800 bg-surface dark:bg-[#1a1a1a] shadow-[0_16px_40px_rgba(15,23,42,0.08)] p-4 sm:p-5 space-y-4 overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-[var(--primary)] via-[#8a4b77] to-[#b36b8f]" />
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">
+                  <h1 className="text-2xl font-bold text-text-primary dark:text-white truncate">
                     {restaurant?.name || "Unknown Restaurant"}
                   </h1>
                 </div>
@@ -2052,7 +2055,7 @@ function RestaurantDetailsContent() {
                   <Star className="h-3 w-3 fill-white" />
                   {Number(restaurant?.rating || 0) > 0 ? Number(restaurant.rating).toFixed(1) : "NEW"}
                 </div>
-                <span className="mt-1 text-xs text-gray-500 whitespace-nowrap text-center">
+                <span className="mt-1 text-xs text-text-secondary whitespace-nowrap text-center">
                   {Number(restaurant?.rating || 0) > 0 ? `${(restaurant.reviews || 0).toLocaleString()}+ ratings` : "No ratings yet"}
                 </span>
               </div>
@@ -2068,7 +2071,7 @@ function RestaurantDetailsContent() {
                 <span className="truncate">
                   {restaurant?.distance || "1.2 km"} | {restaurant?.location || "Location"}
                 </span>
-                <ChevronDown className="h-4 w-4 text-gray-500" />
+                <ChevronDown className="h-4 w-4 text-text-secondary" />
               </button>
               <div
                 className={`inline-flex flex-col items-center justify-center rounded-xl px-2.5 py-1 text-[10px] font-bold text-white leading-tight shadow-sm ${
@@ -2102,13 +2105,13 @@ function RestaurantDetailsContent() {
 
           {/* Filter/Category Buttons */}
           {restaurant?.menuSections && Array.isArray(restaurant.menuSections) && restaurant.menuSections.length > 0 && (
-            <div className="border-y border-gray-200 py-3 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+            <div className="border-y border-border py-3 -mx-4 px-4 overflow-x-auto scrollbar-hide">
             <div className="flex flex-col gap-2 w-max">
               <div className="flex items-center gap-2 w-max">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-1.5 whitespace-nowrap border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] relative"
+                  className="flex items-center gap-1.5 whitespace-nowrap border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] relative"
                   onClick={() => setShowFilterSheet(true)}
                 >
                   <SlidersHorizontal className="h-4 w-4" />
@@ -2123,7 +2126,7 @@ function RestaurantDetailsContent() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`flex items-center gap-1.5 whitespace-nowrap border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] dark:text-white rounded-full ${filters.vegNonVeg === "veg" ? "border-green-600 bg-green-50 text-green-700 font-bold dark:border-green-500 dark:bg-green-900/20 dark:text-green-400" : ""
+                  className={`flex items-center gap-1.5 whitespace-nowrap border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] dark:text-white rounded-full ${filters.vegNonVeg === "veg" ? "border-green-600 bg-green-50 text-green-700 font-bold dark:border-green-500 dark:bg-green-900/20 dark:text-green-400" : ""
                     }`}
                   onClick={() =>
                     setFilters((prev) => ({
@@ -2135,13 +2138,13 @@ function RestaurantDetailsContent() {
                   <div className="h-3 w-3 rounded-full bg-green-600" />
                   Veg
                   {filters.vegNonVeg === "veg" && (
-                    <X className="h-3 w-3 text-gray-600 dark:text-gray-400" />
+                    <X className="h-3 w-3 text-text-secondary dark:text-text-secondary" />
                   )}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`flex items-center gap-1.5 whitespace-nowrap border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] dark:text-white rounded-full ${filters.vegNonVeg === "non-veg" ? "border-red-600 bg-red-50 text-red-600 dark:border-red-500 dark:bg-red-900/20 dark:text-red-400" : ""
+                  className={`flex items-center gap-1.5 whitespace-nowrap border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] dark:text-white rounded-full ${filters.vegNonVeg === "non-veg" ? "border-primary bg-primary-light/10 text-primary dark:border-red-500 dark:bg-red-900/20 dark:text-primary-light" : ""
                     }`}
                   onClick={() =>
                     setFilters((prev) => ({
@@ -2150,10 +2153,10 @@ function RestaurantDetailsContent() {
                     }))
                   }
                 >
-                  <div className="h-3 w-3 rounded-full bg-red-600" />
+                  <div className="h-3 w-3 rounded-full bg-primary" />
                   Non-veg
                   {filters.vegNonVeg === "non-veg" && (
-                    <X className="h-3 w-3 text-gray-600 dark:text-gray-400" />
+                    <X className="h-3 w-3 text-text-secondary dark:text-text-secondary" />
                   )}
                 </Button>
               </div>
@@ -2165,8 +2168,8 @@ function RestaurantDetailsContent() {
                     onClick={() => setSelectedMenuCategory("all")}
                     className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
                       selectedMenuCategory === "all"
-                        ? "border-[#DC2626] bg-[#DC262615] text-[#DC2626]"
-                        : "border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300"
+                        ? "border-[var(--primary)] bg-[#DC262615] text-[var(--primary)]"
+                        : "border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300"
                     }`}
                   >
                     All
@@ -2178,8 +2181,8 @@ function RestaurantDetailsContent() {
                       onClick={() => setSelectedMenuCategory(category.id)}
                       className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
                         selectedMenuCategory === category.id
-                          ? "border-[#DC2626] bg-[#DC262615] text-[#DC2626]"
-                          : "border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300"
+                          ? "border-[var(--primary)] bg-[#DC262615] text-[var(--primary)]"
+                          : "border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300"
                       }`}
                     >
                       {category.image ? (
@@ -2192,7 +2195,7 @@ function RestaurantDetailsContent() {
                           }}
                         />
                       ) : (
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold uppercase text-gray-500">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold uppercase text-text-secondary">
                           {category.name?.charAt(0) || "C"}
                         </span>
                       )}
@@ -2210,11 +2213,11 @@ function RestaurantDetailsContent() {
         {restaurant && (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-6 sm:py-8 md:py-10 lg:py-12 space-y-6 md:space-y-8 lg:space-y-10">
             {filteredSections.length === 0 && hasActiveMenuFilters && (
-              <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] px-5 py-8 text-center">
+              <div className="rounded-2xl border border-dashed border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] px-5 py-8 text-center">
                 <p className="text-sm md:text-base font-medium text-gray-700 dark:text-gray-300">
                   No dishes match the selected filters.
                 </p>
-                <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-2">
+                <p className="text-xs md:text-sm text-text-secondary dark:text-text-secondary mt-2">
                   Clear filters or try a different combination.
                 </p>
               </div>
@@ -2222,10 +2225,10 @@ function RestaurantDetailsContent() {
             {filteredSections.length === 0 && !hasActiveMenuFilters && !loadingMenuItems && (
               <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
                 <div className="bg-gray-100 dark:bg-gray-800/50 p-6 rounded-full mb-6">
-                  <Utensils className="h-12 w-12 text-gray-400" />
+                  <Utensils className="h-12 w-12 text-text-secondary" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Menu Coming Soon</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+                <p className="text-sm text-text-secondary dark:text-text-secondary max-w-xs mx-auto">
                   {restaurant?.name || "This restaurant"} is still setting up their menu. We'll notify you as soon as their delicious dishes are available!
                 </p>
               </div>
@@ -2255,7 +2258,7 @@ function RestaurantDetailsContent() {
                 <div key={sectionIndex} id={sectionId} className="space-y-1 scroll-mt-20">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                      <h2 className="text-lg font-bold text-text-primary dark:text-white">
                         {(section?.name && typeof section.name === 'string' && section.name.trim())
                           ? section.name.trim()
                           : (section?.title && typeof section.title === 'string' && section.title.trim())
@@ -2284,7 +2287,7 @@ function RestaurantDetailsContent() {
                       className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                     >
                       <ChevronDown
-                        className={`h-5 w-5 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'
+                        className={`h-5 w-5 text-text-secondary dark:text-text-secondary transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'
                           }`}
                       />
                     </button>
@@ -2293,7 +2296,7 @@ function RestaurantDetailsContent() {
                   {/* Direct Items */}
                   {isExpanded && isRecommended && !loadingMenuItems && sectionItems.length === 0 && (
                     <div className="text-center py-8">
-                      <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
+                      <p className="text-text-secondary dark:text-text-secondary text-sm md:text-base">
                         No dish recommended
                       </p>
                     </div>
@@ -2330,7 +2333,7 @@ function RestaurantDetailsContent() {
                                 delete dishCardRefs.current[item.id]
                               }
                             }}
-                            className={`flex gap-4 p-4 ${highlightedDishId === item.id && isRecommended ? "border-b-transparent" : "border-b border-gray-100 dark:border-gray-800 last:border-none"} relative cursor-pointer transition-all duration-300 ${highlightedDishId === item.id && isRecommended ? "bg-[#DC262605] dark:bg-[#DC262610] rounded-2xl" : ""}`}
+                            className={`flex gap-4 p-4 ${highlightedDishId === item.id && isRecommended ? "border-b-transparent" : "border-b border-border dark:border-gray-800 last:border-none"} relative cursor-pointer transition-all duration-300 ${highlightedDishId === item.id && isRecommended ? "bg-[#DC262605] dark:bg-[#DC262610] rounded-2xl" : ""}`}
                             onClick={() => handleItemClick(item)}
                           >
                             {/* Vibrant Red Background Gradient Highlight - Recommended Section Only */}
@@ -2359,14 +2362,14 @@ function RestaurantDetailsContent() {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="absolute -inset-[1.5px] rounded-2xl border-2 border-red-600/80 pointer-events-none -z-10 shadow-[0_0_20px_rgba(220,38,38,0.3)]"
+                                    className="absolute -inset-[1.5px] rounded-2xl border-2 border-primary/80 pointer-events-none -z-10 shadow-[0_0_20px_rgba(220,38,38,0.3)]"
                                   />
                                   <motion.div 
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: [0, 0.1, 0] }}
                                     exit={{ opacity: 0 }}
                                     transition={{ duration: 4, times: [0, 0.5, 1] }}
-                                    className="absolute inset-0 bg-[#DC2626]/10 rounded-2xl pointer-events-none"
+                                    className="absolute inset-0 bg-[var(--primary)]/10 rounded-2xl pointer-events-none"
                                   />
                                 </>
                               )}
@@ -2381,8 +2384,8 @@ function RestaurantDetailsContent() {
                                     <div className="w-full h-full bg-green-600 rounded-full"></div>
                                   </div>
                                 ) : (
-                                  <div className="w-4 h-4 border-2 border-red-600 flex items-center justify-center rounded-sm flex-shrink-0 p-[2px]">
-                                    <div className="w-full h-full bg-red-600 rounded-full"></div>
+                                  <div className="w-4 h-4 border-2 border-primary flex items-center justify-center rounded-sm flex-shrink-0 p-[2px]">
+                                    <div className="w-full h-full bg-primary rounded-full"></div>
                                   </div>
                                 )}
                                 {item.name}
@@ -2391,11 +2394,11 @@ function RestaurantDetailsContent() {
                               {/* Highly Reordered Progress Bar - Removed static version */}
 
                               <div className="flex items-center gap-3 mt-1">
-                                <p className="font-semibold text-gray-900 dark:text-white">{getFoodPriceLabel(item)}</p>
+                                <p className="font-semibold text-text-primary dark:text-white">{getFoodPriceLabel(item)}</p>
                                 {/* Preparation Time - Show if available */}
                                 {item.preparationTime && String(item.preparationTime).trim() && (
-                                  <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                                    <Clock size={12} className="text-gray-500" />
+                                  <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary dark:text-text-secondary bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                    <Clock size={12} className="text-text-secondary" />
                                     <span>{String(item.preparationTime).trim()}</span>
                                   </div>
                                 )}
@@ -2403,7 +2406,7 @@ function RestaurantDetailsContent() {
 
                               {/* Description - Show if available */}
                               {item.description && (
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{item.description}</p>
+                                <p className="text-sm text-text-secondary dark:text-text-secondary mt-1 line-clamp-2">{item.description}</p>
                               )}
 
                               {/* Mobile-only action buttons */}
@@ -2416,8 +2419,8 @@ function RestaurantDetailsContent() {
                                     handleBookmarkClick(item)
                                   }}
                                   className={`p-1.5 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${isDishFavorite(item.id, restaurant?.restaurantId || restaurant?._id || restaurant?.id)
-                                    ? "border-red-500 text-red-500 bg-red-50 dark:bg-red-900/20"
-                                    : "border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400"
+                                    ? "border-red-500 text-red-500 bg-primary-light/10 dark:bg-red-900/20"
+                                    : "border-border dark:border-gray-700 text-text-secondary dark:text-text-secondary"
                                     }`}
                                 >
                                   <Bookmark
@@ -2431,7 +2434,7 @@ function RestaurantDetailsContent() {
                                     e.stopPropagation()
                                     handleShareClick(item)
                                   }}
-                                  className="p-1.5 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                  className="p-1.5 border border-border dark:border-gray-700 rounded-lg text-text-secondary dark:text-text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                 >
                                   <Share2 size={18} />
                                 </button>
@@ -2455,14 +2458,14 @@ function RestaurantDetailsContent() {
                                 />
                               ) : (
                                 <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-2xl flex items-center justify-center">
-                                  <span className="text-xs text-gray-400">No image</span>
+                                  <span className="text-xs text-text-secondary">No image</span>
                                 </div>
                               )}
                               {quantity > 0 ? (
                                 <div
-                                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border border-[#DC2626] text-[#DC2626] font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
-                                    ? 'bg-gray-50 border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
-                                    : 'hover:bg-[#FFF5F5]'
+                                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-[var(--primary)] text-[var(--primary)] font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
+                                    ? 'bg-gray-50 border-border text-text-secondary cursor-not-allowed opacity-50'
+                                    : 'hover:bg-primary-light/15'
                                     }`}
                                 >
                                   <button
@@ -2473,11 +2476,11 @@ function RestaurantDetailsContent() {
                                       }
                                     }}
                                     disabled={shouldShowGrayscale}
-                                    className={shouldShowGrayscale ? 'text-gray-400 cursor-not-allowed' : 'text-[#DC2626] hover:text-[#991B1B]'}
+                                    className={shouldShowGrayscale ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
                                   >
                                     <Minus size={14} />
                                   </button>
-                                  <span className={`mx-2 text-sm ${shouldShowGrayscale ? 'text-gray-400' : 'text-[#DC2626]'}`}>{quantity}</span>
+                                  <span className={`mx-2 text-sm ${shouldShowGrayscale ? 'text-text-secondary' : 'text-[var(--primary)]'}`}>{quantity}</span>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
@@ -2486,7 +2489,7 @@ function RestaurantDetailsContent() {
                                       }
                                     }}
                                     disabled={shouldShowGrayscale}
-                                    className={shouldShowGrayscale ? 'text-gray-400 cursor-not-allowed' : 'text-[#DC2626] hover:text-[#991B1B]'}
+                                    className={shouldShowGrayscale ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
                                   >
                                     <Plus size={14} className="stroke-[3px]" />
                                   </button>
@@ -2500,9 +2503,9 @@ function RestaurantDetailsContent() {
                                     }
                                   }}
                                   disabled={shouldShowGrayscale}
-                                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border border-[#DC2626] text-[#DC2626] font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-all ${shouldShowGrayscale
-                                    ? 'bg-gray-50 border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
-                                    : 'hover:bg-[#FFF5F5] hover:scale-105 active:scale-95'
+                                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-[var(--primary)] text-[var(--primary)] font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-all ${shouldShowGrayscale
+                                    ? 'bg-gray-50 border-border text-text-secondary cursor-not-allowed opacity-50'
+                                    : 'hover:bg-primary-light/15 hover:scale-105 active:scale-95'
                                     }`}
                                 >
                                   ADD <Plus size={14} className="stroke-[3px]" />
@@ -2527,7 +2530,7 @@ function RestaurantDetailsContent() {
                           <div key={subIndex} className="space-y-4">
                             {/* Subsection Header */}
                             <div className="flex items-center justify-between">
-                              <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                              <h3 className="text-base font-semibold text-text-primary dark:text-white">
                                 {subsection?.name || subsection?.title || "Subsection"}
                               </h3>
                               <button
@@ -2546,7 +2549,7 @@ function RestaurantDetailsContent() {
                                 className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                               >
                                 <ChevronDown
-                                  className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isSubsectionExpanded ? '' : '-rotate-90'
+                                  className={`h-4 w-4 text-text-secondary dark:text-text-secondary transition-transform duration-200 ${isSubsectionExpanded ? '' : '-rotate-90'
                                     }`}
                                 />
                               </button>
@@ -2579,7 +2582,7 @@ function RestaurantDetailsContent() {
                                           delete dishCardRefs.current[item.id]
                                         }
                                       }}
-                                      className={`flex gap-4 p-4 border-b border-gray-100 dark:border-gray-800 last:border-none relative cursor-pointer transition-all duration-300 ${highlightedDishId === item.id ? "bg-[#DC262605] ring-2 ring-[#DC2626] ring-inset dark:bg-[#DC262610] rounded-2xl" : ""}`}
+                                      className={`flex gap-4 p-4 border-b border-border dark:border-gray-800 last:border-none relative cursor-pointer transition-all duration-300 ${highlightedDishId === item.id ? "bg-[#DC262605] ring-2 ring-[var(--primary)] ring-inset dark:bg-[#DC262610] rounded-2xl" : ""}`}
                                       onClick={() => handleItemClick(item)}
                                     >
                                       {/* Left Side - Details */}
@@ -2590,8 +2593,8 @@ function RestaurantDetailsContent() {
                                               <div className="w-full h-full bg-[#8CC63F] rounded-full"></div>
                                             </div>
                                           ) : (
-                                            <div className="w-4 h-4 border-2 border-[#DC2626] flex items-center justify-center rounded-sm flex-shrink-0 p-[2px]">
-                                              <div className="w-full h-full bg-[#DC2626] rounded-full"></div>
+                                            <div className="w-4 h-4 border-2 border-[var(--primary)] flex items-center justify-center rounded-sm flex-shrink-0 p-[2px]">
+                                              <div className="w-full h-full bg-[var(--primary)] rounded-full"></div>
                                             </div>
                                           )}
                                           {item.name}
@@ -2600,11 +2603,11 @@ function RestaurantDetailsContent() {
                                         {/* Highly Reordered Progress Bar - Removed static version */}
 
                                         <div className="flex items-center gap-3 mt-1">
-                                          <p className="font-semibold text-gray-900 dark:text-white">{getFoodPriceLabel(item)}</p>
+                                          <p className="font-semibold text-text-primary dark:text-white">{getFoodPriceLabel(item)}</p>
                                           {/* Preparation Time - Show if available */}
                                           {item.preparationTime && String(item.preparationTime).trim() && (
-                                            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                                              <Clock size={12} className="text-gray-500" />
+                                            <div className="flex items-center gap-1.5 text-xs font-medium text-text-secondary dark:text-text-secondary bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                                              <Clock size={12} className="text-text-secondary" />
                                               <span>{String(item.preparationTime).trim()}</span>
                                             </div>
                                           )}
@@ -2612,7 +2615,7 @@ function RestaurantDetailsContent() {
 
                                         {/* Description - Show if available */}
                                         {item.description && (
-                                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{item.description}</p>
+                                          <p className="text-sm text-text-secondary dark:text-text-secondary mt-1 line-clamp-2">{item.description}</p>
                                         )}
 
                                         {/* Mobile-only action buttons */}
@@ -2625,8 +2628,8 @@ function RestaurantDetailsContent() {
                                               handleBookmarkClick(item)
                                             }}
                                             className={`p-1.5 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${isDishFavorite(item.id, restaurant?.restaurantId || restaurant?._id || restaurant?.id)
-                                              ? "border-red-500 text-red-500 bg-red-50 dark:bg-red-900/20"
-                                              : "border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400"
+                                              ? "border-red-500 text-red-500 bg-primary-light/10 dark:bg-red-900/20"
+                                              : "border-border dark:border-gray-700 text-text-secondary dark:text-text-secondary"
                                               }`}
                                           >
                                             <Bookmark
@@ -2640,7 +2643,7 @@ function RestaurantDetailsContent() {
                                               e.stopPropagation()
                                               handleShareClick(item)
                                             }}
-                                            className="p-1.5 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                            className="p-1.5 border border-border dark:border-gray-700 rounded-lg text-text-secondary dark:text-text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                           >
                                             <Share2 size={18} />
                                           </button>
@@ -2664,16 +2667,16 @@ function RestaurantDetailsContent() {
                                           />
                                         ) : (
                                           <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-2xl flex items-center justify-center">
-                                            <span className="text-xs text-gray-400">No image</span>
+                                            <span className="text-xs text-text-secondary">No image</span>
                                           </div>
                                         )}
                                         {quantity > 0 ? (
                                           <motion.div
                                             initial={{ opacity: 0, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
-                                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
-                                              ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
-                                              : 'border-[#DC2626] text-[#DC2626] hover:bg-[#DC262605]'
+                                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
+                                              ? 'border-border text-text-secondary cursor-not-allowed opacity-50'
+                                              : 'border-[var(--primary)] text-[var(--primary)] hover:bg-[#DC262605]'
                                               }`}
                                           >
                                             <button
@@ -2684,11 +2687,11 @@ function RestaurantDetailsContent() {
                                                 }
                                               }}
                                               disabled={shouldShowGrayscale}
-                                              className={shouldShowGrayscale ? 'text-gray-400 cursor-not-allowed' : 'text-[#DC2626] hover:text-[#991B1B]'}
+                                              className={shouldShowGrayscale ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
                                             >
                                               <Minus size={14} />
                                             </button>
-                                            <span className={`mx-2 text-sm ${shouldShowGrayscale ? 'text-gray-400' : ''}`}>{quantity}</span>
+                                            <span className={`mx-2 text-sm ${shouldShowGrayscale ? 'text-text-secondary' : ''}`}>{quantity}</span>
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation()
@@ -2697,7 +2700,7 @@ function RestaurantDetailsContent() {
                                                 }
                                               }}
                                               disabled={shouldShowGrayscale}
-                                              className={shouldShowGrayscale ? 'text-gray-400 cursor-not-allowed' : 'text-[#DC2626] hover:text-[#991B1B]'}
+                                              className={shouldShowGrayscale ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
                                             >
                                               <Plus size={14} className="stroke-[3px]" />
                                             </button>
@@ -2715,9 +2718,9 @@ function RestaurantDetailsContent() {
                                               }
                                             }}
                                             disabled={shouldShowGrayscale}
-                                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border border-[#DC2626] text-[#DC2626] font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-all ${shouldShowGrayscale
-                                              ? 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
-                                              : 'hover:bg-[#FFF5F5] hover:scale-105 active:scale-95'
+                                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-[var(--primary)] text-[var(--primary)] font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-all ${shouldShowGrayscale
+                                              ? 'border-border text-text-secondary cursor-not-allowed opacity-50'
+                                              : 'hover:bg-primary-light/15 hover:scale-105 active:scale-95'
                                               }`}
                                           >
                                             ADD <Plus size={14} className="stroke-[3px]" />
@@ -2744,9 +2747,9 @@ function RestaurantDetailsContent() {
 
       {/* FSSAI License Information - Bottom of page */}
       {restaurant?.onboarding?.step3?.fssai?.registrationNumber && (
-        <div className="px-4 py-4 mt-2 mb-24 border-t border-dashed border-gray-200 dark:border-gray-800 bg-gray-50/30 dark:bg-white/5 mx-4 rounded-xl">
+        <div className="px-4 py-4 mt-2 mb-24 border-t border-dashed border-border dark:border-gray-800 bg-gray-50/30 dark:bg-white/5 mx-4 rounded-xl">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-20 flex items-center justify-center bg-white rounded-lg p-1.5 shadow-sm border border-gray-100">
+            <div className="h-12 w-20 flex items-center justify-center bg-surface rounded-lg p-1.5 shadow-sm border border-border">
               <img
                 src={fssaiLogo}
                 alt="FSSAI"
@@ -2754,10 +2757,10 @@ function RestaurantDetailsContent() {
               />
             </div>
             <div className="flex-1">
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest font-bold mb-1">
+              <p className="text-[10px] text-text-secondary dark:text-text-secondary uppercase tracking-widest font-bold mb-1">
                 License No.
               </p>
-              <p className="text-sm font-semibold text-gray-600 dark:text-gray-300 font-mono tracking-wide">
+              <p className="text-sm font-semibold text-text-secondary dark:text-gray-300 font-mono tracking-wide">
                 {restaurant?.onboarding?.step3?.fssai?.registrationNumber}
               </p>
             </div>
@@ -2797,7 +2800,7 @@ function RestaurantDetailsContent() {
           >
             <Button
               ref={menuButtonRef}
-              className="bg-gradient-to-r from-[#DC2626] to-[#991B1B] hover:from-[#991B1B] hover:to-[#7F1D1D] text-white flex items-center gap-2 shadow-[0_12px_40px_rgba(220,38,38,0.4)] border border-white/20 px-6 py-3.5 h-auto rounded-full font-bold active:scale-95 group"
+              className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] hover:from-[var(--primary-dark)] hover:to-[#7F1D1D] text-white flex items-center gap-2 shadow-[0_12px_40px_rgba(220,38,38,0.4)] border border-white/20 px-6 py-3.5 h-auto rounded-full font-bold active:scale-95 group"
               size="lg"
               onClick={() => setShowMenuSheet(true)}
             >
@@ -2827,7 +2830,7 @@ function RestaurantDetailsContent() {
 
                 {/* Menu Sheet */}
                 <motion.div
-                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[85vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
+                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[85vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
@@ -2861,22 +2864,22 @@ function RestaurantDetailsContent() {
                               <img
                                 src={category.image}
                                 alt={category.name}
-                                className="h-10 w-10 rounded-xl object-cover border border-gray-200"
+                                className="h-10 w-10 rounded-xl object-cover border border-border"
                                 onError={(event) => {
                                   event.currentTarget.style.display = "none"
                                 }}
                               />
                             ) : (
-                              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-sm font-bold uppercase text-gray-500">
+                              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-sm font-bold uppercase text-text-secondary">
                                 {category.name?.charAt(0) || "C"}
                               </span>
                             )}
-                            <span className="text-base font-medium text-gray-900 dark:text-white truncate">
+                            <span className="text-base font-medium text-text-primary dark:text-white truncate">
                               {category.name}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                            <span className="text-sm text-text-secondary dark:text-text-secondary">
                               {category.count}
                             </span>
                           </div>
@@ -2886,9 +2889,9 @@ function RestaurantDetailsContent() {
                   </div>
 
                   {/* Close Button */}
-                  <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4 bg-white dark:bg-[#1a1a1a]">
+                  <div className="border-t border-border dark:border-gray-800 px-4 py-4 bg-surface dark:bg-[#1a1a1a]">
                     <Button
-                      className="w-full bg-[#DC2626] hover:bg-[#991B1B] text-white border-0 flex items-center justify-center gap-2 py-6 rounded-xl font-bold transition-all shadow-lg text-sm"
+                      className="w-full bg-[var(--primary)] hover:bg-primary-dark text-white border-0 flex items-center justify-center gap-2 py-6 rounded-xl font-bold transition-all shadow-lg text-sm"
                       onClick={() => setShowMenuSheet(false)}
                     >
                       <X className="h-4 w-4" />
@@ -2920,7 +2923,7 @@ function RestaurantDetailsContent() {
 
                 {/* Bottom Sheet */}
                 <motion.div
-                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl h-[80vh] md:h-auto md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
+                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl h-[80vh] md:h-auto md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
@@ -2928,13 +2931,13 @@ function RestaurantDetailsContent() {
                   style={{ willChange: "transform" }}
                 >
                   {/* Header with X button */}
-                  <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Filters and Sorting</h2>
+                  <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border dark:border-gray-800">
+                    <h2 className="text-lg font-semibold text-text-primary dark:text-white">Filters and Sorting</h2>
                     <button
                       onClick={() => setShowFilterSheet(false)}
                       className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
                     >
-                      <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                      <X className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                     </button>
                   </div>
 
@@ -2942,7 +2945,7 @@ function RestaurantDetailsContent() {
                   <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
                     {/* Sort by */}
                     <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Sort by:</h3>
+                      <h3 className="text-sm font-semibold text-text-primary dark:text-white">Sort by:</h3>
                       <div className="flex flex-col gap-1.5">
                         <button
                           onClick={() =>
@@ -2953,7 +2956,7 @@ function RestaurantDetailsContent() {
                           }
                           className={`text-left px-4 py-2.5 rounded-lg border-2 transition-all ${filters.sortBy === "low-to-high"
                             ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                            : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                             }`}
                         >
                           Price - low to high
@@ -2967,7 +2970,7 @@ function RestaurantDetailsContent() {
                           }
                           className={`text-left px-4 py-2.5 rounded-lg border-2 transition-all ${filters.sortBy === "high-to-low"
                             ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                            : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                             }`}
                         >
                           Price - high to low
@@ -2977,7 +2980,7 @@ function RestaurantDetailsContent() {
 
                     {/* Veg/Non-veg preference */}
                     <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Veg/Non-veg preference:</h3>
+                      <h3 className="text-sm font-semibold text-text-primary dark:text-white">Veg/Non-veg preference:</h3>
                       <div className="flex gap-2">
                         <button
                           onClick={() =>
@@ -2988,7 +2991,7 @@ function RestaurantDetailsContent() {
                           }
                           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "veg"
                             ? "border-green-600 dark:border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                            : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                             }`}
                         >
                           <div className="h-4 w-4 rounded-full bg-green-600 dark:bg-green-500" />
@@ -3002,11 +3005,11 @@ function RestaurantDetailsContent() {
                             }))
                           }
                           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "non-veg"
-                            ? "border-red-600 dark:border-red-600 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-gray-300"
-                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                            ? "border-primary dark:border-primary bg-primary-light/10 dark:bg-red-900/30 text-primary dark:text-gray-300"
+                            : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                             }`}
                         >
-                          <div className="h-4 w-4 rounded-full bg-red-600" />
+                          <div className="h-4 w-4 rounded-full bg-primary" />
                           <span className="font-medium">Non-veg</span>
                         </button>
                       </div>
@@ -3014,7 +3017,7 @@ function RestaurantDetailsContent() {
 
                     {/* Top picks */}
                     <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Top picks:</h3>
+                      <h3 className="text-sm font-semibold text-text-primary dark:text-white">Top picks:</h3>
                       <button
                         onClick={() =>
                           setFilters((prev) => ({
@@ -3023,8 +3026,8 @@ function RestaurantDetailsContent() {
                           }))
                         }
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all w-full ${filters.highlyReordered
-                          ? "border-[#DC2626] dark:border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20 text-[#DC2626] dark:text-[#DC2626]"
-                          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                          ? "border-[var(--primary)] dark:border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20 text-[var(--primary)] dark:text-[var(--primary)]"
+                          : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                           }`}
                       >
                         <RotateCcw className="h-4 w-4" />
@@ -3034,7 +3037,7 @@ function RestaurantDetailsContent() {
 
                     {/* Dietary preference */}
                     <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Dietary preference:</h3>
+                      <h3 className="text-sm font-semibold text-text-primary dark:text-white">Dietary preference:</h3>
                       <button
                         onClick={() =>
                           setFilters((prev) => ({
@@ -3043,8 +3046,8 @@ function RestaurantDetailsContent() {
                           }))
                         }
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all w-full ${filters.spicy
-                          ? "border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                          ? "border-red-500 dark:border-red-400 bg-primary-light/10 dark:bg-red-900/30 text-red-700 dark:text-primary-light"
+                          : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                           }`}
                       >
                         <Flame className="h-4 w-4" />
@@ -3054,7 +3057,7 @@ function RestaurantDetailsContent() {
                   </div>
 
                   {/* Bottom Action Bar */}
-                  <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between bg-white dark:bg-[#1a1a1a]">
+                  <div className="border-t border-border dark:border-gray-800 px-4 py-3 flex items-center justify-between bg-surface dark:bg-[#1a1a1a]">
                     <button
                       onClick={() => {
                         setFilters({
@@ -3064,12 +3067,12 @@ function RestaurantDetailsContent() {
                           spicy: false,
                         })
                       }}
-                      className="text-red-600 dark:text-red-400 font-medium text-sm hover:text-red-700 dark:hover:text-red-500"
+                      className="text-primary dark:text-primary-light font-medium text-sm hover:text-primary-dark dark:hover:text-red-500"
                     >
                       Clear All
                     </button>
                     <Button
-                      className="bg-[#DC2626] hover:bg-[#991B1B] text-white px-6 py-2.5 rounded-lg font-bold"
+                      className="bg-[var(--primary)] hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg font-bold"
                       onClick={() => setShowFilterSheet(false)}
                     >
                       Apply {activeFilterCount > 0 && `(${activeFilterCount})`}
@@ -3100,7 +3103,7 @@ function RestaurantDetailsContent() {
 
                 {/* Bottom Sheet */}
                 <motion.div
-                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl h-[75vh] md:h-auto md:max-h-[90vh] md:max-w-xl w-full md:w-auto flex flex-col"
+                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl h-[75vh] md:h-auto md:max-h-[90vh] md:max-w-xl w-full md:w-auto flex flex-col"
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
@@ -3108,12 +3111,12 @@ function RestaurantDetailsContent() {
                   style={{ willChange: "transform" }}
                 >
                   {/* Header */}
-                  <div className="px-4 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
+                  <div className="px-4 pt-4 pb-3 border-b border-border dark:border-gray-800">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-red-600 dark:bg-red-500 rounded-lg flex items-center justify-center">
+                      <div className="w-8 h-8 bg-primary dark:bg-red-500 rounded-lg flex items-center justify-center">
                         <span className="text-white font-bold text-base">{(restaurant.name || "R").charAt(0).toUpperCase()}</span>
                       </div>
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">{restaurant?.name || "Unknown Restaurant"}</h2>
+                      <h2 className="text-lg font-bold text-text-primary dark:text-white">{restaurant?.name || "Unknown Restaurant"}</h2>
                     </div>
                   </div>
 
@@ -3124,21 +3127,21 @@ function RestaurantDetailsContent() {
                         {restaurant.outlets.map((outlet) => (
                           <div
                             key={outlet?.id || Math.random()}
-                            className="p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2a2a2a]"
+                            className="p-3 rounded-lg border border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a]"
                           >
                             {outlet?.isNearest && (
-                              <div className="flex items-center gap-1.5 mb-2 px-2 py-1 bg-[#F9F9FB] dark:bg-[#DC2626]/20 rounded-md">
-                                <Zap className="h-3.5 w-3.5 text-[#DC2626] dark:text-[#DC2626] fill-[#DC2626] dark:fill-[#DC2626]" />
-                                <span className="text-xs font-semibold text-[#DC2626] dark:text-[#DC2626]">
+                              <div className="flex items-center gap-1.5 mb-2 px-2 py-1 bg-background dark:bg-[var(--primary)]/20 rounded-md">
+                                <Zap className="h-3.5 w-3.5 text-[var(--primary)] dark:text-[var(--primary)] fill-[var(--primary)] dark:fill-[var(--primary)]" />
+                                <span className="text-xs font-semibold text-[var(--primary)] dark:text-[var(--primary)]">
                                   Nearest available outlet
                                 </span>
                               </div>
                             )}
-                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                            <h3 className="text-sm font-semibold text-text-primary dark:text-white mb-2">
                               {outlet?.location || "Location"}
                             </h3>
                             <div className="flex items-center justify-between gap-4">
-                              <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                              <div className="flex items-center gap-3 text-xs text-text-secondary dark:text-text-secondary">
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-3.5 w-3.5" />
                                 </div>
@@ -3150,11 +3153,11 @@ function RestaurantDetailsContent() {
                               <div className="flex flex-col items-end gap-0.5">
                                 <div className="flex items-center gap-1">
                                   <Star className="h-3.5 w-3.5 text-[#8CC63F] dark:text-green-500 fill-[#8CC63F] dark:fill-green-500" />
-                                  <span className="text-xs font-medium text-gray-900 dark:text-white">
+                                  <span className="text-xs font-medium text-text-primary dark:text-white">
                                     {outlet?.rating ? outlet.rating : "NEW"}
                                   </span>
                                 </div>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                <span className="text-xs text-text-secondary dark:text-text-secondary">
                                   By {(outlet?.reviews || 0) >= 1000 ? `${((outlet.reviews || 0) / 1000).toFixed(1)}K+` : `${outlet?.reviews || 0}+`}
                                 </span>
                               </div>
@@ -3163,7 +3166,7 @@ function RestaurantDetailsContent() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <div className="text-center py-8 text-text-secondary dark:text-text-secondary">
                         No outlets available
                       </div>
                     )}
@@ -3171,8 +3174,8 @@ function RestaurantDetailsContent() {
 
                   {/* Footer */}
                   {restaurant?.outlets && Array.isArray(restaurant.outlets) && restaurant.outlets.length > 5 && (
-                    <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-3 bg-white dark:bg-[#1a1a1a]">
-                      <button className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400 font-medium text-sm w-full">
+                    <div className="border-t border-border dark:border-gray-800 px-4 py-3 bg-surface dark:bg-[#1a1a1a]">
+                      <button className="flex items-center justify-center gap-2 text-primary dark:text-primary-light font-medium text-sm w-full">
                         <span>See all {restaurant.outlets.length} outlets</span>
                         <ChevronDown className="h-4 w-4" />
                       </button>
@@ -3203,15 +3206,15 @@ function RestaurantDetailsContent() {
 
                 {/* Manage Collections Bottom Sheet */}
                 <motion.div
-                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl md:max-w-lg w-full md:w-auto"
+                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl md:max-w-lg w-full md:w-auto"
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
                   transition={{ duration: 0.2, type: "spring", damping: 30, stiffness: 400 }}
                 >
                   {/* Header */}
-                  <div className="flex items-center justify-between px-4 pt-6 pb-4 border-b border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Manage Collections</h2>
+                  <div className="flex items-center justify-between px-4 pt-6 pb-4 border-b border-border dark:border-gray-800">
+                    <h2 className="text-lg font-bold text-text-primary dark:text-white">Manage Collections</h2>
                     <button
                       onClick={() => setShowManageCollections(false)}
                       className="h-8 w-8 rounded-full bg-gray-700 dark:bg-gray-600 flex items-center justify-center hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
@@ -3231,11 +3234,11 @@ function RestaurantDetailsContent() {
                       }}
                     >
                       <div className="h-12 w-12 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0">
-                        <Bookmark className="h-6 w-6 text-red-500 dark:text-red-400 fill-red-500 dark:fill-red-400" />
+                        <Bookmark className="h-6 w-6 text-red-500 dark:text-primary-light fill-red-500 dark:fill-red-400" />
                       </div>
                       <div className="flex-1 text-left">
                         <div className="flex items-center justify-between">
-                          <span className="text-base font-medium text-gray-900 dark:text-white">Bookmarks</span>
+                          <span className="text-base font-medium text-text-primary dark:text-white">Bookmarks</span>
                           {selectedItem && (
                             <Checkbox
                               checked={isDishFavorite(selectedItem.id, restaurant?.restaurantId || restaurant?._id || restaurant?.id)}
@@ -3256,7 +3259,7 @@ function RestaurantDetailsContent() {
                             </div>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="text-sm text-text-secondary dark:text-text-secondary mt-1">
                           {getDishFavorites().length} dishes � {getFavorites().length} restaurant
                         </p>
                       </div>
@@ -3268,10 +3271,10 @@ function RestaurantDetailsContent() {
                       onClick={() => setShowManageCollections(false)}
                     >
                       <div className="h-12 w-12 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center flex-shrink-0">
-                        <Plus className="h-6 w-6 text-red-500 dark:text-red-400" />
+                        <Plus className="h-6 w-6 text-red-500 dark:text-primary-light" />
                       </div>
                       <div className="flex-1 text-left">
-                        <span className="text-base font-medium text-gray-900 dark:text-white">
+                        <span className="text-base font-medium text-text-primary dark:text-white">
                           Create new Collection
                         </span>
                       </div>
@@ -3279,9 +3282,9 @@ function RestaurantDetailsContent() {
                   </div>
 
                   {/* Done Button */}
-                  <div className="border-t border-gray-200 dark:border-gray-800 px-4 py-4">
+                  <div className="border-t border-border dark:border-gray-800 px-4 py-4">
                     <Button
-                      className="w-full bg-[#DC2626] hover:bg-[#991B1B] text-white py-3 rounded-lg font-bold"
+                      className="w-full bg-[var(--primary)] hover:bg-primary-dark text-white py-3 rounded-lg font-bold"
                       onClick={() => {
                         setShowManageCollections(false)
                       }}
@@ -3311,7 +3314,7 @@ function RestaurantDetailsContent() {
                 >
                   {/* Item Detail Modal */}
                   <motion.div
-                    className="relative bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl max-h-[90vh] w-full max-w-[450px] md:max-w-2xl flex flex-col overflow-hidden"
+                    className="relative bg-surface dark:bg-[#1a1a1a] rounded-3xl shadow-2xl max-h-[90vh] w-full max-w-[450px] md:max-w-2xl flex flex-col overflow-hidden"
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -3336,7 +3339,7 @@ function RestaurantDetailsContent() {
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                        <span className="text-sm text-gray-400">No image available</span>
+                        <span className="text-sm text-text-secondary">No image available</span>
                       </div>
                     )}
                     {/* Bookmark and Share Icons Overlay */}
@@ -3347,8 +3350,8 @@ function RestaurantDetailsContent() {
                           handleBookmarkClick(selectedItem)
                         }}
                         className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all duration-300 ${isDishFavorite(selectedItem.id, restaurant?.restaurantId || restaurant?._id || restaurant?.id)
-                          ? "border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400"
-                          : "border-white dark:border-gray-800 bg-white/90 dark:bg-[#1a1a1a]/90 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-[#2a2a2a]"
+                          ? "border-red-500 dark:border-red-400 bg-primary-light/10 dark:bg-red-900/30 text-red-500 dark:text-primary-light"
+                          : "border-white dark:border-gray-800 bg-white/90 dark:bg-[#1a1a1a]/90 text-text-secondary dark:text-gray-300 hover:bg-white dark:hover:bg-[#2a2a2a]"
                           }`}
                       >
                         <Bookmark
@@ -3356,7 +3359,7 @@ function RestaurantDetailsContent() {
                             }`}
                         />
                       </button>
-                      <button className="h-10 w-10 rounded-full border border-white dark:border-gray-800 bg-white/90 dark:bg-[#1a1a1a]/90 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-[#2a2a2a] flex items-center justify-center transition-colors">
+                      <button className="h-10 w-10 rounded-full border border-white dark:border-gray-800 bg-white/90 dark:bg-[#1a1a1a]/90 text-text-secondary dark:text-gray-300 hover:bg-white dark:hover:bg-[#2a2a2a] flex items-center justify-center transition-colors">
                         <Share2 className="h-5 w-5" />
                       </button>
                     </div>
@@ -3367,17 +3370,17 @@ function RestaurantDetailsContent() {
                     {/* Item Name and Indicator */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2 flex-1">
-                        <div className={`h-5 w-5 rounded border-2 ${selectedItem.foodType === "Veg" ? "border-green-600 bg-green-50" : "border-red-600 bg-red-50"} dark:border-gray-600 dark:bg-gray-900/30 flex items-center justify-center flex-shrink-0`}>
-                          <div className={`h-2.5 w-2.5 rounded-full ${selectedItem.foodType === "Veg" ? "bg-green-600" : "bg-red-600"}`} />
+                        <div className={`h-5 w-5 rounded border-2 ${selectedItem.foodType === "Veg" ? "border-green-600 bg-green-50" : "border-primary bg-primary-light/10"} dark:border-gray-600 dark:bg-gray-900/30 flex items-center justify-center flex-shrink-0`}>
+                          <div className={`h-2.5 w-2.5 rounded-full ${selectedItem.foodType === "Veg" ? "bg-green-600" : "bg-primary"}`} />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                        <h2 className="text-xl font-bold text-text-primary dark:text-white">
                           {selectedItem.name}
                         </h2>
                       </div>
                     </div>
 
                     {/* Description */}
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                    <p className="text-sm text-text-secondary dark:text-text-secondary mb-4 leading-relaxed">
                       {selectedItem.description}
                     </p>
 
@@ -3385,14 +3388,14 @@ function RestaurantDetailsContent() {
 
                     {/* Not Eligible for Coupons */}
                     {selectedItem.notEligibleForCoupons && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-4">
+                      <p className="text-xs text-text-secondary dark:text-text-secondary font-medium mb-4">
                         NOT ELIGIBLE FOR COUPONS
                       </p>
                     )}
 
                     {hasFoodVariants(selectedItem) && (
                       <div className="mb-4">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Choose a variant</p>
+                        <p className="text-sm font-semibold text-text-primary dark:text-white mb-2">Choose a variant</p>
                         <div className="flex flex-wrap gap-2">
                           {getFoodVariants(selectedItem).map((variant) => (
                             <button
@@ -3401,8 +3404,8 @@ function RestaurantDetailsContent() {
                               onClick={() => setSelectedVariantId(variant.id)}
                               className={`rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
                                 String(selectedVariantId || "") === String(variant.id)
-                                  ? "border-red-500 bg-red-50 text-red-600 dark:border-red-400 dark:bg-red-900/30 dark:text-red-200"
-                                  : "border-gray-200 bg-white text-gray-700 dark:border-gray-700 dark:bg-[#2a2a2a] dark:text-gray-300"
+                                  ? "border-red-500 bg-primary-light/10 text-primary dark:border-red-400 dark:bg-red-900/30 dark:text-red-200"
+                                  : "border-border bg-white text-gray-700 dark:border-gray-700 dark:bg-[#2a2a2a] dark:text-gray-300"
                               }`}
                             >
                               {variant.name} · {RUPEE_SYMBOL}{Math.round(variant.price)}
@@ -3414,12 +3417,12 @@ function RestaurantDetailsContent() {
                   </div>
 
                   {/* Bottom Action Bar */}
-                  <div className="border-t border-gray-200 dark:border-gray-800 px-3 sm:px-4 py-4 bg-white dark:bg-[#1a1a1a]">
+                  <div className="border-t border-border dark:border-gray-800 px-3 sm:px-4 py-4 bg-surface dark:bg-[#1a1a1a]">
                     <div className="flex items-center gap-2 sm:gap-4">
                       {/* Quantity Selector */}
-                      <div className={`flex items-center gap-1 sm:gap-3 border-2 rounded-lg px-2 sm:px-3 h-[44px] bg-white dark:bg-[#2a2a2a] ${shouldShowGrayscale
-                        ? 'border-gray-300 dark:border-gray-700 opacity-50'
-                        : 'border-gray-300 dark:border-gray-700'
+                      <div className={`flex items-center gap-1 sm:gap-3 border-2 rounded-lg px-2 sm:px-3 h-[44px] bg-surface dark:bg-[#2a2a2a] ${shouldShowGrayscale
+                        ? 'border-border dark:border-gray-700 opacity-50'
+                        : 'border-border dark:border-gray-700'
                         }`}>
                         <button
                           onClick={(e) => {
@@ -3434,15 +3437,15 @@ function RestaurantDetailsContent() {
                           }}
                           disabled={getDishQuantity(selectedItem, selectedVariantId) === 0 || shouldShowGrayscale}
                           className={`${shouldShowGrayscale
-                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:text-gray-300 dark:disabled:text-gray-600 disabled:cursor-not-allowed'
+                            ? 'text-gray-300 dark:text-text-secondary cursor-not-allowed'
+                            : 'text-text-secondary dark:text-text-secondary hover:text-text-primary dark:hover:text-white disabled:text-gray-300 dark:disabled:text-text-secondary disabled:cursor-not-allowed'
                             }`}
                         >
                           <Minus className="h-5 w-5" />
                         </button>
                         <span className={`text-lg font-semibold min-w-[1.5rem] sm:min-w-[2rem] text-center ${shouldShowGrayscale
-                          ? 'text-gray-400 dark:text-gray-600'
-                          : 'text-gray-900 dark:text-white'
+                          ? 'text-text-secondary dark:text-text-secondary'
+                          : 'text-text-primary dark:text-white'
                           }`}>
                           {Math.max(1, getDishQuantity(selectedItem, selectedVariantId))}
                         </span>
@@ -3459,8 +3462,8 @@ function RestaurantDetailsContent() {
                           }}
                           disabled={shouldShowGrayscale}
                           className={shouldShowGrayscale
-                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                            ? 'text-gray-300 dark:text-text-secondary cursor-not-allowed'
+                            : 'text-text-secondary dark:text-text-secondary hover:text-text-primary dark:hover:text-white'
                           }
                         >
                           <Plus className="h-5 w-5" />
@@ -3470,8 +3473,8 @@ function RestaurantDetailsContent() {
                       {/* Add Item Button */}
                       <Button
                         className={`flex-1 h-[44px] rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 ${shouldShowGrayscale
-                          ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-600 cursor-not-allowed opacity-50'
-                          : 'bg-red-500 hover:bg-red-600 text-white'
+                          ? 'bg-gray-300 dark:bg-gray-700 text-text-secondary dark:text-text-secondary cursor-not-allowed opacity-50'
+                          : 'bg-red-500 hover:bg-primary text-white'
                           }`}
                         onClick={(e) => {
                           if (!shouldShowGrayscale) {
@@ -3527,7 +3530,7 @@ function RestaurantDetailsContent() {
 
                 {/* Schedule Bottom Sheet */}
                 <motion.div
-                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[60vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
+                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[60vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
@@ -3547,7 +3550,7 @@ function RestaurantDetailsContent() {
                   {/* Scrollable Content */}
                   <div className="flex-1 overflow-y-auto px-4 pt-10 pb-4">
                     {/* Title */}
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 text-center">
+                    <h2 className="text-lg font-bold text-text-primary dark:text-white mb-4 text-center">
                     </h2>
 
                     {/* Date Selection */}
@@ -3577,7 +3580,7 @@ function RestaurantDetailsContent() {
                               onClick={() => setSelectedDate(dateStr)}
                               className="flex flex-col items-center gap-0.5 flex-shrink-0 pb-1"
                             >
-                              <span className={`text-sm font-medium ${isSelected ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                              <span className={`text-sm font-medium ${isSelected ? 'text-text-primary dark:text-white' : 'text-text-secondary dark:text-text-secondary'}`}>
                                 {day} {month} {item.label}
                               </span>
                               {isSelected && (
@@ -3598,8 +3601,8 @@ function RestaurantDetailsContent() {
                             key={index}
                             onClick={() => setSelectedTimeSlot(slot)}
                             className={`w-full text-left px-4 py-2.5 rounded-lg transition-all ${isSelected
-                              ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600"
-                              : "bg-white dark:bg-[#2a2a2a] text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-transparent"
+                              ? "bg-gray-100 dark:bg-gray-800 text-text-primary dark:text-white border border-border dark:border-gray-600"
+                              : "bg-surface dark:bg-[#2a2a2a] text-text-secondary dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-transparent"
                               }`}
                           >
                             <span className="text-sm font-medium">{slot}</span>
@@ -3610,9 +3613,9 @@ function RestaurantDetailsContent() {
                   </div>
 
                   {/* Confirm Button - Fixed at bottom */}
-                  <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+                  <div className="px-4 pb-4 pt-2 border-t border-border">
                     <Button
-                      className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-semibold"
+                      className="w-full bg-red-500 hover:bg-primary text-white py-3 rounded-lg font-semibold"
                       onClick={() => {
                         setShowScheduleSheet(false)
                         // Handle schedule confirmation
@@ -3648,7 +3651,7 @@ function RestaurantDetailsContent() {
 
                 {/* Menu Options Bottom Sheet */}
                 <motion.div
-                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[70vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
+                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[70vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
@@ -3657,8 +3660,8 @@ function RestaurantDetailsContent() {
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Header */}
-                  <div className="px-4 pt-6 pb-4 border-b border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  <div className="px-4 pt-6 pb-4 border-b border-border dark:border-gray-800">
+                    <h2 className="text-lg font-bold text-text-primary dark:text-white">
                       {restaurant?.name || "Unknown Restaurant"}
                     </h2>
                   </div>
@@ -3673,7 +3676,7 @@ function RestaurantDetailsContent() {
                         onClick={handleAddToCollection}
                       >
                         <Bookmark className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                        <span className="text-base text-gray-900 dark:text-white">
+                        <span className="text-base text-text-primary dark:text-white">
                           {isFavorite(restaurant?.slug || slug || "") ? "Remove from Collection" : "Add to Collection"}
                         </span>
                       </button>
@@ -3684,22 +3687,22 @@ function RestaurantDetailsContent() {
                         onClick={handleShareRestaurant}
                       >
                         <Share2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                        <span className="text-base text-gray-900 dark:text-white">Share this restaurant</span>
+                        <span className="text-base text-text-primary dark:text-white">Share this restaurant</span>
                       </button>
 
                     </div>
 
                     {/* Disclaimer Text */}
                     <div className="mt-6 px-2">
-                      <p className="text-xs text-gray-500 leading-relaxed">
+                      <p className="text-xs text-text-secondary leading-relaxed">
                         Menu items, prices, photos and descriptions are set directly by the restaurant. In case you see any incorrect information, please report it to us.
                       </p>
                     </div>
 
                     {/* FSSAI License Information */}
                     {restaurant?.onboarding?.step3?.fssai?.registrationNumber && (
-                      <div className="mt-4 px-2 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center gap-3 opacity-80 mb-2">
-                        <div className="h-8 w-14 flex items-center justify-center bg-white rounded p-1 border border-gray-100">
+                      <div className="mt-4 px-2 pt-4 border-t border-border dark:border-gray-800 flex items-center gap-3 opacity-80 mb-2">
+                        <div className="h-8 w-14 flex items-center justify-center bg-surface rounded p-1 border border-border">
                           <img
                             src={fssaiLogo}
                             alt="FSSAI"
@@ -3707,7 +3710,7 @@ function RestaurantDetailsContent() {
                           />
                         </div>
                         <div className="flex-1">
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">
+                          <p className="text-[10px] text-text-secondary dark:text-text-secondary uppercase tracking-wide font-medium">
                             Lic. No.
                           </p>
                           <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -3743,61 +3746,61 @@ function RestaurantDetailsContent() {
                   onClick={() => setShowShareModal(false)}
                 />
                 <motion.div
-                  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[10021] w-[92vw] max-w-md bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl"
+                  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[10021] w-[92vw] max-w-md bg-surface dark:bg-[#1a1a1a] rounded-2xl shadow-2xl"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.16 }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="px-5 pt-5 pb-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Share</h3>
+                  <div className="px-5 pt-5 pb-3 border-b border-border dark:border-gray-800 flex items-center justify-between gap-3">
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white truncate">Share</h3>
                     <button
                       className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
                       onClick={() => setShowShareModal(false)}
                       aria-label="Close share modal"
                     >
-                      <X className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                      <X className="h-4 w-4 text-text-secondary dark:text-gray-300" />
                     </button>
                   </div>
 
                   <div className="px-5 py-4 space-y-2">
                     {typeof navigator !== "undefined" && navigator.share && (
                       <button
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
                         onClick={handleSystemShareFromModal}
                       >
                         <Share2 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">Share via system apps</span>
+                        <span className="text-sm font-medium text-text-primary dark:text-white">Share via system apps</span>
                       </button>
                     )}
                     <button
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
                       onClick={() => openShareTarget("whatsapp")}
                     >
                       <MessageCircle className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">WhatsApp</span>
+                      <span className="text-sm font-medium text-text-primary dark:text-white">WhatsApp</span>
                     </button>
                     <button
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
                       onClick={() => openShareTarget("telegram")}
                     >
                       <Send className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">Telegram</span>
+                      <span className="text-sm font-medium text-text-primary dark:text-white">Telegram</span>
                     </button>
                     <button
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
                       onClick={() => openShareTarget("email")}
                     >
                       <Mail className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">Email</span>
+                      <span className="text-sm font-medium text-text-primary dark:text-white">Email</span>
                     </button>
                     <button
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border border-border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-left"
                       onClick={copyShareLink}
                     >
                       <Copy className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">Copy link</span>
+                      <span className="text-sm font-medium text-text-primary dark:text-white">Copy link</span>
                     </button>
                   </div>
                 </motion.div>
@@ -3843,10 +3846,10 @@ class RestaurantDetailsErrorBoundary extends Component {
             <div className="flex flex-col items-center gap-4 text-center">
               <AlertCircle className="h-12 w-12 text-red-500" />
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                <h2 className="text-lg font-semibold text-text-primary dark:text-white mb-1">
                   Something went wrong
                 </h2>
-                <p className="text-sm text-gray-600 mb-4 max-w-md">
+                <p className="text-sm text-text-secondary mb-4 max-w-md">
                   We could not load this restaurant page right now.
                 </p>
                 <Button onClick={() => window.location.reload()} variant="outline">

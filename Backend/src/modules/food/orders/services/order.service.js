@@ -124,13 +124,39 @@ export async function calculateOrder(userId, dto) {
 // ----- Create order -----
 export async function createOrder(userId, dto) {
   const restaurant = await FoodRestaurant.findById(dto.restaurantId)
-    .select("status restaurantName highwayId location isAcceptingOrders takeawaySettings")
+    .select("status restaurantName highwayId location isAcceptingOrders takeawaySettings isHighwayRestaurant")
     .lean();
   if (!restaurant) throw new ValidationError("Restaurant not found");
   if (restaurant.status !== "approved")
     throw new ValidationError("Restaurant not accepting orders");
   if (restaurant.isAcceptingOrders === false)
     throw new ValidationError("Restaurant not accepting orders");
+
+  if (restaurant.isHighwayRestaurant && restaurant.highwayId) {
+    const { validateOrderDrivingRange } = await import('../../driving/services/driving.service.js');
+    await validateOrderDrivingRange(restaurant, dto.userLocation);
+  }
+
+  const orderType = dto.orderType || (dto.address ? "delivery" : "takeaway");
+
+  // Validate booking radius early
+  let distanceKm = null;
+  if (
+    restaurant.location?.coordinates?.length === 2 &&
+    dto.address?.location?.coordinates?.length === 2
+  ) {
+    const [rLng, rLat] = restaurant.location.coordinates;
+    const [dLng, dLat] = dto.address.location.coordinates;
+    const d = haversineKm(rLat, rLng, dLat, dLng);
+    distanceKm = Number.isFinite(d) ? d : null;
+  }
+
+  const allowedRadius = config.bookingRadiusKm || 50;
+  if (distanceKm !== null && distanceKm > allowedRadius) {
+    throw new ValidationError(
+      `You are currently ${distanceKm.toFixed(1)} KM away from this restaurant. Ordering is available within ${allowedRadius} KM. You can continue exploring restaurants and menus, but you'll need to be closer before placing an order.`
+    );
+  }
 
   if (orderType === "takeaway") {
     if (restaurant.takeawaySettings?.isEnabled === false) {
@@ -231,16 +257,7 @@ export async function createOrder(userId, dto) {
     qr: {},
   };
 
-  let distanceKm = null;
-  if (
-    restaurant.location?.coordinates?.length === 2 &&
-    dto.address?.location?.coordinates?.length === 2
-  ) {
-    const [rLng, rLat] = restaurant.location.coordinates;
-    const [dLng, dLat] = dto.address.location.coordinates;
-    const d = haversineKm(rLat, rLng, dLat, dLng);
-    distanceKm = Number.isFinite(d) ? d : null;
-  } else {
+  if (distanceKm === null) {
     console.warn(
       `Food order: distance not available, rider earning set to 0`,
     );

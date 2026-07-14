@@ -278,7 +278,7 @@ export default function ProductDetail() {
               variant="ghost"
               size="icon"
               onClick={goBack}
-              className="rounded-full bg-white/90 backdrop-blur-sm hover:bg-white shadow-md"
+              className="rounded-full bg-white/90 backdrop-blur-sm hover:bg-surface shadow-md"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -286,44 +286,44 @@ export default function ProductDetail() {
 
           {/* Rating Badge - Top Right */}
           <div className="absolute top-4 right-4 z-10">
-            <Badge className="bg-[#DC2626] text-white shadow-lg">
+            <Badge className="bg-[var(--primary)] text-white shadow-lg">
               <Star className="h-3 w-3 fill-white text-white mr-1" />
               {averageRating}
             </Badge>
           </div>
 
           {/* Product Info Card Overlay */}
-          <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-[#1a1a1a] rounded-t-3xl p-4 sm:p-5 md:p-6 lg:p-8">
+          <div className="absolute bottom-0 left-0 right-0 bg-surface dark:bg-[#1a1a1a] rounded-t-3xl p-4 sm:p-5 md:p-6 lg:p-8">
             <div className="flex items-start gap-4 md:gap-6 lg:gap-8">
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between mb-2 md:mb-3">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white leading-tight break-words">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-text-primary dark:text-white leading-tight break-words">
                     {product.name}
                   </h1>
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base md:text-lg mb-2 md:mb-3 line-clamp-2 lg:line-clamp-3">
+                <p className="text-text-secondary dark:text-gray-300 text-sm sm:text-base md:text-lg mb-2 md:mb-3 line-clamp-2 lg:line-clamp-3">
                   {product.description}
                 </p>
                 <div className="flex items-center gap-3 md:gap-4 flex-wrap">
                   <div className="flex items-center gap-1 md:gap-2">
                     {renderStars(averageRating, "h-4 w-4 md:h-5 md:w-5")}
-                    <span className="text-gray-900 dark:text-white font-semibold text-sm sm:text-base md:text-lg">{averageRating}</span>
+                    <span className="text-text-primary dark:text-white font-semibold text-sm sm:text-base md:text-lg">{averageRating}</span>
                   </div>
-                  <span className="text-gray-400">|</span>
-                  <span className="text-gray-600 dark:text-gray-300 text-sm sm:text-base md:text-lg underline">
+                  <span className="text-text-secondary">|</span>
+                  <span className="text-text-secondary dark:text-gray-300 text-sm sm:text-base md:text-lg underline">
                     {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
                   </span>
-                  <span className="text-gray-400">|</span>
+                  <span className="text-text-secondary">|</span>
                   <Badge variant="outline" className="text-xs sm:text-sm md:text-base">
                     {product.category}
                   </Badge>
                 </div>
               </div>
               <div className="flex-shrink-0 text-right">
-                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#DC2626]">
+                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-[var(--primary)]">
                   ₹{(product.price * 83).toFixed(0)}
                 </div>
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">per serving</p>
+                <p className="text-xs sm:text-sm text-text-secondary dark:text-text-secondary mt-1">per serving</p>
               </div>
             </div>
           </div>
@@ -336,7 +336,7 @@ export default function ProductDetail() {
             <div className="space-y-4">
               {/* Breadcrumb */}
               <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground flex-wrap">
-                <Link to="/user" className="hover:text-[#DC2626] transition-colors">Home</Link>
+                <Link to="/user" className="hover:text-[var(--primary)] transition-colors">Home</Link>
                 <span>/</span>
                 <span className="text-foreground font-medium truncate">{restaurant?.name || "Restaurant"}</span>
                 <span>/</span>
@@ -352,11 +352,11 @@ export default function ProductDetail() {
               <h2 className="text-xl font-bold">Order</h2>
               {inCart ? (
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 border border-[#DC2626] rounded-lg">
+                  <div className="flex items-center gap-2 border border-[var(--primary)] rounded-lg">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-10 w-10 hover:bg-[#F9F9FB]"
+                      className="h-10 w-10 hover:bg-background"
                       onClick={handleDecrease}
                     >
                       <Minus className="h-5 w-5" />
@@ -367,7 +367,7 @@ export default function ProductDetail() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-10 w-10 hover:bg-[#F9F9FB]"
+                      className="h-10 w-10 hover:bg-background"
                       onClick={handleIncrease}
                     >
                       <Plus className="h-5 w-5" />
@@ -375,14 +375,14 @@ export default function ProductDetail() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm text-muted-foreground">In cart</p>
-                    <p className="text-lg font-bold text-[#DC2626]">
+                    <p className="text-lg font-bold text-[var(--primary)]">
                       ₹{(product.price * 83 * (cartItem?.quantity || 0)).toFixed(0)}
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 border border-gray-300 rounded-lg">
+                  <div className="flex items-center gap-2 border border-border rounded-lg">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -408,7 +408,7 @@ export default function ProductDetail() {
                   >
                     <Button
                       onClick={handleAddToCart}
-                      className="bg-[#DC2626] hover:opacity-90 text-white"
+                      className="bg-[var(--primary)] hover:opacity-90 text-white"
                     >
                       <ShoppingBag className="h-5 w-5 mr-2" />
                       Add to Cart - ₹{(product.price * 83 * quantity).toFixed(0)}
@@ -430,7 +430,7 @@ export default function ProductDetail() {
                     </h3>
                     <p className="text-sm md:text-base text-muted-foreground">{restaurant.cuisine}</p>
                   </div>
-                  <Badge className="bg-[#DC2626] text-white text-sm md:text-base">{restaurant.priceRange}</Badge>
+                  <Badge className="bg-[var(--primary)] text-white text-sm md:text-base">{restaurant.priceRange}</Badge>
                 </div>
                 <div className="flex items-center gap-4 md:gap-6 flex-wrap text-sm md:text-base">
                   <div className="flex items-center gap-1.5">
@@ -522,7 +522,7 @@ export default function ProductDetail() {
                 {!showReviewForm && (
                   <Button
                     onClick={() => setShowReviewForm(true)}
-                    className="bg-[#DC2626] hover:opacity-90 text-white"
+                    className="bg-[var(--primary)] hover:opacity-90 text-white"
                   >
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Write a Review
@@ -577,7 +577,7 @@ export default function ProductDetail() {
                       </Button>
                       <Button
                         type="submit"
-                        className="flex-1 bg-gradient-to-r bg-[#DC2626] hover:from-yellow-600 hover:to-#991B1B"
+                        className="flex-1 bg-gradient-to-r bg-[var(--primary)] hover:from-yellow-600 hover:to-var(--primary-dark)"
                       >
                         <Send className="h-4 w-4 mr-2" />
                         Submit Review
@@ -631,17 +631,17 @@ export default function ProductDetail() {
                               <button
                                 onClick={() => handleHelpful(review.id)}
                                 className={`flex items-center gap-2 text-sm transition-colors ${helpfulVotes.has(review.id)
-                                    ? "text-[#DC2626] font-semibold"
+                                    ? "text-[var(--primary)] font-semibold"
                                     : "text-muted-foreground hover:text-foreground"
                                   }`}
                               >
-                                <ThumbsUp className={`h-4 w-4 ${helpfulVotes.has(review.id) ? "fill-[#DC2626]" : ""}`} />
+                                <ThumbsUp className={`h-4 w-4 ${helpfulVotes.has(review.id) ? "fill-[var(--primary)]" : ""}`} />
                                 <span>Helpful ({review.helpful})</span>
                               </button>
                               <button
                                 onClick={() => handleReplyClick(review.id)}
                                 className={`flex items-center gap-2 text-sm transition-colors ${replyStates[review.id]
-                                    ? "text-[#DC2626] font-semibold"
+                                    ? "text-[var(--primary)] font-semibold"
                                     : "text-muted-foreground hover:text-foreground"
                                   }`}
                               >
@@ -676,7 +676,7 @@ export default function ProductDetail() {
                                       <Button
                                         type="button"
                                         size="sm"
-                                        className="bg-[#DC2626] hover:opacity-90 text-white"
+                                        className="bg-[var(--primary)] hover:opacity-90 text-white"
                                         onClick={() => {
                                           const textarea = document.getElementById(`reply-${review.id}`)
                                           if (textarea) {
@@ -697,7 +697,7 @@ export default function ProductDetail() {
                             {replies[review.id] && replies[review.id].length > 0 && (
                               <div className="mt-4 pt-4 border-t space-y-3">
                                 {replies[review.id].map((reply) => (
-                                  <div key={reply.id} className="flex items-start gap-3 pl-4 border-l-2 border-gray-200">
+                                  <div key={reply.id} className="flex items-start gap-3 pl-4 border-l-2 border-border">
                                     <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0">
                                       <img
                                         src={reply.userAvatar}

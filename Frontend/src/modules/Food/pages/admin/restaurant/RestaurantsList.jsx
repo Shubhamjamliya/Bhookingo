@@ -1,16 +1,11 @@
 import { useState, useMemo, useEffect, useRef } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { Search, Download, ChevronDown, Eye, Settings, ArrowUpDown, Loader2, X, MapPin, Phone, Mail, Clock, Star, Building2, User, FileText, CreditCard, Calendar, Image as ImageIcon, ExternalLink, ShieldX, AlertTriangle, Trash2, Plus } from "lucide-react"
+import { Search, Download, ChevronDown, Eye, Settings, ArrowUpDown, Loader2, X, MapPin, Phone, Mail, Clock, Star, Building2, User, FileText, CreditCard, Calendar, Image as ImageIcon, ExternalLink, ShieldX, AlertTriangle, Trash2, Plus, Store, BadgeCheck, CircleX } from "lucide-react"
 import { adminAPI, restaurantAPI, uploadAPI } from "@food/api"
 import { clearModuleAuth } from "@food/utils/auth"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { exportRestaurantsToPDF } from "@food/components/admin/restaurants/restaurantsExportUtils"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
-
-// Import icons from Dashboard-icons
-import locationIcon from "@food/assets/Dashboard-icons/image1.png"
-import restaurantIcon from "@food/assets/Dashboard-icons/image2.png"
-import inactiveIcon from "@food/assets/Dashboard-icons/image3.png"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -696,13 +691,22 @@ export default function RestaurantsList() {
     setLocationEditError("")
 
     setZonesLoading(true)
-    adminAPI.getZones({ limit: 1000 })
-      .then((res) => {
-        const list = res?.data?.data?.zones || res?.data?.data?.data?.zones || res?.data?.data?.zones || res?.data?.data || []
-        setZones(Array.isArray(list) ? list : [])
-      })
-      .catch(() => setZones([]))
-      .finally(() => setZonesLoading(false))
+    if (typeof adminAPI.getZones !== "function") {
+      console.warn("adminAPI.getZones is not defined")
+      setZones([])
+      setZonesLoading(false)
+    } else {
+      adminAPI.getZones({ limit: 1000 })
+        .then((res) => {
+          const list = res?.data?.data?.zones || res?.data?.data?.data?.zones || res?.data?.data?.zones || res?.data?.data || []
+          setZones(Array.isArray(list) ? list : [])
+        })
+        .catch((err) => {
+          console.error("Failed to load zones", err)
+          setZones([])
+        })
+        .finally(() => setZonesLoading(false))
+    }
 
     // Init dropdown autocomplete after mount.
     requestAnimationFrame(() => initPlacesAutocomplete())
@@ -1027,7 +1031,7 @@ export default function RestaurantsList() {
                 <p className="text-2xl font-bold text-slate-900">{totalRestaurants}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                <img src={locationIcon} alt="Location" className="w-8 h-8" />
+                <Store size={28} strokeWidth={2} color="#1B66C9" />
               </div>
             </div>
           </div>
@@ -1040,7 +1044,7 @@ export default function RestaurantsList() {
                 <p className="text-2xl font-bold text-slate-900">{activeRestaurants}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <img src={restaurantIcon} alt="Restaurant" className="w-8 h-8" />
+                <BadgeCheck size={28} strokeWidth={2} color="#159447" />
               </div>
             </div>
           </div>
@@ -1053,7 +1057,7 @@ export default function RestaurantsList() {
                 <p className="text-2xl font-bold text-slate-900">{inactiveRestaurants}</p>
               </div>
               <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
-                <img src={inactiveIcon} alt="Inactive" className="w-8 h-8" />
+                <CircleX size={28} strokeWidth={2} color="#F55B08" />
               </div>
             </div>
           </div>

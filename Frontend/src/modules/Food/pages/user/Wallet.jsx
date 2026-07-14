@@ -124,7 +124,7 @@ export default function Wallet() {
       case "addition":
         return <ArrowDownCircle className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-green-600 dark:text-green-400" />
       case "deduction":
-        return <ArrowUpCircle className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-red-600 dark:text-red-400" />
+        return <ArrowUpCircle className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-primary dark:text-primary-light" />
       case "refund":
         return <RefreshCw className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-blue-600 dark:text-blue-400" />
       default:
@@ -137,17 +137,17 @@ export default function Wallet() {
       case "addition":
         return "text-green-600 dark:text-green-400"
       case "deduction":
-        return "text-red-600 dark:text-red-400"
+        return "text-primary dark:text-primary-light"
       case "refund":
         return "text-blue-600 dark:text-blue-400"
       default:
-        return "text-gray-600 dark:text-gray-400"
+        return "text-text-secondary dark:text-text-secondary"
     }
   }
 
   return (
-    <AnimatedPage className="min-h-screen bg-white dark:bg-[#0a0a0a]">
-      <div className="bg-white dark:bg-[#1a1a1a] sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800">
+    <AnimatedPage className="min-h-screen bg-surface dark:bg-[#0a0a0a]">
+      <div className="bg-surface dark:bg-[#1a1a1a] sticky top-0 z-10 border-b border-border dark:border-gray-800">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3 px-4 sm:px-6 md:px-8 lg:px-10 py-4 md:py-5">
             <button
@@ -156,7 +156,7 @@ export default function Wallet() {
             >
               <ArrowLeft className="h-5 w-5 md:h-6 md:w-6 text-gray-700 dark:text-white" />
             </button>
-            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">Wallet</h1>
+            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-text-primary dark:text-white">Wallet</h1>
           </div>
         </div>
       </div>
@@ -167,8 +167,8 @@ export default function Wallet() {
         )}
 
         {error && !loading && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 md:p-6">
-            <p className="text-red-600 dark:text-red-400 text-sm md:text-base">{error}</p>
+          <div className="bg-primary-light/10 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 md:p-6">
+            <p className="text-primary dark:text-primary-light text-sm md:text-base">{error}</p>
           </div>
         )}
 
@@ -186,25 +186,25 @@ export default function Wallet() {
                 </div>
 
                 <div className="flex flex-col md:items-start items-center text-center md:text-left">
-                  <h2 className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white mb-2 md:mb-3">
+                  <h2 className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-text-primary dark:text-white mb-2 md:mb-3">
                     {companyName} Money
                   </h2>
 
                   <div className="mb-2 md:mb-3">
-                    <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base mb-1">Current Balance</p>
-                    <p className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold text-gray-900 dark:text-white">
+                    <p className="text-text-secondary dark:text-text-secondary text-xs md:text-sm lg:text-base mb-1">Current Balance</p>
+                    <p className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-bold text-text-primary dark:text-white">
                       {formatAmount(currentBalance)}
                     </p>
                   </div>
 
                   <div className="mb-2 md:mb-3">
-                    <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base mb-1">Referral Earnings</p>
+                    <p className="text-text-secondary dark:text-text-secondary text-xs md:text-sm lg:text-base mb-1">Referral Earnings</p>
                     <p className="text-lg md:text-xl lg:text-2xl font-semibold text-green-600 dark:text-green-400">
                       {formatAmount(referralEarnings)}
                     </p>
                   </div>
 
-                  <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base text-center md:text-left max-w-md">
+                  <p className="text-text-secondary dark:text-text-secondary text-xs md:text-sm lg:text-base text-center md:text-left max-w-md">
                     Add money to enjoy one-tap, seamless payments
                   </p>
                 </div>
@@ -223,7 +223,7 @@ export default function Wallet() {
 
             <div className="space-y-4 md:space-y-6 lg:space-y-8">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
-                <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-400 dark:text-gray-500 tracking-widest uppercase">
+                <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-text-secondary dark:text-text-secondary tracking-widest uppercase">
                   TRANSACTION HISTORY
                 </h2>
 
@@ -241,8 +241,8 @@ export default function Wallet() {
                         onClick={() => setSelectedFilter(filter.id)}
                         className={`px-4 md:px-5 lg:px-6 py-2 md:py-2.5 lg:py-3 rounded-lg md:rounded-xl text-xs md:text-sm lg:text-base font-medium whitespace-nowrap flex-shrink-0 transition-all ${
                           isSelected
-                            ? "bg-white dark:bg-[#1a1a1a] border-2 border-green-600 dark:border-green-500 text-green-600 dark:text-green-400 shadow-sm"
-                            : "bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-sm"
+                            ? "bg-surface dark:bg-[#1a1a1a] border-2 border-green-600 dark:border-green-500 text-green-600 dark:text-green-400 shadow-sm"
+                            : "bg-surface dark:bg-[#1a1a1a] border border-border dark:border-gray-800 text-text-secondary dark:text-gray-300 hover:border-border dark:hover:border-gray-700 hover:shadow-sm"
                         }`}
                       >
                         {filter.label}
@@ -257,7 +257,7 @@ export default function Wallet() {
                   {filteredTransactions.map((transaction) => (
                     <Card
                       key={transaction.id}
-                      className="py-0 border border-gray-100 dark:border-gray-800 shadow-sm dark:bg-[#1a1a1a] hover:shadow-md transition-all duration-200 cursor-pointer"
+                      className="py-0 border border-border dark:border-gray-800 shadow-sm dark:bg-[#1a1a1a] hover:shadow-md transition-all duration-200 cursor-pointer"
                     >
                       <CardContent className="p-4 md:p-5 lg:p-6">
                         <div className="flex items-center justify-between gap-4 md:gap-6">
@@ -269,7 +269,7 @@ export default function Wallet() {
                             </div>
 
                             <div className="flex-1 min-w-0">
-                              <p className="text-gray-900 dark:text-white font-semibold text-sm md:text-base lg:text-lg truncate mb-1">
+                              <p className="text-text-primary dark:text-white font-semibold text-sm md:text-base lg:text-lg truncate mb-1">
                                 {transaction.description}
                               </p>
                               {(transaction?.metadata?.source === "referral_signup" ||
@@ -278,7 +278,7 @@ export default function Wallet() {
                                   Referral reward
                                 </p>
                               )}
-                              <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm lg:text-base">
+                              <p className="text-text-secondary dark:text-text-secondary text-xs md:text-sm lg:text-base">
                                 {formatDate(transaction.date || transaction.createdAt)}
                               </p>
                             </div>
@@ -295,13 +295,13 @@ export default function Wallet() {
                 </div>
               ) : (
                 <div className="py-16 md:py-20 flex flex-col items-center justify-center text-center px-4">
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gray-50 dark:bg-[#1a1a1a] flex items-center justify-center mb-5 border border-gray-100 dark:border-gray-800 shadow-sm">
-                    <History className="w-8 h-8 md:w-10 md:h-10 text-gray-300 dark:text-gray-600" />
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gray-50 dark:bg-[#1a1a1a] flex items-center justify-center mb-5 border border-border dark:border-gray-800 shadow-sm">
+                    <History className="w-8 h-8 md:w-10 md:h-10 text-gray-300 dark:text-text-secondary" />
                   </div>
-                  <h3 className="text-gray-900 dark:text-white font-bold text-base md:text-lg mb-2">
+                  <h3 className="text-text-primary dark:text-white font-bold text-base md:text-lg mb-2">
                     No Transaction History
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-xs md:text-sm max-w-xs leading-relaxed">
+                  <p className="text-text-secondary dark:text-text-secondary text-xs md:text-sm max-w-xs leading-relaxed">
                     Your transactions will appear here when you add money or make a purchase.
                   </p>
                 </div>

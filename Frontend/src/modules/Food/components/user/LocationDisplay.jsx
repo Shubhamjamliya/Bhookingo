@@ -69,7 +69,7 @@ export default function LocationDisplay({
     return (
       <Button
         variant="ghost"
-        className={`flex items-center gap-2 text-red-500 hover:text-red-600 ${className}`}
+        className={`flex items-center gap-2 text-red-500 hover:text-primary ${className}`}
         onClick={handleClick}
       >
         <AlertCircle className="h-4 w-4" />
@@ -87,8 +87,8 @@ export default function LocationDisplay({
     >
       {showIcon && <MapPin className="h-4 w-4 text-red-500" fill="currentColor" />}
       <div className="flex flex-col items-start">
-        <span className="text-xs text-gray-500">Delivering to</span>
-        <span className="text-sm font-semibold text-gray-900">{displayText}</span>
+        <span className="text-xs text-text-secondary">Delivering to</span>
+        <span className="text-sm font-semibold text-text-primary">{displayText}</span>
       </div>
     </Button>
   )
@@ -144,8 +144,8 @@ export function FullLocationDisplay({ className = "" }) {
   if (loading && !location) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-        <span className="text-gray-500">Getting location...</span>
+        <Loader2 className="h-5 w-5 animate-spin text-text-secondary" />
+        <span className="text-text-secondary">Getting location...</span>
       </div>
     )
   }
@@ -173,14 +173,14 @@ export function FullLocationDisplay({ className = "" }) {
       <div className="flex items-center gap-2">
         <MapPin className="h-5 w-5 text-red-500" fill="currentColor" />
         <div className="flex flex-col">
-          <span className="text-xs text-gray-500">Delivering to</span>
-          <span className="text-lg font-bold text-gray-900">
+          <span className="text-xs text-text-secondary">Delivering to</span>
+          <span className="text-lg font-bold text-text-primary">
             {location.area || location.city || "Current Location"}
           </span>
         </div>
       </div>
       {(location.city || location.state) && (
-        <span className="text-sm text-gray-600 ml-7">
+        <span className="text-sm text-text-secondary ml-7">
           {[location.city, location.state].filter(Boolean).join(", ")}
         </span>
       )}

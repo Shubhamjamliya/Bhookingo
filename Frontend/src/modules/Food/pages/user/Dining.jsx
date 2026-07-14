@@ -98,11 +98,11 @@ function DiningRestaurantSkeleton({ index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.06 }}
     >
-      <div className="h-full overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-[#efe2d3]">
+      <div className="h-full overflow-hidden rounded-2xl bg-surface shadow-md ring-1 ring-[#efe2d3]">
         <div className={`relative h-48 overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(126,56,102,0.12),transparent_28%),linear-gradient(135deg,#fcf6fa_0%,#f9edf5_100%)] sm:h-56 md:h-60 lg:h-64 xl:h-72 ${shimmerClassName}`}>
           <div className="absolute left-4 top-4 h-8 w-28 rounded-lg bg-black/10" />
           <div className="absolute right-4 top-4 h-9 w-9 rounded-lg bg-white/60" />
-          <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-r from-[#DC2626] to-transparent/20">
+          <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-r from-[var(--primary)] to-transparent/20">
             <div className="flex h-full flex-col justify-end pl-4 pb-4 sm:pl-5 sm:pb-5">
               <div className="h-2.5 w-24 rounded-full bg-white/35" />
               <div className="mt-2 h-px w-24 bg-white/25" />
@@ -502,7 +502,7 @@ export default function Dining() {
   }, [heroSearch, openSearch, setSearchValue])
 
   return (
-    <AnimatedPage className="bg-white dark:bg-[#0a0a0a] min-h-screen relative pb-40">
+    <AnimatedPage className="bg-surface dark:bg-[#0a0a0a] min-h-screen relative pb-40">
       <style>{`
         @keyframes shimmer {
           100% {
@@ -512,7 +512,7 @@ export default function Dining() {
       `}</style>
       
       {/* Premium Sticky Header - High Z-Index & Optimized Blur */}
-      <div className="sticky top-0 z-[100] w-full bg-gradient-to-b from-[#cb202d] to-[#990c19] dark:bg-[#0a0a0a] md:hidden rounded-b-[2rem] border-b-2 border-white/20 antialiased">
+      <div className="sticky top-0 z-[100] w-full bg-gradient-to-b from-[var(--primary)] to-[var(--primary-dark)] dark:bg-[#0a0a0a] md:hidden rounded-b-[2rem] border-b-2 border-white/20 antialiased">
         {/* Navbar Section - Custom Takeaway Style */}
         <div className="relative z-20 pt-3 pb-3.5 px-4">
           <div className="flex items-center justify-between">
@@ -600,7 +600,7 @@ export default function Dining() {
                       className="object-cover"
                     />
                   )}
-                  <AvatarFallback className="bg-[#FFF5E6] text-[20px] font-black text-[#DC2626] leading-none tracking-tighter antialiased">
+                  <AvatarFallback className="bg-[#FFF5E6] text-[20px] font-black text-[var(--primary)] leading-none tracking-tighter antialiased">
                     {initials || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -615,8 +615,8 @@ export default function Dining() {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Enhanced Search Bar (Matching Home Style) */}
-          <div className="relative bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-gray-800 p-2 flex items-center shadow-inner group">
-            <Search className="h-4 w-4 text-[#DC2626] ml-2 shrink-0" strokeWidth={2.5} />
+          <div className="relative bg-gray-50 dark:bg-[#1a1a1a] rounded-xl border border-border dark:border-gray-800 p-2 flex items-center shadow-inner group">
+            <Search className="h-4 w-4 text-[var(--primary)] ml-2 shrink-0" strokeWidth={2.5} />
             <div className="flex-1 px-3">
               <Input
                 value={heroSearch}
@@ -629,14 +629,14 @@ export default function Dining() {
                     setHeroSearch("")
                   }
                 }}
-                className="h-6 w-full bg-transparent border-0 text-[13px] font-bold text-gray-700 dark:text-white focus-visible:ring-0 focus-visible:ring-offset-0 p-0 leading-none placeholder:text-gray-400"
+                className="h-6 w-full bg-transparent border-0 text-[13px] font-bold text-gray-700 dark:text-white focus-visible:ring-0 focus-visible:ring-offset-0 p-0 leading-none placeholder:text-text-secondary"
                 placeholder="Search restaurant, dish or cuisine..."
               />
             </div>
             <div className="flex items-center gap-3 pr-2">
               <div className="h-4 w-[1px] bg-gray-200 dark:bg-gray-700" />
               <button className="flex items-center justify-center p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                <Mic className="h-4 w-4 text-[#DC2626]" strokeWidth={2.5} />
+                <Mic className="h-4 w-4 text-[var(--primary)]" strokeWidth={2.5} />
               </button>
             </div>
           </div>
@@ -791,14 +791,14 @@ export default function Dining() {
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
               <div className="flex items-center gap-3">
-                <div className="h-8 w-1 bg-[#ef4f5f] rounded-full shadow-[0_0_10px_rgba(239,79,95,0.4)]" />
-                <h3 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight whitespace-nowrap">
+                <div className="h-8 w-1 bg-[var(--primary-light)] rounded-full shadow-[0_0_10px_rgba(239,79,95,0.4)]" />
+                <h3 className="text-xl sm:text-2xl font-black text-text-primary dark:text-white tracking-tight whitespace-nowrap">
                   Popular Restaurants Within 10km
                 </h3>
               </div>
               <div className="flex items-center">
-                <div className="px-3 py-1 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 rounded-full shadow-sm">
-                  <p className="text-[10px] sm:text-xs font-black text-[#ef4f5f] uppercase tracking-widest">
+                <div className="px-3 py-1 bg-primary-light/10 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 rounded-full shadow-sm">
+                  <p className="text-[10px] sm:text-xs font-black text-[var(--primary-light)] uppercase tracking-widest">
                     {filteredRestaurants.length} NEARBY PLACES
                   </p>
                 </div>
@@ -831,10 +831,10 @@ export default function Dining() {
                 <Button
                   variant="outline"
                   onClick={() => setIsFilterOpen(true)}
-                  className="h-7 sm:h-8 px-2 sm:px-3 rounded-full flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 font-medium transition-all bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                  className="h-7 sm:h-8 px-2 sm:px-3 rounded-full flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 font-medium transition-all bg-surface dark:bg-[#1a1a1a] border border-border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                 >
                   <SlidersHorizontal className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="text-xs sm:text-sm font-bold text-black dark:text-white">Filters</span>
+                  <span className="text-xs sm:text-sm font-bold text-text-primary dark:text-white">Filters</span>
                 </Button>
 
                 {/* Filter Buttons */}
@@ -853,12 +853,12 @@ export default function Dining() {
                       variant="outline"
                       onClick={() => toggleFilter(filter.id)}
                       className={`h-7 sm:h-8 px-2 sm:px-3 rounded-full flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 transition-all font-medium ${isActive
-                        ? 'bg-[#DC2626] text-white border border-[#DC2626] hover:bg-[#991B1B]'
-                        : 'bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
+                        ? 'bg-[var(--primary)] text-white border border-[var(--primary)] hover:bg-primary-dark'
+                        : 'bg-surface dark:bg-[#1a1a1a] border border-border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-text-secondary dark:text-gray-300'
                         }`}
                     >
                       {Icon && <Icon className={`h-3 w-3 sm:h-4 sm:w-4 ${isActive ? 'text-white fill-white' : 'text-current'}`} />}
-                      <span className={`text-xs sm:text-sm font-bold ${isActive ? 'text-white' : 'text-black dark:text-white'}`}>{filter.label}</span>
+                      <span className={`text-xs sm:text-sm font-bold ${isActive ? 'text-white' : 'text-text-primary dark:text-white'}`}>{filter.label}</span>
                     </Button>
                   )
                 })}
@@ -874,7 +874,7 @@ export default function Dining() {
               ))}
             </div>
           ) : filteredRestaurants.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[#eadfce] bg-[#fffaf4] px-6 py-12 text-center text-sm font-medium text-gray-500">
+            <div className="rounded-2xl border border-dashed border-[#eadfce] bg-[#fffaf4] px-6 py-12 text-center text-sm font-medium text-text-secondary">
               No popular dining restaurants were found within 10 km for the current location.
             </div>
           ) : (
@@ -947,7 +947,7 @@ export default function Dining() {
                       state={{ restaurant }}
                       className="h-full flex rounded-[22px]"
                     >
-                      <Card className="overflow-hidden gap-0 space-y-0 cursor-pointer border-0 dark:border-gray-800 group bg-white dark:bg-[#1a1a1a] transition-all duration-500 py-0 rounded-[22px] h-full flex flex-col w-full relative">
+                      <Card className="overflow-hidden gap-0 space-y-0 cursor-pointer border-0 dark:border-gray-800 group bg-surface dark:bg-[#1a1a1a] transition-all duration-500 py-0 rounded-[22px] h-full flex flex-col w-full relative">
                         {/* Image Section */}
                         <div className="relative h-44 sm:h-56 md:h-60 lg:h-64 xl:h-72 w-full flex-shrink-0">
                           <motion.div
@@ -1028,12 +1028,12 @@ export default function Dining() {
                               className="h-9 w-9 bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-sm rounded-lg hover:bg-white dark:hover:bg-[#2a2a2a] transition-colors"
                               onClick={handleToggleFavorite}
                             >
-                              <Bookmark className={`h-5 w-5 ${favorite ? "fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200" : "text-gray-600 dark:text-gray-400"}`} strokeWidth={2} />
+                              <Bookmark className={`h-5 w-5 ${favorite ? "fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200" : "text-text-secondary dark:text-text-secondary"}`} strokeWidth={2} />
                             </Button>
                           </motion.div>
 
                           {/* Blue Section - Bottom 40% */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-[#DC2626] to-transparent" style={{ height: '40%' }}>
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-[var(--primary)] to-transparent" style={{ height: '40%' }}>
                             <div className="h-full flex flex-col justify-end">
                               <div className="pl-4 sm:pl-5 pb-4 sm:pb-5">
                                 <p className="text-white text-xs sm:text-sm font-medium uppercase tracking-wide mb-1">
@@ -1062,10 +1062,10 @@ export default function Dining() {
                             <div className="flex items-start justify-between gap-2 mb-2">
                               <div className="flex-1 min-w-0">
                                 <motion.h3
-                                  className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white line-clamp-1"
+                                  className="text-lg sm:text-xl font-bold text-text-primary dark:text-white line-clamp-1"
                                   variants={{
                                     rest: {},
-                                    hover: { color: "#DC2626" }
+                                    hover: { color: "var(--primary)" }
                                   }}
                                   transition={{ duration: 0.3 }}
                                 >
@@ -1085,7 +1085,7 @@ export default function Dining() {
                               </motion.div>
                             </div>
 
-                            <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 mb-2">
+                            <div className="flex items-center gap-1 text-sm text-text-secondary dark:text-text-secondary mb-2">
                               <Clock className="h-4 w-4" strokeWidth={1.5} />
                               <span className="mx-1">|</span>
                               <span className="font-medium">{restaurant.distance}</span>
@@ -1183,7 +1183,7 @@ export default function Dining() {
                       state={{ restaurant }}
                       className="h-full flex rounded-[22px]"
                     >
-                      <Card className="overflow-hidden gap-0 space-y-0 cursor-pointer border-0 dark:border-gray-800 group bg-white dark:bg-[#1a1a1a] transition-all duration-500 py-0 rounded-[22px] h-full flex flex-col w-full relative">
+                      <Card className="overflow-hidden gap-0 space-y-0 cursor-pointer border-0 dark:border-gray-800 group bg-surface dark:bg-[#1a1a1a] transition-all duration-500 py-0 rounded-[22px] h-full flex flex-col w-full relative">
                         {/* Image Section */}
                         <div className="relative h-44 sm:h-56 md:h-60 lg:h-64 xl:h-72 w-full flex-shrink-0">
                           <motion.div
@@ -1248,11 +1248,11 @@ export default function Dining() {
                             className="absolute top-3 right-3 h-9 w-9 bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur-sm rounded-lg hover:bg-white dark:hover:bg-[#2a2a2a] transition-colors"
                             onClick={handleToggleFavorite}
                           >
-                            <Bookmark className={`h-5 w-5 ${favorite ? "fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200" : "text-gray-600 dark:text-gray-400"}`} strokeWidth={2} />
+                            <Bookmark className={`h-5 w-5 ${favorite ? "fill-gray-800 dark:fill-gray-200 text-gray-800 dark:text-gray-200" : "text-text-secondary dark:text-text-secondary"}`} strokeWidth={2} />
                           </Button>
 
                           {/* Blue Section - Bottom 40% */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-[#DC2626] to-transparent" style={{ height: '40%' }}>
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-[var(--primary)] to-transparent" style={{ height: '40%' }}>
                             <div className="h-full flex flex-col justify-end">
                               <div className="pl-4 sm:pl-5 pb-4 sm:pb-5">
                                 <p className="text-white text-xs sm:text-sm font-medium uppercase tracking-wide mb-1">
@@ -1279,7 +1279,7 @@ export default function Dining() {
                           <CardContent className="p-2.5 sm:p-4 pt-1.5 sm:pt-2 border-t-0">
                             {/* Restaurant Name & Rating Badge */}
                             <div className="flex items-start justify-between gap-3 mb-2">
-                              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white line-clamp-1">
+                              <h3 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white line-clamp-1">
                                 {restaurant.name}
                               </h3>
                               <div className="flex-shrink-0 bg-[#267e3e] text-white px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
@@ -1289,13 +1289,13 @@ export default function Dining() {
                             </div>
 
                             {/* Meta Info Row (Time | Distance) */}
-                            <div className="flex items-center gap-1.5 text-sm font-medium text-gray-500 dark:text-gray-400 mb-2.5">
+                            <div className="flex items-center gap-1.5 text-sm font-medium text-text-secondary dark:text-text-secondary mb-2.5">
                               <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4 text-gray-400" strokeWidth={2} />
+                                <Clock className="h-4 w-4 text-text-secondary" strokeWidth={2} />
                               </div>
                               <span className="mx-0.5 text-gray-300">|</span>
                               <div className="flex items-center gap-1">
-                                <MapPin className="h-3.5 w-3.5 text-gray-400" strokeWidth={2} />
+                                <MapPin className="h-3.5 w-3.5 text-text-secondary" strokeWidth={2} />
                                 <span>{restaurant.distance || "Distance unavailable"}</span>
                               </div>
                             </div>
@@ -1312,7 +1312,7 @@ export default function Dining() {
                                 >
                                     {restaurant.isEnabled ? "ON" : "OFF"}
                                 </Badge>
-                              <span className="text-sm font-bold text-gray-600 dark:text-gray-400">Pre-book table</span>
+                              <span className="text-sm font-bold text-text-secondary dark:text-text-secondary">Pre-book table</span>
                             </div>
                           </CardContent>
                         </motion.div>
@@ -1337,17 +1337,17 @@ export default function Dining() {
           />
 
           {/* Modal Content */}
-          <div className="absolute bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-4xl bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl max-h-[85vh] md:max-h-[90vh] flex flex-col animate-[slideUp_0.3s_ease-out]">
+          <div className="absolute bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-4xl bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl max-h-[85vh] md:max-h-[90vh] flex flex-col animate-[slideUp_0.3s_ease-out]">
             {/* Header */}
             <div className="flex items-center justify-between px-4 md:px-6 py-4 md:py-5 border-b dark:border-gray-800">
-              <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Filters and sorting</h2>
+              <h2 className="text-lg md:text-xl font-bold text-text-primary dark:text-white">Filters and sorting</h2>
               <button
                 onClick={() => {
                   setActiveFilters(new Set())
                   setSortBy(null)
                   setSelectedCuisine(null)
                 }}
-                className="text-[#DC2626] font-medium text-sm md:text-base"
+                className="text-[var(--primary)] font-medium text-sm md:text-base"
               >
                 Clear all
               </button>
@@ -1370,11 +1370,11 @@ export default function Dining() {
                     <button
                       key={tab.id}
                       onClick={() => setActiveFilterTab(tab.id)}
-                      className={`flex flex-col items-center gap-1 py-4 px-2 text-center relative transition-colors ${isActive ? 'bg-white dark:bg-[#1a1a1a] text-[#DC2626]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      className={`flex flex-col items-center gap-1 py-4 px-2 text-center relative transition-colors ${isActive ? 'bg-surface dark:bg-[#1a1a1a] text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                     >
                       {isActive && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626] rounded-r" />
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--primary)] rounded-r" />
                       )}
                       <Icon className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.5} />
                       <span className="text-xs md:text-sm font-medium leading-tight">{tab.label}</span>
@@ -1388,7 +1388,7 @@ export default function Dining() {
                 {/* Sort By Tab */}
                 {activeFilterTab === 'sort' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-4">Sort by</h3>
+                    <h3 className="text-lg md:text-xl font-semibold text-text-primary dark:text-white mb-4">Sort by</h3>
                     <div className="flex flex-col gap-3 md:gap-4">
                       {[
                         { id: null, label: 'Relevance' },
@@ -1399,11 +1399,11 @@ export default function Dining() {
                           key={option.id || 'relevance'}
                           onClick={() => setSortBy(option.id)}
                           className={`px-4 md:px-5 py-3 md:py-4 rounded-xl border text-left transition-colors ${sortBy === option.id
-                            ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                            ? 'border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20'
+                            : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                             }`}
                         >
-                          <span className={`text-sm md:text-base font-medium ${sortBy === option.id ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>
+                          <span className={`text-sm md:text-base font-medium ${sortBy === option.id ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>
                             {option.label}
                           </span>
                         </button>
@@ -1416,37 +1416,37 @@ export default function Dining() {
                 {/* Rating Tab */}
                 {activeFilterTab === 'rating' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Restaurant Rating</h3>
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4">Restaurant Rating</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter('rating-35-plus')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('rating-35-plus')
-                          ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                          ? 'border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20'
+                          : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                           }`}
                       >
-                        <Star className={`h-6 w-6 ${activeFilters.has('rating-35-plus') ? 'text-[#DC2626] fill-[#DC2626]' : 'text-gray-400 dark:text-gray-500'}`} />
-                        <span className={`text-sm font-medium ${activeFilters.has('rating-35-plus') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 3.5+</span>
+                        <Star className={`h-6 w-6 ${activeFilters.has('rating-35-plus') ? 'text-[var(--primary)] fill-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} />
+                        <span className={`text-sm font-medium ${activeFilters.has('rating-35-plus') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 3.5+</span>
                       </button>
                       <button
                         onClick={() => toggleFilter('rating-4-plus')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('rating-4-plus')
-                          ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                          ? 'border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20'
+                          : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                           }`}
                       >
-                        <Star className={`h-6 w-6 ${activeFilters.has('rating-4-plus') ? 'text-[#DC2626] fill-[#DC2626]' : 'text-gray-400 dark:text-gray-500'}`} />
-                        <span className={`text-sm font-medium ${activeFilters.has('rating-4-plus') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 4.0+</span>
+                        <Star className={`h-6 w-6 ${activeFilters.has('rating-4-plus') ? 'text-[var(--primary)] fill-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} />
+                        <span className={`text-sm font-medium ${activeFilters.has('rating-4-plus') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 4.0+</span>
                       </button>
                       <button
                         onClick={() => toggleFilter('rating-45-plus')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('rating-45-plus')
-                          ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                          ? 'border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20'
+                          : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                           }`}
                       >
-                        <Star className={`h-6 w-6 ${activeFilters.has('rating-45-plus') ? 'text-[#DC2626] fill-[#DC2626]' : 'text-gray-400 dark:text-gray-500'}`} />
-                        <span className={`text-sm font-medium ${activeFilters.has('rating-45-plus') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 4.5+</span>
+                        <Star className={`h-6 w-6 ${activeFilters.has('rating-45-plus') ? 'text-[var(--primary)] fill-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} />
+                        <span className={`text-sm font-medium ${activeFilters.has('rating-45-plus') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Rated 4.5+</span>
                       </button>
                     </div>
                   </div>
@@ -1455,27 +1455,27 @@ export default function Dining() {
                 {/* Distance Tab */}
                 {activeFilterTab === 'distance' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Distance</h3>
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4">Distance</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => toggleFilter('distance-under-1km')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('distance-under-1km')
-                          ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                          ? 'border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20'
+                          : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                           }`}
                       >
-                        <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-1km') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
-                        <span className={`text-sm font-medium ${activeFilters.has('distance-under-1km') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under 1 km</span>
+                        <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-1km') ? 'text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} strokeWidth={1.5} />
+                        <span className={`text-sm font-medium ${activeFilters.has('distance-under-1km') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Under 1 km</span>
                       </button>
                       <button
                         onClick={() => toggleFilter('distance-under-2km')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors ${activeFilters.has('distance-under-2km')
-                          ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                          ? 'border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20'
+                          : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                           }`}
                       >
-                        <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-2km') ? 'text-[#DC2626]' : 'text-gray-600 dark:text-gray-400'}`} strokeWidth={1.5} />
-                        <span className={`text-sm font-medium ${activeFilters.has('distance-under-2km') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under 2 km</span>
+                        <MapPin className={`h-6 w-6 ${activeFilters.has('distance-under-2km') ? 'text-[var(--primary)]' : 'text-text-secondary dark:text-text-secondary'}`} strokeWidth={1.5} />
+                        <span className={`text-sm font-medium ${activeFilters.has('distance-under-2km') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Under 2 km</span>
                       </button>
                     </div>
                   </div>
@@ -1484,25 +1484,25 @@ export default function Dining() {
                 {/* Price Tab */}
                 {activeFilterTab === 'price' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Dish Price</h3>
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4">Dish Price</h3>
                     <div className="flex flex-col gap-3">
                       <button
                         onClick={() => toggleFilter('price-under-200')}
                         className={`px-4 py-3 rounded-xl border text-left transition-colors ${activeFilters.has('price-under-200')
-                          ? 'border-[#DC2626] bg-[#DC2626]/10 dark:bg-[#DC2626]/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                          ? 'border-[var(--primary)] bg-[var(--primary)]/10 dark:bg-[var(--primary)]/20'
+                          : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                           }`}
                       >
-                        <span className={`text-sm font-medium ${activeFilters.has('price-under-200') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹200</span>
+                        <span className={`text-sm font-medium ${activeFilters.has('price-under-200') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹200</span>
                       </button>
                       <button
                         onClick={() => toggleFilter('price-under-500')}
                         className={`px-4 py-3 rounded-xl border text-left transition-colors ${activeFilters.has('price-under-500')
-                          ? 'border-[#DC2626] bg-[#DC2626]/10 dark:bg-[#DC2626]/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                          ? 'border-[var(--primary)] bg-[var(--primary)]/10 dark:bg-[var(--primary)]/20'
+                          : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                           }`}
                       >
-                        <span className={`text-sm font-medium ${activeFilters.has('price-under-500') ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹500</span>
+                        <span className={`text-sm font-medium ${activeFilters.has('price-under-500') ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>Under ₹500</span>
                       </button>
                     </div>
                   </div>
@@ -1511,18 +1511,18 @@ export default function Dining() {
                 {/* Cuisine Tab */}
                 {activeFilterTab === 'cuisine' && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Cuisine</h3>
+                    <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-4">Cuisine</h3>
                     <div className="grid grid-cols-2 gap-3">
                       {['Continental', 'Italian', 'Asian', 'Indian', 'Chinese', 'American', 'Seafood', 'Cafe'].map((cuisine) => (
                         <button
                           key={cuisine}
                           onClick={() => setSelectedCuisine(selectedCuisine === cuisine ? null : cuisine)}
                           className={`px-4 py-3 rounded-xl border text-center transition-colors ${selectedCuisine === cuisine
-                            ? 'border-[#DC2626] bg-[#F9F9FB] dark:bg-[#DC2626]/20'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-[#DC2626]'
+                            ? 'border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20'
+                            : 'border-border dark:border-gray-700 hover:border-[var(--primary)]'
                             }`}
                         >
-                          <span className={`text-sm font-medium ${selectedCuisine === cuisine ? 'text-[#DC2626]' : 'text-gray-700 dark:text-gray-300'}`}>
+                          <span className={`text-sm font-medium ${selectedCuisine === cuisine ? 'text-[var(--primary)]' : 'text-gray-700 dark:text-gray-300'}`}>
                             {cuisine}
                           </span>
                         </button>
@@ -1534,7 +1534,7 @@ export default function Dining() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center gap-4 md:gap-6 px-4 md:px-6 py-4 md:py-5 border-t dark:border-gray-800 bg-white dark:bg-[#1a1a1a]">
+            <div className="flex items-center gap-4 md:gap-6 px-4 md:px-6 py-4 md:py-5 border-t dark:border-gray-800 bg-surface dark:bg-[#1a1a1a]">
               <button
                 onClick={() => setIsFilterOpen(false)}
                 className="flex-1 py-3 md:py-4 text-center font-semibold text-gray-700 dark:text-gray-300 text-sm md:text-base"
@@ -1544,8 +1544,8 @@ export default function Dining() {
               <button
                 onClick={() => setIsFilterOpen(false)}
                 className={`flex-1 py-3 md:py-4 font-semibold rounded-xl transition-colors text-sm md:text-base ${activeFilters.size > 0 || sortBy || selectedCuisine
-                  ? 'bg-[#DC2626] text-white hover:bg-[#991B1B]'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                  ? 'bg-[var(--primary)] text-white hover:bg-primary-dark'
+                  : 'bg-gray-200 dark:bg-gray-700 text-text-secondary dark:text-text-secondary'
                   }`}
               >
                 {activeFilters.size > 0 || sortBy || selectedCuisine

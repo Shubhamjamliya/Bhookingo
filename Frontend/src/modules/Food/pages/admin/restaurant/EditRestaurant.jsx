@@ -192,6 +192,14 @@ export default function EditRestaurant() {
   useEffect(() => {
     let mounted = true
     setZonesLoading(true)
+
+    if (typeof adminAPI.getZones !== "function") {
+      console.warn("adminAPI.getZones is not defined")
+      setZones([])
+      setZonesLoading(false)
+      return
+    }
+
     adminAPI
       .getZones({ limit: 1000 })
       .then((res) => {
@@ -203,7 +211,8 @@ export default function EditRestaurant() {
         if (!mounted) return
         setZones(Array.isArray(list) ? list : [])
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Failed to load zones", err)
         if (!mounted) return
         setZones([])
       })

@@ -15,7 +15,7 @@ const RestaurantDishCard = ({
       layout
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white dark:bg-[#111111] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-800 group relative"
+      className="bg-surface dark:bg-[#111111] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-border dark:border-gray-800 group relative"
       onClick={onClick}
     >
       <div className="relative h-48 sm:h-56 overflow-hidden">
@@ -59,19 +59,19 @@ const RestaurantDishCard = ({
       </div>
 
       <div className="p-5">
-        <h3 className="text-lg font-black text-gray-900 dark:text-gray-100 mb-1 line-clamp-1 group-hover:text-[#DC2626] transition-colors">
+        <h3 className="text-lg font-black text-text-primary dark:text-gray-100 mb-1 line-clamp-1 group-hover:text-[var(--primary)] transition-colors">
           {restaurant.name}
         </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 line-clamp-1 italic">
+        <p className="text-xs text-text-secondary dark:text-text-secondary mb-4 line-clamp-1 italic">
           {restaurant.cuisine || "Cuisines not listed"}
         </p>
 
         {restaurant.featuredDish && (
-          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800/50 group/dish relative">
+          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-border dark:border-gray-800/50 group/dish relative">
             <div className="flex justify-between items-center">
               <div className="flex-1">
-                <span className="text-[10px] uppercase font-black text-[#DC2626] tracking-widest mb-1 block">Featured Dish</span>
-                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 line-clamp-1">{restaurant.featuredDish.name}</p>
+                <span className="text-[10px] uppercase font-black text-[var(--primary)] tracking-widest mb-1 block">Featured Dish</span>
+                <p className="text-sm font-bold text-text-primary dark:text-gray-100 line-clamp-1">{restaurant.featuredDish.name}</p>
                 <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300 mt-1">
                   <IndianRupee className="w-3 h-3" />
                   <span className="text-xs font-black">{restaurant.featuredDish.price}</span>
@@ -82,7 +82,7 @@ const RestaurantDishCard = ({
                   e.stopPropagation();
                   onAddDish(restaurant.featuredDish);
                 }}
-                className="p-2 bg-white dark:bg-gray-700 rounded-xl shadow-sm hover:shadow-md hover:scale-110 transition-all text-[#DC2626] active:scale-95"
+                className="p-2 bg-surface dark:bg-gray-700 rounded-xl shadow-sm hover:shadow-md hover:scale-110 transition-all text-[var(--primary)] active:scale-95"
               >
                 <Plus className="w-5 h-5" />
               </button>

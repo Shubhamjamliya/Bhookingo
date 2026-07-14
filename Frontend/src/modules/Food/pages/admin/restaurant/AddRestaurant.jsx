@@ -6,13 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Button } from "@food/components/ui/button"
-import { adminAPI, uploadAPI } from "@food/api"
+import { adminAPI, uploadAPI, highwayAPI } from "@food/api"
 import { toast } from "sonner"
 import { Switch } from "@food/components/ui/switch"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
-import { MobileTimePicker } from "@mui/x-date-pickers/MobileTimePicker"
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
 
 const debugLog = (...args) => {}
 const debugWarn = (...args) => { console.warn(...args) }
@@ -113,6 +110,103 @@ const timeToString = (date) => {
   const hours = date.getHours().toString().padStart(2, "0")
   const minutes = date.getMinutes().toString().padStart(2, "0")
   return `${hours}:${minutes}`
+}
+
+const parse24HourTo12Hour = (timeStr, defaultVal = "09:00") => {
+  const val = timeStr || defaultVal
+  const [h24, min] = val.split(":")
+  let hourVal = parseInt(h24, 10)
+  const period = hourVal >= 12 ? "PM" : "AM"
+  hourVal = hourVal % 12
+  if (hourVal === 0) hourVal = 12
+  const hour = String(hourVal).padStart(2, "0")
+  const minute = String(min || "00").padStart(2, "0")
+  return { hour, minute, period }
+}
+
+const format12HourTo24Hour = (hour, minute, period) => {
+  let h = parseInt(hour, 10)
+  if (period === "PM") {
+    if (h !== 12) h += 12
+  } else {
+    if (h === 12) h = 0
+  }
+  return `${String(h).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+}
+
+function TimeDropdownPicker({ label, value, onChange }) {
+  const { hour, minute, period } = parse24HourTo12Hour(value, label.toLowerCase().includes("opening") ? "09:00" : "21:00")
+
+  useEffect(() => {
+    if (!value) {
+      const defaultVal = label.toLowerCase().includes("opening") ? "09:00" : "21:00"
+      onChange(defaultVal)
+    }
+  }, [value, onChange, label])
+
+  const hoursList = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"))
+  const minutesList = ["00", "15", "30", "45"]
+  if (!minutesList.includes(minute)) {
+    minutesList.push(minute)
+    minutesList.sort()
+  }
+
+  const handleHourChange = (newHour) => {
+    onChange(format12HourTo24Hour(newHour, minute, period))
+  }
+
+  const handleMinuteChange = (newMinute) => {
+    onChange(format12HourTo24Hour(hour, newMinute, period))
+  }
+
+  const handlePeriodChange = (newPeriod) => {
+    onChange(format12HourTo24Hour(hour, minute, newPeriod))
+  }
+
+  return (
+    <div className="border border-gray-200 rounded-md px-3 py-2 bg-gray-50/60">
+      <div className="flex items-center gap-2 mb-2">
+        <Clock className="w-4 h-4 text-gray-800" />
+        <span className="text-xs font-medium text-gray-900">{label}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <select
+          value={hour}
+          onChange={(e) => handleHourChange(e.target.value)}
+          className="w-16 bg-white text-xs font-semibold text-slate-800 border border-slate-200 rounded-md p-1.5 cursor-pointer outline-none hover:border-slate-300 focus:border-black transition-colors"
+        >
+          {hoursList.map((h) => (
+            <option key={h} value={h}>
+              {h}
+            </option>
+          ))}
+        </select>
+        
+        <span className="text-slate-400 font-bold">:</span>
+        
+        <select
+          value={minute}
+          onChange={(e) => handleMinuteChange(e.target.value)}
+          className="w-16 bg-white text-xs font-semibold text-slate-800 border border-slate-200 rounded-md p-1.5 cursor-pointer outline-none hover:border-slate-300 focus:border-black transition-colors"
+        >
+          {minutesList.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={period}
+          onChange={(e) => handlePeriodChange(e.target.value)}
+          className="w-20 bg-slate-100 text-xs font-bold text-slate-800 border border-slate-200 rounded-md p-1.5 cursor-pointer outline-none hover:bg-slate-200 focus:border-black transition-colors"
+        >
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
+    </div>
+  )
 }
 
 const getStoredFileLabel = (value) => {
@@ -258,8 +352,8 @@ export default function AddRestaurant() {
     menuImages: [],
     profileImage: null,
     cuisines: [],
-    openingTime: "",
-    closingTime: "",
+    openingTime: "09:00",
+    closingTime: "21:00",
     openDays: [],
     takeawayEnabled: true,
   })
@@ -283,6 +377,71 @@ export default function AddRestaurant() {
     accountHolderName: "",
     accountType: "",
   })
+
+  // Highway Info validation state
+  const [highwayInfo, setHighwayInfo] = useState({
+    loading: false,
+    status: null,
+    highwayName: null,
+    highwayRef: null,
+    distanceMeters: null,
+    thresholdMeters: null,
+  })
+
+  useEffect(() => {
+    const lat = Number(step1.location?.latitude)
+    const lng = Number(step1.location?.longitude)
+    const address = step1.location?.formattedAddress || step1.location?.addressLine1 || ""
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !address.trim()) {
+      setHighwayInfo({
+        loading: false,
+        status: null,
+        highwayName: null,
+        highwayRef: null,
+        distanceMeters: null,
+        thresholdMeters: null,
+      })
+      return
+    }
+
+    const triggerDetection = async () => {
+      setHighwayInfo((prev) => ({ ...prev, loading: true }))
+      try {
+        const res = await highwayAPI.detectHighway(lat, lng)
+        const data = res?.data?.data
+        if (res?.data?.success && data) {
+          setHighwayInfo({
+            loading: false,
+            status: data.status,
+            highwayName: data.highwayName || null,
+            highwayRef: data.highwayRef || null,
+            distanceMeters: data.distanceMeters ?? null,
+            thresholdMeters: data.thresholdMeters ?? null,
+          })
+        } else {
+          setHighwayInfo({
+            loading: false,
+            status: "OUT_OF_SERVICE",
+            highwayName: null,
+            highwayRef: null,
+            distanceMeters: null,
+            thresholdMeters: null,
+          })
+        }
+      } catch (err) {
+        setHighwayInfo({
+          loading: false,
+          status: "OUT_OF_SERVICE",
+          highwayName: null,
+          highwayRef: null,
+          distanceMeters: null,
+          thresholdMeters: null,
+        })
+      }
+    }
+
+    triggerDetection()
+  }, [step1.location?.latitude, step1.location?.longitude])
 
   const languageTabs = [
     { key: "default", label: "Default" },
@@ -494,6 +653,17 @@ export default function AddRestaurant() {
 
     if (!step1.location?.area?.trim()) errors.push("Area/Sector/Locality is required")
     if (!step1.location?.city?.trim()) errors.push("City is required")
+
+    // Highway validation
+    const lat = Number(step1.location?.latitude)
+    const lng = Number(step1.location?.longitude)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      errors.push("Please search and select a location so map coordinates are captured.")
+    } else if (highwayInfo.loading) {
+      errors.push("Checking highway proximity — please wait a moment.")
+    } else if (highwayInfo.status !== "IN_SERVICE") {
+      errors.push("Restaurant location is not within the allowed National Highway range.")
+    }
     return errors
   }
 
@@ -510,7 +680,7 @@ export default function AddRestaurant() {
       if (openingMinutes === closingMinutes) {
         errors.push("Opening time and closing time cannot be same")
       } else if (closingMinutes < openingMinutes) {
-        errors.push("Closing time cannot be less than opening time")
+        errors.push("Please select valid restaurant operating hours.")
       }
     }
     if (!step2.openDays || step2.openDays.length === 0) errors.push("Please select at least one open day")
@@ -1058,6 +1228,41 @@ export default function AddRestaurant() {
           <p className="text-[11px] text-gray-500 mt-1">
             Search to auto-fill Area, City, State, Pincode and coordinates.
           </p>
+
+          {highwayInfo.loading && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 flex items-center gap-2 text-xs">
+              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+              <span>Checking highway proximity...</span>
+            </div>
+          )}
+
+          {!highwayInfo.loading && highwayInfo.status === "IN_SERVICE" && (
+            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md text-green-800 space-y-1 text-xs">
+              <div className="flex items-center gap-2 font-semibold">
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <span>Restaurant location available</span>
+              </div>
+              <div className="pl-6 text-gray-600 space-y-0.5">
+                <p>Nearest Highway: <span className="font-medium text-gray-900">{highwayInfo.highwayRef}</span></p>
+                <p>Distance: <span className="font-medium text-gray-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+              </div>
+            </div>
+          )}
+
+          {!highwayInfo.loading && highwayInfo.status === "OUT_OF_SERVICE" && (
+            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 space-y-1 text-xs">
+              <div className="flex items-center gap-2 font-semibold">
+                <X className="w-4 h-4 text-red-600" />
+                <span>Restaurant location is not within the allowed National Highway range.</span>
+              </div>
+              {highwayInfo.highwayRef && (
+                <div className="pl-6 text-gray-600 space-y-0.5">
+                  <p>Nearest Highway: <span className="font-medium text-gray-900">{highwayInfo.highwayRef}</span></p>
+                  <p>Distance: <span className="font-medium text-gray-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div>
@@ -1227,109 +1432,22 @@ export default function AddRestaurant() {
 
         <div className="space-y-3">
           <Label className="text-xs text-gray-700">Outlet timings*</Label>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="border border-gray-200 rounded-md px-3 py-2 bg-gray-50/60">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-4 h-4 text-gray-800" />
-                  <span className="text-xs font-medium text-gray-900">Opening time</span>
-                </div>
-                <MobileTimePicker
-                  ampm={true}
-                  value={stringToTime(step2.openingTime)}
-                  onChange={(newValue) => {
-                    if (!newValue) {
-                      setStep2({ ...step2, openingTime: "" })
-                      return
-                    }
-                    const nextOpening = timeToString(newValue)
-                    const closingMinutes = timeStringToMinutes(step2.closingTime)
-                    const openingMinutes = timeStringToMinutes(nextOpening)
-                    if (openingMinutes !== null && closingMinutes !== null) {
-                      if (openingMinutes === closingMinutes) {
-                        toast.error("Opening time and closing time cannot be same")
-                        return
-                      }
-                      if (closingMinutes < openingMinutes) {
-                        toast.error("Closing time cannot be less than opening time")
-                        return
-                      }
-                    }
-                    setStep2({ ...step2, openingTime: nextOpening })
-                  }}
-                  slotProps={{
-                    textField: {
-                      variant: "outlined",
-                      size: "small",
-                      placeholder: "Select time",
-                      sx: {
-                        "& .MuiOutlinedInput-root": {
-                          height: "36px",
-                          fontSize: "12px",
-                          backgroundColor: "white",
-                          "& fieldset": { borderColor: "#e5e7eb" },
-                          "&:hover fieldset": { borderColor: "#d1d5db" },
-                          "&.Mui-focused fieldset": { borderColor: "#000" },
-                        },
-                        "& .MuiInputBase-input": { padding: "8px 12px", fontSize: "12px" },
-                      },
-                    },
-                  }}
-                  format="hh:mm a"
-                />
-              </div>
-
-              <div className="border border-gray-200 rounded-md px-3 py-2 bg-gray-50/60">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-4 h-4 text-gray-800" />
-                  <span className="text-xs font-medium text-gray-900">Closing time</span>
-                </div>
-                <MobileTimePicker
-                  ampm={true}
-                  value={stringToTime(step2.closingTime)}
-                  onChange={(newValue) => {
-                    if (!newValue) {
-                      setStep2({ ...step2, closingTime: "" })
-                      return
-                    }
-                    const nextClosing = timeToString(newValue)
-                    const openingMinutes = timeStringToMinutes(step2.openingTime)
-                    const closingMinutes = timeStringToMinutes(nextClosing)
-                    if (openingMinutes !== null && closingMinutes !== null) {
-                      if (openingMinutes === closingMinutes) {
-                        toast.error("Opening time and closing time cannot be same")
-                        return
-                      }
-                      if (closingMinutes < openingMinutes) {
-                        toast.error("Closing time cannot be less than opening time")
-                        return
-                      }
-                    }
-                    setStep2({ ...step2, closingTime: nextClosing })
-                  }}
-                  slotProps={{
-                    textField: {
-                      variant: "outlined",
-                      size: "small",
-                      placeholder: "Select time",
-                      sx: {
-                        "& .MuiOutlinedInput-root": {
-                          height: "36px",
-                          fontSize: "12px",
-                          backgroundColor: "white",
-                          "& fieldset": { borderColor: "#e5e7eb" },
-                          "&:hover fieldset": { borderColor: "#d1d5db" },
-                          "&.Mui-focused fieldset": { borderColor: "#000" },
-                        },
-                        "& .MuiInputBase-input": { padding: "8px 12px", fontSize: "12px" },
-                      },
-                    },
-                  }}
-                  format="hh:mm a"
-                />
-              </div>
-            </div>
-          </LocalizationProvider>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <TimeDropdownPicker
+              label="Opening time"
+              value={step2.openingTime}
+              onChange={(nextOpening) => {
+                setStep2({ ...step2, openingTime: nextOpening })
+              }}
+            />
+            <TimeDropdownPicker
+              label="Closing time"
+              value={step2.closingTime}
+              onChange={(nextClosing) => {
+                setStep2({ ...step2, closingTime: nextClosing })
+              }}
+            />
+          </div>
         </div>
 
         <div>

@@ -73,7 +73,7 @@ export default function Categories() {
   );
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] pb-10">
+    <div className="min-h-screen bg-surface dark:bg-[#0a0a0a] pb-10">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md border-b border-neutral-100 dark:border-gray-800 px-4 py-4 flex items-center gap-4">
         <button onClick={goBack} className="p-2 hover:bg-neutral-100 dark:hover:bg-gray-800 rounded-full transition-colors active:scale-95">
@@ -81,20 +81,20 @@ export default function Categories() {
         </button>
         <div className="flex-1">
           <h1 className="text-xl font-bold text-neutral-900 dark:text-white tracking-tight">All Categories</h1>
-          <p className="text-[10px] text-neutral-500 dark:text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">What's on your mind?</p>
+          <p className="text-[10px] text-neutral-500 dark:text-text-secondary font-bold uppercase tracking-widest leading-none mt-1">What's on your mind?</p>
         </div>
       </div>
 
       {/* Search Bar */}
       <div className="px-4 py-6">
         <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 dark:text-gray-500 group-focus-within:text-[#DC2626] transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400 dark:text-text-secondary group-focus-within:text-[var(--primary)] transition-colors" />
           <input
             type="text"
             placeholder="Search specialties, cuisines..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-neutral-50 dark:bg-gray-900 border border-neutral-100 dark:border-gray-800 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[#DC2626]/5 focus:border-[#DC2626] transition-all placeholder:text-neutral-400 dark:placeholder:text-gray-600 dark:text-white"
+            className="w-full pl-12 pr-4 py-4 bg-neutral-50 dark:bg-gray-900 border border-neutral-100 dark:border-gray-800 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/5 focus:border-[var(--primary)] transition-all placeholder:text-neutral-400 dark:placeholder:text-text-secondary dark:text-white"
           />
         </div>
       </div>
@@ -124,7 +124,7 @@ export default function Categories() {
                     to={`/food/user/category/${category.slug}`}
                     className="flex flex-col items-center gap-2.5 group"
                   >
-                    <div className="relative w-full aspect-square rounded-full overflow-hidden shadow-sm border border-neutral-100 dark:border-gray-800 bg-white dark:bg-gray-900 group-active:scale-90 transition-all duration-300">
+                    <div className="relative w-full aspect-square rounded-full overflow-hidden shadow-sm border border-neutral-100 dark:border-gray-800 bg-surface dark:bg-gray-900 group-active:scale-90 transition-all duration-300">
                       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/5 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
                       <OptimizedImage
                         src={category.image}
@@ -149,10 +149,10 @@ export default function Categories() {
               <Grid2x2 className="h-10 w-10 text-neutral-300 dark:text-gray-700" />
             </div>
             <h3 className="text-lg font-bold text-neutral-900 dark:text-white">No results found</h3>
-            <p className="text-sm text-neutral-500 dark:text-gray-400 mt-2 max-w-[240px]">We couldn't find any categories matching your search. Try another keyword!</p>
+            <p className="text-sm text-neutral-500 dark:text-text-secondary mt-2 max-w-[240px]">We couldn't find any categories matching your search. Try another keyword!</p>
             <button 
               onClick={() => setSearchQuery("")}
-              className="mt-8 px-8 py-3 bg-neutral-900 dark:bg-white dark:text-black text-white rounded-2xl text-sm font-bold active:scale-95 transition-all shadow-lg"
+              className="mt-8 px-8 py-3 bg-neutral-900 dark:bg-white dark:text-text-primary text-white rounded-2xl text-sm font-bold active:scale-95 transition-all shadow-lg"
             >
               Show all categories
             </button>

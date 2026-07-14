@@ -11,7 +11,7 @@ import { Badge } from "@food/components/ui/badge"
 import { useProfile } from "@food/context/ProfileContext"
 import { toast } from "sonner"
 
-const ORANGE = "#DC2626"
+const ORANGE = "var(--primary)"
 
 const getAddressId = (address) => address?.id || address?._id || ""
 
@@ -153,7 +153,7 @@ export default function SelectAddress() {
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold dark:text-white truncate">
                 Select address
               </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-text-secondary dark:text-text-secondary">
                 Pick from saved addresses or add manually.
               </p>
             </div>
@@ -187,7 +187,7 @@ export default function SelectAddress() {
                     )
                   })}
                 </div>
-                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-2 text-xs text-text-secondary dark:text-text-secondary">
                   Work is stored as Office in backend.
                 </p>
               </CardContent>
@@ -213,12 +213,12 @@ export default function SelectAddress() {
                     placeholder="Start typing to search saved addresses…"
                     className="pr-10"
                   />
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary" />
 
                   {showDropdown && (
-                    <div className="absolute z-20 mt-2 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] shadow-xl overflow-hidden">
+                    <div className="absolute z-20 mt-2 w-full rounded-xl border border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] shadow-xl overflow-hidden">
                       {suggestions.length === 0 ? (
-                        <div className="p-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="p-4 text-sm text-text-secondary dark:text-text-secondary">
                           No matches found.
                         </div>
                       ) : (
@@ -231,21 +231,21 @@ export default function SelectAddress() {
                                 key={id || formatAddressLine(addr)}
                                 type="button"
                                 onClick={() => onPickSuggestion(addr)}
-                                className="w-full text-left px-4 py-3 hover:bg-orange-50/60 dark:hover:bg-white/5 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+                                className="w-full text-left px-4 py-3 hover:bg-orange-50/60 dark:hover:bg-white/5 transition-colors border-b border-border dark:border-gray-800 last:border-b-0"
                               >
                                 <div className="flex items-start justify-between gap-3">
                                   <div className="min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <p className="font-semibold text-gray-900 dark:text-white">
+                                      <p className="font-semibold text-text-primary dark:text-white">
                                         {String(addr?.label || "Saved").toLowerCase() === "office" ? "Work" : (addr?.label || "Saved")}
                                       </p>
                                       {addr?.isDefault && (
-                                        <Badge className="bg-orange-100 text-orange-800 dark:bg-[#DC2626]/15 dark:text-orange-200">
+                                        <Badge className="bg-orange-100 text-orange-800 dark:bg-[var(--primary)]/15 dark:text-orange-200">
                                           Default
                                         </Badge>
                                       )}
                                     </div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                                    <p className="text-sm text-text-secondary dark:text-text-secondary truncate">
                                       {formatAddressLine(addr)}
                                     </p>
                                   </div>
@@ -263,7 +263,7 @@ export default function SelectAddress() {
                     </div>
                   )}
                 </div>
-                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <p className="mt-2 text-xs text-text-secondary dark:text-text-secondary">
                   Selecting a suggestion will prefill the manual fields (you can still edit).
                 </p>
               </CardContent>

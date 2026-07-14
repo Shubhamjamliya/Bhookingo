@@ -38,7 +38,7 @@ export default function PromoRow({ handleVegModeChange, navigate, isVegMode, tog
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-3 px-4 pt-4 pb-6 bg-white dark:bg-[#0a0a0a]">
+    <div className="grid grid-cols-3 gap-3 px-4 pt-4 pb-6 bg-surface dark:bg-[#0a0a0a]">
       {promoCardsData.map((promo, idx) => (
         <div
           key={idx}
@@ -56,7 +56,7 @@ export default function PromoRow({ handleVegModeChange, navigate, isVegMode, tog
           <div className={`absolute -top-10 -left-10 w-24 h-24 rounded-full mix-blend-multiply filter blur-2xl opacity-20 ${promo.bgColor}`} />
           
           <div className="py-2.5 px-1 flex flex-col items-center text-center relative z-10 w-full">
-            <span className="text-[9px] font-black text-gray-400/80 dark:text-gray-500 tracking-[0.15em] uppercase leading-none mb-1">
+            <span className="text-[9px] font-black text-text-secondary/80 dark:text-text-secondary tracking-[0.15em] uppercase leading-none mb-1">
               {promo.title}
             </span>
             <div className={`text-[12px] sm:text-[13px] font-black ${promo.textColor} leading-none truncate w-full px-1 flex items-center justify-center gap-0.5`}>

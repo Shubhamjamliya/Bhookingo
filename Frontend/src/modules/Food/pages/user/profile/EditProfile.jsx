@@ -461,9 +461,9 @@ export default function EditProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] pb-12">
+    <div className="min-h-screen bg-background dark:bg-[#0a0a0a] pb-12">
       {/* Header */}
-      <div className="bg-white dark:bg-[#1a1a1a] border-b border-gray-100 dark:border-gray-800">
+      <div className="bg-surface dark:bg-[#1a1a1a] border-b border-border dark:border-gray-800">
         <div className="max-w-7xl mx-auto flex items-center gap-3 px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-4 md:py-5 lg:py-6">
           <button
             onClick={() => {
@@ -474,13 +474,13 @@ export default function EditProfile() {
           >
             <ArrowLeft className="h-5 w-5 text-gray-700 dark:text-white" />
           </button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Your Profile</h1>
+          <h1 className="text-lg font-semibold text-text-primary dark:text-white">Your Profile</h1>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 pb-28 md:pb-12 mt-20">
-        <div className="relative bg-white dark:bg-[#1a1a1a] rounded-[32px] pt-16 pb-8 px-4 sm:px-6 shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-gray-100/50 dark:border-gray-800">
+        <div className="relative bg-surface dark:bg-[#1a1a1a] rounded-[32px] pt-16 pb-8 px-4 sm:px-6 shadow-[0_2px_20px_rgb(0,0,0,0.04)] border border-border/50 dark:border-gray-800">
 
           {/* SVG Hump overlapping top */}
           <div className="absolute -top-[49px] left-1/2 -translate-x-1/2 w-[320px] h-[50px] overflow-hidden pointer-events-none">
@@ -516,16 +516,16 @@ export default function EditProfile() {
                   <DropdownMenuTrigger asChild>
                     <button
                       disabled={isUploadingImage}
-                      className="absolute bottom-1 right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border-[1.5px] border-gray-100 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="absolute bottom-1 right-1 w-8 h-8 bg-surface rounded-full flex items-center justify-center shadow-md border-[1.5px] border-border hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isUploadingImage ? (
-                        <Loader2 className="h-4 w-4 text-[#DC2626] animate-spin" />
+                        <Loader2 className="h-4 w-4 text-[var(--primary)] animate-spin" />
                       ) : (
-                        <Pencil className="h-[18px] w-[18px] text-[#DC2626]" strokeWidth={2.5} />
+                        <Pencil className="h-[18px] w-[18px] text-[var(--primary)]" strokeWidth={2.5} />
                       )}
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" sideOffset={12} className="w-[220px] bg-white/70 backdrop-blur-2xl dark:bg-[#1a1a1a]/70 rounded-[28px] border border-gray-100/50 dark:border-gray-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-2 z-50 flex flex-col gap-2 relative">
+                  <DropdownMenuContent align="center" sideOffset={12} className="w-[220px] bg-white/70 backdrop-blur-2xl dark:bg-[#1a1a1a]/70 rounded-[28px] border border-border/50 dark:border-gray-800 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-2 z-50 flex flex-col gap-2 relative">
                     <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-md rotate-45 rounded-sm z-[-1]" />
                     <DropdownMenuItem
                       onClick={() => {
@@ -533,13 +533,13 @@ export default function EditProfile() {
                         setImagePreview("")
                         setPendingImageFile(null)
                       }}
-                      className="cursor-pointer text-[15.5px] font-medium py-3.5 px-4 rounded-[20px] bg-[#E5E7EB] dark:bg-[#333] text-[#DC2626] focus:text-[#DC2626] focus:bg-[#D1D5DB] dark:focus:bg-[#444] hover:bg-[#D1D5DB] dark:hover:bg-[#444] outline-none flex justify-center tracking-wide shadow-sm"
+                      className="cursor-pointer text-[15.5px] font-medium py-3.5 px-4 rounded-[20px] bg-[var(--border)] dark:bg-[#333] text-[var(--primary)] focus:text-[var(--primary)] focus:bg-[#D1D5DB] dark:focus:bg-[#444] hover:bg-[#D1D5DB] dark:hover:bg-[#444] outline-none flex justify-center tracking-wide shadow-sm"
                     >
                       <span>Delete Photo</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={handleProfileImageAction}
-                      className="cursor-pointer text-[15.5px] font-medium py-3.5 px-4 rounded-[20px] bg-[#E5E7EB] dark:bg-[#333] text-gray-900 dark:text-gray-100 focus:bg-[#D1D5DB] dark:focus:bg-[#444] hover:bg-[#D1D5DB] dark:hover:bg-[#444] outline-none flex justify-center tracking-wide shadow-sm"
+                      className="cursor-pointer text-[15.5px] font-medium py-3.5 px-4 rounded-[20px] bg-[var(--border)] dark:bg-[#333] text-text-primary dark:text-gray-100 focus:bg-[#D1D5DB] dark:focus:bg-[#444] hover:bg-[#D1D5DB] dark:hover:bg-[#444] outline-none flex justify-center tracking-wide shadow-sm"
                     >
                       <span>Change photo</span>
                     </DropdownMenuItem>
@@ -549,12 +549,12 @@ export default function EditProfile() {
                 <button
                   onClick={handleProfileImageAction}
                   disabled={isUploadingImage}
-                  className="absolute bottom-1 right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border-[1.5px] border-gray-100 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute bottom-1 right-1 w-8 h-8 bg-surface rounded-full flex items-center justify-center shadow-md border-[1.5px] border-border hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isUploadingImage ? (
-                    <Loader2 className="h-4 w-4 text-[#DC2626] animate-spin" />
+                    <Loader2 className="h-4 w-4 text-[var(--primary)] animate-spin" />
                   ) : (
-                    <Pencil className="h-[18px] w-[18px] text-[#DC2626]" strokeWidth={2.5} />
+                    <Pencil className="h-[18px] w-[18px] text-[var(--primary)]" strokeWidth={2.5} />
                   )}
                 </button>
               )}
@@ -572,8 +572,8 @@ export default function EditProfile() {
           <div className="space-y-4 md:space-y-5 lg:space-y-6 pt-6">
             {/* Name Field */}
             <div className="relative">
-              <fieldset className="border border-gray-300 dark:border-gray-700 rounded-[14px] px-3 pb-2 pt-0 transition-colors focus-within:border-[#DC2626] focus-within:border-[1.5px]">
-                <legend className="text-[13px] text-gray-400 dark:text-gray-500 px-1 font-normal tracking-wide">Name</legend>
+              <fieldset className="border border-border dark:border-gray-700 rounded-[14px] px-3 pb-2 pt-0 transition-colors focus-within:border-[var(--primary)] focus-within:border-[1.5px]">
+                <legend className="text-[13px] text-text-secondary dark:text-text-secondary px-1 font-normal tracking-wide">Name</legend>
                 <div className="flex items-center justify-between">
                   <input
                     id="name"
@@ -583,7 +583,7 @@ export default function EditProfile() {
                     className="w-full bg-transparent border-none outline-none text-gray-800 dark:text-white text-[16px] font-medium pb-1"
                   />
                   {formData.name && (
-                    <button type="button" onClick={() => handleClear('name')} className="text-gray-400 hover:text-gray-600">
+                    <button type="button" onClick={() => handleClear('name')} className="text-text-secondary hover:text-text-secondary">
                       <X className="h-4 w-4" />
                     </button>
                   )}
@@ -593,8 +593,8 @@ export default function EditProfile() {
 
             {/* Mobile Field */}
             <div>
-              <fieldset className="border border-gray-300 dark:border-gray-700 rounded-[14px] px-3 pb-2 pt-0 transition-colors focus-within:border-[#DC2626] focus-within:border-[1.5px]">
-                <legend className="text-[13px] text-gray-400 dark:text-gray-500 px-1 font-normal tracking-wide">Mobile</legend>
+              <fieldset className="border border-border dark:border-gray-700 rounded-[14px] px-3 pb-2 pt-0 transition-colors focus-within:border-[var(--primary)] focus-within:border-[1.5px]">
+                <legend className="text-[13px] text-text-secondary dark:text-text-secondary px-1 font-normal tracking-wide">Mobile</legend>
                 <div className="flex items-center justify-between">
                   <input
                     id="mobile"
@@ -603,18 +603,18 @@ export default function EditProfile() {
                     onChange={(e) => handleChange('mobile', e.target.value)}
                     className="w-full bg-transparent border-none outline-none text-gray-800 dark:text-white text-[16px] font-medium pb-1"
                   />
-                  <button type="button" onClick={handleMobileChange} className="text-[#DC2626] text-[13px] font-semibold tracking-wider shrink-0 px-1">
+                  <button type="button" onClick={handleMobileChange} className="text-[var(--primary)] text-[13px] font-semibold tracking-wider shrink-0 px-1">
                     CHANGE
                   </button>
                 </div>
               </fieldset>
-              {fieldErrors.mobile && <p className="text-xs text-red-600 mt-1">{fieldErrors.mobile}</p>}
+              {fieldErrors.mobile && <p className="text-xs text-primary mt-1">{fieldErrors.mobile}</p>}
             </div>
 
             {/* Email Field */}
             <div>
-              <fieldset className="border border-gray-300 dark:border-gray-700 rounded-[14px] px-3 pb-2 pt-0 transition-colors focus-within:border-[#DC2626] focus-within:border-[1.5px]">
-                <legend className="text-[13px] text-gray-400 dark:text-gray-500 px-1 font-normal tracking-wide">Email</legend>
+              <fieldset className="border border-border dark:border-gray-700 rounded-[14px] px-3 pb-2 pt-0 transition-colors focus-within:border-[var(--primary)] focus-within:border-[1.5px]">
+                <legend className="text-[13px] text-text-secondary dark:text-text-secondary px-1 font-normal tracking-wide">Email</legend>
                 <div className="flex items-center justify-between">
                   <input
                     id="email"
@@ -623,12 +623,12 @@ export default function EditProfile() {
                     onChange={(e) => handleChange('email', e.target.value)}
                     className="w-full bg-transparent border-none outline-none text-gray-800 dark:text-white text-[16px] font-medium pb-1"
                   />
-                  <button type="button" onClick={handleEmailChange} className="text-[#DC2626] text-[13px] font-semibold tracking-wider shrink-0 px-1">
+                  <button type="button" onClick={handleEmailChange} className="text-[var(--primary)] text-[13px] font-semibold tracking-wider shrink-0 px-1">
                     CHANGE
                   </button>
                 </div>
               </fieldset>
-              {fieldErrors.email && <p className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>}
+              {fieldErrors.email && <p className="text-xs text-primary mt-1">{fieldErrors.email}</p>}
             </div>
 
             {/* Date of Birth Field */}
@@ -649,7 +649,7 @@ export default function EditProfile() {
                           borderRadius: '14px',
                           '& fieldset': { borderColor: '#d1d5db' },
                           '&:hover fieldset': { borderColor: '#9ca3af' },
-                          '&.Mui-focused fieldset': { borderColor: '#DC2626', borderWidth: '1.5px' },
+                          '&.Mui-focused fieldset': { borderColor: 'var(--primary)', borderWidth: '1.5px' },
                         },
                         '& .MuiInputBase-input': {
                           padding: '10px 14px 14px',
@@ -671,7 +671,7 @@ export default function EditProfile() {
                   }}
                 />
               </LocalizationProvider>
-              {fieldErrors.dateOfBirth && <p className="text-xs text-red-600 mt-1">{fieldErrors.dateOfBirth}</p>}
+              {fieldErrors.dateOfBirth && <p className="text-xs text-primary mt-1">{fieldErrors.dateOfBirth}</p>}
             </div>
 
             {/* Anniversary Field */}
@@ -691,7 +691,7 @@ export default function EditProfile() {
                           borderRadius: '14px',
                           '& fieldset': { borderColor: '#d1d5db' },
                           '&:hover fieldset': { borderColor: '#9ca3af' },
-                          '&.Mui-focused fieldset': { borderColor: '#DC2626', borderWidth: '1.5px' },
+                          '&.Mui-focused fieldset': { borderColor: 'var(--primary)', borderWidth: '1.5px' },
                         },
                         '& .MuiInputBase-input': {
                           padding: '10px 14px 14px',
@@ -716,8 +716,8 @@ export default function EditProfile() {
 
             {/* Gender Field */}
             <div>
-              <fieldset className="border border-gray-300 dark:border-gray-700 rounded-[14px] px-3 pb-1 pt-0 transition-colors focus-within:border-[#DC2626] focus-within:border-[1.5px]">
-                <legend className="text-[13px] text-gray-400 dark:text-gray-500 px-1 font-normal tracking-wide">Gender</legend>
+              <fieldset className="border border-border dark:border-gray-700 rounded-[14px] px-3 pb-1 pt-0 transition-colors focus-within:border-[var(--primary)] focus-within:border-[1.5px]">
+                <legend className="text-[13px] text-text-secondary dark:text-text-secondary px-1 font-normal tracking-wide">Gender</legend>
                 <Select
                   value={formData.gender || ""}
                   onValueChange={(value) => handleChange('gender', value)}
@@ -743,8 +743,8 @@ export default function EditProfile() {
               onClick={handleUpdate}
               disabled={!hasChanges || isSaving || isUploadingImage}
               className={`w-full h-[52px] rounded-xl font-semibold text-[15px] transition-all ${isSaving || isUploadingImage || !hasChanges
-                  ? 'bg-[#DC2626]/70 text-white cursor-not-allowed'
-                  : 'bg-[#DC2626] hover:bg-[#991B1B] text-white shadow-md shadow-red-500/20'
+                  ? 'bg-[var(--primary)]/70 text-white cursor-not-allowed'
+                  : 'bg-[var(--primary)] hover:bg-primary-dark text-white shadow-md shadow-red-500/20'
                 }`}
             >
               {isSaving ? (

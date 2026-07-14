@@ -297,7 +297,7 @@ export default function FoodApproval() {
                 placeholder="Search by name, category, restaurant or status"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-md border border-gray-300 bg-white py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:border-[#f50022] focus:ring-1 focus:ring-[#f50022]"
+                className="w-full rounded-md border border-gray-300 bg-white py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:border-[#DC2626] focus:ring-1 focus:ring-[#DC2626]"
               />
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function FoodApproval() {
           {/* Table */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-[#f50022]" />
+              <Loader2 className="w-8 h-8 animate-spin text-[#DC2626]" />
             </div>
           ) : (
             <div className="border-t border-gray-200">
@@ -408,7 +408,7 @@ export default function FoodApproval() {
                               <button
                                 onClick={() => handleViewDetails(request)}
                                 className="inline-flex h-7 w-7 items-center justify-center rounded-md text-white transition-colors"
-                                style={{ backgroundColor: "#f50022" }}
+                                style={{ backgroundColor: "#DC2626" }}
                                 title="View Details"
                               >
                                 <Eye className="w-4 h-4" />

@@ -104,28 +104,28 @@ export default function Logout() {
   }
 
   return (
-    <AnimatedPage className="min-h-screen bg-[#f5f5f5]">
+    <AnimatedPage className="min-h-screen bg-background">
       <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 lg:py-8">
         {/* Header */}
         <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6 lg:mb-8">
           <Link to="/user/profile">
             <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10 p-0">
-              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 text-black dark:text-white" />
+              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5 text-text-primary dark:text-white" />
             </Button>
           </Link>
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-black dark:text-white">Log out</h1>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-text-primary dark:text-white">Log out</h1>
         </div>
 
         {!isLoggingOut ? (
           <>
             {/* Warning Card */}
-            <Card className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-0 mb-4 md:mb-5 lg:mb-6">
+            <Card className="bg-surface dark:bg-gray-800 rounded-xl shadow-sm border-0 mb-4 md:mb-5 lg:mb-6">
               <CardContent className="p-6 md:p-8 lg:p-10 text-center">
                 <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-5 lg:mb-6">
                   <Power className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-gray-700 dark:text-gray-300" />
                 </div>
-                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2 md:mb-3">Log out?</h2>
-                <p className="text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-400 mb-4 md:mb-6">
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-text-primary dark:text-white mb-2 md:mb-3">Log out?</h2>
+                <p className="text-sm md:text-base lg:text-lg text-text-secondary dark:text-text-secondary mb-4 md:mb-6">
                   Are you sure you want to log out? You'll need to sign in again to access your account.
                 </p>
               </CardContent>
@@ -154,7 +154,7 @@ export default function Logout() {
             <div className="space-y-3 md:space-y-4">
               <Button
                 onClick={handleLogout}
-                className="w-full bg-red-600 hover:bg-red-700 text-white text-sm md:text-base h-10 md:h-12"
+                className="w-full bg-primary hover:bg-primary-dark text-white text-sm md:text-base h-10 md:h-12"
               >
                 Yes, Log out
               </Button>
@@ -170,13 +170,13 @@ export default function Logout() {
           </>
         ) : (
           /* Logging Out State */
-          <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-md border-0 overflow-hidden">
+          <Card className="bg-surface dark:bg-gray-800 rounded-2xl shadow-md border-0 overflow-hidden">
             <CardContent className="p-6 md:p-8 lg:p-10 text-center">
               <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-5 lg:mb-6">
                 <Power className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-gray-700 dark:text-gray-300 animate-pulse" />
               </div>
-              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2 md:mb-3">Logging out...</h2>
-              <p className="text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-400 mb-3 md:mb-4">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-text-primary dark:text-white mb-2 md:mb-3">Logging out...</h2>
+              <p className="text-sm md:text-base lg:text-lg text-text-secondary dark:text-text-secondary mb-3 md:mb-4">
                 Please wait while we sign you out.
               </p>
               {error && (

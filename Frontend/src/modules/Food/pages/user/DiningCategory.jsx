@@ -138,9 +138,9 @@ export default function DiningCategory() {
             className="h-auto rounded-full border border-[#e7d8c5] bg-white px-4 py-2 text-left hover:bg-[#fff3e6] dark:border-gray-700 dark:bg-[#1a1a1a] dark:hover:bg-gray-800"
           >
             <div className="flex items-center gap-2">
-              <FaLocationDot className="h-4 w-4 text-[#DC2626]" />
+              <FaLocationDot className="h-4 w-4 text-[var(--primary)]" />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#aa8b68] dark:text-gray-400">Dining In</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#aa8b68] dark:text-text-secondary">Dining In</p>
                 <p className="text-sm font-bold text-[#2f2215] dark:text-white">{cityName}</p>
               </div>
             </div>
@@ -159,18 +159,18 @@ export default function DiningCategory() {
               </p>
             </div>
             <div className="inline-flex items-center gap-2 self-start rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#6b5641] shadow-sm dark:border dark:border-gray-700 dark:bg-[#1a1a1a] dark:text-gray-300">
-              <MapPin className="h-4 w-4 text-[#DC2626]" />
+              <MapPin className="h-4 w-4 text-[var(--primary)]" />
               <span>{restaurants.length} places found</span>
             </div>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="py-20 text-center text-[#7f6850] dark:text-gray-400">Loading dining restaurants...</div>
+          <div className="py-20 text-center text-[#7f6850] dark:text-text-secondary">Loading dining restaurants...</div>
         ) : error ? (
-          <div className="py-20 text-center text-red-600">{error}</div>
+          <div className="py-20 text-center text-primary">{error}</div>
         ) : restaurants.length === 0 ? (
-          <div className="rounded-[24px] border border-dashed border-[#e8d9c5] bg-white px-6 py-16 text-center text-[#7f6850] dark:border-gray-800 dark:bg-[#141414] dark:text-gray-400">
+          <div className="rounded-[24px] border border-dashed border-[#e8d9c5] bg-white px-6 py-16 text-center text-[#7f6850] dark:border-gray-800 dark:bg-[#141414] dark:text-text-secondary">
             No restaurants are linked to this dining category yet.
           </div>
         ) : (
@@ -223,7 +223,7 @@ export default function DiningCategory() {
                           variant="ghost"
                           size="icon"
                           onClick={toggleFavorite}
-                          className="h-10 w-10 rounded-full bg-white/90 text-[#2f2215] backdrop-blur-sm hover:bg-white dark:bg-[#1f1f1f]/90 dark:text-white dark:hover:bg-[#2b2b2b]"
+                          className="h-10 w-10 rounded-full bg-white/90 text-[#2f2215] backdrop-blur-sm hover:bg-surface dark:bg-[#1f1f1f]/90 dark:text-white dark:hover:bg-[#2b2b2b]"
                         >
                           <Bookmark className={`h-5 w-5 ${favorite ? "fill-current" : ""}`} />
                         </Button>
@@ -248,7 +248,7 @@ export default function DiningCategory() {
                       </div>
 
                       <div className="flex items-center gap-2 text-sm text-[#5f4c39] dark:text-gray-300">
-                        <UtensilsCrossed className="h-4 w-4 text-[#DC2626]" />
+                        <UtensilsCrossed className="h-4 w-4 text-[var(--primary)]" />
                         <span className="line-clamp-1">{restaurant.cuisine}</span>
                       </div>
 
@@ -264,7 +264,7 @@ export default function DiningCategory() {
 
                       <div className="flex items-center justify-between border-t border-dashed border-[#ead7c0] pt-4 dark:border-gray-700">
                         <div className="text-sm font-semibold text-[#4c3b2c] dark:text-gray-200">{restaurant.price}</div>
-                        <div className="inline-flex items-center gap-2 text-sm font-bold text-[#DC2626]">
+                        <div className="inline-flex items-center gap-2 text-sm font-bold text-[var(--primary)]">
                           <BadgePercent className="h-4 w-4" />
                           <span>Menu & booking</span>
                         </div>

@@ -870,6 +870,9 @@ export default function AddRestaurant() {
 
   // Manual search states for fallback
   const [locationSearchValue, setLocationSearchValue] = useState("")
+  const [isGoogleMapsValid, setIsGoogleMapsValid] = useState(true)
+  const [locationSuggestions, setLocationSuggestions] = useState([])
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false)
 
 
 
@@ -904,12 +907,14 @@ export default function AddRestaurant() {
         const apiKey = await getGoogleMapsApiKey()
         if (!apiKey) {
           debugError("Google Maps API Key missing or invalid")
+          setIsGoogleMapsValid(false)
           return false
         }
 
         // 3. Catch Google Maps authentication failures
         window.gm_authFailure = () => {
           debugError("Google Maps authentication failed.")
+          setIsGoogleMapsValid(false)
         }
 
         // 4. Check for any existing script and force libraries=places
@@ -937,10 +942,16 @@ export default function AddRestaurant() {
             setTimeout(() => {
               const ok = !!window.google?.maps?.places?.Autocomplete
               mapsScriptLoadedRef.current = ok
+              if (!ok) {
+                setIsGoogleMapsValid(false)
+              }
               resolve(ok)
             }, 200)
           }
-          script.onerror = () => resolve(false)
+          script.onerror = () => {
+            setIsGoogleMapsValid(false)
+            resolve(false)
+          }
           document.head.appendChild(script)
         })
       }
@@ -1095,6 +1106,45 @@ export default function AddRestaurant() {
     }
   }, [step])
 
+  // Hybrid Search Fallback (Nominatim)
+  useEffect(() => {
+    if (step !== 1) return
+    if (isGoogleMapsValid) {
+      setLocationSuggestions([])
+      setIsSearchingLocation(false)
+      return
+    }
+    const q = String(locationSearchValue || "").trim()
+    if (q.length < 3) {
+      setLocationSuggestions([])
+      setIsSearchingLocation(false)
+      return
+    }
+
+    const t = setTimeout(async () => {
+      try {
+        setIsSearchingLocation(true)
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=4&q=${encodeURIComponent(q)}&countrycodes=in`
+        const res = await fetch(url, { headers: { Accept: "application/json" } })
+        const json = await res.json()
+        const mapped = (Array.isArray(json) ? json : []).map(r => ({
+          id: r.place_id,
+          display: r.display_name || "",
+          lat: Number(r.lat),
+          lng: Number(r.lon),
+          addr: r.address || {},
+        }))
+        setLocationSuggestions(mapped)
+      } catch (e) {
+        debugError("Nominatim search failed:", e)
+      } finally {
+        setIsSearchingLocation(false)
+      }
+    }, 400)
+
+    return () => clearTimeout(t)
+  }, [locationSearchValue, step, isGoogleMapsValid])
+
 
   // Render functions for each step
   const renderStep1 = () => (
@@ -1183,14 +1233,74 @@ export default function AddRestaurant() {
         <div className="relative">
           <Label className="text-xs text-gray-700">Search location</Label>
           <div className="relative">
-            <Input
-              ref={locationSearchInputRef}
-              value={locationSearchValue}
-              onChange={(e) => setLocationSearchValue(e.target.value)}
-              className="mt-1 bg-white text-sm"
-              placeholder="Search and select restaurant address..."
-            />
+            {isGoogleMapsValid ? (
+              <Input
+                key="google-input"
+                ref={locationSearchInputRef}
+                value={locationSearchValue}
+                onChange={(e) => setLocationSearchValue(e.target.value)}
+                className="mt-1 bg-white text-sm"
+                placeholder="Search and select restaurant address..."
+              />
+            ) : (
+              <Input
+                key="fallback-input"
+                value={locationSearchValue}
+                onChange={(e) => setLocationSearchValue(e.target.value)}
+                className="mt-1 bg-white text-sm"
+                placeholder="Search and select restaurant address..."
+              />
+            )}
+            {!isGoogleMapsValid && isSearchingLocation && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+              </div>
+            )}
           </div>
+
+          {!isGoogleMapsValid && locationSuggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto">
+              {locationSuggestions.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    const { lat, lng, display, addr } = s
+                    const area = addr.suburb || addr.neighbourhood || addr.city_district || addr.locality || ""
+                    const city = addr.city || addr.town || addr.village || ""
+                    const state = addr.state || ""
+                    const pincode = addr.postcode || ""
+
+                    isPlaceSelectedRef.current = true
+
+                    setStep1((prev) => ({
+                      ...prev,
+                      location: {
+                        ...prev.location,
+                        formattedAddress: display,
+                        addressLine1: display,
+                        area: area || prev.location.area,
+                        city: city || prev.location.city,
+                        state: state || prev.location.state,
+                        pincode: pincode || prev.location.pincode,
+                        latitude: lat,
+                        longitude: lng,
+                      },
+                    }))
+                    setLocationSearchValue(display)
+                    setLocationSuggestions([])
+
+                    if (locationSearchInputRef.current) {
+                      locationSearchInputRef.current.blur()
+                    }
+                  }}
+                  className="w-full px-4 py-2 text-left text-[13px] font-medium text-gray-700 hover:bg-orange-50 border-b border-gray-100 last:border-none"
+                >
+                  <span className="truncate">{s.display}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           <p className="text-[11px] text-gray-500 mt-1">
             Search to auto-fill Area, City, State, Pincode and coordinates.

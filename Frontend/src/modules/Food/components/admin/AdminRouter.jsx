@@ -84,6 +84,7 @@ const RefundPolicy = lazy(() => import("@food/pages/admin/settings/RefundPolicy"
 const ShippingPolicy = lazy(() => import("@food/pages/admin/settings/ShippingPolicy"));
 const CancellationPolicy = lazy(() => import("@food/pages/admin/settings/CancellationPolicy"));
 const SupportCMS = lazy(() => import("@food/pages/admin/settings/SupportCMS"));
+const ContactInfoCMS = lazy(() => import("@food/pages/admin/settings/ContactInfoCMS"));
 const ReactRegistration = lazy(() => import("@food/pages/admin/settings/ReactRegistration"));
 // System Settings
 const ThirdParty = lazy(() => import("@food/pages/admin/system/ThirdParty"));
@@ -242,6 +243,7 @@ export default function AdminRouter() {
             <Route path="pages-social-media/shipping" element={<ShippingPolicy />} />
             <Route path="pages-social-media/cancellation" element={<CancellationPolicy />} />
             <Route path="pages-social-media/support" element={<SupportCMS />} />
+            <Route path="pages-social-media/contact" element={<ContactInfoCMS />} />
             <Route path="pages-social-media/react-registration" element={<ReactRegistration />} />
             
             <Route path="3rd-party-configurations/party" element={<ThirdParty />} />

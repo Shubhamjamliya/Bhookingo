@@ -9,7 +9,8 @@ export const FOOD_LEGAL_PAGE_KEYS = [
     'support_restaurant',
     'refund',
     'shipping',
-    'cancellation'
+    'cancellation',
+    'contact'
 ];
 
 export const FOOD_PAGE_CONTENT_KEYS = ['about', ...FOOD_LEGAL_PAGE_KEYS];

@@ -101,6 +101,13 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<AppShellSkeleton />}>
       <Routes>
+        {/* Landing Page */}
+        <Route path="/" element={
+          <Suspense fallback={<PageLoader />}>
+            <MasterLandingPage />
+          </Suspense>
+        } />
+
         {/* Auth Module */}
         <Route path="/user/auth/*" element={
           <Suspense fallback={<AppShellSkeleton />}>

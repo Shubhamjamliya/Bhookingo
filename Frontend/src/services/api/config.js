@@ -40,6 +40,8 @@ export const API_ENDPOINTS = {
     SHIPPING_PUBLIC: "/food/pages/shipping",
     CANCELLATION: "/food/admin/pages-social-media/cancellation",
     CANCELLATION_PUBLIC: "/food/pages/cancellation",
+    CONTACT: "/food/admin/pages-social-media/contact",
+    CONTACT_PUBLIC: "/food/pages/contact",
     SUPPORT_USER_PUBLIC: "/food/pages/support_user",
     SUPPORT_RESTAURANT_PUBLIC: "/food/pages/support_restaurant",
     FEEDBACK_CREATE: "", FEEDBACK_EXPERIENCE: "/food/admin/feedback-experiences", FEEDBACK_EXPERIENCE_CREATE: "/food/restaurant/feedback-experience", FEEDBACK_EXPERIENCE_BY_ID: "",

@@ -782,7 +782,7 @@ export default function FoodsList() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-                <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
+                <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen} modal={true}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
@@ -803,7 +803,11 @@ export default function FoodsList() {
                       placeholder="Search category..."
                       autoFocus
                     />
-                    <div className="max-h-56 overflow-y-auto">
+                    <div 
+                      className="max-h-56 overflow-y-auto"
+                      onWheel={(e) => e.stopPropagation()}
+                      onTouchMove={(e) => e.stopPropagation()}
+                    >
                       {categoryOptions
                         .filter((c) => {
                           const q = String(categorySearch || "").trim().toLowerCase()

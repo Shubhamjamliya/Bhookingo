@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { encryptOtp } from '../utils/otpSecurity.js';
 
 const orderItemSchema = new mongoose.Schema(
     {
@@ -152,7 +153,26 @@ const orderSchema = new mongoose.Schema(
         },
         orderType: {
             type: String,
+            enum: ['DELIVERY', 'TAKEAWAY', 'DINING'],
+            default: 'DELIVERY',
             index: true
+        },
+        address: {
+            type: addressSchema,
+            required: false
+        },
+        customerLocation: {
+            latitude: { type: Number },
+            longitude: { type: Number }
+        },
+        distanceKm: {
+            type: Number
+        },
+        etaMins: {
+            type: Number
+        },
+        arrivalEstimate: {
+            type: String
         },
         userId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -202,11 +222,20 @@ const orderSchema = new mongoose.Schema(
                 'preparing',
                 'ready_for_pickup',
                 'completed',
+                'delivered',
                 'cancelled_by_user',
                 'cancelled_by_restaurant',
                 'cancelled_by_admin'
             ],
             default: 'created'
+        },
+        pickupOtp: {
+            hash: { type: String, default: '' },
+            generatedAt: { type: Date, default: null },
+            verifiedAt: { type: Date, default: null },
+            verifiedBy: { type: String, default: '' },
+            status: { type: String, enum: ['ACTIVE', 'VERIFIED', 'EXPIRED'], default: 'ACTIVE' },
+            attempts: { type: Number, default: 0 }
         },
         
         statusHistory: {
@@ -242,6 +271,22 @@ orderSchema.pre('save', async function (next) {
     // Synchronize camelCase alias to satisfy unique index 'orderId_1'
     if (this.order_id) {
         this.orderId = this.order_id;
+    }
+
+    // Auto-generate pickup OTP for TAKEAWAY and DINING orders when status becomes ready_for_pickup
+    if (this.isModified('orderStatus') && this.orderStatus === 'ready_for_pickup') {
+        if (['TAKEAWAY', 'DINING'].includes(this.orderType)) {
+            if (!this.pickupOtp || !this.pickupOtp.hash) {
+                // Generate a random 6 digit OTP code
+                const otpVal = String(Math.floor(100000 + Math.random() * 900000));
+                this.pickupOtp = {
+                    hash: encryptOtp(otpVal),
+                    generatedAt: new Date(),
+                    status: 'ACTIVE',
+                    attempts: 0
+                };
+            }
+        }
     }
     next();
 });

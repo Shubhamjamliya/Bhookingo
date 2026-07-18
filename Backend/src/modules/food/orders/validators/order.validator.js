@@ -48,6 +48,7 @@ export function validateCalculateOrderDto(body) {
         restaurantId: z.string().min(1, 'Restaurant id required'),
         highwayId: z.string().optional(),
         couponCode: z.string().optional(),
+        orderType: z.enum(['DELIVERY', 'TAKEAWAY', 'DINING']).optional(),
     });
     const result = schema.safeParse(body);
     if (!result.success) {
@@ -74,7 +75,19 @@ export function validateCreateOrderDto(body) {
         paymentMethod: z.enum(['cash', 'razorpay', 'razorpay_qr', 'card', 'wallet']),
         highwayId: z.string().nullable().optional(),
         scheduledAt: z.string().datetime({ offset: true }).nullable().optional(),
-        orderType: z.enum(['delivery', 'takeaway', 'dining']).optional()
+        orderType: z.enum(['DELIVERY', 'TAKEAWAY', 'DINING']).default('DELIVERY'),
+        userLocation: z.object({
+            latitude: z.number(),
+            longitude: z.number()
+        }).optional()
+    }).refine(data => {
+        if (data.orderType === 'DELIVERY' && !data.address) {
+            return false;
+        }
+        return true;
+    }, {
+        message: 'Delivery address is required for delivery orders',
+        path: ['address']
     });
     const result = schema.safeParse(body);
     if (!result.success) {
@@ -147,6 +160,17 @@ export function validateOrderRatingsDto(body) {
     const schema = z.object({
         restaurantRating: z.number().min(1).max(5),
         restaurantComment: z.string().max(500).optional(),
+    });
+    const result = schema.safeParse(body || {});
+    if (!result.success) {
+        throw new ValidationError(result.error.errors?.[0]?.message || 'Validation failed');
+    }
+    return result.data;
+}
+
+export function validateRejectOrderDto(body) {
+    const schema = z.object({
+        reason: z.string().optional()
     });
     const result = schema.safeParse(body || {});
     if (!result.success) {

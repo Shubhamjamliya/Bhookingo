@@ -484,9 +484,26 @@ function RestaurantDetailsContent() {
 
           // Calculate distance if both coordinates are available
           let calculatedDistance = null
+          let distanceInKm = actualRestaurant?.distanceInKm ?? apiRestaurant?.distanceInKm ?? actualRestaurant?.distance ?? apiRestaurant?.distance ?? null
+          if (typeof distanceInKm === "string") {
+            const parsed = parseFloat(distanceInKm)
+            if (!isNaN(parsed)) {
+              if (distanceInKm.toLowerCase().includes("m") && !distanceInKm.toLowerCase().includes("km")) {
+                distanceInKm = parsed / 1000
+              } else {
+                distanceInKm = parsed
+              }
+            } else {
+              distanceInKm = null
+            }
+          } else if (typeof distanceInKm !== "number") {
+            distanceInKm = null
+          }
+
           if (userLat && userLng && restaurantLat && restaurantLng &&
             !isNaN(userLat) && !isNaN(userLng) && !isNaN(restaurantLat) && !isNaN(restaurantLng)) {
-            const distanceInKm = calculateDistance(userLat, userLng, restaurantLat, restaurantLng)
+            const computedDistance = calculateDistance(userLat, userLng, restaurantLat, restaurantLng)
+            distanceInKm = computedDistance
             // Format distance: show 1 decimal place if >= 1km, otherwise show in meters
             if (distanceInKm >= 1) {
               calculatedDistance = `${distanceInKm.toFixed(1)} km`
@@ -504,6 +521,15 @@ function RestaurantDetailsContent() {
               restaurantLat,
               restaurantLng
             })
+            // If coordinates are missing but we got distanceInKm from data, format calculatedDistance from it
+            if (distanceInKm !== null) {
+              if (distanceInKm >= 1) {
+                calculatedDistance = `${distanceInKm.toFixed(1)} km`
+              } else {
+                const distanceInMeters = Math.round(distanceInKm * 1000)
+                calculatedDistance = `${distanceInMeters} m`
+              }
+            }
           }
 
           // Resolve display category/cuisine with broad API compatibility

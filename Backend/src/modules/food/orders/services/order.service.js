@@ -33,7 +33,9 @@ import * as userWalletService from '../../user/services/userWallet.service.js';
 import { calculateOrderPricing } from './order-pricing.service.js';
 
 
+import { decryptOtp } from '../utils/otpSecurity.js';
 import * as paymentService from './order-payment.service.js';
+import * as dispatchService from './dispatch.service.js';
 import {
   enqueueOrderEvent,
   haversineKm,
@@ -124,7 +126,7 @@ export async function calculateOrder(userId, dto) {
 // ----- Create order -----
 export async function createOrder(userId, dto) {
   const restaurant = await FoodRestaurant.findById(dto.restaurantId)
-    .select("status restaurantName highwayId location isAcceptingOrders takeawaySettings isHighwayRestaurant")
+    .select("status restaurantName highwayId location isAcceptingOrders takeawaySettings diningSettings isHighwayRestaurant")
     .lean();
   if (!restaurant) throw new ValidationError("Restaurant not found");
   if (restaurant.status !== "approved")
@@ -137,18 +139,23 @@ export async function createOrder(userId, dto) {
     await validateOrderDrivingRange(restaurant, dto.userLocation);
   }
 
-  const orderType = dto.orderType || (dto.address ? "delivery" : "takeaway");
+  const orderType = String(dto.orderType || (dto.address ? "DELIVERY" : "TAKEAWAY")).toUpperCase();
 
   // Validate booking radius early
   let distanceKm = null;
-  if (
-    restaurant.location?.coordinates?.length === 2 &&
-    dto.address?.location?.coordinates?.length === 2
-  ) {
+  const hasUserLoc = dto.userLocation?.latitude != null && dto.userLocation?.longitude != null;
+  const hasAddrLoc = dto.address?.location?.coordinates?.length === 2;
+
+  if (restaurant.location?.coordinates?.length === 2) {
     const [rLng, rLat] = restaurant.location.coordinates;
-    const [dLng, dLat] = dto.address.location.coordinates;
-    const d = haversineKm(rLat, rLng, dLat, dLng);
-    distanceKm = Number.isFinite(d) ? d : null;
+    if (hasAddrLoc && orderType === "DELIVERY") {
+      const [dLng, dLat] = dto.address.location.coordinates;
+      const d = haversineKm(rLat, rLng, dLat, dLng);
+      distanceKm = Number.isFinite(d) ? d : null;
+    } else if (hasUserLoc) {
+      const d = haversineKm(rLat, rLng, dto.userLocation.latitude, dto.userLocation.longitude);
+      distanceKm = Number.isFinite(d) ? d : null;
+    }
   }
 
   const allowedRadius = config.bookingRadiusKm || 50;
@@ -158,15 +165,26 @@ export async function createOrder(userId, dto) {
     );
   }
 
-  if (orderType === "takeaway") {
+  if (orderType === "TAKEAWAY") {
     if (restaurant.takeawaySettings?.isEnabled === false) {
       throw new ValidationError("Takeaway is not available for this restaurant");
     }
   }
 
+  if (orderType === "DINING") {
+    if (restaurant.diningSettings?.isEnabled === false) {
+      throw new ValidationError("Dining is not available for this restaurant");
+    }
+  }
 
-  const settings = await getDispatchSettings();
-  const dispatchMode = settings.dispatchMode;
+
+  let dispatchMode = "auto";
+  try {
+    const settings = await getDispatchSettings();
+    dispatchMode = settings?.dispatchMode || "auto";
+  } catch (error) {
+    logger.error(`[OrderService] Failed to retrieve dispatch settings during order creation: ${error.message}`);
+  }
 
 
 
@@ -177,21 +195,23 @@ export async function createOrder(userId, dto) {
 
   // Global Customization Toggles Enforcement
   if (isCash) {
-    // 1. General COD Toggle (Master switch for non-takeaway)
-    if (orderType !== "takeaway") {
+    // 1. General COD Toggle (Master switch for non-takeaway/non-dining)
+    if (orderType !== "TAKEAWAY" && orderType !== "DINING") {
       const globalCodConfig = await FoodSystemConfig.findOne({ key: "cod_enabled" }).select("value").lean();
       if (globalCodConfig && globalCodConfig.value === false) {
+        throw new ValidationError("Cash on Delivery is currently disabled");
       }
     }
 
     // 2. Mode-specific COD Toggles
     let codEnabledKey = "";
-    if (orderType === "takeaway") codEnabledKey = "takeaway_cod_enabled";
-    else if (orderType === "dining") codEnabledKey = "dining_cod_enabled";
+    if (orderType === "TAKEAWAY") codEnabledKey = "takeaway_cod_enabled";
+    else if (orderType === "DINING") codEnabledKey = "dining_cod_enabled";
 
     if (codEnabledKey) {
       const codConfig = await FoodSystemConfig.findOne({ key: codEnabledKey }).select("value").lean();
       if (codConfig && codConfig.value === false) {
+        throw new ValidationError("Cash on Delivery is disabled for this order type");
       }
     }
   }
@@ -263,7 +283,7 @@ export async function createOrder(userId, dto) {
     );
   }
 
-  const riderEarning = orderType === "takeaway" ? 0 : await getRiderEarning(distanceKm);
+  const riderEarning = (orderType === "TAKEAWAY" || orderType === "DINING") ? 0 : await getRiderEarning(distanceKm);
   
   // Calculate restaurant commission from subtotal
   const { commissionAmount: restaurantCommission } = await foodTransactionService.getRestaurantCommissionSnapshot({
@@ -292,6 +312,12 @@ export async function createOrder(userId, dto) {
     payment,
     orderStatus: (isCash || isWallet) ? "confirmed" : "created",
     dispatch: { modeAtCreation: dispatchMode, status: "unassigned" },
+    address: orderType === "DELIVERY" ? dto.address : undefined,
+    customerLocation: dto.userLocation ? {
+      latitude: dto.userLocation.latitude,
+      longitude: dto.userLocation.longitude
+    } : undefined,
+    distanceKm,
     statusHistory: [
       {
         at: new Date(),
@@ -411,7 +437,7 @@ export async function createOrder(userId, dto) {
   ];
   if (
     dispatchMode === "auto" &&
-    orderType !== "takeaway" &&
+    orderType === "DELIVERY" &&
     (isCash ||
       order.payment.status === "paid" ||
       order.payment.status === "cod_pending") &&
@@ -492,7 +518,7 @@ export async function verifyPayment(userId, dto) {
     "ready",
     "picked_up",
   ];
-  if (settings.dispatchMode === "auto" && dispatchableStatuses.includes(order.orderStatus)) {
+  if (order.orderType === "DELIVERY" && settings.dispatchMode === "auto" && dispatchableStatuses.includes(order.orderStatus)) {
     try {
       await tryAutoAssign(order._id);
     } catch {}
@@ -545,36 +571,30 @@ export async function listOrdersUser(userId, query) {
 
 export async function getOrderById(
   orderId,
+  { userId, restaurantId, admin } = {}
 ) {
   const identity = buildOrderIdentityFilter(orderId);
   if (!identity) throw new ValidationError("Order id required");
   const order = await FoodOrder.findOne(identity)
     .populate(
       "restaurantId",
-      "restaurantName ownerPhone profileImage area city location rating totalRatings primaryContactNumber",
+      "restaurantName ownerPhone profileImage area city location rating totalRatings primaryContactNumber highwayName",
     )
     .populate("userId", "name fullName phone email")
     .lean();
   if (!order) throw new NotFoundError("Order not found");
 
-  if (admin) return normalizeOrderForClient(order);
-
   const orderUserId = order.userId?._id?.toString() || order.userId?.toString();
   const orderRestaurantId = order.restaurantId?._id?.toString() || order.restaurantId?.toString();
 
-  if (userId && orderUserId !== userId.toString())
-    throw new ForbiddenError("Not your order");
-  if (restaurantId && orderRestaurantId !== restaurantId.toString())
-    throw new ForbiddenError("Not your restaurant order");
-
-
-  if (userId) {
-    const out = normalizeOrderForClient(order);
-    return out;
-    return out;
+  if (!admin) {
+    if (userId && orderUserId !== userId.toString())
+      throw new ForbiddenError("Not your order");
+    if (restaurantId && orderRestaurantId !== restaurantId.toString())
+      throw new ForbiddenError("Not your restaurant order");
   }
 
-  return sanitizeOrderForExternal(order);
+  return normalizeOrderForClient(order, { includeOtp: true, admin: Boolean(admin) });
 }
 
 export async function getDropOtpUser(orderId, userId) {
@@ -1003,57 +1023,63 @@ export async function updateOrderStatusRestaurant(
       io.to(restRoom).emit("order_status_update", payload);
       io.to(userRoom).emit("order_status_update", payload);
       
-      // Notify assigned rider via socket if they exist
-      if (assignedRiderId) {
+      // Notify assigned rider via socket if they exist (only for DELIVERY)
+      if (order.orderType === "DELIVERY" && order.dispatch?.riderId) {
+          const assignedRiderId = order.dispatch.riderId;
+          const riderRoom = `rider:${assignedRiderId}`;
           console.log(`[DEBUG] Emitting order_status_update to rider room: ${riderRoom}`);
           io.to(riderRoom).emit("order_status_update", payload);
       }
     }
 
-    const notifyList = [
-      { ownerType: "USER", ownerId: order.userId },
-      { ownerType: "RESTAURANT", ownerId: restaurantId },
-    ];
-
-    if (assignedRiderId) {
-    }
-
-    let riderTitle = `Order #${order.order_id || order._id} updated`;
-    let riderBody = `The order status is now ${String(orderStatus).replace(/_/g, " ")}.`;
-
-    if (String(orderStatus).includes("cancel")) {
-      riderTitle = "Order Cancelled ❌";
-      riderBody = `Order #${order.order_id || order._id} has been cancelled. Please stop your current task.`;
-      
-      // Sync transaction status
-      try {
-        const isOnlinePaid = order.payment.method === "razorpay" && (order.payment.status === "paid" || order.payment.status === "refunded");
-        await foodTransactionService.updateTransactionStatus(order._id, 'cancelled_by_restaurant', {
-            status: isOnlinePaid ? 'refunded' : 'failed',
-            note: `Order cancelled by restaurant/admin`,
-            recordedByRole: 'RESTAURANT',
-            recordedById: restaurantId
-        });
-      } catch (err) {
-        logger.warn(`updateOrderStatusRestaurant transaction sync failed: ${err?.message || err}`);
-      }
-    }
-
-    await notifyOwnersSafely(
-      notifyList,
-      {
-        title: title,
-        body: body,
-        image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
-        data: {
-          type: "order_status_update",
-          orderId: order._id.toString(),
-          orderMongoId: order._id?.toString?.() || "",
-          orderStatus: String(orderStatus || ""),
-          link: `/food/user/orders/${order._id?.toString?.() || ""}`,
+    if (orderStatus === 'ready_for_pickup') {
+      await notifyOwnerSafely(
+        { ownerType: "USER", ownerId: order.userId },
+        {
+          title: "Your order is ready! 🛍️",
+          body: "Your order is ready. Show this OTP at the restaurant while collecting your order.",
+          image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
+          data: {
+            type: "order_status_update",
+            orderId: order._id.toString(),
+            orderMongoId: order._id?.toString?.() || "",
+            orderStatus: String(orderStatus || ""),
+            link: `/food/user/orders/${order._id?.toString?.() || ""}`,
+          }
+        }
+      );
+      await notifyOwnerSafely(
+        { ownerType: "RESTAURANT", ownerId: restaurantId },
+        {
+          title: "Order Ready for Pickup 🛍️",
+          body: "Order is ready for pickup. Verify customer's OTP before handing over.",
+          image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
+          data: {
+            type: "order_status_update",
+            orderId: order._id.toString(),
+            orderMongoId: order._id?.toString?.() || "",
+            orderStatus: String(orderStatus || ""),
+            link: `/restaurant/orders/${order._id?.toString?.() || ""}`,
+          }
+        }
+      );
+    } else {
+      await notifyOwnersSafely(
+        notifyList,
+        {
+          title: title,
+          body: body,
+          image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
+          data: {
+            type: "order_status_update",
+            orderId: order._id.toString(),
+            orderMongoId: order._id?.toString?.() || "",
+            orderStatus: String(orderStatus || ""),
+            link: `/food/user/orders/${order._id?.toString?.() || ""}`,
+          },
         },
-      },
-    );
+      );
+    }
   } catch (err) {
     console.error("[DEBUG] Error emitting status update to restaurant:", err);
   }
@@ -1062,6 +1088,7 @@ export async function updateOrderStatusRestaurant(
     const io = getIO();
     if (io) {
       if (
+        order.orderType === "DELIVERY" &&
         (String(orderStatus) === "preparing" || String(orderStatus) === "confirmed") && 
         (String(from) !== "preparing" && String(from) !== "confirmed")
       ) {
@@ -1339,5 +1366,349 @@ export async function deleteOrderAdmin(orderId, adminId) {
     orderId: String(order._id.toString() || ""),
     orderMongoId: String(order._id),
   };
+}
+
+export async function acceptOrderAdmin(orderId, adminId) {
+  const identity = buildOrderIdentityFilter(orderId);
+  if (!identity) throw new ValidationError("Order id required");
+
+  let order = await FoodOrder.findOne(identity);
+  if (!order) throw new NotFoundError("Order not found");
+
+  const from = order.orderStatus;
+  const to = "confirmed";
+
+  if (!isStatusAdvance(from, to)) {
+      throw new ValidationError(`Current order status '${from}' is further ahead than '${to}'. Order cannot be moved backwards.`);
+  }
+
+  order.orderStatus = to;
+  pushStatusHistory(order, {
+    byRole: "ADMIN",
+    byId: adminId,
+    from,
+    to,
+    note: "Accepted by admin",
+  });
+  await order.save();
+
+  try {
+    const io = getIO();
+    if (io) {
+      const payload = {
+        orderMongoId: order._id?.toString?.(),
+        orderId: order._id.toString(),
+        orderStatus: order.orderStatus,
+        title: "Order Accepted! 🧑‍🍳",
+        message: "The admin has accepted your order.",
+      };
+      io.to(rooms.restaurant(order.restaurantId)).emit("order_status_update", payload);
+      io.to(rooms.user(order.userId)).emit("order_status_update", payload);
+    }
+
+    await notifyOwnersSafely(
+      [
+        { ownerType: "USER", ownerId: order.userId },
+        { ownerType: "RESTAURANT", ownerId: order.restaurantId },
+      ],
+      {
+        title: "Order Accepted! 🧑‍🍳",
+        body: "Your order has been accepted.",
+        image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
+        data: {
+          type: "order_status_update",
+          orderId: order._id.toString(),
+          orderMongoId: order._id?.toString?.() || "",
+          orderStatus: "confirmed",
+          link: `/food/user/orders/${order._id?.toString?.() || ""}`,
+        },
+      }
+    );
+  } catch (err) {
+    console.error("Error in admin accept socket/notification:", err);
+  }
+
+  const settings = await getDispatchSettings();
+  if (
+    settings.dispatchMode === "auto" &&
+    order.orderType === "DELIVERY" &&
+    (order.payment?.method === "cash" ||
+      order.payment?.status === "paid" ||
+      order.payment?.status === "cod_pending")
+  ) {
+    try {
+      await tryAutoAssign(order._id);
+    } catch {}
+  }
+
+  return normalizeOrderForClient(order);
+}
+
+export async function rejectOrderAdmin(orderId, adminId, reason = "") {
+  const identity = buildOrderIdentityFilter(orderId);
+  if (!identity) throw new ValidationError("Order id required");
+
+  let order = await FoodOrder.findOne(identity);
+  if (!order) throw new NotFoundError("Order not found");
+
+  const from = order.orderStatus;
+  const to = "cancelled_by_restaurant";
+
+  order.orderStatus = to;
+  pushStatusHistory(order, {
+    byRole: "ADMIN",
+    byId: adminId,
+    from,
+    to,
+    note: reason || "Rejected by admin",
+  });
+  await order.save();
+
+  const isOnlinePaid = order.payment?.method === "razorpay" && (order.payment?.status === "paid" || order.payment?.status === "refunded");
+  const refundDetail = isOnlinePaid ? ` Your refund of ₹${order.pricing?.total} is being processed and will be credited to your original payment method within 5-7 working days.` : "";
+  const title = "Order Cancelled ❌";
+  const body = `Unfortunately, your order has been cancelled by admin.${refundDetail}`;
+
+  try {
+    const io = getIO();
+    if (io) {
+      const payload = {
+        orderMongoId: order._id?.toString?.(),
+        orderId: order._id.toString(),
+        orderStatus: order.orderStatus,
+        title,
+        message: body,
+      };
+      io.to(rooms.restaurant(order.restaurantId)).emit("order_status_update", payload);
+      io.to(rooms.user(order.userId)).emit("order_status_update", payload);
+    }
+
+    try {
+      await foodTransactionService.updateTransactionStatus(order._id, 'cancelled_by_restaurant', {
+          status: isOnlinePaid ? 'refunded' : 'failed',
+          note: `Order cancelled by admin: ${reason}`,
+          recordedByRole: 'ADMIN',
+          recordedById: adminId
+      });
+    } catch (err) {
+      logger.warn(`rejectOrderAdmin transaction sync failed: ${err?.message || err}`);
+    }
+
+    await notifyOwnersSafely(
+      [
+        { ownerType: "USER", ownerId: order.userId },
+        { ownerType: "RESTAURANT", ownerId: order.restaurantId },
+      ],
+      {
+        title,
+        body,
+        image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
+        data: {
+          type: "order_status_update",
+          orderId: order._id.toString(),
+          orderMongoId: order._id?.toString?.() || "",
+          orderStatus: to,
+          link: `/food/user/orders/${order._id?.toString?.() || ""}`,
+        },
+      }
+    );
+  } catch (err) {
+    console.error("Error in admin reject socket/notification:", err);
+  }
+
+  if (
+    order.payment?.status === "paid" &&
+    order.payment?.method === "razorpay" &&
+    order.payment?.razorpay?.paymentId &&
+    (!order.payment?.refund || order.payment?.refund?.status !== "processed")
+  ) {
+    try {
+      const refundResult = await initiateRazorpayRefund(
+        order.payment.razorpay.paymentId,
+        order.pricing.total
+      );
+
+      if (refundResult.success) {
+        order.payment.status = "refunded";
+        order.payment.refund = {
+          status: "processed",
+          amount: order.pricing.total,
+          refundId: refundResult.refundId,
+          processedAt: new Date()
+        };
+      } else {
+        order.payment.refund = {
+          status: "failed",
+          amount: order.pricing.total
+        };
+      }
+    } catch (err) {
+      console.error(`Automated refund failed for Order ${order._id.toString()} (Admin Cancel):`, err);
+      order.payment.refund = { status: "failed", amount: order.pricing.total };
+    }
+    await order.save();
+  } else if (
+    order.payment?.status === "paid" &&
+    order.payment?.method === "wallet" &&
+    (!order.payment?.refund || order.payment?.refund?.status !== "processed")
+  ) {
+    try {
+      await userWalletService.refundWalletBalance(order.userId, order.pricing.total, `Refund for order #${order.order_id || order._id} cancelled by admin`, { orderId: order._id });
+      order.payment.status = "refunded";
+      order.payment.refund = {
+        status: "processed",
+        amount: order.pricing.total,
+        processedAt: new Date()
+      };
+    } catch (err) {
+      console.error(`Wallet refund processing error for Order ${order._id.toString()}:`, err);
+      order.payment.refund = { status: "failed", amount: order.pricing.total };
+    }
+    await order.save();
+  }
+
+  enqueueOrderEvent('restaurant_order_status_updated', {
+      orderMongoId: order._id?.toString?.(),
+      orderId: order._id.toString(),
+      restaurantId: order.restaurantId,
+      from,
+      to,
+  });
+
+  return normalizeOrderForClient(order);
+}
+
+export async function verifyOtp(orderId, otpCode, verifier) {
+  const identity = buildOrderIdentityFilter(orderId);
+  if (!identity) throw new ValidationError("Order id required");
+
+  const order = await FoodOrder.findOne(identity);
+  if (!order) throw new NotFoundError("Order not found");
+
+  if (order.orderType !== 'TAKEAWAY' && order.orderType !== 'DINING') {
+      throw new ValidationError("OTP verification is not supported for this order type");
+  }
+
+  if (!order.pickupOtp || !order.pickupOtp.hash) {
+      throw new ValidationError("No OTP has been generated for this order");
+  }
+
+  if (order.pickupOtp.status === 'VERIFIED') {
+      throw new ValidationError("OTP has already been verified");
+  }
+
+  if (order.pickupOtp.attempts >= 5) {
+      throw new ValidationError("Too many failed attempts. This OTP is locked.");
+  }
+
+  const expiryWindowMs = 2 * 60 * 60 * 1000;
+  const now = new Date();
+  if (order.pickupOtp.generatedAt && (now - order.pickupOtp.generatedAt > expiryWindowMs)) {
+      order.pickupOtp.status = 'EXPIRED';
+      await order.save();
+      throw new ValidationError("OTP has expired");
+  }
+
+  if (order.pickupOtp.status === 'EXPIRED') {
+      throw new ValidationError("OTP has expired");
+  }
+
+  const decrypted = decryptOtp(order.pickupOtp.hash);
+  if (decrypted !== otpCode) {
+      order.pickupOtp.attempts = (order.pickupOtp.attempts || 0) + 1;
+      await order.save();
+      throw new ValidationError("Invalid OTP code");
+  }
+
+  const fromStatus = order.orderStatus;
+  order.pickupOtp.status = 'VERIFIED';
+  order.pickupOtp.verifiedAt = now;
+  order.pickupOtp.verifiedBy = verifier.userId;
+  order.orderStatus = 'completed';
+
+  pushStatusHistory(order, {
+      byRole: verifier.role,
+      byId: verifier.userId,
+      from: fromStatus,
+      to: 'completed',
+      note: 'OTP verified. Order completed.'
+  });
+
+  await order.save();
+
+  try {
+      const io = getIO();
+      if (io) {
+          const payload = {
+              orderMongoId: order._id.toString(),
+              orderId: order._id.toString(),
+              orderStatus: 'completed',
+              title: "Order Completed! 🎉",
+              message: "Your OTP has been verified and your order is complete.",
+          };
+          io.to(rooms.user(order.userId)).emit("order_status_update", payload);
+          io.to(rooms.restaurant(order.restaurantId)).emit("order_status_update", payload);
+      }
+      
+      // Send push notifications
+      await notifyOwnerSafely(
+          { ownerType: "USER", ownerId: order.userId },
+          {
+              title: "Order Completed! 🎉",
+              body: "Your order is successfully collected and completed.",
+              image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
+              data: {
+                  type: "order_status_update",
+                  orderId: order._id.toString(),
+                  orderMongoId: order._id.toString(),
+                  orderStatus: 'completed',
+                  link: `/food/user/orders/${order._id.toString()}`
+              }
+          }
+      );
+      await notifyOwnerSafely(
+          { ownerType: "RESTAURANT", ownerId: order.restaurantId },
+          {
+              title: "OTP Verified Successfully",
+              body: `OTP verified for Order #${order.order_id || order._id}. Order marked as completed.`,
+              image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
+              data: {
+                  type: "order_status_update",
+                  orderId: order._id.toString(),
+                  orderMongoId: order._id.toString(),
+                  orderStatus: 'completed',
+                  link: `/restaurant/orders/${order._id.toString()}`
+              }
+          }
+      );
+  } catch (err) {
+      logger.warn(`verifyOtp socket emit or notifications failed: ${err.message}`);
+  }
+
+  return normalizeOrderForClient(order, { includeOtp: true, admin: verifier.role === 'ADMIN' });
+}
+
+export async function updateOrderLocation(orderId, lat, lng, distanceText, durationText, etaMins) {
+  const identity = buildOrderIdentityFilter(orderId);
+  if (!identity) throw new ValidationError("Order id required");
+  
+  const order = await FoodOrder.findOne(identity);
+  if (!order) throw new NotFoundError("Order not found");
+  
+  if (lat != null && lng != null) {
+    order.customerLocation = { latitude: lat, longitude: lng };
+  }
+  if (distanceText) {
+    order.distanceKm = Number(parseFloat(distanceText));
+  }
+  if (etaMins != null) {
+    order.etaMins = Number(etaMins);
+  }
+  if (durationText) {
+    order.arrivalEstimate = durationText;
+  }
+  
+  await order.save();
+  return order;
 }
 

@@ -7,6 +7,7 @@ import uploadRoutes from '../modules/uploads/routes/upload.routes.js';
 import restaurantAdminRoutes from '../modules/food/admin/routes/admin.routes.js';
 import userRoutes from '../modules/food/user/routes/user.routes.js';
 import orderUserRoutes from '../modules/food/orders/routes/order.routes.user.js';
+import { verifyOtpController } from '../modules/food/orders/controllers/order.controller.js';
 import paymentRoutes from '../core/payments/payment.routes.js';
 import fcmRoutes from '../core/notifications/fcm.routes.js';
 import notificationRoutes from '../core/notifications/notification.routes.js';
@@ -48,6 +49,7 @@ router.get('/v1/food/public/customization-settings', systemConfigController.getC
 router.use('/v1/food/admin', authMiddleware, requireRoles('ADMIN'), restaurantAdminRoutes);
 router.use('/v1/food/user', authMiddleware, requireRoles('USER'), userRoutes);
 router.use('/v1/food/notifications', authMiddleware, requireRoles('USER', 'RESTAURANT'), notificationRoutes);
+router.post('/v1/food/orders/:orderId/verify-otp', authMiddleware, requireRoles('RESTAURANT', 'ADMIN'), verifyOtpController);
 router.use('/v1/food/orders', authMiddleware, requireRoles('USER'), orderUserRoutes);
 router.use('/v1/food/driving-mode', authMiddleware, requireRoles('USER'), drivingModeRoutes);
 router.use('/v1/food/payments', authMiddleware, paymentRoutes);

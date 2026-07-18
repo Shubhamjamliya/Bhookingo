@@ -140,6 +140,54 @@ export const initSocket = async (server) => {
             socket.leave(room);
         });
 
+        socket.on('update-location', async ({ orderId, lat, lng }) => {
+            if (!orderId || lat == null || lng == null) return;
+            try {
+                const { updateOrderLocation } = await import('../modules/food/orders/services/order.service.js');
+                const order = await updateOrderLocation(orderId, lat, lng);
+                if (order) {
+                    const payload = {
+                        orderId: String(orderId),
+                        lat,
+                        lng,
+                        customerLocation: { latitude: lat, longitude: lng },
+                        distanceKm: order.distanceKm || 0,
+                        arrivalEstimate: order.arrivalEstimate || "",
+                        etaMins: order.etaMins || 0
+                    };
+                    if (io) {
+                        io.to(roomNames.tracking(orderId)).emit('location-update', payload);
+                    }
+                }
+            } catch (err) {
+                logger.warn(`Failed to process update-location socket event: ${err.message}`);
+            }
+        });
+
+        socket.on('update-directions', async ({ orderId, distanceText, durationText, etaMins }) => {
+            if (!orderId) return;
+            try {
+                const { updateOrderLocation } = await import('../modules/food/orders/services/order.service.js');
+                const order = await updateOrderLocation(orderId, undefined, undefined, distanceText, durationText, etaMins);
+                if (order) {
+                    const payload = {
+                        orderId: String(orderId),
+                        distanceText: distanceText || "",
+                        durationText: durationText || "",
+                        etaMins: etaMins || 0,
+                        distanceKm: order.distanceKm || 0,
+                        arrivalEstimate: order.arrivalEstimate || "",
+                        etaMinsState: order.etaMins || 0
+                    };
+                    if (io) {
+                        io.to(roomNames.tracking(orderId)).emit('location-update', payload);
+                    }
+                }
+            } catch (err) {
+                logger.warn(`Failed to process update-directions socket event: ${err.message}`);
+            }
+        });
+
         socket.on('disconnect', () => {
             // logger.info(`Socket client disconnected: ${socket.id}`);
 

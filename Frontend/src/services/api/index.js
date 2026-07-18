@@ -508,6 +508,14 @@ export const adminAPI = {
     apiClient.delete(`/food/admin/orders/${String(orderId)}`, {
       contextModule: "admin",
     }),
+  acceptOrder: (orderId) =>
+    apiClient.patch(`/food/admin/orders/${String(orderId)}/accept`, {}, {
+      contextModule: "admin",
+    }),
+  rejectOrder: (orderId, reason = "") =>
+    apiClient.patch(`/food/admin/orders/${String(orderId)}/reject`, { reason }, {
+      contextModule: "admin",
+    }),
   /** Dispatch settings – auto vs manual assign (global) */
   /** Create restaurant (admin). Single API: POST /food/admin/restaurants. Body: JSON with image URLs. */
   createRestaurant: (body) =>
@@ -1149,6 +1157,8 @@ export const restaurantAPI = {
       { contextModule: "restaurant" },
     );
   },
+  verifyOtp: (orderId, otp) =>
+    apiClient.post(`/food/orders/${String(orderId)}/verify-otp`, { otp }, { contextModule: "restaurant" }),
   /**
    * Accept an incoming order (restaurant).
    * UI expects this to move order into "preparing" bucket.
@@ -1702,6 +1712,8 @@ export const orderAPI = {
     apiClient.post("/food/orders/verify-payment", body ?? {}, {
       contextModule: "user",
     }),
+  verifyOtp: (orderId, otp) =>
+    apiClient.post(`/food/orders/${String(orderId)}/verify-otp`, { otp }, { contextModule: "user" }),
   getOrders: (params = {}) =>
     apiClient
       .get("/food/orders", {

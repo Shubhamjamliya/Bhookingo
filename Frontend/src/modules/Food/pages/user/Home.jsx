@@ -2203,7 +2203,7 @@ export default function Home() {
               if (linkedRestaurants.length > 0) {
                 const firstRestaurant = linkedRestaurants[0];
                 const restaurantSlug = firstRestaurant.slug || firstRestaurant.restaurantId || firstRestaurant._id;
-                navigate(`/restaurants/${restaurantSlug}`);
+                navigate(`/user/restaurants/${restaurantSlug}`);
               }
             }}
             aria-label={`Open hero banner ${currentBannerIndex + 1}`}

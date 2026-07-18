@@ -511,7 +511,8 @@ export default function OrdersPage({ statusKey = "all" }) {
         paymentMethodDetail,
         orderStatus: displayStatus,
 
-        orderOtp: order.pickupOtp,
+        orderOtp: order.pickupOtp?.code || (typeof order.pickupOtp === 'string' ? order.pickupOtp : null) || order.orderOtp,
+        pickupOtp: order.pickupOtp,
         address: order.address || order.customerAddress ,
         refundStatus: order.payment?.refund?.status || (order.payment?.status === 'refunded' ? 'processed' : null)
       }

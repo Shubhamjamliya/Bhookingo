@@ -35,7 +35,7 @@ export async function calculateOrderPricing(userId, dto) {
   };
 
   const basePackagingFee = feeSettings.packagingFee != null ? Number(feeSettings.packagingFee) : 0;
-  const packagingFee = dto.orderType === "takeaway" ? 0 : basePackagingFee;
+  const packagingFee = (dto.orderType === "TAKEAWAY" || dto.orderType === "DINING") ? 0 : basePackagingFee;
   const platformFee = feeSettings.platformFee != null ? Number(feeSettings.platformFee) : 0;
 
   

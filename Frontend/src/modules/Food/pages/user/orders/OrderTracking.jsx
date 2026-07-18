@@ -20,7 +20,8 @@ import {
   CircleSlash,
   Loader2,
   Clock,
-  Calendar
+  Calendar,
+  Compass
 } from "lucide-react"
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import { Card, CardContent } from "@food/components/ui/card"
@@ -36,10 +37,12 @@ import { useOrders } from "@food/context/OrdersContext"
 import { useProfile } from "@food/context/ProfileContext"
 import { useLocation as useUserLocation } from "@food/hooks/useLocation"
 
-import { orderAPI, restaurantAPI } from "@food/api"
+import { orderAPI, restaurantAPI, userAPI } from "@food/api"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { useUserNotifications } from "@food/hooks/useUserNotifications"
 import { RESTAURANT_PIN_SVG, CUSTOMER_PIN_SVG } from "@food/constants/mapIcons"
+import OrderTrackingMap from "./components/OrderTrackingMap"
+import useLocationSharing from "@food/hooks/useLocationSharing"
 
 // Fallback definitions in case imports fail at runtime or are shadowed
 const DEFAULT_CUSTOMER_PIN = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#10B981"><path d="M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z"/><circle cx="12" cy="9" r="3" fill="#FFFFFF"/></svg>`;
@@ -313,6 +316,17 @@ function normalizeLookupId(value) {
   return raw
 }
 
+function getTimelineStageIndex(orderStatus) {
+  const s = String(orderStatus || "").toLowerCase();
+  if (s === "placed" || s === "confirmed" || s === "created" || s === "pending") return 0;
+  if (s === "accepted") return 1;
+  if (s === "preparing") return 2;
+  if (s === "ready_for_pickup" || s === "ready") return 3;
+  if (s === "reached_restaurant" || s === "reached") return 4;
+  if (s === "completed" || s === "delivered") return 5;
+  return 0;
+}
+
 export default function OrderTracking() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
@@ -324,8 +338,6 @@ export default function OrderTracking() {
   const { profile, getDefaultAddress } = useProfile()
   const { location: userLiveLocation } = useUserLocation()
 
-  const { isConnected: isSocketConnected } = useUserNotifications()
-  
   // State for order data
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -338,6 +350,41 @@ export default function OrderTracking() {
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
   const [cancellationReason, setCancellationReason] = useState("")
+
+  const [isBottomSheetExpanded, setIsBottomSheetExpanded] = useState(false)
+  const [liveSpeed, setLiveSpeed] = useState(null)
+  const [liveHeading, setLiveHeading] = useState(null)
+
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (pos.coords.speed != null) {
+          setLiveSpeed(Math.round(pos.coords.speed * 3.6));
+        } else {
+          setLiveSpeed(null);
+        }
+        if (pos.coords.heading != null) {
+          setLiveHeading(Math.round(pos.coords.heading));
+        } else {
+          setLiveHeading(null);
+        }
+      },
+      () => {},
+      { enableHighAccuracy: true }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  const isTakeawayOrDining = order && ["takeaway", "dining"].includes(String(order.orderType || "").toLowerCase());
+  const isSharingEnabled = Boolean(
+    order &&
+    isTakeawayOrDining &&
+    ['confirmed', 'preparing', 'ready', 'ready_for_pickup'].includes(orderStatus)
+  );
+  const { updateDirections } = useLocationSharing(orderId, isSharingEnabled);
+
+  const { isConnected: isSocketConnected } = useUserNotifications()
   const [refundDestination, setRefundDestination] = useState("source")
   const [isCancelling, setIsCancelling] = useState(false)
   const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false)
@@ -345,6 +392,9 @@ export default function OrderTracking() {
   const [isUpdatingInstructions, setIsUpdatingInstructions] = useState(false)
   const [resolvedLookupId, setResolvedLookupId] = useState("")
   const [timerNow, setTimerNow] = useState(Date.now())
+  const [remainingDistance, setRemainingDistance] = useState("")
+  const [restaurantsAhead, setRestaurantsAhead] = useState([])
+  const [socketDropOtpCode, setSocketDropOtpCode] = useState(null)
   
   // Rating states
   const [showRatingModal, setShowRatingModal] = useState(false)
@@ -395,6 +445,15 @@ export default function OrderTracking() {
       setSubmittingRating(false)
     }
   }
+
+  const handleNavigate = () => {
+    if (!activeUserCoords || !restaurantCoordsResolved) {
+      toast.error("Locations not available for navigation");
+      return;
+    }
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${activeUserCoords.lat},${activeUserCoords.lng}&destination=${restaurantCoordsResolved.lat},${restaurantCoordsResolved.lng}&travelmode=driving`;
+    window.open(url, "_blank");
+  };
 
   const handleEtaUpdate = useCallback((newEta) => {
     if (typeof newEta === 'string') {
@@ -900,6 +959,47 @@ export default function OrderTracking() {
     return () => clearInterval(timer)
   }, [])
 
+  const restaurantCoordsResolved = useMemo(() => {
+    const coords = getRestaurantCoordsFromOrder(order);
+    if (Array.isArray(coords) && coords.length >= 2) {
+      return { lat: Number(coords[1]), lng: Number(coords[0]) };
+    }
+    return null;
+  }, [order]);
+
+  const activeUserCoords = useMemo(() => {
+    return userLiveCoords || fallbackCustomerCoords;
+  }, [userLiveCoords, fallbackCustomerCoords]);
+
+  useEffect(() => {
+    if (!order || !userLiveLocation?.latitude || !userLiveLocation?.longitude) return;
+
+    const isTakeawayOrDining = ["takeaway", "dining"].includes(String(order.orderType || "").toLowerCase());
+    if (!isTakeawayOrDining) return;
+
+    let isSubscribed = true;
+    const fetchStops = async () => {
+      try {
+        const response = await userAPI.getRestaurantsAhead({
+          lat: userLiveLocation.latitude,
+          lng: userLiveLocation.longitude,
+        });
+        if (response?.data?.success && isSubscribed) {
+          setRestaurantsAhead(response.data.data.restaurants || []);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch restaurants ahead in order tracking:", err);
+      }
+    };
+
+    fetchStops();
+    const interval = setInterval(fetchStops, 30000);
+    return () => {
+      isSubscribed = false;
+      clearInterval(interval);
+    };
+  }, [order?.orderId, userLiveLocation?.latitude, userLiveLocation?.longitude]);
+
   // Listen for order status updates from socket (e.g., "Order is ready")
   useEffect(() => {
     const handleOrderStatusNotification = (event) => {
@@ -1233,311 +1333,392 @@ export default function OrderTracking() {
     orderStatus === "delivered" ||
     order?.status === "delivered" ||
     Boolean(order?.deliveredAt)
+  const showPickupOtp = isTakeawayOrDining && (orderStatus === 'ready' || orderStatus === 'ready_for_pickup') && (order?.pickupOtp?.code || (typeof order?.pickupOtp === 'string' ? order?.pickupOtp : null));
+  const customerOtp = order?.pickupVerification?.dropOtp?.code || order?.customerOtp || order?.deliveryOtp || (typeof order?.pickupOtp === 'string' ? order?.pickupOtp : null) || order?.otp || socketDropOtpCode;
+  const showLegacyOtp = !isTakeawayOrDining && customerOtp;
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0a]">
-      {/* Order Confirmed Modal */}
-      <AnimatePresence>
-        {showConfirmation && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-surface dark:bg-[#1a1a1a] flex flex-col items-center justify-center"
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] relative overflow-hidden flex flex-col h-screen w-screen">
+      {/* 1. Header (Floating glassmorphic card over the map) */}
+      <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between p-3 bg-white/80 dark:bg-[#121212]/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/20 dark:border-neutral-800/30">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/food')}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 text-gray-800 dark:text-gray-200 hover:bg-gray-100 transition-colors"
           >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, type: "spring" }}
-              className="text-center px-8"
-            >
-              <AnimatedCheckmark delay={0.3} />
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 }}
-                className="text-2xl font-bold text-text-primary dark:text-gray-100 mt-6"
-              >
-                {isScheduledOrder ? "Order Scheduled!" : "Order Confirmed!"}
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.1 }}
-                className="text-text-secondary dark:text-gray-300 mt-2"
-              >
-                {isScheduledOrder
-                  ? `Scheduled for ${scheduledDateFormatted}`
-                  : "Your order has been placed successfully"}
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.5 }}
-                className="mt-8"
-              >
-                <div className="w-8 h-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-sm text-text-secondary mt-3">Loading order details...</p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 2.0 }}
-                className="mt-12 pt-8 border-t border-border dark:border-gray-800"
-              >
-                <div className="flex items-center justify-center gap-2 text-[var(--primary)] dark:text-orange-400 font-medium cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate('/user/profile/report-safety-emergency', { state: { returnTo: location.pathname } })}>
-                  <Shield className="w-4 h-4" />
-                  
-                </div>
-              </motion.div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Green Header */}
-      <motion.div
-        className={`${currentStatus.color} text-white sticky top-0 z-40`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        {/* Navigation bar */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <Link to="/user/orders">
-            <motion.button
-              className="w-10 h-10 flex items-center justify-center"
-              whileTap={{ scale: 0.9 }}
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </motion.button>
-          </Link>
-          <h2 className="font-semibold text-lg">{order.restaurant}</h2>
-          <motion.button
-            className="w-10 h-10 flex items-center justify-center cursor-pointer"
-            whileTap={{ scale: 0.9 }}
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="text-left">
+            <h2 className="font-extrabold text-sm text-gray-900 dark:text-white leading-tight">Order Tracking</h2>
+            <p className="text-[10px] text-text-secondary mt-0.5 uppercase tracking-wider font-bold">#{order.orderId || order._id}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
             onClick={handleShare}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 text-gray-800 dark:text-gray-200 hover:bg-gray-100 transition-colors"
           >
             <Share2 className="w-5 h-5" />
-          </motion.button>
-        </div>
-
-        {/* Status section - hidden for success milestones as requested */}
-        {isScheduledOrder && ['placed', 'confirmed'].includes(orderStatus) ? (
-          <div className="px-4 pb-5 text-center">
-            <motion.div
-              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 mb-3"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-            >
-              <Clock className="w-4 h-4" />
-              <span className="text-sm font-semibold">Scheduled Order</span>
-            </motion.div>
-            <motion.h1
-              className="text-2xl font-bold mb-2"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              Order Scheduled
-            </motion.h1>
-            <motion.div
-              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-5 py-2.5"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Calendar className="w-4 h-4" />
-              <span className="text-sm font-medium">{scheduledDateFormatted}</span>
-              <span className="w-1 h-1 rounded-full bg-white/60" />
-              <motion.button
-                onClick={handleRefresh}
-                className="ml-1"
-                animate={{ rotate: isRefreshing ? 360 : 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <RefreshCw className="w-4 h-4" />
-              </motion.button>
-            </motion.div>
-            <motion.p
-              className="text-xs mt-3 text-white/80"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              The restaurant will start preparing your order closer to the scheduled time
-            </motion.p>
-          </div>
-        ) : !['ready', 'delivered'].includes(orderStatus) && (
-          <div className="px-4 pb-4 text-center">
-            <motion.h1
-              className="text-2xl font-bold mb-3"
-              key={currentStatus.title}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              {currentStatus.title}
-            </motion.h1>
-
-            {/* Status pill */}
-            <motion.div
-              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <span className="text-sm">{currentStatus.subtitle}</span>
-              {orderStatus === 'preparing' && (
-                <>
-                  <span className="w-1 h-1 rounded-full bg-white" />
-                  <span className="text-sm text-orange-200">On time</span>
-                </>
-              )}
-              <motion.button
-                onClick={handleRefresh}
-                className="ml-1"
-                animate={{ rotate: isRefreshing ? 360 : 0 }}
-                transition={{ duration: 0.5 }}
-              >
-              <RefreshCw className="w-4 h-4" />
-            </motion.button>
-          </motion.div>
-        </div>
-      )}
-      </motion.div>
-
-      {/* Map Section */}
-      {!isDeliveredOrder && orderStatus !== 'cancelled' && !(isScheduledOrder && ['placed', 'confirmed'].includes(orderStatus)) && (
-        <MapErrorBoundary>
-          
-        </MapErrorBoundary>
-      )}
-
-      {/* Scrollable Content */}
-      <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 space-y-4 md:space-y-6 pb-24 md:pb-32">
-        {/* Cancellation window removed as per user request to hide immediately after acceptance */}
-
-        {customerOtp && orderStatus !== 'delivered' && orderStatus !== 'cancelled' && (
-          <motion.div
-            className="bg-blue-50 dark:bg-blue-900/10 rounded-xl p-4 shadow-sm border border-blue-100 dark:border-blue-900/30"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.28 }}
+          </button>
+          <button
+            onClick={() => navigate('/user/profile/report-safety-emergency', { state: { returnTo: location.pathname } })}
+            className="px-3.5 h-10 flex items-center justify-center rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-black uppercase tracking-wider shadow-md hover:from-red-600 hover:to-orange-600 transition-all"
           >
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wide">Order OTP</p>
-            <p className="text-2xl font-extrabold text-blue-900 dark:text-blue-200 mt-1 tracking-widest">{customerOtp}</p>
-            <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">Share this 4-digit OTP at the restaurant to collect your order.</p>
-          </motion.div>
-        )}
+            Help
+          </button>
+        </div>
+      </div>
 
-        {/* Dynamic Status Card */}
-        <motion.div
-          className="bg-surface dark:bg-[#1a1a1a] rounded-xl p-3 sm:p-4 shadow-sm"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          {isScheduledOrder && ['placed', 'confirmed'].includes(orderStatus) ? (
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm border border-blue-100 bg-blue-50">
-                <Clock className="w-7 h-7 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-text-primary dark:text-gray-100 leading-tight">Order Scheduled</p>
-                <p className="text-sm text-text-secondary dark:text-text-secondary mt-1 leading-snug">
-                  {scheduledDateFormatted}
-                </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                  We'll notify you when the restaurant starts preparing
-                </p>
-              </div>
-            </div>
+      {/* 2. Floating Status Card */}
+      <div className="absolute top-20 left-4 right-4 z-30 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-white/20 dark:border-neutral-800/30 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping" />
+            <h3 className="font-black text-sm text-gray-900 dark:text-white uppercase tracking-wider">
+              {currentStatus.title}
+            </h3>
+          </div>
+          <span className="px-2 py-0.5 rounded-md bg-green-55 bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-wider border border-green-500/20">
+            On Time
+          </span>
+        </div>
+        <div className="flex justify-between items-end">
+          <div className="text-left">
+            <p className="text-[9px] text-text-secondary uppercase tracking-widest font-bold">Estimated Arrival</p>
+            <p className="text-xl font-black text-gray-800 dark:text-gray-100 mt-0.5 leading-none">
+              {estimatedTime} mins
+            </p>
+          </div>
+          <button 
+            onClick={handleRefresh}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-neutral-900 text-xs font-black text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-neutral-800 hover:bg-gray-100 transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Full Screen Map Background */}
+      <div className="absolute inset-0 z-0 h-full w-full bg-gray-100 dark:bg-neutral-900">
+        <MapErrorBoundary>
+          {activeUserCoords && restaurantCoordsResolved ? (
+            <OrderTrackingMap
+              userLocation={activeUserCoords}
+              restaurantLocation={restaurantCoordsResolved}
+              restaurantName={order.restaurant || "Restaurant"}
+              restaurantsAhead={restaurantsAhead}
+              orderType={order.orderType || "TAKEAWAY"}
+              onDirectionsCalculated={({ distanceText, durationText, durationValue }) => {
+                setRemainingDistance(distanceText);
+                if (durationValue) {
+                  const etaVal = Math.ceil(durationValue / 60);
+                  setEstimatedTime(etaVal);
+                  updateDirections(distanceText, durationText, etaVal);
+                }
+              }}
+            />
           ) : (
-            <div className="flex items-center gap-4">
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm border border-border dark:border-gray-800 ${
-                currentStatus.iconType === 'cancelled' ? 'bg-primary-light/10 dark:bg-red-900/20' : 
-                currentStatus.iconType === 'delivered' ? 'bg-green-50 dark:bg-green-900/20' : 
-                'bg-orange-50 dark:bg-orange-900/20'
-              }`}>
-                {currentStatus.iconType === 'cancelled' ? (
-                  <div className="w-full h-full flex items-center justify-center p-2 text-red-500">
-                    <X className="w-full h-full" />
-                  </div>
-                ) : currentStatus.iconType === 'delivered' ? (
-                  <div className="w-full h-full flex items-center justify-center p-2 text-green-500">
-                    <Check className="w-full h-full" />
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center p-2 text-orange-500">
-                    <Receipt className="w-full h-full" />
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-text-primary dark:text-gray-100 leading-tight">{currentStatus.title}</p>
-                <p className="text-sm text-text-secondary dark:text-text-secondary mt-1 leading-snug">{currentStatus.subtitle}</p>
-              </div>
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-neutral-900 p-4">
+              <Loader2 className="w-8 h-8 animate-spin text-text-secondary mb-2" />
+              <p className="text-sm text-text-secondary">Locating coordinates...</p>
             </div>
           )}
-        </motion.div>
+        </MapErrorBoundary>
 
-        {/* Rating Logic: Show rating card after order completion */}
-        {orderStatus === 'delivered' && !isOrderRated && (
-          <motion.div
-            className="bg-surface dark:bg-[#1a1a1a] rounded-xl p-6 shadow-sm border-2 border-[var(--primary)]/10 relative overflow-hidden group"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
-          >
-            {/* Background pattern decoration */}
-            <div className="absolute -top-4 -right-4 w-24 h-24 bg-[var(--primary)]/5 rounded-full blur-2xl group-hover:bg-[var(--primary)]/10 transition-colors" />
-            
-            <div className="flex flex-col items-center text-center relative z-10">
-              <div className="w-16 h-16 bg-[var(--primary)]/10 dark:bg-[var(--primary)]/20 rounded-full flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300">
-                <Star className="w-8 h-8 text-[var(--primary)] fill-[var(--primary)]" />
+        {/* Floating Map Action Buttons & Dashboard Metrics */}
+        {activeUserCoords && restaurantCoordsResolved && (
+          <div className="absolute bottom-32 left-4 right-4 z-20 flex flex-col gap-3">
+            {/* Real-time Dashboard metrics floating on the map */}
+            <div className="bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-3 border border-white/20 dark:border-neutral-800/30 shadow-md flex items-center justify-between text-left">
+              <div className="flex-1 border-r border-gray-100 dark:border-neutral-800 pr-2">
+                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Distance</span>
+                <span className="text-sm font-black text-gray-800 dark:text-gray-200">{remainingDistance || "Calculating..."}</span>
               </div>
-              <h3 className="text-xl font-bold text-text-primary dark:text-gray-100">Enjoyed your food?</h3>
-              <p className="text-sm text-text-secondary dark:text-text-secondary mt-2 mb-6 max-w-[280px]">
-                Rate your experience with <span className="font-semibold text-gray-700 dark:text-gray-300">{order?.restaurant}</span> and help us improve!
-              </p>
-              
-              <Button 
-                onClick={handleOpenRating}
-                className="w-full max-w-[200px] bg-[var(--primary)] hover:bg-primary-dark text-white font-bold h-12 rounded-xl border-none shadow-lg shadow-[var(--primary)]/20"
-              >
-                Rate Order
-              </Button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Rating Summary: Show what the user rated */}
-        {orderStatus === 'delivered' && isOrderRated && (
-          <motion.div
-            className="bg-surface dark:bg-[#1a1a1a] rounded-xl p-5 shadow-sm border border-border dark:border-gray-800"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-50 dark:border-gray-800/50">
-              <h3 className="text-sm font-bold text-text-primary dark:text-gray-100 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                Your Feedback
-              </h3>
-              <button 
-                onClick={handleOpenRating}
-                className="text-[10px] font-bold text-[var(--primary)] dark:text-orange-400 uppercase tracking-widest hover:opacity-80 transition-opacity"
-              >
-                Edit Rating
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">Food & Restaurant</span>
-                  {order?.ratings?.restaurant?.comment && (
-                    <span className="text-[10px] text-text-secondary dark:text-text-secondary italic mt-0.5 line-clamp-1">"{order.ratings.restaurant.comment}"</span>
+              <div className="flex-1 border-r border-gray-100 dark:border-neutral-800 px-3">
+                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Highway</span>
+                <span className="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate block">
+                  {order.restaurantId?.highwayName || order.restaurant?.highwayName || order.highwayName || "On Highway"}
+                </span>
+              </div>
+              {(liveSpeed !== null || liveHeading !== null) && (
+                <div className="pl-3 flex gap-4">
+                  {liveSpeed !== null && (
+                    <div>
+                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Speed</span>
+                      <span className="text-sm font-black text-gray-800 dark:text-gray-200">{liveSpeed} km/h</span>
+                    </div>
+                  )}
+                  {liveHeading !== null && (
+                    <div>
+                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Heading</span>
+                      <span className="text-sm font-black text-gray-800 dark:text-gray-200">{liveHeading}°</span>
+                    </div>
                   )}
                 </div>
+              )}
+            </div>
+
+            {/* Quick map action buttons */}
+            <div className="flex justify-between items-center">
+              <button
+                onClick={() => {
+                  if (activeUserCoords) {
+                    window.dispatchEvent(new CustomEvent("recenter-map", { detail: activeUserCoords }));
+                  }
+                }}
+                className="w-12 h-12 rounded-full bg-white dark:bg-[#121212] shadow-lg flex items-center justify-center text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-neutral-800 hover:scale-105 transition-transform"
+                title="My Location"
+              >
+                <Compass className="w-5 h-5 text-indigo-600" />
+              </button>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleNavigate}
+                  className="flex items-center gap-1.5 h-12 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-extrabold text-xs uppercase tracking-wider shadow-lg hover:from-blue-600 hover:to-indigo-700 transition-all hover:scale-[1.02]"
+                >
+                  <Compass className="w-4 h-4 text-white" />
+                  Navigate
+                </button>
+                <button
+                  onClick={handleCallRestaurant}
+                  className="w-12 h-12 rounded-xl bg-white dark:bg-[#121212] border border-gray-100 dark:border-neutral-800 shadow-lg flex items-center justify-center text-[var(--primary)] hover:scale-105 transition-transform"
+                >
+                  <Phone className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 4. Bottom Sliding Order Details Panel */}
+      <div 
+        className={`fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-[#121212] rounded-t-3xl shadow-[0_-8px_30px_rgb(0,0,0,0.12)] border-t border-gray-100 dark:border-neutral-850 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col overflow-hidden ${
+          isBottomSheetExpanded ? 'translate-y-0 h-[85vh]' : 'translate-y-[calc(100%-110px)] h-[600px]'
+        }`}
+      >
+        {/* Sliding Header/Handle */}
+        <div 
+          className="h-10 w-full flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50/50 dark:hover:bg-neutral-900/30 border-b border-gray-50 dark:border-neutral-900/50"
+          onClick={() => setIsBottomSheetExpanded(prev => !prev)}
+        >
+          <div className="w-12 h-1.5 bg-gray-200 dark:bg-neutral-800 rounded-full mb-1" />
+        </div>
+
+        {/* Collapsed Header Details (always visible at top of sliding panel) */}
+        <div 
+          className="flex items-center justify-between px-6 pb-4 cursor-pointer"
+          onClick={() => setIsBottomSheetExpanded(prev => !prev)}
+        >
+          <div className="flex items-center gap-3">
+            <img 
+              src={order.restaurantImage || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&q=80"} 
+              alt={order.restaurant}
+              className="w-12 h-12 rounded-xl object-cover border border-gray-100 dark:border-neutral-800" 
+            />
+            <div className="text-left">
+              <h4 className="font-extrabold text-sm text-gray-800 dark:text-gray-200 leading-tight">
+                {order.restaurant}
+              </h4>
+              <p className="text-[10px] text-text-secondary mt-0.5 font-bold uppercase tracking-wider">ID: #{order.orderId}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="text-[9px] text-[var(--primary)] font-black uppercase tracking-wider block">ETA</span>
+            <span className="text-sm font-black text-gray-800 dark:text-gray-100">
+              {estimatedTime} mins
+            </span>
+          </div>
+        </div>
+
+        {/* Scrollable Expanded Details Area */}
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 pb-12">
+          {/* OTP Section (only if status is ready/ready_for_pickup) */}
+          {showPickupOtp && orderStatus !== 'delivered' && orderStatus !== 'cancelled' && (
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl p-5 shadow-md border border-emerald-400/30 text-center space-y-2">
+              <div className="bg-white/20 text-white rounded-full px-3 py-0.5 text-[9px] font-black uppercase tracking-widest inline-block">
+                {String(order?.orderType || "").toUpperCase() === "DINING" ? "Dine-In Verification" : "Order Ready for Pickup"}
+              </div>
+              <p className="text-[10px] font-bold text-emerald-100 uppercase tracking-widest leading-none">
+                {String(order?.orderType || "").toUpperCase() === "DINING" ? "Dining OTP" : "Pickup OTP"}
+              </p>
+              <p className="text-4xl font-mono font-black tracking-[0.2em] leading-none my-1">{showPickupOtp}</p>
+              <p className="text-[10px] text-emerald-50">
+                {String(order?.orderType || "").toUpperCase() === "DINING" 
+                  ? "Show this OTP to check in and check table assignment." 
+                  : "Show this OTP to collect your order."}
+              </p>
+            </div>
+          )}
+
+          {/* Horizontal Timeline progress */}
+          <div className="bg-gray-50 dark:bg-neutral-900/30 rounded-2xl p-4 border border-gray-100 dark:border-neutral-850">
+            <h5 className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-4 text-left">Timeline</h5>
+            {(() => {
+              const stages = [
+                { label: "Confirmed", key: "confirmed" },
+                { label: "Accepted", key: "accepted" },
+                { label: "Preparing", key: "preparing" },
+                { label: "Ready", key: "ready" },
+                { label: "Reached", key: "reached" },
+                { label: "Completed", key: "completed" }
+              ];
+              const getStageStatus = (idx) => {
+                const currentIdx = getTimelineStageIndex(orderStatus);
+                const hasReached = remainingDistance && parseFloat(remainingDistance) < 0.1;
+                let activeIdx = currentIdx;
+                if (currentIdx === 3 && hasReached) {
+                  activeIdx = 4;
+                }
+                if (idx < activeIdx) return "completed";
+                if (idx === activeIdx) return "active";
+                return "pending";
+              };
+              const activeIdx = getTimelineStageIndex(orderStatus);
+              return (
+                <div className="relative w-full py-2">
+                  <div className="absolute top-[20px] left-[8%] right-[8%] h-[3px] bg-gray-200 dark:bg-neutral-800 z-0">
+                    <div 
+                      className="h-full bg-green-500 transition-all duration-500" 
+                      style={{ width: `${(Math.max(0, activeIdx) / (stages.length - 1)) * 100}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between relative z-10">
+                    {stages.map((stage, idx) => {
+                      const status = getStageStatus(idx);
+                      return (
+                        <div key={idx} className="flex flex-col items-center w-[16%]">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${
+                            status === "completed" ? "bg-green-500 text-white shadow-sm" :
+                            status === "active" ? "bg-green-55 bg-green-500/10 border-2 border-green-500 text-green-600 animate-pulse" :
+                            "bg-gray-105 bg-gray-100 border border-gray-200 dark:bg-neutral-900 dark:border-neutral-800 text-gray-400"
+                          }`}>
+                            {status === "completed" ? (
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            ) : (
+                              <div className={`w-1.5 h-1.5 rounded-full ${status === "active" ? "bg-green-600" : "bg-gray-300 dark:bg-neutral-705 bg-gray-400"}`} />
+                            )}
+                          </div>
+                          <span className={`text-[8px] font-black mt-2 text-center leading-tight uppercase tracking-wider ${
+                            status === "completed" ? "text-green-600 dark:text-green-400" :
+                            status === "active" ? "text-green-55 font-extrabold text-green-600" :
+                            "text-gray-400 dark:text-neutral-600"
+                          }`}>
+                            {stage.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Restaurant Information section */}
+          <div className="space-y-3 text-left">
+            <h5 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Restaurant Details</h5>
+            <div className="flex items-start gap-3">
+              <img 
+                src={order.restaurantImage || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&q=80"} 
+                alt={order.restaurant}
+                className="w-16 h-16 rounded-2xl object-cover border border-gray-100 dark:border-neutral-800" 
+              />
+              <div className="flex-1">
+                <h6 className="font-extrabold text-sm text-gray-800 dark:text-gray-200">{order.restaurant}</h6>
+                <p className="text-xs text-text-secondary mt-0.5 leading-snug">{order.restaurantAddress || "Restaurant location details"}</p>
+                {order.restaurantId?.highwayName && (
+                  <span className="inline-block mt-2 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-wider rounded-md border border-indigo-100/30">
+                    Highway: {order.restaurantId.highwayName}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <button
+                onClick={handleCallRestaurant}
+                className="flex items-center justify-center gap-2 h-11 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 text-gray-700 dark:text-gray-200 text-xs font-black uppercase tracking-wider hover:bg-gray-100 transition-all"
+              >
+                <Phone className="w-4 h-4" />
+                Call Restaurant
+              </button>
+              <button
+                onClick={handleNavigate}
+                className="flex items-center justify-center gap-2 h-11 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider transition-all"
+              >
+                <Compass className="w-4 h-4" />
+                Navigate
+              </button>
+            </div>
+          </div>
+
+          {/* Order Details list */}
+          <div className="space-y-3 text-left border-t border-gray-50 dark:border-neutral-900/50 pt-4">
+            <div className="flex items-center justify-between">
+              <h5 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Order Details</h5>
+              <button
+                onClick={() => setShowOrderDetails(true)}
+                className="text-[10px] font-black text-[var(--primary)] uppercase tracking-wider hover:opacity-80"
+              >
+                View Bill Receipt
+              </button>
+            </div>
+            <div className="bg-gray-50 dark:bg-neutral-900/30 rounded-2xl p-4 space-y-3.5 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Order ID</span>
+                <span className="font-mono font-bold text-gray-800 dark:text-gray-200">#{order.orderId}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Placed Date</span>
+                <span className="font-bold text-gray-800 dark:text-gray-200">
+                  {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Payment status</span>
+                <span className="font-bold text-green-600 uppercase text-[10px] tracking-wider">
+                  {order.payment?.status === "paid" || order.paymentMethod === "wallet" ? "Paid" : "Pending / COD"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Order Type</span>
+                <span className="font-bold text-gray-800 dark:text-gray-200 uppercase">{order.orderType || "Takeaway"}</span>
+              </div>
+              {remainingDistance && (
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">Distance to Restaurant</span>
+                  <span className="font-bold text-gray-800 dark:text-gray-200">{remainingDistance}</span>
+                </div>
+              )}
+            </div>
+
+            {/* List of items */}
+            <div className="space-y-2.5">
+              <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest block font-bold">Items List</span>
+              {order.items?.map((item, index) => (
+                <div key={index} className="flex justify-between items-center text-sm p-2 bg-gray-50/50 dark:bg-neutral-900/10 rounded-xl border border-gray-105 border-gray-200 dark:border-neutral-850">
+                  <span className="font-bold text-gray-800 dark:text-gray-200">
+                    {item.quantity} x {item.name}
+                  </span>
+                  <span className="font-bold text-gray-700 dark:text-gray-300">
+                    ₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Rating Summary Block if Rated */}
+          {orderStatus === 'delivered' && isOrderRated && (
+            <div className="p-4 bg-gray-50 dark:bg-neutral-900/30 rounded-2xl text-left border border-gray-250 border-gray-200 dark:border-neutral-850">
+              <div className="flex justify-between items-center border-b border-gray-200 dark:border-neutral-800/30 pb-2 mb-2">
+                <span className="text-xs font-extrabold text-gray-800 dark:text-gray-200">Your Feedback</span>
+                <button onClick={handleOpenRating} className="text-[10px] font-black text-[var(--primary)] uppercase tracking-wider">Edit</button>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-600 dark:text-gray-400">Rating</span>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
@@ -1551,174 +1732,43 @@ export default function OrderTracking() {
                   ))}
                 </div>
               </div>
-
+              {order?.ratings?.restaurant?.comment && (
+                <p className="text-xs text-text-secondary dark:text-text-secondary italic mt-2">"{order.ratings.restaurant.comment}"</p>
+              )}
             </div>
-          </motion.div>
-        )}
-
-
-
-        {/* Contact & Address Section */}
-        <motion.div
-          className="bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm overflow-hidden"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <SectionItem
-            icon={User}
-            title={
-              order?.userName ||
-              order?.userId?.fullName ||
-              order?.userId?.name ||
-              profile?.fullName ||
-              profile?.name ||
-              'Customer'
-            }
-            subtitle={
-              order?.userPhone ||
-              order?.userId?.phone ||
-              profile?.phone ||
-              defaultAddress?.phone ||
-              'Phone number not available'
-            }
-            showArrow={false}
-          />
-          <SectionItem
-            iconNode={
-              <div
-                dangerouslySetInnerHTML={{ __html: SAFE_CUSTOMER_PIN }}
-                className="w-6 h-6 [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
-              />
-            }
-            title="Location"
-            subtitle={(() => {
-              // Priority 1: Use order address formattedAddress (live location address)
-              if (order?.address?.formattedAddress && order.address.formattedAddress !== "Select location") {
-                return order.address.formattedAddress
-              }
-
-              // Priority 2: Build full address from order address parts
-              if (order?.address) {
-                const orderAddressParts = []
-                if (order.address.street) orderAddressParts.push(order.address.street)
-                if (order.address.additionalDetails) orderAddressParts.push(order.address.additionalDetails)
-                if (order.address.city) orderAddressParts.push(order.address.city)
-                if (order.address.state) orderAddressParts.push(order.address.state)
-                if (order.address.zipCode) orderAddressParts.push(order.address.zipCode)
-                if (orderAddressParts.length > 0) {
-                  return orderAddressParts.join(', ')
-                }
-              }
-
-              // Priority 3: Use defaultAddress formattedAddress (live location address)
-              if (defaultAddress?.formattedAddress && defaultAddress.formattedAddress !== "Select location") {
-                return defaultAddress.formattedAddress
-              }
-
-              // Priority 4: Build full address from defaultAddress parts
-              if (defaultAddress) {
-                const defaultAddressParts = []
-                if (defaultAddress.street) defaultAddressParts.push(defaultAddress.street)
-                if (defaultAddress.additionalDetails) defaultAddressParts.push(defaultAddress.additionalDetails)
-                if (defaultAddress.city) defaultAddressParts.push(defaultAddress.city)
-                if (defaultAddress.state) defaultAddressParts.push(defaultAddress.state)
-                if (defaultAddress.zipCode) defaultAddressParts.push(defaultAddress.zipCode)
-                if (defaultAddressParts.length > 0) {
-                  return defaultAddressParts.join(', ')
-                }
-              }
-
-              return 'Add customer details'
-            })()}
-            showArrow={false}
-          />
-          {!isAdminAccepted && orderStatus !== 'cancelled' && orderStatus !== 'delivered' && (
-            <SectionItem
-              icon={MessageSquare}
-              title={order?.note ? "Edit instructions" : "Add instructions"}
-              subtitle={order?.note ? order.note.substring(0, 35) + (order.note.length > 35 ? "..." : "") : ""}
-              onClick={() => {
-                setorderNote(order?.note || "");
-                setIsInstructionsModalOpen(true);
-              }}
-            />
           )}
-        </motion.div>
 
-        {/* Restaurant Section */}
-        <motion.div
-          className="bg-surface dark:bg-[#1a1a1a] rounded-xl shadow-sm overflow-hidden"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.75 }}
-        >
-          <div className="flex items-center gap-3 p-4 border-b border-dashed border-border dark:border-gray-800">
-            <div className="w-12 h-12 rounded-full bg-orange-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-              <div
-                dangerouslySetInnerHTML={{ __html: SAFE_RESTAURANT_PIN }}
-                className="w-7 h-7 [&_svg]:w-full [&_svg]:h-full [&_svg]:block"
-              />
+          {/* Rating Prompt if Completed and NOT Rated */}
+          {orderStatus === 'delivered' && !isOrderRated && (
+            <div className="p-4 bg-[var(--primary)]/5 rounded-2xl text-center space-y-3">
+              <h6 className="font-extrabold text-sm text-gray-800 dark:text-gray-200">Enjoyed your food?</h6>
+              <p className="text-xs text-text-secondary">Help others by rating your checkout experience at the restaurant counter.</p>
+              <button 
+                onClick={handleOpenRating} 
+                className="w-full h-10 rounded-xl bg-[var(--primary)] text-white text-xs font-black uppercase tracking-wider shadow-md"
+              >
+                Rate Order
+              </button>
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-text-primary dark:text-gray-100">{order.restaurant}</p>
-              <p className="text-sm text-text-secondary dark:text-text-secondary">{order.restaurantAddress || 'Restaurant location'}</p>
+          )}
+
+          {/* Cancellation Option (Pending only) */}
+          {!isAdminAccepted && orderStatus !== 'cancelled' && orderStatus !== 'delivered' && (
+            <div className="pt-2">
+              <button
+                onClick={handleCancelOrder}
+                className="w-full h-11 rounded-xl border border-red-200 hover:bg-red-50 text-red-655 text-red-600 text-xs font-black uppercase tracking-wider transition-all"
+              >
+                Cancel Order
+              </button>
+              <p className="text-[10px] text-gray-500 text-center mt-2 px-2">You can cancel your order until the restaurant accepts it.</p>
             </div>
-            <motion.button
-              className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center"
-              onClick={handleCallRestaurant}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Phone className="w-5 h-5 text-[var(--primary)]" />
-            </motion.button>
-          </div>
-
-          {/* Order Items */}
-          <div
-            className="p-4 border-b border-dashed border-border dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-            onClick={() => setShowOrderDetails(true)}
-          >
-            <div className="flex items-start gap-3">
-              <Receipt className="w-5 h-5 text-text-secondary mt-0.5" />
-              <div className="flex-1">
-                <div className="mt-2 space-y-1">
-                  {order?.items?.map((item, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm text-text-secondary dark:text-text-secondary">
-                      <span className="w-4 h-4 rounded border border-green-600 flex items-center justify-center">
-                        <span className="w-2 h-2 rounded-full bg-green-600" />
-                      </span>
-                      <span>{item.quantity} x {item.name}{item.variantName ? ` (${item.variantName})` : ""}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-text-secondary" />
-            </div>
-          </div>
-        </motion.div>
-
-        {!isAdminAccepted && orderStatus !== 'cancelled' && orderStatus !== 'delivered' && (
-          <motion.div
-            className="flex flex-col gap-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            <Button
-              variant="outline"
-              className="w-full text-primary border-red-100 hover:bg-primary-light/10 h-12 rounded-xl font-semibold"
-              onClick={handleCancelOrder}
-            >
-              Cancel Order
-            </Button>
-            <p className="text-[10px] text-text-secondary text-center px-4">
-              You can cancel your order until the restaurant accepts it.
-            </p>
-          </motion.div>
-        )}
-
+          )}
+        </div>
       </div>
 
+      {/* MODALS */}
+      
       {/* Cancel Order Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent className="sm:max-w-xl w-[95%] max-w-[600px]">

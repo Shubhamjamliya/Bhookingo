@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { decryptOtp } from '../utils/otpSecurity.js';
 import { logger } from '../../../../utils/logger.js';
 import {
   sendNotificationToOwner,
@@ -91,21 +92,39 @@ export function pushStatusHistory(order, { byRole, byId, from, to, note = "" }) 
   });
 }
 
-export function normalizeOrderForClient(orderDoc) {
+export function normalizeOrderForClient(orderDoc, { includeOtp = false, admin = false } = {}) {
   const order = orderDoc?.toObject ? orderDoc.toObject() : orderDoc || {};
   const mongoId = (order._id || orderDoc?._id || "").toString();
   const displayId = order.order_id || mongoId;
-  return {
+  const result = {
     ...order,
     orderMongoId: mongoId,
     orderId: displayId,
     status: order?.orderStatus || order?.status || "",
     rating: order?.ratings?.restaurant?.rating ?? order?.rating ?? null,
     restaurantNote: order?.restaurantNote || "",
+    etaMins: order?.etaMins || null,
+    arrivalEstimate: order?.arrivalEstimate || null,
     cancellationReason: (order?.orderStatus?.includes('cancel') || order?.status?.includes('cancel')) 
       ? (order.statusHistory?.findLast(h => h.to?.includes('cancel'))?.note || "")
       : null,
   };
+
+  if (!includeOtp) {
+    delete result.pickupOtp;
+  } else if (result.pickupOtp) {
+    if (result.pickupOtp.hash) {
+      // Hide OTP from user/restaurant if order status is not ready_for_pickup or completed/delivered
+      const showOtp = admin || ['ready_for_pickup', 'completed', 'delivered'].includes(result.orderStatus);
+      if (showOtp) {
+        result.pickupOtp.code = decryptOtp(result.pickupOtp.hash);
+      } else {
+        delete result.pickupOtp;
+      }
+    }
+  }
+
+  return result;
 }
 
 export async function applyAggregateRating(model, entityId, newRating) {
@@ -130,6 +149,11 @@ export function formatOrderPayload(orderDoc, restaurantDoc) {
   const restaurant = restaurantDoc || order?.restaurantId || null;
   const restaurantLocation = restaurant?.location || {};
   const customerAddressParts = [
+    order.address?.street,
+    order.address?.additionalDetails,
+    order.address?.city,
+    order.address?.state,
+    order.address?.zipCode
   ]
     .map((v) => String(v || '').trim())
     .filter(Boolean);
@@ -167,7 +191,12 @@ export function formatOrderPayload(orderDoc, restaurantDoc) {
       city: restaurantLocation?.city || restaurant?.city || "",
       state: restaurantLocation?.state || restaurant?.state || "",
     },
-    customerAddress: customerAddressParts.length ? customerAddressParts.join(', ') : "",
+    customerAddress: customerAddressParts.length ? customerAddressParts.join(', ') : (order.address?.formattedAddress || ""),
+    customerLocation: order.customerLocation || null,
+    distanceKm: order.distanceKm || null,
+    etaMins: order.etaMins || null,
+    arrivalEstimate: order.arrivalEstimate || null,
+    orderType: order.orderType || "DELIVERY",
     note: order?.note || "",
     riderEarning: order?.riderEarning || 0,
     dispatch: order?.dispatch,
@@ -227,6 +256,7 @@ export const STATUS_PRIORITY = {
   picked_up: 60,
   reached_drop: 70,
   delivered: 80,
+  completed: 80,
   cancelled_by_user: 100,
   cancelled_by_restaurant: 100,
   cancelled_by_admin: 100,

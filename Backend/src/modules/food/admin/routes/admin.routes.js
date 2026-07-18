@@ -192,6 +192,8 @@ router.patch('/dining/requests/:id/reject', diningAdminController.rejectDiningRe
 router.get('/orders', orderController.listOrdersAdminController);
 router.get('/orders/:orderId', orderController.getOrderByIdAdminController);
 router.delete('/orders/:orderId', orderController.deleteOrderAdminController);
+router.patch('/orders/:orderId/accept', orderController.acceptOrderAdminController);
+router.patch('/orders/:orderId/reject', orderController.rejectOrderAdminController);
 
 // ----- CMS Pages (About + legal) -----
 router.get('/pages-social-media/:key', getAdminPageController);

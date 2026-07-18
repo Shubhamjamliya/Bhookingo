@@ -128,13 +128,18 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                 </p>
                 <p className="text-sm font-medium text-slate-900">{order.date}{order.time ? `, ${order.time}` : ""}</p>
               </div>
-              {order.orderOtp && (
+              {(order.orderOtp || order.pickupOtp?.code) && (
                 <div className="space-y-1">
-                  <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider flex items-center gap-2 font-bold">
+                  <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider flex items-center gap-2 font-bold font-bold">
                     <CheckCircle2 className="w-4 h-4" />
-                    Handover Code (OTP)
+                    Pickup OTP
                   </p>
-                  <p className="text-lg font-bold text-slate-950 tracking-[0.2em]">{order.orderOtp}</p>
+                  <p className="text-lg font-bold text-slate-950 tracking-[0.2em]">{order.pickupOtp?.code || order.orderOtp}</p>
+                  {order.pickupOtp?.status && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      OTP Status: <span className="font-semibold text-slate-700">{order.pickupOtp.status}</span>
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -197,6 +202,47 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
                   )}`}>
                       {order.paymentCollectionStatus || order.paymentStatus}
                   </p>
+                </div>
+              )}
+
+              {order.orderType && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Order Type</p>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase tracking-wider ${
+                    order.orderType === "DELIVERY" ? "bg-blue-50 text-blue-600 border-blue-100" : 
+                    order.orderType === "TAKEAWAY" ? "bg-orange-50 text-orange-600 border-orange-100" : 
+                    "bg-purple-50 text-purple-600 border-purple-100"
+                  }`}>
+                    {order.orderType}
+                  </span>
+                </div>
+              )}
+
+              {order.pickupOtp && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pickup OTP Info</p>
+                  <p className="text-sm font-bold font-mono text-slate-900">
+                    {order.pickupOtp.code || "******"} ({order.pickupOtp.status || "PENDING"})
+                  </p>
+                  {order.pickupOtp.generatedAt && (
+                    <p className="text-[10px] text-slate-500">
+                      Generated: {new Date(order.pickupOtp.generatedAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {order.distanceKm != null && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer Distance</p>
+                  <p className="text-sm font-bold text-slate-900">
+                    {order.distanceKm.toFixed(1)} km
+                  </p>
+                  {order.arrivalEstimate && (
+                    <p className="text-[10px] text-slate-500">
+                      ETA: {order.arrivalEstimate}
+                    </p>
+                  )}
                 </div>
               )}
 

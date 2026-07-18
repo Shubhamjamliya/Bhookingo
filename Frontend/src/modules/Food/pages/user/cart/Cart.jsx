@@ -189,6 +189,7 @@ export default function Cart() {
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
   const [orderSuccessSavingsAmount, setOrderSuccessSavingsAmount] = useState(0)
   const [placedOrderId, setPlacedOrderId] = useState(null)
+  const [placedOrderDetails, setPlacedOrderDetails] = useState(null)
   const [selectedAddressId, setSelectedAddressId] = useState(null)
   
   useEffect(() => {
@@ -233,8 +234,8 @@ export default function Cart() {
     if (methodId === "razorpay") return customizationSettings.online_payment_enabled !== false
     if (methodId === "wallet") return customizationSettings.wallet_payment_enabled !== false
     if (methodId === "cash") {
-      // General COD toggle (Excludes Takeaway)
-      if (orderType !== "takeaway") {
+      // General COD toggle (Excludes Takeaway/Dining)
+      if (orderType !== "takeaway" && orderType !== "dining") {
         if (customizationSettings.cod_enabled === false) return false
       }
 
@@ -298,6 +299,12 @@ export default function Cart() {
   // Addons state
   const [addons, setAddons] = useState([])
   const [loadingAddons, setLoadingAddons] = useState(false)
+
+  useEffect(() => {
+    if (orderType === "delivery") {
+      setOrderType("takeaway");
+    }
+  }, [orderType, setOrderType]);
 
   // Coupons state - fetched from backend
   const [availableCoupons, setAvailableCoupons] = useState([])
@@ -927,7 +934,7 @@ export default function Cart() {
     const calculatePricing = async () => {
       const resolvedRestaurantId = restaurantData?.restaurantId || restaurantData?._id || cart[0]?.restaurantId || undefined
       
-      const canCalculate = cart.length > 0 && resolvedRestaurantId && (orderType === "takeaway" || hasSavedAddress)
+      const canCalculate = cart.length > 0 && resolvedRestaurantId && (orderType === "takeaway" || orderType === "dining" || hasSavedAddress)
       
       if (!canCalculate) {
         setPricing(null)
@@ -956,7 +963,7 @@ export default function Cart() {
           items,
           restaurantId: resolvedRestaurantId,
           couponCode: resolvedCouponCode,
-          orderType: orderType
+          orderType: String(orderType || "TAKEAWAY").toUpperCase()
         }
         
         debugLog("Recalculating pricing with body:", requestBody)
@@ -1354,7 +1361,7 @@ export default function Cart() {
     }
 
     // Validate with backend first; only set applied if backend accepts
-    if (cart.length > 0 && hasSavedAddress) {
+    if (cart.length > 0 && (orderType === "takeaway" || orderType === "dining" || hasSavedAddress)) {
       try {
         const items = cart.map(item => ({
           itemId: item.itemId || item.id,
@@ -1372,7 +1379,8 @@ export default function Cart() {
         const response = await orderAPI.calculateOrder({
           items,
           restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
-          couponCode: coupon.code
+          couponCode: coupon.code,
+          orderType: String(orderType || "TAKEAWAY").toUpperCase()
         })
 
         const pricingData = response?.data?.data?.pricing
@@ -1400,7 +1408,7 @@ export default function Cart() {
       return
     }
 
-    if (cart.length === 0 || !hasSavedAddress) {
+    if (cart.length === 0 || (!hasSavedAddress && orderType === "delivery")) {
       return
     }
 
@@ -1431,7 +1439,8 @@ export default function Cart() {
       const response = await orderAPI.calculateOrder({
         items,
         restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
-        couponCode: inputCode
+        couponCode: inputCode,
+        orderType: String(orderType || "TAKEAWAY").toUpperCase()
       })
 
       const pricingData = response?.data?.data?.pricing
@@ -1471,7 +1480,7 @@ export default function Cart() {
     setManualCouponCode("")
 
     // Recalculate pricing without coupon
-    if (cart.length > 0 && hasSavedAddress) {
+    if (cart.length > 0 && (orderType === "takeaway" || orderType === "dining" || hasSavedAddress)) {
       try {
         const items = cart.map(item => ({
           itemId: item.itemId || item.id,
@@ -1489,7 +1498,8 @@ export default function Cart() {
         const response = await orderAPI.calculateOrder({
           items,
           restaurantId: restaurantData?.restaurantId || restaurantData?._id || restaurantId || null,
-          couponCode: null
+          couponCode: null,
+          orderType: String(orderType || "TAKEAWAY").toUpperCase()
         })
 
         if (response?.data?.success && response?.data?.data?.pricing) {
@@ -1503,7 +1513,7 @@ export default function Cart() {
 
 
   const handlePlaceOrder = async () => {
-    if (!hasSavedAddress) {
+    if (orderType === "delivery" && !hasSavedAddress) {
       openLocationSelector()
       return
     }
@@ -1730,21 +1740,23 @@ export default function Cart() {
           restaurantDataId: restaurantData?._id?.toString(),
           restaurantDataRestaurantId: restaurantData?.restaurantId,
           cartRestaurantName: cart[0]?.restaurant,
-          finalRestaurantName: finalRestaurantName
+          finalName: finalRestaurantName
         });
         alert('Error: Restaurant information mismatch detected. Please refresh the page and try again.');
         setIsPlacingOrder(false);
         return;
       }
 
+      const mappedOrderType = String(orderType || "TAKEAWAY").toUpperCase();
+
       const orderPayload = {
         items: orderItems,
-        address: {
+        address: mappedOrderType === "DELIVERY" ? {
           ...defaultAddress,
           phone: recipientPhone || defaultAddress?.phone || "",
           name: recipientName,
           fullName: recipientName,
-        },
+        } : undefined,
         customerName: recipientName,
         customerPhone: recipientPhone || defaultAddress?.phone || "",
         restaurantId: finalRestaurantId,
@@ -1754,6 +1766,11 @@ export default function Cart() {
         restaurantNote: restaurantNote || "",
         sendCutlery: sendCutlery !== false,
         paymentMethod: selectedPaymentMethod,
+        orderType: mappedOrderType,
+        userLocation: currentLocation?.latitude && currentLocation?.longitude ? {
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude
+        } : undefined,
         // `useZone()` can return `null`. Zod expects string/undefined, not null.
         zoneId: zoneId || undefined,
         scheduledAt: isScheduled ? new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString() : undefined,
@@ -1784,6 +1801,7 @@ export default function Cart() {
       // Cash flow: order placed without online payment
       if (selectedPaymentMethod === "cash") {
         setPlacedOrderId(order?._id || order?.orderId || order?.id || null)
+        setPlacedOrderDetails(order || null)
         setOrderSuccessSavingsAmount(platformPricingSavings.totalSavings > 0 ? platformPricingSavings.totalSavings : 0)
         if (platformPricingSavings.totalSavings > 0) {
           setCongratssSavingsAmount(platformPricingSavings.totalSavings)
@@ -1810,6 +1828,7 @@ export default function Cart() {
       if (selectedPaymentMethod === "wallet") {
         toast.success("Order placed with Wallet payment")
         setPlacedOrderId(order?._id || order?.orderId || order?.id || null)
+        setPlacedOrderDetails(order || null)
         setOrderSuccessSavingsAmount(platformPricingSavings.totalSavings > 0 ? platformPricingSavings.totalSavings : 0)
         if (platformPricingSavings.totalSavings > 0) {
           setCongratssSavingsAmount(platformPricingSavings.totalSavings)
@@ -1921,6 +1940,7 @@ export default function Cart() {
                 paymentId: verifyResponse.data.data?.payment?.paymentId
               })
               setPlacedOrderId(order._id || order.orderId)
+              setPlacedOrderDetails(order || null)
               setOrderSuccessSavingsAmount(platformPricingSavings.totalSavings > 0 ? platformPricingSavings.totalSavings : 0)
               if (platformPricingSavings.totalSavings > 0) {
                 setCongratssSavingsAmount(platformPricingSavings.totalSavings)
@@ -2050,7 +2070,7 @@ export default function Cart() {
     setCongratssSavingsPercentage(0)
     setCongratssSavingsItems([])
     setOrderSuccessSavingsAmount(0)
-    navigate(`/user/orders/${placedOrderId}?confirmed=true`)
+    navigate(`/food`)
   }
 
   // Empty cart state - but don't show if order success or placing order modal is active
@@ -2101,12 +2121,16 @@ export default function Cart() {
               </Button>
               <div className="min-w-0">
                 <p className="text-[11px] md:text-xs text-text-secondary dark:text-text-secondary leading-none">{restaurantName}</p>
-                {orderType === "takeaway" ? (
-                  <div className="flex flex-col mt-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                      <span className="text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Takeaway Mode</span>
-                    </div>
+                {orderType === "takeaway" || orderType === "dining" ? (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/30 text-orange-600">
+                    {orderType === "dining" ? (
+                      <Utensils className="h-3.5 w-3.5" />
+                    ) : (
+                      <ShoppingBag className="h-3.5 w-3.5" />
+                    )}
+                    <span className="text-[10px] md:text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                      {orderType === "dining" ? "Dining Mode" : "Takeaway Mode"}
+                    </span>
                   </div>
                 ) : (
                   <p className="text-sm md:text-base font-medium text-gray-800 dark:text-white truncate">
@@ -2425,7 +2449,58 @@ export default function Cart() {
                 )}
               </div>
 
-              {orderType !== "takeaway" && (
+              {/* Order Type Selector - Pro UI */}
+              <div className="bg-surface dark:bg-[#1a1a1a] p-4 md:p-6 rounded-2xl shadow-sm border border-border dark:border-gray-800 space-y-4">
+                <div>
+                  <h3 className="text-xs font-black text-text-secondary uppercase tracking-widest leading-none mb-1">
+                    ORDER MODE
+                  </h3>
+                  <p className="text-xs text-text-secondary dark:text-text-secondary">
+                    Choose how you want to receive your food
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-2.5">
+                  {/* Takeaway Option */}
+                  <div
+                    onClick={() => setOrderType("takeaway")}
+                    className={`flex items-center gap-4 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                      orderType === "takeaway"
+                        ? "border-[var(--primary)] bg-[#DC262605] dark:bg-[#DC262610]"
+                        : "border-border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900"
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${orderType === "takeaway" ? "bg-[var(--primary)]/10 text-[var(--primary)]" : "bg-gray-100 dark:bg-gray-800 text-gray-500"}`}>
+                      <ShoppingBag className="h-5 w-5" />
+                    </div>
+                    <div className="text-left leading-tight">
+                      <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Takeaway</p>
+                      <p className="text-xs text-text-secondary mt-0.5">Collect your order from the restaurant.</p>
+                    </div>
+                  </div>
+
+                  {/* Dining Option */}
+                  <div
+                    onClick={() => setOrderType("dining")}
+                    className={`flex items-center gap-4 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                      orderType === "dining"
+                        ? "border-[var(--primary)] bg-[#DC262605] dark:bg-[#DC262610]"
+                        : "border-border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900"
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${orderType === "dining" ? "bg-[var(--primary)]/10 text-[var(--primary)]" : "bg-gray-100 dark:bg-gray-800 text-gray-500"}`}>
+                      <Utensils className="h-5 w-5" />
+                    </div>
+                    <div className="text-left leading-tight">
+                      <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Dining</p>
+                      <p className="text-xs text-text-secondary mt-0.5">Enjoy your meal at the restaurant.</p>
+                    </div>
+                  </div>
+
+
+                </div>
+              </div>
+
+              {orderType === "delivery" && (
                 <div className="bg-surface dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-border dark:border-gray-800">
                   <div className="flex items-start gap-3 md:gap-4">
                     <div className="mt-0.5">
@@ -2492,25 +2567,33 @@ export default function Cart() {
               )}
 
               <div className="bg-surface dark:bg-[#1a1a1a] px-4 md:px-6 py-5 rounded-2xl shadow-sm border border-border dark:border-gray-800">
-                {orderType === "takeaway" ? (
+                {orderType === "takeaway" || orderType === "dining" ? (
                   <div className="flex items-start gap-4">
                     <div className="bg-[#DC262605] dark:bg-[#DC262610] p-3.5 rounded-2xl border border-[#DC262615] dark:border-[#DC262630]">
-                      <ShoppingBag className="h-6 w-6 text-[var(--primary)]" />
+                      {orderType === "dining" ? (
+                        <Utensils className="h-6 w-6 text-[var(--primary)]" />
+                      ) : (
+                        <ShoppingBag className="h-6 w-6 text-[var(--primary)]" />
+                      )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xs font-black text-text-secondary uppercase tracking-widest leading-none">PICKUP FROM</h3>
+                      <h3 className="text-xs font-black text-text-secondary uppercase tracking-widest leading-none">
+                        {orderType === "dining" ? "DINING AT" : "PICKUP FROM"}
+                      </h3>
                       <p className="text-lg font-black text-text-primary dark:text-white mt-1.5 leading-tight">
                         {restaurantData?.name || cart[0]?.restaurant || "Restaurant"}
                       </p>
                       <p className="text-xs md:text-sm text-text-secondary dark:text-text-secondary mt-1 line-clamp-2 font-medium">
                         {restaurantData?.address || restaurantData?.location?.address || "Restaurant Address"}
                       </p>
-                      <div className="mt-4 flex items-center gap-2">
-                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-[11px] font-black bg-green-50 dark:bg-green-900/10 px-3 py-1.5 rounded-lg border border-green-100 dark:border-green-900/20">
-                          <CheckCircle2 className="h-4 w-4" />
-                          <span className="uppercase tracking-tight">READY FOR PICKUP IN {restaurantData?.preparationTime || "25-30"} MINS</span>
+                      {orderType === "takeaway" && (
+                        <div className="mt-4 flex items-center gap-2">
+                          <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-[11px] font-black bg-green-50 dark:bg-green-900/10 px-3 py-1.5 rounded-lg border border-green-100 dark:border-green-900/20">
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span className="uppercase tracking-tight">READY FOR PICKUP IN {restaurantData?.preparationTime || "25-30"} MINS</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -2866,7 +2949,7 @@ export default function Cart() {
                   ? "Processing..."
                   : !bookingEligibility.bookable
                     ? "Too Far to Order"
-                    : (orderType !== "takeaway" && !hasSavedAddress)
+                    : (orderType === "delivery" && !hasSavedAddress)
                       ? "Select Address"
                       : "Place Order"}
                 <div className="flex align-center h-full">
@@ -2892,7 +2975,7 @@ export default function Cart() {
                 <div className="px-6 py-8">
                   {/* Title */}
                   <h2 className="text-2xl font-bold text-text-primary mb-6">
-                    {orderType === "takeaway" ? "Placing takeaway order" : "Placing your order"}
+                    {orderType === "takeaway" ? "Placing takeaway order" : orderType === "dining" ? "Placing dining order" : "Placing your order"}
                   </h2>
 
                   {/* Payment Info */}
@@ -2920,15 +3003,15 @@ export default function Cart() {
                     </div>
                     <div>
                       <p className="text-lg font-semibold text-text-primary">
-                        {orderType === "takeaway" ? "Picking up from Restaurant" : "Delivering to Location"}
+                        {orderType === "takeaway" ? "Picking up from Restaurant" : orderType === "dining" ? "Dining at Restaurant" : "Delivering to Location"}
                       </p>
                       <p className="text-sm text-text-secondary mt-1">
-                        {orderType === "takeaway" 
+                        {orderType === "takeaway" || orderType === "dining"
                           ? (restaurantData?.name || cart[0]?.restaurant || "Restaurant")
                           : (defaultAddress ? (formatFullAddress(defaultAddress) || defaultAddress?.formattedAddress || defaultAddress?.address || "Address") : "Add address")}
                       </p>
                       <p className="text-sm text-text-secondary">
-                        {orderType === "takeaway"
+                        {orderType === "takeaway" || orderType === "dining"
                           ? (restaurantData?.address || restaurantData?.location?.address || "Restaurant Address")
                           : (defaultAddress ? (formatFullAddress(defaultAddress) || "Address") : "Address")}
                       </p>
@@ -3051,7 +3134,6 @@ export default function Cart() {
             >
               {/* Confetti Background */}
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {/* Animated confetti pieces */}
                 {[...Array(50)].map((_, i) => (
                   <div
                     key={i}
@@ -3068,117 +3150,92 @@ export default function Cart() {
               </div>
 
               {/* Success Content */}
-              <div className="relative z-10 flex flex-col items-center px-6">
+              <div className="relative z-10 flex flex-col items-center px-6 w-full max-w-md text-center">
                 {/* Success Tick Circle */}
                 <div
                   className="relative mb-8"
                   style={{ animation: 'scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both' }}
                 >
-                  {/* Outer ring animation */}
                   <div
-                    className="absolute inset-0 w-32 h-32 rounded-full border-4 border-green-500 dark:border-green-400"
+                    className="absolute inset-0 w-28 h-28 rounded-full border-4 border-green-500 dark:border-green-400"
                     style={{
                       animation: 'ringPulse 1.5s ease-out infinite',
                       opacity: 0.3
                     }}
                   />
-                  {/* Main circle */}
-                  <div className="w-32 h-32 bg-gradient-to-br from-green-500 to-green-600 dark:from-green-500 dark:to-emerald-500 rounded-full flex items-center justify-center shadow-2xl shadow-green-200/60 dark:shadow-green-900/40">
+                  <div className="w-28 h-28 bg-gradient-to-br from-green-500 to-green-600 dark:from-green-500 dark:to-emerald-500 rounded-full flex items-center justify-center shadow-2xl">
                     <svg
-                      className="w-16 h-16 text-white"
+                      className="w-14 h-14 text-white"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="3"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      style={{ animation: 'checkDraw 0.5s ease-out 0.5s both' }}
                     >
-                      <path d="M5 12l5 5L19 7" className="check-path" />
+                      <path d="M5 12l5 5L19 7" />
                     </svg>
                   </div>
-                  {/* Sparkles */}
-                  {[...Array(6)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-2 h-2 bg-yellow-400 dark:bg-yellow-300 rounded-full"
-                      style={{
-                        top: '50%',
-                        left: '50%',
-                        animation: `sparkle 0.6s ease-out ${0.3 + i * 0.1}s both`,
-                        transform: `rotate(${i * 60}deg) translateY(-80px)`,
-                      }}
-                    />
-                  ))}
                 </div>
 
-                {/* Location Info */}
-                <div
-                  className="text-center"
-                  style={{ animation: 'slideUp 0.5s ease-out 0.6s both' }}
-                >
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <div className="w-5 h-5 text-red-500 dark:text-primary-light">
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                      </svg>
-                    </div>
-                    <h2 className="text-2xl font-bold text-text-primary dark:text-white">
-                      {defaultAddress?.city || "Your Location"}
-                    </h2>
+                {/* Placed Message */}
+                <h3 className="text-3xl font-black text-green-600 dark:text-green-400 mb-2">Order Confirmed!</h3>
+                <p className="text-text-secondary dark:text-gray-300 text-sm mb-6">Your order is being sent to the restaurant.</p>
+
+                {/* Order Summary Box */}
+                <div className="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 w-full space-y-3.5 mb-8 text-left shadow-sm">
+                  <div className="flex justify-between items-center text-sm border-b border-gray-100 dark:border-gray-800 pb-2">
+                    <span className="text-gray-500 font-medium">Restaurant</span>
+                    <span className="font-bold text-gray-800 dark:text-gray-100">{placedOrderDetails?.restaurantName || cart[0]?.restaurant || "Restaurant"}</span>
                   </div>
-                  <p className="text-text-secondary dark:text-text-secondary text-base">
-                  </p>
+                  <div className="flex justify-between items-center text-sm border-b border-gray-100 dark:border-gray-800 pb-2">
+                    <span className="text-gray-500 font-medium">Order Number</span>
+                    <span className="font-mono font-bold text-gray-800 dark:text-gray-100 text-xs">{placedOrderDetails?.orderId || placedOrderId}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm border-b border-gray-100 dark:border-gray-800 pb-2">
+                    <span className="text-gray-500 font-medium">Payment Status</span>
+                    <span className="font-bold text-green-600 uppercase text-xs">
+                      {placedOrderDetails?.payment?.status === "paid" || selectedPaymentMethod === "wallet" ? "Paid" : "COD (Pay on Handover)"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Estimated Prep Time</span>
+                    <span className="font-bold text-orange-600 text-xs">
+                      {orderType === "dining" ? "Ready to serve in ~25 mins" : "Ready for pickup in ~25 mins"}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Order Placed Message */}
-                 <div
-                  className="mt-12 text-center"
-                  style={{ animation: 'slideUp 0.5s ease-out 0.8s both' }}
-                >
-                  <h3 className="text-3xl font-bold text-[var(--primary)] dark:text-[#a65d8a] mb-2">Order Placed!</h3>
-                  <p className="text-text-secondary dark:text-gray-300">Your delicious food is on its way</p>
-                  {orderSuccessSavingsAmount > 0 && (
-                    <p className="mt-2 text-sm text-[var(--primary)] dark:text-[#a65d8a]">
-                      You save approx {RUPEE_SYMBOL}{orderSuccessSavingsAmount.toFixed(0)} on this order
-                    </p>
-                  )}
-                </div>
-
-                {/* Platform Pricing Savings Celebration */}
+                {/* Platform Pricing Savings (Celebration banner if they saved money) */}
                 {platformPricingSavings.hasPlatformPricing && platformPricingSavings.totalSavings > 0 && (
-                  <motion.div
-                    className="mt-8 w-full max-w-sm bg-gradient-to-br from-[var(--primary)]/10 to-[var(--primary)]/5 dark:from-[var(--primary)]/20 dark:to-[var(--primary)]/10 border border-[var(--primary)]/30 rounded-2xl p-4"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.6, delay: 1.0 }}
-                  >
-                    <div className="flex items-center justify-center gap-2 mb-3">
-                      <Sparkles className="h-5 w-5 text-[var(--primary)]" />
-                      <span className="font-bold text-[var(--primary)]">You Saved on this Order</span>
+                  <div className="mb-6 w-full bg-gradient-to-br from-[var(--primary)]/10 to-[var(--primary)]/5 dark:from-[var(--primary)]/20 dark:to-[var(--primary)]/10 border border-[var(--primary)]/30 rounded-2xl p-3 flex items-center justify-between text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-[var(--primary)]">Savings Made</span>
                     </div>
-                    <div className="text-center space-y-1">
-                      <div className="text-4xl font-black text-[var(--primary)]">
-                        {RUPEE_SYMBOL}{platformPricingSavings.totalSavings.toFixed(0)}
-                      </div>
-                      <p className="text-sm text-text-secondary dark:text-text-secondary">
-                        {platformPricingSavings.savingsPercentage}% cheaper than other platforms
-                      </p>
-                      <p className="text-xs text-text-secondary dark:text-text-secondary mt-2">
-                        By ordering with us instead of Swiggy, Zomato, & others
-                      </p>
+                    <div className="text-right">
+                      <span className="text-lg font-black text-[var(--primary)]">{RUPEE_SYMBOL}{platformPricingSavings.totalSavings.toFixed(0)}</span>
                     </div>
-                  </motion.div>
+                  </div>
                 )}
 
-                {/* Action Button */}
-                 <button
-                  onClick={handleGoToOrders}
-                  className="mt-10 bg-[var(--primary)] hover:bg-primary-dark text-white font-semibold py-4 px-12 rounded-xl shadow-lg shadow-[var(--primary)]/20 dark:shadow-[var(--primary)]/40 transition-all hover:shadow-xl hover:scale-105"
-                  style={{ animation: 'slideUp 0.5s ease-out 1s both' }}
-                >
-                  Track Your Order
-                </button>
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                  <button
+                    onClick={() => {
+                      setShowOrderSuccess(false);
+                      navigate(`/food/user/orders/${placedOrderId}`);
+                    }}
+                    className="flex-1 bg-[var(--primary)] hover:bg-primary-dark text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-[var(--primary)]/10 transition-all hover:scale-[1.02] active:scale-[0.98] text-sm"
+                  >
+                    Track Order
+                  </button>
+                  <button
+                    onClick={handleGoToOrders}
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold py-3.5 px-6 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] text-sm border border-gray-200 dark:border-gray-700"
+                  >
+                    Back to Home
+                  </button>
+                </div>
               </div>
             </div>
           )}

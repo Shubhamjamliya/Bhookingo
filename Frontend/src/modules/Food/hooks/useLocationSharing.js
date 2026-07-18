@@ -18,25 +18,20 @@ export const useLocationSharing = (orderId, enabled = false) => {
   const socketRef = useRef(null);
   const watchIdRef = useRef(null);
   const isSharingRef = useRef(false);
-      '',
-  );
 
   const backendUrl = API_BASE_URL ? API_BASE_URL.replace('/api', '') : '';
 
   const startSharing = () => {
     if (!orderId || isSharingRef.current) return;
-    // Backend disconnected - new backend in progress. Do not open Socket.
     if (!API_BASE_URL || !backendUrl || !backendUrl.startsWith('http')) return;
 
     if (!socketRef.current) {
       socketRef.current = io(backendUrl, {
+        path: '/socket.io/',
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5
-      });
-
-      socketRef.current.on('connect', () => {
       });
     }
 
@@ -48,7 +43,7 @@ export const useLocationSharing = (orderId, enabled = false) => {
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
-        const { latitude, longitude, heading, speed, accuracy } = position.coords;
+        const { latitude, longitude, heading } = position.coords;
         const now = Date.now();
 
         if (now - lastSentTime < LOCATION_UPDATE_INTERVAL) return;
@@ -76,26 +71,6 @@ export const useLocationSharing = (orderId, enabled = false) => {
             timestamp: now
           });
         }
-
-            lat: latitude,
-            lng: longitude,
-            heading: heading || 0,
-            speed: speed || 0,
-            accuracy: accuracy || 0,
-            isOnline: true,
-            activeOrderId: orderId,
-            timestamp: now
-          }).catch(() => {});
-        }
-
-        writeOrderTracking(orderId, {
-          lat: latitude,
-          lng: longitude,
-          heading: heading || 0,
-          speed: speed || 0,
-          status: 'in_transit',
-          timestamp: now
-        }).catch(() => {});
       },
       () => {},
       {
@@ -113,27 +88,39 @@ export const useLocationSharing = (orderId, enabled = false) => {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
-
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
     }
-
     isSharingRef.current = false;
   };
 
   useEffect(() => {
-    if (enabled && orderId) startSharing();
-    else stopSharing();
-    return () => stopSharing();
+    if (enabled) {
+      startSharing();
+    } else {
+      stopSharing();
+    }
   }, [enabled, orderId]);
 
   useEffect(() => () => stopSharing(), []);
 
+  const updateDirections = (distanceText, durationText, etaMins) => {
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('update-directions', {
+        orderId,
+        distanceText,
+        durationText,
+        etaMins
+      });
+    }
+  };
+
   return {
     isSharing: Boolean(enabled && orderId),
     startSharing,
-    stopSharing
+    stopSharing,
+    updateDirections
   };
 };
 

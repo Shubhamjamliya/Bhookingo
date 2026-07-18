@@ -398,6 +398,15 @@ export default function UserOrderDetails() {
           </div>
         </div>
 
+        {/* Pickup OTP Card */}
+        {(order.status === 'ready_for_pickup' || order.orderStatus === 'ready_for_pickup') && order.pickupOtp?.code && (
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-5 rounded-xl shadow-md border dark:border-gray-800 space-y-2 text-center">
+            <p className="text-xs font-semibold text-emerald-100 uppercase tracking-wider">Pickup OTP</p>
+            <h3 className="text-3xl font-mono font-bold tracking-widest leading-none my-1">{order.pickupOtp.code}</h3>
+            <p className="text-xs text-emerald-50">Show this OTP at restaurant while collecting your order.</p>
+          </div>
+        )}
+
         {/* Restaurant Info Card */}
         <div className="bg-surface dark:bg-[#121212] p-4 rounded-xl shadow-sm border dark:border-gray-800">
           <div className="flex items-center justify-between mb-4">

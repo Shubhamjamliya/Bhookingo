@@ -13,6 +13,72 @@ import DrivingFilters from "./components/DrivingFilters";
 import DrivingModeFallback from "./components/DrivingModeFallback";
 import DrivingLocationPermission from "./components/DrivingLocationPermission";
 import BottomNavigation from "@food/components/user/BottomNavigation";
+import { extractImages } from "@food/utils/common";
+
+// Food/menu images carousel component for the details card
+function RestaurantImageCarousel({ restaurant }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const allImages = React.useMemo(() => {
+    if (!restaurant) return [];
+    const candidates = [
+      ...(restaurant.menuImages || []),
+      ...(restaurant.coverImages || []),
+      restaurant.profileImage,
+      restaurant.profileImageUrl,
+      restaurant.image,
+      restaurant.imageUrl,
+      restaurant.coverImage,
+      restaurant.onboarding?.step2?.profileImageUrl,
+      ...(restaurant.onboarding?.step2?.menuImageUrls || [])
+    ].filter(Boolean);
+    return extractImages(candidates);
+  }, [restaurant]);
+
+  useEffect(() => {
+    if (allImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % allImages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [allImages]);
+
+  const activeImage = allImages[currentIndex] || "https://picsum.photos/seed/dhaba/600/400";
+
+  return (
+    <div className="relative h-48 w-full bg-neutral-100 dark:bg-neutral-900 overflow-hidden">
+      <style>{`
+        @keyframes carouselFadeIn {
+          from { opacity: 0.5; }
+          to { opacity: 1; }
+        }
+      `}</style>
+      <img
+        key={currentIndex}
+        src={activeImage}
+        alt={restaurant.restaurantName}
+        className="w-full h-full object-cover transition-opacity duration-500"
+        style={{
+          animation: "carouselFadeIn 0.6s ease-in-out"
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+      
+      {allImages.length > 1 && (
+        <div className="absolute top-4 right-4 flex gap-1 z-20 bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm">
+          {allImages.map((_, idx) => (
+            <div
+              key={idx}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                idx === currentIndex ? "w-3 bg-white" : "w-1.5 bg-white/50"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function DrivingMode() {
   const navigate = useNavigate();
@@ -450,7 +516,7 @@ export default function DrivingMode() {
   const handlePreorder = (restaurant) => {
     if (setOrderType) setOrderType("takeaway");
     setSelectedRestaurant(null);
-    navigate(`/food/restaurants/${restaurant.restaurantSlug || restaurant._id}`);
+    navigate(`/user/restaurants/${restaurant.restaurantSlug || restaurant._id}`);
   };
 
   // Filter & Sort Logic
@@ -820,15 +886,10 @@ export default function DrivingMode() {
         <Dialog open={!!selectedRestaurant} onOpenChange={() => setSelectedRestaurant(null)}>
           <DialogContent className="max-w-md w-[calc(100vw-32px)] p-0 overflow-hidden bg-white dark:bg-[#1a1a1a] rounded-2xl border-none">
             
-            {/* Cover photo */}
+            {/* Cover photo / Carousel */}
             <div className="relative h-48 bg-neutral-100 dark:bg-neutral-900">
-              <img
-                src={selectedRestaurant.coverImages?.[0] || "https://picsum.photos/seed/dhaba/600/400"}
-                alt={selectedRestaurant.restaurantName}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+              <RestaurantImageCarousel restaurant={selectedRestaurant} />
+              <div className="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between">
                 <h3 className="text-xl font-black text-white leading-none">
                   {selectedRestaurant.restaurantName}
                 </h3>

@@ -97,6 +97,18 @@ export async function createInitialTransaction(order) {
             ? restaurantCommissionFromOrder
             : (commissionAmount || 0);
     const restaurantNet = (order.pricing?.subtotal || 0) + (order.pricing?.packagingFee || 0) - restaurantCommission;
+    const restaurantShare = Math.max(0, restaurantNet);
+    const taxAmount = Number(order.pricing?.tax || 0);
+
+    let platformNetProfit = 0;
+    try {
+        platformNetProfit = Math.max(
+            0,
+            Number((totalCustomerPaid - restaurantShare - riderShare - taxAmount).toFixed(2))
+        );
+    } catch (err) {
+        logger.error(`[TransactionService] Error calculating platformNetProfit: ${err.message}`);
+    }
 
     const transaction = new FoodTransaction({
         orderId: order._id,
@@ -135,11 +147,11 @@ export async function createInitialTransaction(order) {
         },
         amounts: {
             totalCustomerPaid,
-            restaurantShare: Math.max(0, restaurantNet),
+            restaurantShare,
             restaurantCommission,
             riderShare,
             platformNetProfit,
-            taxAmount: order.pricing?.tax || 0
+            taxAmount
         },
         gateway: {
             razorpayOrderId: order.payment?.razorpay?.orderId,

@@ -1,6 +1,7 @@
 import React from "react";
 import { Star, ShieldCheck, MapPin, Clock, Navigation, CheckCircle2, Bookmark } from "lucide-react";
 import { cn } from "@food/utils/utils";
+import { extractImages } from "@food/utils/common";
 
 const FOOD_IMAGE_FALLBACK = "https://picsum.photos/seed/dhaba/300/200";
 
@@ -18,7 +19,18 @@ export default function DrivingRestaurantCard({ restaurant, onClick }) {
     facilities
   } = restaurant;
 
-  const imageSrc = coverImages?.[0] || FOOD_IMAGE_FALLBACK;
+  const candidates = [
+    restaurant.profileImage,
+    restaurant.profileImageUrl,
+    restaurant.onboarding?.step2?.profileImageUrl,
+    restaurant.image,
+    restaurant.imageUrl,
+    ...(Array.isArray(coverImages) ? coverImages : [coverImages]),
+    restaurant.coverImage
+  ].filter(Boolean);
+
+  const extracted = extractImages(candidates);
+  const imageSrc = extracted[0] || FOOD_IMAGE_FALLBACK;
 
   return (
     <div 

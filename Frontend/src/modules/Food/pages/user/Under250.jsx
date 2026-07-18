@@ -72,12 +72,12 @@ export default function Under250() {
   const { userProfile } = useProfile()
 
   const displayArea = useMemo(() => {
-    let name = location?.area || "Select Location"
+    let name = location?.area || location?.city || "Current Location"
     if (/^-?\d+(\.\d+)?$/.test(name.trim())) {
       return "Current Location"
     }
     return name
-  }, [location?.area])
+  }, [location?.area, location?.city])
 
   const displayCity = location?.city || "Indore"
   const displayAddress = useMemo(() => {
@@ -844,11 +844,9 @@ export default function Under250() {
                 </span>
                 <ChevronDown className="h-3 w-3 text-white/70" />
               </div>
-              {(displayAddress || displayCity) && (
-                <span className="text-[10px] font-medium text-white/80 truncate max-w-[160px] sm:max-w-[220px] leading-tight mt-0.5 drop-shadow-md">
-                  {displayAddress}{displayAddress && displayCity ? ", " : ""}{displayCity}
-                </span>
-              )}
+              <span className="text-[10px] font-normal text-white/80 truncate max-w-[160px] sm:max-w-[220px] leading-tight mt-0.5 drop-shadow-md">
+                Select Location
+              </span>
             </div>
           </Button>
 

@@ -99,6 +99,7 @@ const transformOrderForList = (order) => ({
   sortTimestamp: new Date(getAllOrdersTimestamp(order)).getTime(),
   scheduledAt: order.scheduledAt || null,
   restaurantNote: order.restaurantNote || null,
+  type: order.orderType || "DELIVERY",
 });
 
 // Completed Orders List Component
@@ -142,6 +143,7 @@ function CompletedOrders({ onSelectOrder, refreshToken = 0 }) {
             photoAlt: order.items?.[0]?.name || "Order",
             amount: order.pricing?.total || order.total || 0,
             paymentMethod: order.paymentMethod || order.payment?.method || null,
+            type: order.orderType || "DELIVERY",
           }));
 
           transformedOrders.sort((a, b) => {
@@ -352,6 +354,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
             amount: order.pricing?.total || order.total || 0,
             paymentMethod: order.paymentMethod || order.payment?.method || null,
             restaurantNote: order.restaurantNote || null,
+            type: order.orderType || "DELIVERY",
           }));
 
           transformedOrders.sort((a, b) => {
@@ -3420,6 +3423,14 @@ function OrderCard({
                 {statusLabel}
               </span>
               
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-black border uppercase tracking-wider ${
+                type === "DELIVERY" ? "bg-blue-50 text-blue-600 border-blue-100" : 
+                type === "TAKEAWAY" ? "bg-orange-50 text-orange-600 border-orange-100" : 
+                "bg-purple-50 text-purple-600 border-purple-100"
+              }`}>
+                {type || "DELIVERY"}
+              </span>
+              
               {isPreparing && onCancel && (
                 <button
                   type="button"
@@ -3865,6 +3876,7 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
             paymentMethod: order.paymentMethod || order.payment?.method || null,
             scheduledAt: order.scheduledAt || null,
             restaurantNote: order.restaurantNote || null,
+            type: order.orderType || "DELIVERY",
           }));
 
           if (isMounted) {

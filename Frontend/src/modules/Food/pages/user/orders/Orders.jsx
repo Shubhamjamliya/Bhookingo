@@ -55,7 +55,12 @@ export default function Orders() {
     const now = new Date()
     const elapsedMinutes = Math.floor((now - createdAt) / (1000 * 60))
 
-    const remainingMinutes = Math.max(0, maxETA - elapsedMinutes)
+    const maxETA = order?.maxETA || order?.estimatedTime || order?.eta || order?.estimatedDeliveryTime || null
+    if (!maxETA) {
+      return null
+    }
+
+    const remainingMinutes = Math.max(0, Number(maxETA) - elapsedMinutes)
 
     return remainingMinutes > 0 ? remainingMinutes : null
   }
@@ -117,6 +122,9 @@ export default function Orders() {
         transformedStatus.toLowerCase() === 'completed'
 
       const hasRestaurantRating = Number.isFinite(Number(order.restaurantRating))
+      const hasRating = hasRestaurantRating || 
+                        Number.isFinite(Number(order.rating)) || 
+                        Number.isFinite(Number(order.ratings?.restaurant?.rating))
 
       const orderId = order.id || order._id || order.mongoId
       const hasShownPopup = shownRatingForOrders.has(orderId)

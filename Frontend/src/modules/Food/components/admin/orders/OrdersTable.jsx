@@ -310,10 +310,13 @@ export default function OrdersTable({
                         paymentTypeDisplay = 'COD (QR)';
                       } else if (!paymentTypeDisplay) {
                         if (paymentMethod === 'cash' || paymentMethod === 'cod') {
+                          paymentTypeDisplay = 'COD';
                         } else if (paymentMethod === 'wallet') {
                           paymentTypeDisplay = 'Wallet';
-                        } else {
+                        } else if (paymentMethod) {
                           paymentTypeDisplay = 'Online';
+                        } else {
+                          paymentTypeDisplay = 'Pending';
                         }
                       }
                       
@@ -323,6 +326,11 @@ export default function OrdersTable({
                       }
                       
                       const isWallet = paymentTypeDisplay === 'Wallet';
+                      const isCod = 
+                        paymentTypeDisplay === 'COD' || 
+                        paymentTypeDisplay === 'COD (QR)' || 
+                        paymentMethod === 'cash' || 
+                        paymentMethod === 'cod';
                       
                       return (
                         <span className={`text-sm font-medium ${
@@ -330,7 +338,7 @@ export default function OrdersTable({
                           isWallet ? 'text-purple-600' : 
                           'text-emerald-600'
                         }`}>
-                          {paymentTypeDisplay}
+                          {paymentTypeDisplay || 'Pending'}
                         </span>
                       );
                     })()}

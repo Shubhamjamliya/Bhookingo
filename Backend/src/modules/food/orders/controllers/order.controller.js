@@ -1,4 +1,5 @@
 import { sendResponse } from '../../../../utils/response.js';
+import { ValidationError } from '../../../../core/auth/errors.js';
 import * as orderService from '../services/order.service.js';
 import * as foodOrderPaymentService from '../services/foodOrderPayment.service.js';
 import {
@@ -8,7 +9,8 @@ import {
     validateCancelOrderDto,
     validateOrderStatusDto,
     validateDispatchSettingsDto,
-    validateOrderRatingsDto
+    validateOrderRatingsDto,
+    validateRejectOrderDto
 } from '../validators/order.validator.js';
 
 export async function calculateOrderController(req, res, next) {
@@ -59,7 +61,22 @@ export async function getOrderByIdUserController(req, res, next) {
         const userId = req.user?.userId;
         const orderId = req.params.orderId;
         const order = await orderService.getOrderById(orderId, { userId });
-        return sendResponse(res, 200, 'Order retrieved', { order });
+        
+        const restaurant = order?.restaurantId || null;
+        const restaurantLocation = restaurant?.location || null;
+        const userLocation = order?.userLocation || null;
+        const timeline = order?.statusHistory || [];
+
+        return sendResponse(res, 200, 'Order retrieved', {
+            order,
+            restaurant,
+            orderStatus: order?.orderStatus || order?.status || 'PENDING',
+            paymentStatus: order?.paymentStatus || 'PENDING',
+            orderType: order?.orderType || 'TAKEAWAY',
+            restaurantLocation,
+            userLocation,
+            timeline
+        });
     } catch (err) {
         next(err);
     }
@@ -220,6 +237,47 @@ export async function deleteOrderAdminController(req, res, next) {
         const orderId = req.params.orderId;
         const result = await orderService.deleteOrderAdmin(orderId, adminId);
         return sendResponse(res, 200, 'Order deleted successfully', result);
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function acceptOrderAdminController(req, res, next) {
+    try {
+        const adminId = req.user?.userId;
+        const orderId = req.params.orderId;
+        const order = await orderService.acceptOrderAdmin(orderId, adminId);
+        return sendResponse(res, 200, 'Order accepted by admin', { order });
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function rejectOrderAdminController(req, res, next) {
+    try {
+        const adminId = req.user?.userId;
+        const orderId = req.params.orderId;
+        const dto = validateRejectOrderDto(req.body);
+        const order = await orderService.rejectOrderAdmin(orderId, adminId, dto.reason);
+        return sendResponse(res, 200, 'Order rejected by admin', { order });
+    } catch (err) {
+        next(err);
+    }
+}
+
+export async function verifyOtpController(req, res, next) {
+    try {
+        const orderId = req.params.orderId;
+        const otp = req.body.otp;
+        const verifier = {
+            userId: req.user?.userId,
+            role: req.user?.role
+        };
+        if (!otp) {
+            throw new ValidationError("OTP code is required");
+        }
+        const order = await orderService.verifyOtp(orderId, otp, verifier);
+        return sendResponse(res, 200, 'OTP verified successfully', { order });
     } catch (err) {
         next(err);
     }

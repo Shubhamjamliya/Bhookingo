@@ -6,6 +6,8 @@ import Lenis from "lenis"
 import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
 import { restaurantAPI } from "@food/api"
+import io from "socket.io-client"
+import { API_BASE_URL } from "@food/api/config"
 import {
   ArrowLeft,
   Printer,
@@ -62,6 +64,8 @@ export default function OrderDetails() {
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [otpInput, setOtpInput] = useState("")
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
 
   // Fetch order data from API
   useEffect(() => {
@@ -199,10 +203,14 @@ export default function OrderDetails() {
             time: new Date(order.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
             restaurant: restaurantName,
             address: fullAddress,
+            orderType: order.orderType || "DELIVERY",
+            pickupOtp: order.pickupOtp || null,
             customer: {
               name: customerName,
               orderCount: order.userId?.orderCount || 1,
               location: fullAddress,
+              distance: order.distanceKm != null ? `${order.distanceKm.toFixed(1)} km` : null,
+              arrivalEstimate: order.distanceKm != null ? `~${Math.max(5, Math.round((order.distanceKm / 45) * 60))} mins travel time` : null,
             },
             items: order.items?.map(item => ({
               name: item.name,
@@ -254,6 +262,53 @@ export default function OrderDetails() {
     }
   }, [orderId])
 
+  // Real-time location socket updates
+  useEffect(() => {
+    if (!orderId) return;
+
+    let backendUrl = API_BASE_URL;
+    try {
+      backendUrl = new URL(backendUrl).origin;
+    } catch {
+      backendUrl = String(backendUrl || "")
+        .replace(/\/api\/v\d+\/?$/i, "")
+        .replace(/\/api\/?$/i, "")
+        .replace(/\/+$/, "");
+    }
+
+    const socket = io(backendUrl, {
+      path: '/socket.io/',
+      transports: ['websocket', 'polling'],
+      reconnection: true
+    });
+
+    socket.on('connect', () => {
+      socket.emit('join-tracking', orderId);
+    });
+
+    socket.on('location-update', (payload) => {
+      if (payload && String(payload.orderId) === String(orderId)) {
+        setOrderData(prev => {
+          if (!prev) return prev;
+          const updatedDistance = payload.distanceText || (payload.distanceKm != null ? `${payload.distanceKm.toFixed(1)} km` : prev.customer.distance);
+          const updatedEstimate = payload.durationText || payload.arrivalEstimate || (payload.etaMins != null ? `~${payload.etaMins} mins` : prev.customer.arrivalEstimate);
+          return {
+            ...prev,
+            customer: {
+              ...prev.customer,
+              distance: updatedDistance,
+              arrivalEstimate: updatedEstimate
+            }
+          };
+        });
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [orderId]);
+
   // Lenis smooth scrolling
   useEffect(() => {
     const lenis = new Lenis({
@@ -280,6 +335,37 @@ export default function OrderDetails() {
     setToastMessage("Order ID copied to clipboard")
     setShowToast(true)
     setTimeout(() => setShowToast(false), 2000)
+  }
+
+  const handleVerifyOtp = async () => {
+    if (!otpInput || otpInput.length !== 6) {
+      setToastMessage("Please enter a valid 6-digit OTP");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+    try {
+      setIsVerifyingOtp(true);
+      const response = await restaurantAPI.verifyOtp(orderId, otpInput);
+      if (response.data?.success) {
+        setToastMessage("OTP Verified! Order completed.");
+        setShowToast(true);
+        setTimeout(() => {
+          setShowToast(false);
+          window.location.reload();
+        }, 1500);
+      } else {
+        setToastMessage(response.data?.message || "Failed to verify OTP");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      }
+    } catch (err) {
+      setToastMessage(err.response?.data?.message || "Failed to verify OTP");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   }
 
   const handlePrintReceipt = async () => {
@@ -587,7 +673,11 @@ export default function OrderDetails() {
       case "CANCELLED":
         return "bg-red-700 text-white"
       case "DELIVERED":
+      case "COMPLETED":
         return "bg-green-600 text-white"
+      case "READY":
+      case "READY_FOR_PICKUP":
+        return "bg-orange-500 text-white"
       default:
         return "bg-gray-600 text-white"
     }
@@ -738,9 +828,18 @@ export default function OrderDetails() {
           {/* Status and Order ID Row */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex flex-col items-end gap-1">
-              <span className={`px-2.5 py-1 rounded text-xs font-bold ${getStatusColor(orderData.status)}`}>
-                {orderData.status}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className={`px-2.5 py-1 rounded text-xs font-bold ${getStatusColor(orderData.status)}`}>
+                  {orderData.status}
+                </span>
+                <span className={`px-2.5 py-1 rounded text-xs font-bold border uppercase tracking-wider ${
+                  orderData.orderType === "DELIVERY" ? "bg-blue-50 text-blue-600 border-blue-100" : 
+                  orderData.orderType === "TAKEAWAY" ? "bg-orange-50 text-orange-600 border-orange-100" : 
+                  "bg-purple-50 text-purple-600 border-purple-100"
+                }`}>
+                  {orderData.orderType || "DELIVERY"}
+                </span>
+              </div>
               <span className="text-xs text-gray-500">{orderData.date}, {orderData.time}</span>
               {/* Resend button for order details */}
               {(orderData.status === "PREPARING" || orderData.status === "READY" || orderData.status === "CONFIRMED") && 
@@ -775,6 +874,23 @@ export default function OrderDetails() {
           {/* Divider */}
           <div className="border-t border-gray-200 my-3"></div>
 
+          {/* Customer Live Travel / Distance Info for TAKEAWAY and DINING */}
+          {(orderData.orderType === "TAKEAWAY" || orderData.orderType === "DINING") && orderData.customer.distance && (
+            <div className="mb-3 p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-indigo-600 animate-bounce" style={{ animationDuration: '3s' }} />
+                <div>
+                  <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest block">Customer Travel Info</span>
+                  <span className="text-xs text-indigo-900 font-bold">{orderData.customer.arrivalEstimate || "Arriving soon"}</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest block">Distance</span>
+                <span className="text-sm font-black text-indigo-900">{orderData.customer.distance}</span>
+              </div>
+            </div>
+          )}
+
           {/* Rejection Reason */}
           {orderData.reason && (
             <p className="text-sm text-[#B80B3D]">{orderData.reason}</p>
@@ -791,6 +907,59 @@ export default function OrderDetails() {
             </div>
           )}
         </div>
+
+        {/* OTP Verification Section for TAKEAWAY and DINING */}
+        {(orderData.orderType === "TAKEAWAY" || orderData.orderType === "DINING") && (
+          <div className="bg-white rounded-lg p-4 border border-orange-200 shadow-sm space-y-4">
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Pickup OTP Handoff</h3>
+            
+            {orderData.status === "READY_FOR_PICKUP" || orderData.status === "READY" ? (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center bg-orange-50 border border-orange-100 rounded-lg p-3">
+                  <span className="text-xs text-orange-850 font-medium">Customer's Pickup OTP:</span>
+                  <span className="text-xl font-mono font-bold text-orange-950 tracking-wider">
+                    {orderData.pickupOtp?.code || "******"}
+                  </span>
+                </div>
+                
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    pattern="\d*"
+                    placeholder="Enter 6-digit OTP"
+                    value={otpInput}
+                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 font-mono text-center tracking-widest text-lg"
+                  />
+                  <button
+                    type="button"
+                    disabled={isVerifyingOtp}
+                    onClick={handleVerifyOtp}
+                    className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {isVerifyingOtp ? "Verifying..." : "Verify"}
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-500">Verify client's OTP before handing over food collection.</p>
+              </div>
+            ) : orderData.pickupOtp?.status === "VERIFIED" || orderData.status === "COMPLETED" || orderData.status === "DELIVERED" ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-1">
+                <div className="flex justify-between text-xs text-green-850 font-semibold">
+                  <span>Pickup OTP Status:</span>
+                  <span>VERIFIED</span>
+                </div>
+                {orderData.pickupOtp?.code && (
+                  <div className="flex justify-between text-xs text-green-700">
+                    <span>Verified OTP Code:</span>
+                    <span className="font-mono font-bold">{orderData.pickupOtp.code}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 italic">OTP verification will become active when the order is marked ready for pickup.</p>
+            )}
+          </div>
+        )}
 
         {/* Customer Details Section */}
         <div>
@@ -810,12 +979,24 @@ export default function OrderDetails() {
               <hr className="border-gray-200 my-3" />
               
             </div>
-               <div className="flex items-center gap-3">
-              <MapPin className="w-5 h-5 text-gray-600" />
+            <div className="flex items-start gap-3">
+              <MapPin className="w-5 h-5 text-gray-600 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm text-gray-900">{orderData.customer.location}</p>
+                <p className="text-sm text-gray-900 font-semibold">
+                  {orderData.orderType === "DELIVERY" ? "Delivery Location" : orderData.orderType === "TAKEAWAY" ? "Takeaway Order" : "Dining Order"}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">{orderData.customer.location}</p>
+                {orderData.customer.arrivalEstimate && (
+                  <p className="text-xs text-green-600 font-semibold mt-1 bg-green-50 px-2 py-0.5 rounded inline-block">
+                    Expected Arrival: {orderData.customer.arrivalEstimate}
+                  </p>
+                )}
               </div>
-              <p className="text-sm text-gray-600">{orderData.customer.distance}</p>
+              {orderData.customer.distance && (
+                <span className="text-xs font-black bg-gray-100 text-gray-700 px-2 py-1 rounded shrink-0">
+                  {orderData.customer.distance}
+                </span>
+              )}
             </div>
           </div>
 

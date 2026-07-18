@@ -45,6 +45,26 @@ export const authMiddleware = (req, res, next) => {
                 }).catch(() => sendError(res, 401, 'Authentication failed'));
                 return;
             }
+
+            if (decoded.role === 'ADMIN' || decoded.role === 'SUB_ADMIN') {
+                // Enforce active status and non-deleted status in real-time for sub-admins/admins
+                mongoose.model('FoodAdmin').findById(decoded.userId).lean().then((doc) => {
+                    if (!doc || doc.isDeleted === true) {
+                        return sendError(res, 401, 'Admin account not found or deleted');
+                    }
+                    if (doc.status === 'suspended') {
+                        return sendError(res, 401, 'Your account has been suspended. Please contact support.');
+                    }
+                    if (doc.status === 'inactive' || doc.isActive === false) {
+                        return sendError(res, 401, 'Your account is inactive. Please contact the administrator.');
+                    }
+                    // Attach updated role and permissions to req.user for RBAC checking
+                    req.user.role = doc.role || 'ADMIN';
+                    req.user.permissions = doc.permissions || {};
+                    next();
+                }).catch(() => sendError(res, 401, 'Authentication failed'));
+                return;
+            }
             return next();
         }).catch(() => sendError(res, 401, 'Authentication failed'));
         return;

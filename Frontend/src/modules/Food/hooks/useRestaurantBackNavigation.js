@@ -94,7 +94,7 @@ const resolveRestaurantBackPath = ({ pathname, state }) => {
     normalizedPath === "/ratings-reviews" ||
     normalizedPath === "/dish-ratings"
   ) {
-    return explicitBackPath || "/food/restaurant/reviews"
+    return explicitBackPath || "/food/restaurant/feedback?tab=reviews"
   }
 
   if (

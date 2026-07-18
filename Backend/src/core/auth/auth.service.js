@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import nodemailer from "nodemailer";
+import bcrypt from "bcryptjs";
 import ms from "ms";
 import { OAuth2Client } from "google-auth-library";
 import { FoodUser } from "../users/user.model.js";
@@ -7,7 +9,7 @@ import { AdminResetOtp } from "../admin/adminResetOtp.model.js";
 import { FoodRestaurant } from "../../modules/food/restaurant/models/restaurant.model.js";
 import { FoodReferralSettings } from "../../modules/food/admin/models/referralSettings.model.js";
 import { FoodReferralLog } from "../../modules/food/admin/models/referralLog.model.js";
-import { createOrUpdateOtp, verifyOtp } from "../otp/otp.service.js";
+import { createOrUpdateOtp, verifyOtp, sendOrderSms } from "../otp/otp.service.js";
 import { signAccessToken, signRefreshToken } from "./token.util.js";
 import { FoodRefreshToken } from "../refreshTokens/refreshToken.model.js";
 import { ValidationError, AuthError } from "./errors.js";
@@ -530,15 +532,27 @@ export const adminLogin = async (email, password) => {
     throw new ValidationError("Email and password are required");
   }
 
-  const admin = await FoodAdmin.findOne({ email });
+  const admin = await FoodAdmin.findOne({ email, isDeleted: { $ne: true } });
   if (!admin) {
     throw new AuthError("Invalid credentials");
+  }
+
+  if (admin.status === 'suspended') {
+    throw new AuthError("Your account has been suspended. Please contact support.");
+  }
+
+  if (admin.status === 'inactive' || admin.isActive === false) {
+    throw new AuthError("Your account is inactive. Please contact the administrator.");
   }
 
   const isMatch = await admin.comparePassword(password);
   if (!isMatch) {
     throw new AuthError("Invalid credentials");
   }
+
+  // Update lastLogin
+  admin.lastLogin = new Date();
+  await admin.save();
 
   const payload = { userId: admin._id.toString(), role: admin.role };
 
@@ -1003,104 +1017,322 @@ export const changeAdminPassword = async (
 };
 
 /** Admin forgot password: request OTP. Only accepts email that is registered as admin. */
-export const requestAdminForgotPasswordOtp = async (email) => {
-  const normalizedEmail = String(email || "")
-    .trim()
-    .toLowerCase();
-  if (!normalizedEmail) {
-    throw new ValidationError("Email is required");
+const hashSha256 = (text) => {
+  return crypto.createHash("sha256").update(text).digest("hex");
+};
+
+export const requestAdminForgotPasswordOtp = async (email, phone, ip = '', userAgent = '') => {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedPhone = String(phone || "").trim().replace(/\D/g, "");
+
+  if (!normalizedEmail || !normalizedPhone) {
+    throw new ValidationError("Email and mobile number are required");
   }
 
-  const admin = await FoodAdmin.findOne({ email: normalizedEmail });
+  const admin = await FoodAdmin.findOne({ email: normalizedEmail, isDeleted: { $ne: true } });
   if (!admin) {
-    throw new AuthError("This email is not registered as an admin account.");
+    throw new AuthError("The provided recovery information is invalid.");
   }
 
-  const otp = config.useDefaultOtp
-    ? "123456"
-    : String(crypto.randomInt(100000, 999999));
-  const ttlMs = (config.otpExpiryMinutes || 10) * 60 * 1000;
-  const expiresAt = new Date(Date.now() + ttlMs);
+  let isMatch = false;
+  if (admin.role === 'ADMIN') {
+    const mainEmailMatch = admin.email === normalizedEmail;
+    const recoveryEmailMatch = admin.recoveryEmail && admin.recoveryEmail === normalizedEmail;
+    const emailMatch = mainEmailMatch || recoveryEmailMatch;
+
+    const mainPhoneMatch = admin.phone && admin.phone.replace(/\D/g, "") === normalizedPhone;
+    const recoveryPhoneMatch = admin.recoveryMobile && admin.recoveryMobile.replace(/\D/g, "") === normalizedPhone;
+    const phoneMatch = mainPhoneMatch || recoveryPhoneMatch;
+
+    if (emailMatch && phoneMatch) {
+      isMatch = true;
+    }
+  } else if (admin.role === 'SUB_ADMIN') {
+    const emailMatch = admin.email === normalizedEmail;
+    const phoneMatch = admin.phone && admin.phone.replace(/\D/g, "") === normalizedPhone;
+    if (emailMatch && phoneMatch) {
+      isMatch = true;
+    }
+  }
+
+  if (!isMatch) {
+    await mongoose.model('FoodAdminAuditLog').create({
+      adminId: admin._id,
+      adminEmail: normalizedEmail,
+      action: 'Recovery Requested Failed',
+      details: 'Recovery failed: provided recovery details do not match records.',
+      ip,
+      userAgent
+    });
+    throw new AuthError("The provided recovery information is invalid.");
+  }
+
+  const existingOtp = await AdminResetOtp.findOne({ email: normalizedEmail });
+  const now = new Date();
+
+  if (existingOtp) {
+    if (existingOtp.lockedUntil && existingOtp.lockedUntil > now) {
+      const remMins = Math.ceil((existingOtp.lockedUntil - now) / 60000);
+      throw new AuthError(`Account locked due to too many failed attempts. Try again in ${remMins} minutes.`);
+    }
+
+    if (existingOtp.lastResentAt) {
+      const timeDiffSec = Math.floor((now - existingOtp.lastResentAt) / 1000);
+      if (timeDiffSec < 60) {
+        throw new AuthError(`Please wait ${60 - timeDiffSec} seconds before requesting a new OTP.`);
+      }
+    }
+
+    if (existingOtp.resendAttempts >= 3) {
+      existingOtp.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      await existingOtp.save();
+
+      await mongoose.model('FoodAdminAuditLog').create({
+        adminId: admin._id,
+        adminEmail: admin.email,
+        action: 'Too Many Attempts',
+        details: 'Recovery blocked: maximum resend attempts (3) exceeded. Locked for 15 minutes.',
+        ip,
+        userAgent
+      });
+      throw new AuthError("Maximum OTP resends exceeded. Session locked for 15 minutes.");
+    }
+  }
+
+  const otp = config.useDefaultOtp ? "123456" : String(crypto.randomInt(100000, 999999));
+  const otpHash = hashSha256(otp);
+  const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
   await AdminResetOtp.findOneAndUpdate(
     { email: normalizedEmail },
-    { otp, expiresAt, attempts: 0 },
-    { upsert: true, new: true },
+    {
+      phone: normalizedPhone,
+      otpHash,
+      otpExpiresAt,
+      attempts: 0,
+      isVerified: false,
+      resetToken: null,
+      resetTokenExpiresAt: null,
+      lockedUntil: null,
+      $inc: { resendAttempts: 1 },
+      lastResentAt: now
+    },
+    { upsert: true, new: true }
   );
 
-  if (config.useDefaultOtp) {
-    logger.info(`Admin reset OTP for ${normalizedEmail}: ${otp}`);
+  let emailSent = false;
+  let smsSent = false;
+
+  try {
+    emailSent = await sendAdminResetOtpEmail(normalizedEmail, otp);
+  } catch (err) {
+    logger.error(`Failed to send recovery OTP email: ${err.message}`);
   }
 
-  const sent = await sendAdminResetOtpEmail(normalizedEmail, otp);
-  if (!sent && !config.useDefaultOtp) {
-    logger.warn(
-      `Admin OTP not sent by email to ${normalizedEmail}; check SMTP config.`,
-    );
+  try {
+    await sendOrderSms(admin.phone || normalizedPhone, otp);
+    smsSent = true;
+  } catch (err) {
+    logger.error(`Failed to send recovery OTP SMS: ${err.message}`);
   }
+
+  await mongoose.model('FoodAdminAuditLog').create({
+    adminId: admin._id,
+    adminEmail: admin.email,
+    action: 'Recovery Requested',
+    details: `OTP generated. Email Sent: ${emailSent ? 'Yes' : 'No'}. SMS Sent: ${smsSent ? 'Yes' : 'No'}.`,
+    ip,
+    userAgent
+  });
 
   return {
     success: true,
-    message: "If this email is registered, you will receive an OTP shortly.",
+    message: "A verification code has been sent to your registered contact channels."
   };
 };
 
-/** Admin forgot password: verify OTP and set new password in one call. */
-export const resetAdminPasswordWithOtp = async (email, otp, newPassword) => {
-  const normalizedEmail = String(email || "")
-    .trim()
-    .toLowerCase();
+export const verifyAdminForgotPasswordOtp = async (email, otp, ip = '', userAgent = '') => {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
   const otpStr = String(otp || "").replace(/\D/g, "");
+
   if (!normalizedEmail || !otpStr) {
-    throw new ValidationError("Email and OTP are required");
-  }
-  if (!newPassword || String(newPassword).length < 6) {
-    throw new ValidationError("New password must be at least 6 characters");
+    throw new ValidationError("Email and verification code are required");
   }
 
   const record = await AdminResetOtp.findOne({ email: normalizedEmail });
   if (!record) {
-    throw new AuthError("OTP not found or expired. Please request a new code.");
-  }
-  if (record.expiresAt < new Date()) {
-    await record.deleteOne();
-    throw new AuthError("OTP has expired. Please request a new code.");
-  }
-  if (record.attempts >= (config.otpMaxAttempts || 5)) {
-    throw new AuthError("Too many attempts. Please request a new code.");
-  }
-  record.attempts += 1;
-  if (record.otp !== otpStr) {
-    await record.save();
-    throw new AuthError("Invalid OTP.");
+    throw new AuthError("The verification code is invalid or has expired.");
   }
 
-  const admin = await FoodAdmin.findOne({ email: normalizedEmail });
+  const now = new Date();
+
+  if (record.lockedUntil && record.lockedUntil > now) {
+    const remMins = Math.ceil((record.lockedUntil - now) / 60000);
+    throw new AuthError(`Session locked due to too many failed attempts. Try again in ${remMins} minutes.`);
+  }
+
+  if (record.otpExpiresAt < now) {
+    await record.deleteOne();
+    throw new AuthError("The verification code is invalid or has expired.");
+  }
+
+  const admin = await FoodAdmin.findOne({ email: normalizedEmail, isDeleted: { $ne: true } });
+  const adminId = admin ? admin._id : null;
+
+  if (record.attempts >= 5) {
+    record.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+    record.attempts = 0;
+    await record.save();
+
+    await mongoose.model('FoodAdminAuditLog').create({
+      adminId,
+      adminEmail: normalizedEmail,
+      action: 'Too Many Attempts',
+      details: 'Recovery OTP verification blocked: 5 failed attempts reached. Locked for 15 minutes.',
+      ip,
+      userAgent
+    });
+    throw new AuthError("Too many attempts. Verification session locked for 15 minutes.");
+  }
+
+  const otpHash = hashSha256(otpStr);
+  if (record.otpHash !== otpHash) {
+    record.attempts += 1;
+    await record.save();
+
+    await mongoose.model('FoodAdminAuditLog').create({
+      adminId,
+      adminEmail: normalizedEmail,
+      action: 'OTP Failed',
+      details: `Failed OTP entry. Attempts: ${record.attempts}/5.`,
+      ip,
+      userAgent
+    });
+
+    throw new AuthError("The verification code is invalid or has expired.");
+  }
+
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  record.resetToken = resetToken;
+  record.resetTokenExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  record.isVerified = true;
+  record.attempts = 0;
+  record.otpHash = 'USED';
+  await record.save();
+
+  await mongoose.model('FoodAdminAuditLog').create({
+    adminId,
+    adminEmail: normalizedEmail,
+    action: 'OTP Verified',
+    details: 'OTP verified successfully. Reset token issued.',
+    ip,
+    userAgent
+  });
+
+  return {
+    success: true,
+    resetToken
+  };
+};
+
+export const resetAdminPasswordWithOtp = async (resetToken, newPassword, ip = '', userAgent = '') => {
+  if (!resetToken || !newPassword) {
+    throw new ValidationError("Reset token and password are required");
+  }
+
+  const record = await AdminResetOtp.findOne({
+    resetToken,
+    isVerified: true,
+    resetTokenExpiresAt: { $gt: new Date() }
+  });
+
+  if (!record) {
+    throw new AuthError("Session expired or invalid reset token. Please request a new code.");
+  }
+
+  const admin = await FoodAdmin.findOne({ email: record.email, isDeleted: { $ne: true } });
   if (!admin) {
     await record.deleteOne();
     throw new AuthError("Account not found.");
   }
 
-  admin.password = newPassword;
-  await admin.save();
-  await record.deleteOne();
-
-  try {
-    const { notifyAdminsSafely } = await import("../../core/notifications/firebase.service.js");
-    void notifyAdminsSafely({
-      title: "Security Alert: Password Reset Successful 🔐",
-      body: `The password for admin account ${admin.email} has been reset via OTP.`,
-      data: {
-        type: "security_alert",
-        subType: "password_reset",
-        email: admin.email
-      }
-    });
-  } catch (e) {
-    console.error("Failed to notify admins of password reset:", e);
+  if (newPassword.length < 8) {
+    throw new ValidationError("Password must be at least 8 characters long");
+  }
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (!passwordRegex.test(newPassword)) {
+    throw new ValidationError("Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character");
   }
 
-  return { success: true, message: "Password reset successfully." };
+  if (admin.passwordHistory && admin.passwordHistory.length > 0) {
+    for (const oldHash of admin.passwordHistory) {
+      const match = await bcrypt.compare(newPassword, oldHash);
+      if (match) {
+        throw new ValidationError("You cannot reuse any of your recently used passwords.");
+      }
+    }
+  }
+
+  const matchCurrent = await bcrypt.compare(newPassword, admin.password);
+  if (matchCurrent) {
+    throw new ValidationError("You cannot reuse any of your recently used passwords.");
+  }
+
+  admin.password = newPassword;
+  admin.passwordResetDate = new Date();
+  await admin.save();
+
+  await record.deleteOne();
+
+  await mongoose.model('FoodRefreshToken').deleteMany({ userId: admin._id });
+
+  await mongoose.model('FoodAdminAuditLog').create({
+    adminId: admin._id,
+    adminEmail: admin.email,
+    action: 'Password Reset Successful',
+    details: 'Password reset completed. All active sessions invalidated.',
+    ip,
+    userAgent
+  });
+
+  try {
+    const from = config.emailFrom || config.emailUser;
+    const transporter = nodemailer.createTransport({
+        host: config.emailHost,
+        port: config.emailPort || 587,
+        secure: config.emailPort === 465,
+        auth: {
+            user: config.emailUser,
+            pass: config.emailPass
+        }
+    });
+
+    const mailOptions = {
+      from,
+      to: admin.recoveryEmail || admin.email,
+      subject: 'Security Alert: Your Bhookingo Admin Password Has Been Changed',
+      html: `
+        <p>Hello,</p>
+        <p><strong>Your Bhookingo Admin password was changed successfully.</strong></p>
+        <p>If this wasn't you, please contact support immediately.</p>
+        <p>Timestamp: ${new Date().toUTCString()}</p>
+      `
+    };
+    await transporter.sendMail(mailOptions);
+  } catch (err) {
+    logger.error(`Failed to send password changed notification email: ${err.message}`);
+  }
+
+  try {
+    await sendOrderSms(
+      admin.recoveryMobile || admin.phone,
+      "Your Bhookingo Admin password was changed successfully. If this wasn't you, contact support immediately."
+    );
+  } catch (err) {
+    logger.error(`Failed to send password changed notification SMS: ${err.message}`);
+  }
+
+  return { success: true };
 };
 
 export const refreshAccessToken = async (token) => {

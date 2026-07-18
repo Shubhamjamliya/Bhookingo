@@ -6,6 +6,8 @@ import { clearModuleAuth } from "@food/utils/auth"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@food/components/ui/dropdown-menu"
 import { exportRestaurantsToPDF } from "@food/components/admin/restaurants/restaurantsExportUtils"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
+import { getCurrentUser } from "@food/utils/auth"
+import { hasModulePermission } from "@food/utils/permissions"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -98,6 +100,10 @@ const getPrimaryRestaurantImage = (restaurant, fallback = "") => {
 
 
 export default function RestaurantsList() {
+  const user = getCurrentUser("admin")
+  const canEdit = hasModulePermission(user, "restaurants", "edit")
+  const canSuspend = hasModulePermission(user, "restaurants", "suspend")
+
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
   const [restaurants, setRestaurants] = useState([])
@@ -248,7 +254,8 @@ export default function RestaurantsList() {
             zone: zoneLabelFromRestaurant(restaurant),
             approvalStatus: normalizeApprovalStatus(restaurant),
             isActive: restaurant.isActive !== false,
-            rating: restaurant.ratings?.average || restaurant.rating || 0,
+            rating: restaurant.rating || restaurant.ratings?.average || 0,
+            totalRatings: restaurant.totalRatings || restaurant.ratings?.count || 0,
             logo: getPrimaryRestaurantImage(restaurant, PLACEHOLDER_40),
             originalData: restaurant,
           }))
@@ -1244,11 +1251,29 @@ export default function RestaurantsList() {
                           <span className="text-sm text-slate-700">{restaurant.zone}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                            <span className="text-sm font-semibold text-slate-900">
-                              {(Number(restaurant.rating) || 0).toFixed(1)}
-                            </span>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-0.5">
+                              {Array.from({ length: 5 }).map((_, i) => {
+                                const starVal = i + 1;
+                                const isFilled = starVal <= Math.round(restaurant.rating || 0);
+                                return (
+                                  <Star
+                                    key={i}
+                                    className={`w-3 h-3 ${
+                                      isFilled
+                                        ? "fill-amber-400 text-amber-400"
+                                        : "text-slate-255 fill-slate-200"
+                                    }`}
+                                  />
+                                );
+                              })}
+                            </div>
+                            <div className="text-sm font-semibold text-slate-900 leading-none mt-0.5">
+                              {(Number(restaurant.rating) || 0).toFixed(1)} / 5
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-medium leading-none">
+                              {restaurant.totalRatings > 0 ? `(${restaurant.totalRatings} Reviews)` : "(No Reviews)"}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -1270,23 +1295,27 @@ export default function RestaurantsList() {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => handleBanRestaurant(restaurant)}
-                              className={`p-1.5 rounded transition-colors ${!restaurant.isActive
-                                ? "text-green-600 hover:bg-green-50"
-                                : "text-red-600 hover:bg-red-50"
-                                }`}
-                              title={!restaurant.isActive ? "Unban Restaurant" : "Ban Restaurant"}
-                            >
-                              <ShieldX className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteRestaurant(restaurant)}
-                              className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
-                              title="Delete Restaurant"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {canSuspend && (
+                              <button
+                                onClick={() => handleBanRestaurant(restaurant)}
+                                className={`p-1.5 rounded transition-colors ${!restaurant.isActive
+                                  ? "text-green-600 hover:bg-green-50"
+                                  : "text-red-600 hover:bg-red-50"
+                                  }`}
+                                title={!restaurant.isActive ? "Unban Restaurant" : "Ban Restaurant"}
+                              >
+                                <ShieldX className="w-4 h-4" />
+                              </button>
+                            )}
+                            {canSuspend && (
+                              <button
+                                onClick={() => handleDeleteRestaurant(restaurant)}
+                                className="p-1.5 rounded text-red-600 hover:bg-red-50 transition-colors"
+                                title="Delete Restaurant"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1316,14 +1345,14 @@ export default function RestaurantsList() {
                 <p className="text-sm text-slate-500 mt-1">Detailed overview and information</p>
               </div>
               <div className="flex items-center gap-2">
-                {!isEditingDetails ? (
+                {!isEditingDetails && canEdit ? (
                   <button
                     onClick={handleStartEditDetails}
                     className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
                   >
                     Edit Details
                   </button>
-                ) : (
+                ) : !isEditingDetails ? null : (
                   <>
                     <button
                       onClick={handleCancelEditDetails}
@@ -1724,14 +1753,14 @@ export default function RestaurantsList() {
                         </div>
                       </div>
                       <div className="flex items-center justify-center md:justify-start gap-6 flex-wrap">
-                        {(r?.ratings?.average != null) && (
+                        {(r?.rating != null || r?.ratings?.average != null) && (
                           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 rounded-xl">
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-500" />
                             <span className="text-sm font-bold text-yellow-700">
-                              {(r.ratings?.average ?? 0).toFixed(1)}
+                              {(r.rating ?? r.ratings?.average ?? 0).toFixed(1)}
                             </span>
                             <span className="text-xs text-yellow-600/70 ml-1 font-medium">
-                              ({(r.ratings?.count ?? 0)} reviews)
+                              ({(r.totalRatings ?? r.ratings?.count ?? 0)} reviews)
                             </span>
                           </div>
                         )}

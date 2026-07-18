@@ -182,6 +182,7 @@ export const adminSidebarMenu = [
     label: "SYSTEM SETTINGS",
     items: [
       { type: "link", label: "Broadcast Notification", path: "/admin/food/broadcast-notification", icon: "Bell" },
+      { type: "link", label: "Sub-Admins", path: "/admin/food/sub-admins", icon: "UserCog" },
       { type: "link", label: "Business Setup", path: "/admin/food/business-setup", icon: "Settings" },
       { type: "link", label: "Customization Settings", path: "/admin/food/customization-settings", icon: "Zap" },
       { type: "link", label: "Driving Mode Settings", path: "/admin/food/driving-mode-settings", icon: "Settings" },

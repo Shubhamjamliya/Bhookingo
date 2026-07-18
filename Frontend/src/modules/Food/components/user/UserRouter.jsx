@@ -44,6 +44,7 @@ const Orders = lazy(() => import("@food/pages/user/orders/Orders"))
 const OrderTracking = lazy(() => import("@food/pages/user/orders/OrderTracking"))
 const OrderInvoice = lazy(() => import("@food/pages/user/orders/OrderInvoice"))
 const UserOrderDetails = lazy(() => import("@food/pages/user/orders/UserOrderDetails"))
+const OrderReview = lazy(() => import("@food/pages/user/orders/OrderReview"))
 
 // Offers
 const Offers = lazy(() => import("@food/pages/user/Offers"))
@@ -229,6 +230,7 @@ export default function UserRouter() {
             <Route path="orders/:orderId" element={<OrderTracking />} />
             <Route path="orders/:orderId/invoice" element={<OrderInvoice />} />
             <Route path="orders/:orderId/details" element={<UserOrderDetails />} />
+            <Route path="orders/:orderId/review" element={<OrderReview />} />
 
             {/* Offers */}
             <Route path="offers" element={<Offers />} />

@@ -166,14 +166,28 @@ export function validateDispatchSettingsDto(body) {
 }
 
 export function validateOrderRatingsDto(body) {
+    console.log("📥 Incoming ratings payload validation request body:", JSON.stringify(body, null, 2));
+    const facilitySchema = z.object({
+        rating: z.number().min(1).max(5).nullable().optional(),
+        availability: z.boolean().optional()
+    }).optional();
+
     const schema = z.object({
         restaurantRating: z.number().min(1).max(5),
-        restaurantComment: z.string().max(500).optional(),
+        restaurantComment: z.string().max(500).optional().nullable(),
+        parking: facilitySchema,
+        wifi: facilitySchema,
+        familyFriendly: facilitySchema,
+        evCharging: facilitySchema,
+        washroom: facilitySchema
     });
     const result = schema.safeParse(body || {});
     if (!result.success) {
-        throw new ValidationError(result.error.errors?.[0]?.message || 'Validation failed');
+        const formattedErrors = result.error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+        console.error("❌ Ratings validation failed! Details:", formattedErrors);
+        throw new ValidationError(`Validation failed: ${formattedErrors}`);
     }
+    console.log("✅ Ratings validation passed successfully. Validated DTO:", JSON.stringify(result.data, null, 2));
     return result.data;
 }
 

@@ -127,9 +127,22 @@ const orderEntityRatingSchema = new mongoose.Schema(
     { _id: false }
 );
 
+const facilityRatingSchema = new mongoose.Schema(
+    {
+        rating: { type: Number, min: 1, max: 5, default: null },
+        availability: { type: Boolean, default: true }
+    },
+    { _id: false }
+);
+
 const orderRatingsSchema = new mongoose.Schema(
     {
         restaurant: { type: orderEntityRatingSchema, default: undefined },
+        parking: { type: facilityRatingSchema, default: undefined },
+        wifi: { type: facilityRatingSchema, default: undefined },
+        familyFriendly: { type: facilityRatingSchema, default: undefined },
+        evCharging: { type: facilityRatingSchema, default: undefined },
+        washroom: { type: facilityRatingSchema, default: undefined }
     },
     { _id: false }
 );

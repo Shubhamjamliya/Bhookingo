@@ -579,7 +579,7 @@ export async function getOrderById(
   const order = await FoodOrder.findOne(identity)
     .populate(
       "restaurantId",
-      "restaurantName ownerPhone profileImage area city location rating totalRatings primaryContactNumber highwayName",
+      "restaurantName ownerPhone profileImage area city location rating totalRatings primaryContactNumber highwayName facilities",
     )
     .populate("userId", "name fullName phone email")
     .lean();
@@ -872,10 +872,11 @@ export async function submitOrderRatings(orderId, userId, dto) {
   const order = await FoodOrder.findOne({
     ...identity,
     userId: new mongoose.Types.ObjectId(userId),
-  });
+  }).populate('restaurantId');
   if (!order) throw new NotFoundError("Order not found");
-  if (String(order.orderStatus) !== "delivered") {
-    throw new ValidationError("You can rate only delivered orders");
+  const currentStatus = String(order.orderStatus).toLowerCase();
+  if (currentStatus !== "delivered" && currentStatus !== "completed") {
+    throw new ValidationError("You can rate only completed or delivered orders");
   }
 
   const restaurantAlreadyRated = Number.isFinite(
@@ -886,31 +887,100 @@ export async function submitOrderRatings(orderId, userId, dto) {
   }
 
   const now = new Date();
-  order.ratings = order.ratings || {};
   order.ratings.restaurant = {
     rating: dto.restaurantRating,
     comment: dto.restaurantComment || "",
     ratedAt: now,
   };
 
-
-
-  await Promise.all([
-    applyAggregateRating(
-      FoodRestaurant,
-      order.restaurantId,
-      dto.restaurantRating,
-    ),
-    Promise.resolve(),
-  ]);
+  const restaurantFacilities = order.restaurantId?.facilities || {};
+  const facilities = ['parking', 'wifi', 'familyFriendly', 'evCharging', 'washroom'];
+  facilities.forEach(fac => {
+    const isSupported = restaurantFacilities[fac] === true;
+    if (isSupported && dto[fac]) {
+      order.ratings[fac] = {
+        rating: typeof dto[fac].rating === 'number' ? dto[fac].rating : null,
+        availability: dto[fac].availability !== false
+      };
+    } else {
+      order.ratings[fac] = undefined;
+    }
+  });
 
   await order.save();
+  await calculateAndSaveRestaurantRatingStats(order.restaurantId?._id || order.restaurantId);
+
   enqueueOrderEvent('order_ratings_submitted', {
     orderMongoId: order._id?.toString?.(),
     orderId: order._id.toString(),
     userId,
     restaurantRating: dto.restaurantRating,
   });
+
+  return order;
+}
+
+/**
+ * Recalculate and update a restaurant's overall and facility average ratings.
+ */
+export async function calculateAndSaveRestaurantRatingStats(restaurantId) {
+  const FoodOrder = mongoose.model('FoodOrder');
+  const FoodRestaurant = mongoose.model('FoodRestaurant');
+
+  const orders = await FoodOrder.find({
+    restaurantId,
+    'ratings.restaurant.rating': { $exists: true, $ne: null }
+  }).select('ratings').lean();
+
+  if (orders.length === 0) return;
+
+  let overallSum = 0, overallCount = 0;
+  let parkingSum = 0, parkingCount = 0;
+  let wifiSum = 0, wifiCount = 0;
+  let familySum = 0, familyCount = 0;
+  let evSum = 0, evCount = 0;
+  let washroomSum = 0, washroomCount = 0;
+
+  orders.forEach(o => {
+    const ratings = o.ratings || {};
+
+    if (ratings.restaurant && typeof ratings.restaurant.rating === 'number') {
+      overallSum += ratings.restaurant.rating;
+      overallCount++;
+    }
+    if (ratings.parking && ratings.parking.availability !== false && typeof ratings.parking.rating === 'number') {
+      parkingSum += ratings.parking.rating;
+      parkingCount++;
+    }
+    if (ratings.wifi && ratings.wifi.availability !== false && typeof ratings.wifi.rating === 'number') {
+      wifiSum += ratings.wifi.rating;
+      wifiCount++;
+    }
+    if (ratings.familyFriendly && ratings.familyFriendly.availability !== false && typeof ratings.familyFriendly.rating === 'number') {
+      familySum += ratings.familyFriendly.rating;
+      familyCount++;
+    }
+    if (ratings.evCharging && ratings.evCharging.availability !== false && typeof ratings.evCharging.rating === 'number') {
+      evSum += ratings.evCharging.rating;
+      evCount++;
+    }
+    if (ratings.washroom && ratings.washroom.availability !== false && typeof ratings.washroom.rating === 'number') {
+      washroomSum += ratings.washroom.rating;
+      washroomCount++;
+    }
+  });
+
+  const updateData = {
+    rating: overallCount > 0 ? Number((overallSum / overallCount).toFixed(1)) : 0,
+    totalRatings: overallCount,
+    parkingRating: parkingCount > 0 ? Number((parkingSum / parkingCount).toFixed(1)) : 0,
+    wifiRating: wifiCount > 0 ? Number((wifiSum / wifiCount).toFixed(1)) : 0,
+    familyFriendlyRating: familyCount > 0 ? Number((familySum / familyCount).toFixed(1)) : 0,
+    evChargingRating: evCount > 0 ? Number((evSum / evCount).toFixed(1)) : 0,
+    washroomRating: washroomCount > 0 ? Number((washroomSum / washroomCount).toFixed(1)) : 0
+  };
+
+  await FoodRestaurant.findByIdAndUpdate(restaurantId, { $set: updateData });
 }
 
 export async function updateOrderInstructions(orderId, userId, instructions) {

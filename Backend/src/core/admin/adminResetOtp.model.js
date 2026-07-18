@@ -9,17 +9,47 @@ const adminResetOtpSchema = new mongoose.Schema(
             trim: true,
             index: true
         },
-        otp: {
+        phone: {
+            type: String,
+            trim: true,
+            default: ''
+        },
+        otpHash: {
             type: String,
             required: true
         },
-        expiresAt: {
+        otpExpiresAt: {
             type: Date,
             required: true
         },
         attempts: {
             type: Number,
             default: 0
+        },
+        resendAttempts: {
+            type: Number,
+            default: 0
+        },
+        lastResentAt: {
+            type: Date,
+            default: null
+        },
+        resetToken: {
+            type: String,
+            default: null,
+            index: true
+        },
+        resetTokenExpiresAt: {
+            type: Date,
+            default: null
+        },
+        isVerified: {
+            type: Boolean,
+            default: false
+        },
+        lockedUntil: {
+            type: Date,
+            default: null
         }
     },
     {
@@ -28,6 +58,7 @@ const adminResetOtpSchema = new mongoose.Schema(
     }
 );
 
-adminResetOtpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// Auto-delete records after they expire (set TTL on resetTokenExpiresAt or otpExpiresAt fallback)
+adminResetOtpSchema.index({ resetTokenExpiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const AdminResetOtp = mongoose.model('AdminResetOtp', adminResetOtpSchema);

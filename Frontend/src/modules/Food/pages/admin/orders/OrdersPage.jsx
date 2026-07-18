@@ -14,6 +14,8 @@ import RefundModal from "@food/components/admin/orders/RefundModal"
 import { useOrdersManagement } from "@food/components/admin/orders/useOrdersManagement"
 import { Loader2 } from "lucide-react"
 import { OrdersDashboardSkeleton } from "@food/components/ui/loading-skeletons"
+import { getCurrentUser } from "@food/utils/auth"
+import { hasModulePermission } from "@food/utils/permissions"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 const alertSound = "/alert.mp3"
 const originalSound = "/original.mp3"
@@ -39,6 +41,12 @@ const statusConfig = {
 }
 
 export default function OrdersPage({ statusKey = "all" }) {
+  const user = getCurrentUser("admin")
+  const canEdit = hasModulePermission(user, "orders", "edit")
+  const canCancel = hasModulePermission(user, "orders", "cancel")
+  const canRefund = hasModulePermission(user, "orders", "refund")
+  const canExport = hasModulePermission(user, "orders", "export")
+
   const config = statusConfig[statusKey] || statusConfig["all"]
   const [orders, setOrders] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -901,7 +909,7 @@ export default function OrdersPage({ statusKey = "all" }) {
         setSearchQuery={setSearchQuery}
         onFilterClick={() => setIsFilterOpen(true)}
         activeFiltersCount={activeFiltersCount}
-        onExport={handleExport}
+        onExport={canExport ? handleExport : undefined}
         onSettingsClick={() => setIsSettingsOpen(true)}
       />
       <FilterPanel
@@ -937,10 +945,10 @@ export default function OrdersPage({ statusKey = "all" }) {
         visibleColumns={visibleColumns}
         onViewOrder={handleViewOrder}
         onPrintOrder={handlePrintOrder}
-        onRefund={handleRefund}
-        onDeleteOrder={statusKey === "all" ? handleDeleteOrder : undefined}
-        onAcceptOrder={statusKey === "all" ? handleAcceptOrder : undefined}
-        onRejectOrder={statusKey === "all" ? handleRejectOrder : undefined}
+        onRefund={canRefund ? handleRefund : undefined}
+        onDeleteOrder={(statusKey === "all" && canCancel) ? handleDeleteOrder : undefined}
+        onAcceptOrder={(statusKey === "all" && canEdit) ? handleAcceptOrder : undefined}
+        onRejectOrder={(statusKey === "all" && canEdit) ? handleRejectOrder : undefined}
         actionLoadingOrderId={processingActionOrderId}
         deletingOrderId={deletingOrderId}
       />

@@ -16,13 +16,9 @@ export default function Orders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [ratingModal, setRatingModal] = useState({ open: false, order: null })
   const [activeMenuOrderId, setActiveMenuOrderId] = useState(null)
   const [showShareModal, setShowShareModal] = useState(false)
   const [sharePayload, setSharePayload] = useState(null)
-  const [selectedRestaurantRating, setSelectedRestaurantRating] = useState(null)
-  const [restaurantFeedbackText, setRestaurantFeedbackText] = useState("")
-  const [submittingRating, setSubmittingRating] = useState(false)
   const [countdowns, setCountdowns] = useState({})
   // Track orders that have shown rating popup - persist in localStorage
   const [shownRatingForOrders, setShownRatingForOrders] = useState(() => {
@@ -95,7 +91,7 @@ export default function Orders() {
 
   // Auto-show rating popup when order is delivered (only once per order)
   useEffect(() => {
-    if (orders.length === 0 || ratingModal.open) {
+    if (orders.length === 0) {
       return
     }
 
@@ -121,10 +117,10 @@ export default function Orders() {
         transformedStatus.toLowerCase() === 'delivered' ||
         transformedStatus.toLowerCase() === 'completed'
 
-      const hasRestaurantRating = Number.isFinite(Number(order.restaurantRating))
+      const hasRestaurantRating = typeof order.restaurantRating === 'number' && order.restaurantRating > 0
       const hasRating = hasRestaurantRating || 
-                        Number.isFinite(Number(order.rating)) || 
-                        Number.isFinite(Number(order.ratings?.restaurant?.rating))
+                        (typeof order.rating === 'number' && order.rating > 0) || 
+                        (typeof order.ratings?.restaurant?.rating === 'number' && order.ratings?.restaurant?.rating > 0)
 
       const orderId = order.id || order._id || order.mongoId
       const hasShownPopup = shownRatingForOrders.has(orderId)
@@ -167,19 +163,17 @@ export default function Orders() {
 
       // Small delay to ensure smooth UX
       setTimeout(() => {
-        debugLog('? Opening rating modal for order:', {
+        debugLog('? Redirecting to rating page for order:', {
           orderId: orderId,
           restaurant: orderToRate.restaurant,
           status: orderToRate.status,
           originalStatus: orderToRate.originalStatus
         })
-        setRatingModal({ open: true, order: orderToRate })
-        setSelectedRestaurantRating(null)
-        setRestaurantFeedbackText("")
+        navigate(`/user/orders/${orderId}/review`)
       }, 800) // Show after 0.8 seconds
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders, shownRatingForOrders, ratingModal.open])
+  }, [orders, shownRatingForOrders])
 
   // Fetch orders from backend API
   useEffect(() => {
@@ -386,7 +380,7 @@ export default function Orders() {
     return restaurantMatch || itemsMatch
   })
 
-  const ratingSubmitDisabled = submittingRating || selectedRestaurantRating === null;
+
   // Handle reorder
   const handleReorder = (order) => {
     const restaurantTarget = order.restaurantSlug || order.restaurantId
@@ -565,70 +559,7 @@ Order again from this restaurant in the ${companyName} app.`
     }
   }
 
-  // Open rating modal for an order
-  const handleOpenRating = (order) => {
-    setRatingModal({ open: true, order })
-    setSelectedRestaurantRating(order.restaurantRating || null)
-    setRestaurantFeedbackText(order.ratings?.restaurant?.comment || "")
-  }
 
-  const handleCloseRating = () => {
-    setRatingModal({ open: false, order: null })
-    setSelectedRestaurantRating(null)
-    setRestaurantFeedbackText("")
-  }
-
-  // Submit rating & feedback to backend
-  const handleSubmitRating = async () => {
-    if (!selectedRestaurantRating) {
-      toast.error("Please select all required ratings first")
-      return
-    }
-
-    try {
-      setSubmittingRating(true)
-
-      const order = ratingModal.order
-
-      const response = await orderAPI.submitOrderRatings(order.id, {
-        restaurantRating: selectedRestaurantRating,
-        
-        restaurantComment: restaurantFeedbackText || undefined,
-      })
-      const updatedOrder = response?.data?.data?.order || response?.data?.order || null
-
-      // Update local state so UI shows "You rated"
-      setOrders(prev =>
-        prev.map(o =>
-          o.id === order.id ? {
-            ...o,
-            restaurantRating: updatedOrder?.ratings?.restaurant?.rating ?? selectedRestaurantRating,
-            
-            ratings: updatedOrder?.ratings || {
-              restaurant: { rating: selectedRestaurantRating, comment: restaurantFeedbackText || "" },
-            },
-            rating: updatedOrder?.ratings?.restaurant?.rating ?? selectedRestaurantRating
-          } : o
-        )
-      )
-
-      toast.success("Thanks for rating your order!")
-
-      // Mark this order as rated so popup doesn't show again (before closing modal)
-      const orderId = order.id || order._id || order.mongoId
-      setShownRatingForOrders(prev => new Set([...prev, orderId]))
-
-      handleCloseRating()
-    } catch (error) {
-      debugError("Error submitting order ratings:", error)
-      toast.error(
-        error?.response?.data?.message ||
-        "Failed to submit ratings. Please try again."
-      )
-    } finally {
-      setSubmittingRating(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -965,24 +896,45 @@ Order again from this restaurant in the ${companyName} app.`
                       <span className="text-xs font-semibold text-red-500 dark:text-primary-light">Payment failed</span>
                     </div>
                   ) : order.restaurantRating ? (
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm text-gray-800 dark:text-gray-200">You rated</span>
-                        {order.restaurantRating && (
-                          <div className="flex bg-yellow-400 text-white px-1 rounded text-[10px] items-center gap-0.5 h-4">
-                            R {order.restaurantRating}<Star className="w-2 h-2 fill-current" />
-                          </div>
-                        )}
+                    <div className="flex flex-col gap-1 text-left">
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Star 
+                            key={`rated-star-${i}`} 
+                            className={`w-3.5 h-3.5 ${i < order.restaurantRating ? 'text-yellow-400 fill-yellow-400 text-yellow-400' : 'text-gray-205'}`} 
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-green-600 font-bold">Review Submitted</span>
+                      <div className="flex gap-2 mt-1">
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const targetId = order.id || order.mongoId || order._id || order.orderId;
+                            navigate(`/user/orders/${targetId}/review`);
+                          }}
+                          className="text-[10px] text-[var(--primary)] font-black uppercase tracking-wider hover:underline cursor-pointer"
+                        >
+                          View / Edit Review
+                        </button>
                       </div>
                     </div>
-                  ) : isDelivered ? (
+                  ) : (isDelivered || order.status === 'completed' || order.originalStatus === 'completed' || order.originalStatus === 'delivered') ? (
                     <div>
                       <p className="text-xs text-text-secondary dark:text-text-secondary">Order delivered</p>
                       <button
                         type="button"
-                        onClick={() => handleOpenRating(order)}
-                        className="text-xs text-[var(--primary)] font-medium mt-0.5 flex items-center"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const targetId = order.id || order.mongoId || order._id || order.orderId;
+                          navigate(`/user/orders/${targetId}/review`);
+                        }}
+                        className="text-xs text-[var(--primary)] font-extrabold mt-1 flex items-center gap-1 hover:underline cursor-pointer"
                       >
+                        ⭐ Rate Order
                       </button>
                     </div>
                   ) : (
@@ -1019,90 +971,7 @@ Order again from this restaurant in the ${companyName} app.`
         <h1 className="text-4xl font-black text-gray-200 dark:text-gray-800 tracking-tighter italic uppercase">bhookingo</h1>
       </div>
 
-      {/* Rating & Feedback Modal */}
-      {ratingModal.open && ratingModal.order && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-3xl bg-surface dark:bg-[#121212] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border dark:border-gray-800">
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] px-6 py-5">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Star className="w-5 h-5 fill-white" />
-                </h2>
-                <button
-                  type="button"
-                  onClick={handleCloseRating}
-                  className="text-white/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/20"
-                >
-                  <span className="text-xl">x</span>
-                </button>
-              </div>
-              <p className="text-sm text-white/90">{ratingModal.order.restaurant}</p>
-            </div>
 
-            <div className="px-6 py-6 font-sans">
-              <div className="mb-6">
-                <p className="text-sm font-semibold text-text-primary dark:text-gray-100 mb-3">
-                  Restaurant rating (out of 5)
-                </p>
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  {Array.from({ length: 5 }, (_, i) => i + 1).map((num) => {
-                    const isActive = (selectedRestaurantRating || 0) >= num
-                    return (
-                      <button
-                        key={`restaurant-${num}`}
-                        type="button"
-                        onClick={() => setSelectedRestaurantRating(num)}
-                        className="p-2 transition-transform hover:scale-125 active:scale-95"
-                      >
-                        <Star
-                          className={`w-10 h-10 transition-all ${isActive
-                              ? "text-yellow-400 fill-yellow-400 drop-shadow-lg"
-                              : "text-gray-300 hover:text-yellow-200"
-                            }`}
-                        />
-                      </button>
-                    )
-                  })}
-                </div>
-                <textarea
-                  rows={2}
-                  value={restaurantFeedbackText}
-                  onChange={(e) => setRestaurantFeedbackText(e.target.value)}
-                  className="w-full rounded-xl border-2 border-border dark:border-gray-800 bg-surface dark:bg-[#1a1a1a] px-4 py-2 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] resize-none transition-all"
-                  placeholder="Restaurant feedback (optional)"
-                />
-              </div>
-
-
-
-              {/* Submit Button */}
-              <button
-                type="button"
-                disabled={ratingSubmitDisabled}
-                onClick={handleSubmitRating}
-                className="w-full rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white text-base font-bold py-3.5 hover:from-[var(--primary-dark)] hover:to-[#C44409] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-[var(--primary)]/30 flex items-center justify-center gap-2"
-              >
-                {submittingRating ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Star className="w-5 h-5 fill-white" />
-                    Submit Ratings
-                  </>
-                )}
-              </button>
-
-              {ratingSubmitDisabled && (
-                <p className="text-xs text-center text-red-500 mt-2">Please select all required ratings to continue</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {showShareModal && sharePayload && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm px-4 pb-4 pt-10 sm:items-center">

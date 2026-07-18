@@ -22,7 +22,11 @@ import {
   Loader2,
   Clock,
   Calendar,
-  Compass
+  Compass,
+  Car,
+  Wifi,
+  Users,
+  Zap
 } from "lucide-react"
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import { Card, CardContent } from "@food/components/ui/card"
@@ -400,54 +404,48 @@ export default function OrderTracking() {
   const [socketDropOtpCode, setSocketDropOtpCode] = useState(null)
   
   // Rating states
-  const [showRatingModal, setShowRatingModal] = useState(false)
-  const [selectedRestaurantRating, setSelectedRestaurantRating] = useState(null)
-  const [restaurantFeedbackText, setRestaurantFeedbackText] = useState("")
-  const [submittingRating, setSubmittingRating] = useState(false)
+  const [showSuccessPage, setShowSuccessPage] = useState(false)
 
   // Check if order is already rated
-  const hasRestaurantRating = Number.isFinite(Number(order?.ratings?.restaurant?.rating || order?.restaurantRating))
+  const hasRestaurantRating = typeof (order?.ratings?.restaurant?.rating || order?.restaurantRating) === 'number' && (order?.ratings?.restaurant?.rating || order?.restaurantRating) > 0
   const isOrderRated = hasRestaurantRating
 
   const handleOpenRating = () => {
-    setSelectedRestaurantRating(order?.ratings?.restaurant?.rating || order?.restaurantRating || null)
-    setRestaurantFeedbackText(order?.ratings?.restaurant?.comment || "")
-    setShowRatingModal(true)
+    navigate(`/user/orders/${orderId || order?._id || order?.id}/review`)
   }
 
-  const handleSubmitRating = async () => {
-    if (!order || selectedRestaurantRating === null) {
-      toast.error("Please select all required ratings first")
-      return
-    }
+  const handleSuccessPageContinue = () => {
+    setShowSuccessPage(false)
+    const localCompletedKey = `order_review_shown_${order?.id || order?._id || orderId}`
+    window.localStorage.setItem(localCompletedKey, 'true')
+    navigate(`/user/orders/${orderId || order?._id || order?.id}/review`)
+  }
 
-    try {
-      setSubmittingRating(true)
-      const response = await orderAPI.submitOrderRatings(order.mongoId || order._id || order.id, {
-        restaurantRating: selectedRestaurantRating,
-        restaurantComment: restaurantFeedbackText || undefined,
-      })
-      
-      const updatedOrderData = response?.data?.data?.order || response?.data?.order
-      if (updatedOrderData) {
-        setOrder(prev => ({
-          ...prev,
-          ...updatedOrderData,
-          ratings: updatedOrderData.ratings,
-          restaurantRating: updatedOrderData.ratings?.restaurant?.rating,
-          
-        }))
+  useEffect(() => {
+    if (showSuccessPage) {
+      const timer = setTimeout(() => {
+        handleSuccessPageContinue()
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [showSuccessPage])
+
+  // Trigger success screen on order completion
+  useEffect(() => {
+    if (!order) return
+    const uiStatus = mapOrderToTrackingUiStatus(order)
+    const orderRawStatus = order.status || order.orderStatus
+    const isCompleted = uiStatus === 'delivered' || orderRawStatus === 'completed' || orderRawStatus === 'delivered'
+    
+    if (isCompleted && !isOrderRated) {
+      const localCompletedKey = `order_review_shown_${order.id || order._id || orderId}`
+      if (window.localStorage.getItem(localCompletedKey) !== 'true') {
+        setShowSuccessPage(true)
       }
-
-      toast.success("Thanks for your feedback!")
-      setShowRatingModal(false)
-    } catch (error) {
-      debugError("Error submitting order ratings:", error)
-      toast.error(error?.response?.data?.message || "Failed to submit ratings")
-    } finally {
-      setSubmittingRating(false)
     }
-  }
+  }, [order, isOrderRated, orderId])
+
+
 
   const handleNavigate = () => {
     if (!activeUserCoords || !restaurantCoordsResolved) {
@@ -1039,7 +1037,7 @@ export default function OrderTracking() {
           if (!prev) return prev;
           const updated = {
             ...prev,
-            status: status || prev.status,
+            status: payload.orderStatus || status || prev.status,
             orderStatus: payload.orderStatus || status || prev.orderStatus
           };
           if (payload.pickupOtp) {
@@ -2065,69 +2063,49 @@ export default function OrderTracking() {
         </DialogContent>
       </Dialog>
 
-      {/* Rating & Feedback Modal */}
-      <Dialog open={showRatingModal} onOpenChange={setShowRatingModal}>
-        <DialogContent className="sm:max-w-md w-[95vw] rounded-3xl p-6 border-0 shadow-2xl bg-surface dark:bg-[#1a1a1a] max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="mb-2">
-            <DialogTitle className="text-xl font-bold text-text-primary dark:text-white flex items-center gap-2">
-              <Star className="w-6 h-6 text-[var(--primary)] fill-[var(--primary)]" />
-              Rate your Experience
-            </DialogTitle>
-          </DialogHeader>
+      {/* Success Page Splash Overlay */}
+      <AnimatePresence>
+        {showSuccessPage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-white dark:bg-gray-950 z-[999] flex flex-col items-center justify-center p-6 text-center"
+          >
+            <div className="max-w-md space-y-6">
+              <motion.div
+                initial={{ scale: 0.5, rotate: -10 }}
+                animate={{ scale: 1.0, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                className="w-24 h-24 bg-green-100 dark:bg-green-950/30 rounded-full flex items-center justify-center mx-auto shadow-md"
+              >
+                <Check className="w-12 h-12 text-green-600 dark:text-green-400" />
+              </motion.div>
 
-          <div className="space-y-6 py-2">
-            {/* Restaurant Rating */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="font-semibold text-gray-800 dark:text-gray-200">How was the food?</p>
-                <span className="text-xs px-2 py-0.5 bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400 rounded-full font-medium">Restaurant</span>
+              <div className="space-y-3">
+                <h1 className="text-3xl font-black text-text-primary dark:text-white">
+                  🎉 Order Successfully Completed
+                </h1>
+                <p className="text-lg text-text-secondary dark:text-gray-400 font-medium">
+                  Thank you for choosing Bhookingo!
+                </p>
+                <p className="text-base text-green-600 dark:text-green-400 font-semibold">
+                  Enjoy your meal.
+                </p>
               </div>
-              <div className="flex justify-center gap-3">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <motion.button
-                    key={`res-star-${star}`}
-                    whileHover={{ scale: 1.15 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setSelectedRestaurantRating(star)}
-                    className="p-1"
-                  >
-                    <Star
-                      className={`w-10 h-10 transition-all duration-300 ${
-                        star <= selectedRestaurantRating
-                          ? "text-yellow-400 fill-yellow-400 drop-shadow-sm"
-                          : "text-gray-200 dark:text-gray-800"
-                      }`}
-                    />
-                  </motion.button>
-                ))}
+
+              <div className="pt-6">
+                <Button
+                  onClick={handleSuccessPageContinue}
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold h-14 rounded-2xl shadow-lg active:scale-[0.98] transition-all"
+                >
+                  Continue
+                </Button>
               </div>
-              <Textarea
-                placeholder="Write a quick review for the food (optional)"
-                value={restaurantFeedbackText}
-                onChange={(e) => setRestaurantFeedbackText(e.target.value)}
-                className="min-h-[80px] text-sm bg-gray-50 dark:bg-gray-800/50 border-border dark:border-gray-800 resize-none rounded-xl"
-              />
             </div>
-
-
-
-            <Button
-              onClick={handleSubmitRating}
-              disabled={submittingRating || selectedRestaurantRating === null}
-              className="w-full bg-[var(--primary)] hover:bg-primary-dark text-white font-bold h-14 rounded-2xl shadow-lg mt-4"
-            >
-              {submittingRating ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit Feedback"}
-            </Button>
-            
-            <button
-              onClick={() => setShowRatingModal(false)}
-              className="w-full text-sm text-text-secondary dark:text-text-secondary font-medium hover:text-text-secondary dark:hover:text-text-secondary transition-colors py-2"
-            >
-              Maybe later
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

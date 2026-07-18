@@ -350,7 +350,7 @@ export async function getRestaurants(query) {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .select('restaurantName location area city profileImage coverImages menuImages status ownerName ownerPhone highwayId facilities')
+            .select('restaurantName location area city profileImage coverImages menuImages status ownerName ownerPhone highwayId facilities rating totalRatings')
             .populate('highwayId', 'name ref')
             .lean(),
         FoodRestaurant.countDocuments(filter)
@@ -2105,7 +2105,7 @@ export async function getRestaurantReviews(query = {}) {
             .limit(limit)
             .populate('userId', 'name email phone')
             .populate('restaurantId', 'restaurantName')
-            .select('orderId userId restaurantId ratings.restaurant createdAt')
+            .select('orderId userId restaurantId ratings.restaurant ratings.parking ratings.wifi ratings.familyFriendly ratings.evCharging ratings.washroom createdAt')
             .lean(),
         FoodOrder.countDocuments(filter)
     ]);
@@ -2119,6 +2119,11 @@ export async function getRestaurantReviews(query = {}) {
         customerId: doc.userId?._id || 'N/A',
         review: doc.ratings?.restaurant?.comment || '',
         rating: doc.ratings?.restaurant?.rating || 0,
+        parking: doc.ratings?.parking || null,
+        wifi: doc.ratings?.wifi || null,
+        familyFriendly: doc.ratings?.familyFriendly || null,
+        evCharging: doc.ratings?.evCharging || null,
+        washroom: doc.ratings?.washroom || null,
         submittedAt: doc.createdAt
     }));
 
@@ -3797,5 +3802,415 @@ export async function getSidebarBadges() {
         console.error('Error fetching sidebar badges:', error);
         return {};
     }
+}
+
+export async function listSubAdmins(query = {}) {
+    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 50, 1), 1000);
+    const page = Math.max(parseInt(query.page, 10) || 1, 1);
+    const skip = (page - 1) * limit;
+
+    const filter = {
+        role: 'SUB_ADMIN',
+        isDeleted: { $ne: true }
+    };
+
+    if (query.search && String(query.search).trim()) {
+        const term = String(query.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const searchRegex = new RegExp(term, 'i');
+        filter.$or = [
+            { name: searchRegex },
+            { email: searchRegex },
+            { roleTitle: searchRegex }
+        ];
+    }
+
+    if (query.status && String(query.status).trim()) {
+        filter.status = String(query.status).trim();
+    }
+
+    if (query.roleTitle && String(query.roleTitle).trim()) {
+        filter.roleTitle = String(query.roleTitle).trim();
+    }
+
+    // Sort options
+    let sortOption = { createdAt: -1 };
+    if (query.sortBy) {
+        const order = query.sortOrder === 'asc' ? 1 : -1;
+        sortOption = { [query.sortBy]: order };
+    }
+
+    const [docs, total] = await Promise.all([
+        mongoose.model('FoodAdmin').find(filter)
+            .sort(sortOption)
+            .skip(skip)
+            .limit(limit)
+            .select('-password')
+            .lean(),
+        mongoose.model('FoodAdmin').countDocuments(filter)
+    ]);
+
+    return { subAdmins: docs, total, page, limit };
+}
+
+export async function getSubAdminById(id) {
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
+    return mongoose.model('FoodAdmin').findOne({ _id: id, isDeleted: { $ne: true } }).select('-password').lean();
+}
+
+export async function createSubAdmin(data, creator, clientIp = '', userAgent = '') {
+    const FoodAdminModel = mongoose.model('FoodAdmin');
+    
+    // Check if email already exists
+    const existing = await FoodAdminModel.findOne({ email: data.email.toLowerCase(), isDeleted: { $ne: true } }).select('_id').lean();
+    if (existing) {
+        throw new Error('Email is already in use by another admin');
+    }
+
+    const name = `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Sub-Admin';
+    const permissionsMap = data.permissions || {};
+
+    const newSubAdmin = new FoodAdminModel({
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        name,
+        email: data.email.toLowerCase(),
+        password: data.password, // Schema pre-save will hash this!
+        phone: data.phone || '',
+        profileImage: data.profileImage || '',
+        role: 'SUB_ADMIN',
+        roleTitle: data.roleTitle || 'Operations Manager',
+        permissions: permissionsMap,
+        status: data.status || 'active',
+        isActive: data.status === 'active',
+        notes: data.notes || '',
+        createdBy: creator._id
+    });
+
+    await newSubAdmin.save();
+
+    // Log the audit event
+    await mongoose.model('FoodAdminAuditLog').create({
+        adminId: creator._id,
+        adminEmail: creator.email,
+        targetUser: newSubAdmin.email,
+        action: 'SUB_ADMIN_CREATED',
+        newValue: {
+            name: newSubAdmin.name,
+            email: newSubAdmin.email,
+            roleTitle: newSubAdmin.roleTitle,
+            status: newSubAdmin.status,
+            permissions: permissionsMap
+        },
+        ip: clientIp,
+        userAgent
+    });
+
+    const result = newSubAdmin.toObject();
+    delete result.password;
+    return result;
+}
+
+export async function updateSubAdmin(id, data, updater, clientIp = '', userAgent = '') {
+    const FoodAdminModel = mongoose.model('FoodAdmin');
+    const subAdmin = await FoodAdminModel.findOne({ _id: id, isDeleted: { $ne: true } });
+    if (!subAdmin) {
+        throw new Error('Sub-Admin not found');
+    }
+
+    const oldValue = {
+        name: subAdmin.name,
+        email: subAdmin.email,
+        roleTitle: subAdmin.roleTitle,
+        status: subAdmin.status,
+        permissions: subAdmin.permissions
+    };
+
+    if (data.email && data.email.toLowerCase() !== subAdmin.email) {
+        const existing = await FoodAdminModel.findOne({ email: data.email.toLowerCase(), _id: { $ne: subAdmin._id }, isDeleted: { $ne: true } }).select('_id').lean();
+        if (existing) {
+            throw new Error('Email is already in use by another admin');
+        }
+        subAdmin.email = data.email.toLowerCase();
+    }
+
+    if (data.firstName !== undefined) subAdmin.firstName = data.firstName;
+    if (data.lastName !== undefined) subAdmin.lastName = data.lastName;
+    
+    if (data.firstName !== undefined || data.lastName !== undefined) {
+        subAdmin.name = `${data.firstName || subAdmin.firstName || ''} ${data.lastName || subAdmin.lastName || ''}`.trim();
+    }
+
+    if (data.phone !== undefined) subAdmin.phone = data.phone;
+    if (data.profileImage !== undefined) subAdmin.profileImage = data.profileImage;
+    if (data.roleTitle !== undefined) subAdmin.roleTitle = data.roleTitle;
+    if (data.permissions !== undefined) subAdmin.permissions = data.permissions;
+    if (data.status !== undefined) {
+        subAdmin.status = data.status;
+        subAdmin.isActive = data.status === 'active';
+    }
+    if (data.notes !== undefined) subAdmin.notes = data.notes;
+
+    if (data.password) {
+        subAdmin.password = data.password; // pre-save will hash this
+    }
+
+    await subAdmin.save();
+
+    const newValue = {
+        name: subAdmin.name,
+        email: subAdmin.email,
+        roleTitle: subAdmin.roleTitle,
+        status: subAdmin.status,
+        permissions: subAdmin.permissions
+    };
+
+    // Log the audit event
+    await mongoose.model('FoodAdminAuditLog').create({
+        adminId: updater._id,
+        adminEmail: updater.email,
+        targetUser: subAdmin.email,
+        action: 'SUB_ADMIN_UPDATED',
+        oldValue,
+        newValue,
+        ip: clientIp,
+        userAgent
+    });
+
+    const result = subAdmin.toObject();
+    delete result.password;
+    return result;
+}
+
+export async function deleteSubAdmin(id, deleter, clientIp = '', userAgent = '') {
+    const FoodAdminModel = mongoose.model('FoodAdmin');
+    const subAdmin = await FoodAdminModel.findOne({ _id: id, isDeleted: { $ne: true } });
+    if (!subAdmin) {
+        throw new Error('Sub-Admin not found');
+    }
+
+    const oldValue = {
+        name: subAdmin.name,
+        email: subAdmin.email,
+        roleTitle: subAdmin.roleTitle,
+        status: subAdmin.status
+    };
+
+    subAdmin.isDeleted = true;
+    subAdmin.status = 'inactive';
+    subAdmin.isActive = false;
+    await subAdmin.save();
+
+    // Log the audit event
+    await mongoose.model('FoodAdminAuditLog').create({
+        adminId: deleter._id,
+        adminEmail: deleter.email,
+        targetUser: subAdmin.email,
+        action: 'SUB_ADMIN_DELETED',
+        oldValue,
+        newValue: { ...oldValue, isDeleted: true, status: 'inactive' },
+        ip: clientIp,
+        userAgent
+    });
+
+    return { success: true };
+}
+
+export async function resetSubAdminPassword(id, newPassword, updater, clientIp = '', userAgent = '') {
+    const FoodAdminModel = mongoose.model('FoodAdmin');
+    const subAdmin = await FoodAdminModel.findOne({ _id: id, isDeleted: { $ne: true } });
+    if (!subAdmin) {
+        throw new Error('Sub-Admin not found');
+    }
+
+    subAdmin.password = newPassword; // pre-save will hash this
+    subAdmin.passwordResetDate = new Date();
+    await subAdmin.save();
+
+    // Log the audit event
+    await mongoose.model('FoodAdminAuditLog').create({
+        adminId: updater._id,
+        adminEmail: updater.email,
+        targetUser: subAdmin.email,
+        action: 'PASSWORD_RESET',
+        details: `Password reset for sub-admin: ${subAdmin.email}`,
+        ip: clientIp,
+        userAgent
+    });
+
+    return { success: true };
+}
+
+export async function listAuditLogs(query = {}) {
+    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 50, 1), 1000);
+    const page = Math.max(parseInt(query.page, 10) || 1, 1);
+    const skip = (page - 1) * limit;
+
+    const filter = {};
+    if (query.search && String(query.search).trim()) {
+        const term = String(query.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const searchRegex = new RegExp(term, 'i');
+        filter.$or = [
+            { adminEmail: searchRegex },
+            { targetUser: searchRegex },
+            { action: searchRegex }
+        ];
+    }
+
+    const [docs, total] = await Promise.all([
+        mongoose.model('FoodAdminAuditLog').find(filter)
+            .sort({ timestamp: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+        mongoose.model('FoodAdminAuditLog').countDocuments(filter)
+    ]);
+
+    return { auditLogs: docs, total, page, limit };
+}
+
+export async function getRecoverySettings(adminId) {
+    const FoodAdminModel = mongoose.model('FoodAdmin');
+    const admin = await FoodAdminModel.findById(adminId)
+        .populate('recoverySettingsUpdatedBy', 'name email')
+        .lean();
+    
+    if (!admin) {
+        throw new Error('Admin not found');
+    }
+
+    return {
+        recoveryEmail: admin.recoveryEmail || '',
+        recoveryMobile: admin.recoveryMobile || '',
+        recoveryEmailVerified: admin.recoveryEmailVerified || false,
+        recoveryMobileVerified: admin.recoveryMobileVerified || false,
+        recoverySettingsUpdatedAt: admin.recoverySettingsUpdatedAt || null,
+        updatedBy: admin.recoverySettingsUpdatedBy ? {
+            name: admin.recoverySettingsUpdatedBy.name,
+            email: admin.recoverySettingsUpdatedBy.email
+        } : null
+    };
+}
+
+export async function requestRecoveryVerify(adminId, type, value) {
+    const crypto = await import('crypto');
+    const { sendAdminResetOtpEmail } = await import('../../../../utils/email.js');
+    const { sendOrderSms } = await import('../../../otp/otp.service.js');
+    const { config } = await import('../../../../config/env.js');
+
+    const cleanValue = String(value || '').trim();
+    if (!cleanValue) {
+        throw new Error('Verification value is required');
+    }
+
+    if (type === 'email') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(cleanValue)) {
+            throw new Error('Invalid email format');
+        }
+    } else if (type === 'mobile') {
+        const cleanPhone = cleanValue.replace(/\D/g, "");
+        if (cleanPhone.length < 8) {
+            throw new Error('Invalid mobile number format');
+        }
+    } else {
+        throw new Error('Invalid verification type');
+    }
+
+    // Generate secure 6-digit OTP
+    const otp = config.useDefaultOtp ? "123456" : String(crypto.randomInt(100000, 999999));
+    const hash = crypto.createHash("sha256").update(otp).digest("hex");
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+
+    const lookupKey = `verify_recovery_${adminId}_${type}_${cleanValue.toLowerCase()}`;
+
+    // Store hashed OTP
+    await mongoose.model('AdminResetOtp').findOneAndUpdate(
+        { email: lookupKey },
+        {
+            phone: type === 'mobile' ? cleanValue : '',
+            otpHash: hash,
+            otpExpiresAt: expiresAt,
+            attempts: 0
+        },
+        { upsert: true, new: true }
+    );
+
+    // Send OTP
+    if (type === 'email') {
+        await sendAdminResetOtpEmail(cleanValue, otp);
+    } else {
+        await sendOrderSms(cleanValue, otp);
+    }
+
+    return { success: true, message: 'Verification OTP sent successfully' };
+}
+
+export async function confirmRecoveryVerify(adminId, adminEmail, type, value, otp, ip = '', userAgent = '') {
+    const crypto = await import('crypto');
+    const cleanValue = String(value || '').trim();
+    const cleanOtp = String(otp || '').replace(/\D/g, "");
+
+    const lookupKey = `verify_recovery_${adminId}_${type}_${cleanValue.toLowerCase()}`;
+    const record = await mongoose.model('AdminResetOtp').findOne({ email: lookupKey });
+
+    if (!record) {
+        throw new Error('The verification code is invalid or has expired.');
+    }
+
+    if (record.otpExpiresAt < new Date()) {
+        await record.deleteOne();
+        throw new Error('The verification code is invalid or has expired.');
+    }
+
+    if (record.attempts >= 5) {
+        throw new Error('Too many verification attempts. Please request a new code.');
+    }
+
+    const hash = crypto.createHash("sha256").update(cleanOtp).digest("hex");
+    if (record.otpHash !== hash) {
+        record.attempts += 1;
+        await record.save();
+        throw new Error('The verification code is invalid or has expired.');
+    }
+
+    // OTP correct! Apply recovery details updates
+    const FoodAdminModel = mongoose.model('FoodAdmin');
+    const admin = await FoodAdminModel.findById(adminId);
+    if (!admin) {
+        throw new Error('Super Admin account not found.');
+    }
+
+    const action = type === 'email' ? 'Recovery Email Updated' : 'Recovery Mobile Updated';
+    const details = type === 'email' 
+        ? `Recovery email changed from ${admin.recoveryEmail || 'None'} to ${cleanValue}`
+        : `Recovery mobile changed from ${admin.recoveryMobile || 'None'} to ${cleanValue}`;
+
+    if (type === 'email') {
+        admin.recoveryEmail = cleanValue;
+        admin.recoveryEmailVerified = true;
+    } else {
+        admin.recoveryMobile = cleanValue;
+        admin.recoveryMobileVerified = true;
+    }
+
+    admin.recoverySettingsUpdatedAt = new Date();
+    admin.recoverySettingsUpdatedBy = adminId;
+    await admin.save();
+
+    // Delete OTP record
+    await record.deleteOne();
+
+    // Log Audit Event
+    await mongoose.model('FoodAdminAuditLog').create({
+        adminId,
+        adminEmail,
+        action,
+        details,
+        ip,
+        userAgent,
+        timestamp: new Date()
+    });
+
+    return { success: true };
 }
 

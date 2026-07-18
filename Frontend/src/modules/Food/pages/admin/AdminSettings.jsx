@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@food/components/ui/card";
 import { toast } from "sonner";
-import { Lock, Eye, EyeOff, Save, Loader2, Shield, User, Mail, Truck } from "lucide-react";
+import { Lock, Eye, EyeOff, Save, Loader2, Shield, User, Mail, Truck, Phone, AlertCircle, UserCheck, RefreshCw } from "lucide-react";
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -30,6 +30,25 @@ export default function AdminSettings() {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // Recovery settings state
+  const [recoveryInfo, setRecoveryInfo] = useState({
+    recoveryEmail: "",
+    recoveryMobile: "",
+    recoveryEmailVerified: false,
+    recoveryMobileVerified: false,
+    recoverySettingsUpdatedAt: null,
+    updatedBy: null
+  });
+  const [newRecoveryEmail, setNewRecoveryEmail] = useState("");
+  const [newRecoveryMobile, setNewRecoveryMobile] = useState("");
+  
+  // Verification state
+  const [verificationType, setVerificationType] = useState(null); // 'email' | 'mobile'
+  const [verificationValue, setVerificationValue] = useState("");
+  const [verificationOtp, setVerificationOtp] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+
   // Single API: getAdminProfile (GET /auth/me) for current account display
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +58,18 @@ export default function AdminSettings() {
         const admin = res?.data?.data?.admin ?? res?.data?.admin;
         if (!cancelled && admin) {
           setAdminInfo({ name: admin.name, email: admin.email, role: admin.role });
+          
+          if (admin.role === 'ADMIN') {
+            try {
+              const recRes = await adminAPI.getRecoverySettings();
+              if (recRes?.data?.success && recRes.data.data) {
+                const data = recRes.data.data;
+                setRecoveryInfo(data);
+                setNewRecoveryEmail(data.recoveryEmail || "");
+                setNewRecoveryMobile(data.recoveryMobile || "");
+              }
+            } catch (_) {}
+          }
           return;
         }
       } catch (_) {}
@@ -138,6 +169,67 @@ export default function AdminSettings() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRequestVerify = async (type, value) => {
+    const cleanValue = String(value || '').trim();
+    if (!cleanValue) {
+      toast.error(`Please enter a valid recovery ${type}`);
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to verify and set ${cleanValue} as your new recovery ${type}?`)) {
+      return;
+    }
+
+    try {
+      setIsVerifying(true);
+      const res = await adminAPI.requestRecoveryVerify(type, cleanValue);
+      if (res?.data?.success) {
+        setVerificationType(type);
+        setVerificationValue(cleanValue);
+        setOtpSent(true);
+        setVerificationOtp("");
+        toast.success(res.data.message || `Verification code sent successfully to ${cleanValue}`);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send verification code");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleConfirmVerify = async (e) => {
+    e.preventDefault();
+    if (!verificationOtp) {
+      toast.error("Please enter the verification code");
+      return;
+    }
+
+    try {
+      setIsVerifying(true);
+      const res = await adminAPI.confirmRecoveryVerify(verificationType, verificationValue, verificationOtp);
+      if (res?.data?.success) {
+        toast.success(`Recovery ${verificationType} verified and updated successfully!`);
+        setOtpSent(false);
+        setVerificationType(null);
+        setVerificationValue("");
+        setVerificationOtp("");
+        
+        // Reload settings
+        const recRes = await adminAPI.getRecoverySettings();
+        if (recRes?.data?.success && recRes.data.data) {
+          const data = recRes.data.data;
+          setRecoveryInfo(data);
+          setNewRecoveryEmail(data.recoveryEmail || "");
+          setNewRecoveryMobile(data.recoveryMobile || "");
+        }
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Invalid or expired verification code");
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -336,6 +428,150 @@ export default function AdminSettings() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Admin Recovery Settings Card (Super-Admin Only) */}
+      {adminInfo && adminInfo.role === 'ADMIN' && (
+        <Card className="border border-slate-150 shadow-sm rounded-2xl">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-neutral-700" />
+              <CardTitle>Admin Recovery Settings</CardTitle>
+            </div>
+            <CardDescription>
+              Configure backup contact channels used to securely verify recovery OTPs when resetting passwords. Only primary Super Admin can access.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Recovery Email Input */}
+              <div className="space-y-3 p-4 bg-slate-50 dark:bg-gray-900 rounded-xl border border-slate-100 dark:border-gray-850 relative">
+                <Label htmlFor="recoveryEmail" className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-gray-300">
+                  <Mail className="w-4 h-4 text-slate-500" />
+                  Recovery Email Address
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="recoveryEmail"
+                    type="email"
+                    value={newRecoveryEmail}
+                    onChange={(e) => setNewRecoveryEmail(e.target.value)}
+                    placeholder="recovery@bhookingo.com"
+                    className="bg-white dark:bg-[#1a1a1a] rounded-xl"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => handleRequestVerify('email', newRecoveryEmail)}
+                    disabled={isVerifying || newRecoveryEmail.trim().toLowerCase() === (recoveryInfo.recoveryEmail || '').trim().toLowerCase()}
+                    className="bg-black hover:bg-neutral-800 text-white rounded-xl px-4"
+                  >
+                    Verify
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1.5 mt-2 text-xs">
+                  {recoveryInfo.recoveryEmailVerified ? (
+                    <span className="flex items-center gap-1 text-green-600 font-bold">
+                      <UserCheck className="w-3.5 h-3.5" />
+                      Verified: {recoveryInfo.recoveryEmail}
+                    </span>
+                  ) : recoveryInfo.recoveryEmail ? (
+                    <span className="flex items-center gap-1 text-amber-600 font-bold">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      Unverified: {recoveryInfo.recoveryEmail}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 font-medium">No recovery email configured</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Recovery Mobile Input */}
+              <div className="space-y-3 p-4 bg-slate-50 dark:bg-gray-900 rounded-xl border border-slate-100 dark:border-gray-850 relative">
+                <Label htmlFor="recoveryMobile" className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-gray-300">
+                  <Phone className="w-4 h-4 text-slate-500" />
+                  Recovery Mobile Number
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="recoveryMobile"
+                    type="text"
+                    value={newRecoveryMobile}
+                    onChange={(e) => setNewRecoveryMobile(e.target.value)}
+                    placeholder="+919999999999"
+                    className="bg-white dark:bg-[#1a1a1a] rounded-xl"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => handleRequestVerify('mobile', newRecoveryMobile)}
+                    disabled={isVerifying || newRecoveryMobile.trim() === (recoveryInfo.recoveryMobile || '').trim()}
+                    className="bg-black hover:bg-neutral-800 text-white rounded-xl px-4"
+                  >
+                    Verify
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1.5 mt-2 text-xs">
+                  {recoveryInfo.recoveryMobileVerified ? (
+                    <span className="flex items-center gap-1 text-green-600 font-bold">
+                      <UserCheck className="w-3.5 h-3.5" />
+                      Verified: {recoveryInfo.recoveryMobile}
+                    </span>
+                  ) : recoveryInfo.recoveryMobile ? (
+                    <span className="flex items-center gap-1 text-amber-600 font-bold">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      Unverified: {recoveryInfo.recoveryMobile}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 font-medium">No recovery mobile configured</span>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* OTP Verification Prompt */}
+            {otpSent && (
+              <form onSubmit={handleConfirmVerify} className="p-5 border border-amber-200 bg-amber-50/50 dark:bg-amber-950/10 rounded-2xl space-y-3">
+                <div className="flex items-center gap-2 text-amber-800 dark:text-amber-500">
+                  <Lock className="w-5 h-5" />
+                  <span className="font-bold text-sm">Enter Verification OTP</span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-gray-400">
+                  We've sent a 6-digit code to <strong>{verificationValue}</strong>. Please enter the code below to verify and activate this recovery channel.
+                </p>
+                <div className="flex gap-2 max-w-sm">
+                  <Input
+                    type="text"
+                    required
+                    placeholder="Enter 6-digit OTP"
+                    value={verificationOtp}
+                    onChange={(e) => setVerificationOtp(e.target.value)}
+                    className="rounded-xl bg-white dark:bg-[#1a1a1a] h-11"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isVerifying}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-5 rounded-xl h-11"
+                  >
+                    {isVerifying ? "Verifying..." : "Confirm OTP"}
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {/* Audit tracker details */}
+            {(recoveryInfo.recoverySettingsUpdatedAt || recoveryInfo.updatedBy) && (
+              <div className="pt-4 border-t border-slate-100 dark:border-gray-850 flex flex-wrap gap-4 text-xs text-slate-500">
+                {recoveryInfo.updatedBy && (
+                  <span>Updated By: <strong className="text-slate-700 dark:text-gray-300">{recoveryInfo.updatedBy.name} ({recoveryInfo.updatedBy.email})</strong></span>
+                )}
+                {recoveryInfo.recoverySettingsUpdatedAt && (
+                  <span>Last Updated: <strong className="text-slate-700 dark:text-gray-300">{new Date(recoveryInfo.recoverySettingsUpdatedAt).toLocaleString('en-IN')}</strong></span>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

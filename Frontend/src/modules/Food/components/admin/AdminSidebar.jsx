@@ -53,6 +53,8 @@ import { cn } from "@food/utils/utils"
 import { Input } from "@food/components/ui/input"
 import { adminSidebarMenu } from "@food/utils/adminSidebarMenu"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
+import { getCurrentUser } from "@food/utils/auth"
+import { hasPathPermission } from "@food/utils/permissions"
 import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png"
 const debugLog = (...args) => { }
 const debugWarn = (...args) => { }
@@ -267,16 +269,56 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
   // expandedSections state is initialized above in getInitialStates consolidation
 
 
-  // Filter menu items based on search query
+  // Filter menu items based on permissions and search query
   const filteredMenuData = useMemo(() => {
+    const user = getCurrentUser("admin");
+
+    // Helper to check if a link is allowed
+    const isLinkAllowed = (linkItem) => {
+      return hasPathPermission(user, linkItem.path);
+    };
+
+    // First filter by permissions
+    const permittedMenu = [];
+    adminSidebarMenu.forEach((item) => {
+      if (item.type === "link") {
+        if (isLinkAllowed(item)) {
+          permittedMenu.push(item);
+        }
+      } else if (item.type === "section") {
+        const permittedItems = [];
+        item.items.forEach((subItem) => {
+          if (subItem.type === "link") {
+            if (isLinkAllowed(subItem)) {
+              permittedItems.push(subItem);
+            }
+          } else if (subItem.type === "expandable") {
+            const permittedSubItems = subItem.subItems?.filter((si) => isLinkAllowed(si)) || [];
+            if (permittedSubItems.length > 0) {
+              permittedItems.push({
+                ...subItem,
+                subItems: permittedSubItems
+              });
+            }
+          }
+        });
+        if (permittedItems.length > 0) {
+          permittedMenu.push({
+            ...item,
+            items: permittedItems
+          });
+        }
+      }
+    });
+
     if (!searchQuery.trim()) {
-      return adminSidebarMenu
+      return permittedMenu;
     }
 
     const query = searchQuery.toLowerCase().trim()
     const filtered = []
 
-    adminSidebarMenu.forEach((item) => {
+    permittedMenu.forEach((item) => {
       if (item.type === "link") {
         if (item.label.toLowerCase().includes(query)) {
           filtered.push(item)

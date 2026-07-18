@@ -2773,7 +2773,7 @@ function RestaurantDetailsContent() {
 
       {/* FSSAI License Information - Bottom of page */}
       {restaurant?.onboarding?.step3?.fssai?.registrationNumber && (
-        <div className="px-4 py-4 mt-2 mb-24 border-t border-dashed border-border dark:border-gray-800 bg-gray-50/30 dark:bg-white/5 mx-4 rounded-xl">
+        <div className="px-4 py-4 mt-2 mb-8 border-t border-dashed border-border dark:border-gray-800 bg-gray-50/30 dark:bg-white/5 mx-4 rounded-xl">
           <div className="flex items-center gap-4">
             <div className="h-12 w-20 flex items-center justify-center bg-surface rounded-lg p-1.5 shadow-sm border border-border">
               <img
@@ -2790,6 +2790,153 @@ function RestaurantDetailsContent() {
                 {restaurant?.onboarding?.step3?.fssai?.registrationNumber}
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reviews & Facilities Ratings Section */}
+      {restaurant && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-8 space-y-8 border-t border-border dark:border-gray-800 pb-32">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Left: Overall Score & Facilities Average Scores Card */}
+            <div className="bg-surface dark:bg-[#1a1a1a] rounded-3xl border border-border dark:border-gray-800 p-6 shadow-sm space-y-6 self-start">
+              <div>
+                <h2 className="text-xl font-bold text-text-primary dark:text-white mb-4">Ratings & Reviews</h2>
+                <div className="flex items-center gap-4">
+                  <div className="text-5xl font-black text-text-primary dark:text-white">
+                    {Number(restaurant.rating || 0) > 0 ? Number(restaurant.rating).toFixed(1) : 'NEW'}
+                  </div>
+                  <div>
+                    <div className="flex gap-0.5 text-yellow-400">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={`score-star-${star}`}
+                          className={`w-5 h-5 ${star <= Math.round(restaurant.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200 dark:text-gray-850'}`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-sm text-text-secondary dark:text-gray-400 mt-1 font-medium">
+                      {(restaurant.reviewsList?.length || restaurant.totalRatings || 0)} customer reviews
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Facility Rating Averages */}
+              {(() => {
+                const facStats = [
+                  { key: 'parking', label: 'Parking Rating', score: restaurant.parkingRating || 0 },
+                  { key: 'wifi', label: 'WiFi Rating', score: restaurant.wifiRating || 0 },
+                  { key: 'familyFriendly', label: 'Family Friendly', score: restaurant.familyFriendlyRating || 0 },
+                  { key: 'evCharging', label: 'EV Charging', score: restaurant.evChargingRating || 0 },
+                  { key: 'washroom', label: 'Washroom Rating', score: restaurant.washroomRating || 0 },
+                ];
+
+                const activeStats = facStats.filter(f => restaurant.facilities?.[f.key] === true);
+                if (activeStats.length === 0) return null;
+
+                return (
+                  <div className="space-y-4 border-t border-border dark:border-gray-850 pt-6">
+                    <h3 className="font-bold text-text-primary dark:text-white text-sm">Facility Averages</h3>
+                    <div className="space-y-3">
+                      {activeStats.map((stat) => (
+                        <div key={`stat-row-${stat.key}`} className="space-y-1">
+                          <div className="flex justify-between items-center text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            <span>{stat.label}</span>
+                            <span className="flex items-center gap-1 font-bold">
+                              {stat.score > 0 ? stat.score.toFixed(1) : 'No ratings'} <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
+                            <div 
+                              className="bg-green-600 h-full rounded-full transition-all duration-500" 
+                              style={{ width: `${(stat.score / 5) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Right: Reviews List */}
+            <div className="lg:col-span-2 space-y-4">
+              <h3 className="text-lg font-bold text-text-primary dark:text-white">Recent Reviews</h3>
+              {(!restaurant.reviewsList || restaurant.reviewsList.length === 0) ? (
+                <div className="bg-surface dark:bg-[#1a1a1a] rounded-3xl border border-border dark:border-gray-800 p-8 text-center text-text-secondary dark:text-gray-400">
+                  No reviews submitted yet. Be the first to rate!
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {restaurant.reviewsList.map((rev) => (
+                    <div key={rev.id} className="bg-surface dark:bg-[#1a1a1a] rounded-3xl border border-border dark:border-gray-800 p-5 shadow-sm space-y-4">
+                      {/* Customer Header */}
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={rev.customerImage} 
+                          alt={rev.customerName} 
+                          className="w-10 h-10 rounded-full border border-border dark:border-gray-800"
+                          onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(rev.customerName)}`; }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-text-primary dark:text-white text-sm truncate">{rev.customerName}</h4>
+                          <p className="text-[10px] text-text-secondary dark:text-gray-450 font-medium">
+                            {new Date(rev.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 bg-green-600 text-white px-2 py-0.5 rounded-lg text-xs font-bold shadow-sm">
+                          {rev.rating} <Star className="w-3.5 h-3.5 fill-white text-white" />
+                        </div>
+                      </div>
+
+                      {/* Comment text */}
+                      {rev.comment && (
+                        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium italic leading-relaxed pl-1">
+                          "{rev.comment}"
+                        </p>
+                      )}
+
+                      {/* Individual Facility Ratings for this review */}
+                      {(() => {
+                        const facilityItems = [
+                          { key: 'parking', label: 'Parking', rating: rev.parking?.rating, availability: rev.parking?.availability },
+                          { key: 'wifi', label: 'WiFi', rating: rev.wifi?.rating, availability: rev.wifi?.availability },
+                          { key: 'familyFriendly', label: 'Family Friendly', rating: rev.familyFriendly?.rating, availability: rev.familyFriendly?.availability },
+                          { key: 'evCharging', label: 'EV Charging', rating: rev.evCharging?.rating, availability: rev.evCharging?.availability },
+                          { key: 'washroom', label: 'Washroom', rating: rev.washroom?.rating, availability: rev.washroom?.availability },
+                        ].filter(f => f.rating !== null && f.rating !== undefined || f.availability === false);
+
+                        if (facilityItems.length === 0) return null;
+
+                        return (
+                          <div className="flex flex-wrap gap-2 pt-2 border-t border-border dark:border-gray-850">
+                            {facilityItems.map((item) => (
+                              <div 
+                                key={`rev-${rev.id}-${item.key}`}
+                                className="inline-flex items-center gap-1 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-lg border border-gray-100 dark:border-gray-800 text-[11px]"
+                              >
+                                <span className="font-semibold text-text-primary dark:text-gray-250">{item.label}:</span>
+                                {item.availability === false ? (
+                                  <span className="text-rose-500 font-black uppercase tracking-tighter text-[9px]">Not Available</span>
+                                ) : (
+                                  <span className="flex items-center gap-0.5 text-yellow-600 font-bold">
+                                    {item.rating} <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@food/components/ui/dialog"
 import { adminAPI } from "@food/api"
 import { toast } from "sonner"
+import { formatDateTime } from "@/shared/utils/dateTime"
 
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -23,6 +24,11 @@ export default function RestaurantReviews() {
     customer: true,
     review: true,
     rating: true,
+    parking: true,
+    wifi: true,
+    familyFriendly: true,
+    evCharging: true,
+    washroom: true,
     date: true,
   })
 
@@ -65,6 +71,11 @@ export default function RestaurantReviews() {
       customer: true,
       review: true,
       rating: true,
+      parking: true,
+      wifi: true,
+      familyFriendly: true,
+      evCharging: true,
+      washroom: true,
       date: true,
     })
   }
@@ -76,6 +87,11 @@ export default function RestaurantReviews() {
     customer: "Customer",
     review: "Review",
     rating: "Rating",
+    parking: "Parking Rating",
+    wifi: "WiFi Rating",
+    familyFriendly: "Family Friendly Rating",
+    evCharging: "EV Charging Rating",
+    washroom: "Washroom Rating",
     date: "Date & Time",
   }
 
@@ -223,6 +239,21 @@ export default function RestaurantReviews() {
                     {visibleColumns.rating && (
                       <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Rating</th>
                     )}
+                    {visibleColumns.parking && (
+                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Parking</th>
+                    )}
+                    {visibleColumns.wifi && (
+                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">WiFi</th>
+                    )}
+                    {visibleColumns.familyFriendly && (
+                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Family</th>
+                    )}
+                    {visibleColumns.evCharging && (
+                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">EV Charging</th>
+                    )}
+                    {visibleColumns.washroom && (
+                      <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Washroom</th>
+                    )}
                     {visibleColumns.date && (
                       <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-700 uppercase tracking-wider">Date & Time</th>
                     )}
@@ -246,6 +277,31 @@ export default function RestaurantReviews() {
                       {visibleColumns.rating && (
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getRatingBadge(review.rating)}
+                        </td>
+                      )}
+                      {visibleColumns.parking && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                          {getFacilityRatingStr(review.parking)}
+                        </td>
+                      )}
+                      {visibleColumns.wifi && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                          {getFacilityRatingStr(review.wifi)}
+                        </td>
+                      )}
+                      {visibleColumns.familyFriendly && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                          {getFacilityRatingStr(review.familyFriendly)}
+                        </td>
+                      )}
+                      {visibleColumns.evCharging && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                          {getFacilityRatingStr(review.evCharging)}
+                        </td>
+                      )}
+                      {visibleColumns.washroom && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                          {getFacilityRatingStr(review.washroom)}
                         </td>
                       )}
                       {visibleColumns.date && <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{formatDateTime(review.submittedAt)}</td>}
@@ -284,6 +340,41 @@ export default function RestaurantReviews() {
                 </div>
               </div>
               <div className="bg-slate-50 rounded-lg p-4"><p className="text-xs text-slate-600 mb-2 font-semibold">Review Feedback</p><p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">{selectedReview.review || 'No review text provided'}</p></div>
+              
+              {/* Facility Ratings */}
+              {(() => {
+                const facList = [
+                  { key: 'parking', label: 'Parking', val: selectedReview.parking },
+                  { key: 'wifi', label: 'WiFi', val: selectedReview.wifi },
+                  { key: 'familyFriendly', label: 'Family Friendly', val: selectedReview.familyFriendly },
+                  { key: 'evCharging', label: 'EV Charging', val: selectedReview.evCharging },
+                  { key: 'washroom', label: 'Washroom', val: selectedReview.washroom },
+                ].filter(f => f.val?.rating != null || f.val?.availability === false);
+
+                if (facList.length === 0) return null;
+
+                return (
+                  <div className="bg-slate-50 rounded-lg p-4 space-y-3">
+                    <p className="text-xs text-slate-600 font-semibold">Facility Ratings</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {facList.map((item) => (
+                        <div key={`fac-details-${item.key}`} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200">
+                          <span className="text-xs font-semibold text-slate-700">{item.label}</span>
+                          {item.val.availability === false ? (
+                            <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Not Available</span>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-bold text-slate-900">{item.val.rating}</span>
+                              <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="bg-slate-50 rounded-lg p-4"><p className="text-xs text-slate-600 mb-1">Submitted At</p><p className="text-sm font-medium text-slate-900">{formatDateTime(selectedReview.submittedAt)}</p></div>
             </div>
           )}
@@ -334,4 +425,143 @@ export default function RestaurantReviews() {
       </Dialog>
     </div>
   )
+}
+
+function getFacilityRatingStr(val) {
+  if (!val) return "N/A";
+  if (val.availability === false) return "Not Available";
+  return val.rating != null ? String(val.rating) : "N/A";
+}
+
+function exportReviewsToCSV(reviews) {
+  const headers = ["Serial Number", "Order ID", "Restaurant", "Customer", "Review", "Rating", "Parking Rating", "WiFi Rating", "Family Friendly Rating", "EV Charging Rating", "Washroom Rating", "Date & Time"];
+  const rows = reviews.map(r => [
+    r.sl,
+    r.orderId,
+    `"${(r.restaurant || "").replace(/"/g, '""')}"`,
+    `"${(r.customer || "").replace(/"/g, '""')}"`,
+    `"${(r.review || "").replace(/"/g, '""')}"`,
+    r.rating,
+    getFacilityRatingStr(r.parking),
+    getFacilityRatingStr(r.wifi),
+    getFacilityRatingStr(r.familyFriendly),
+    getFacilityRatingStr(r.evCharging),
+    getFacilityRatingStr(r.washroom),
+    new Date(r.submittedAt).toLocaleString("en-IN")
+  ]);
+  const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", `Restaurant_Reviews_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function exportReviewsToExcel(reviews) {
+  let table = '<table border="1"><tr>';
+  const headers = ["Serial Number", "Order ID", "Restaurant", "Customer", "Review", "Rating", "Parking Rating", "WiFi Rating", "Family Friendly Rating", "EV Charging Rating", "Washroom Rating", "Date & Time"];
+  headers.forEach(h => { table += `<th>${h}</th>`; });
+  table += '</tr>';
+  reviews.forEach(r => {
+    table += `<tr>
+      <td>${r.sl}</td>
+      <td>${r.orderId}</td>
+      <td>${r.restaurant}</td>
+      <td>${r.customer}</td>
+      <td>${r.review || ""}</td>
+      <td>${r.rating}</td>
+      <td>${getFacilityRatingStr(r.parking)}</td>
+      <td>${getFacilityRatingStr(r.wifi)}</td>
+      <td>${getFacilityRatingStr(r.familyFriendly)}</td>
+      <td>${getFacilityRatingStr(r.evCharging)}</td>
+      <td>${getFacilityRatingStr(r.washroom)}</td>
+      <td>${new Date(r.submittedAt).toLocaleString("en-IN")}</td>
+    </tr>`;
+  });
+  table += '</table>';
+  const blob = new Blob([table], { type: "application/vnd.ms-excel" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", `Restaurant_Reviews_${new Date().toISOString().split('T')[0]}.xls`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function exportReviewsToPDF(reviews) {
+  let htmlContent = `
+    <html>
+    <head>
+      <title>Restaurant Reviews Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { text-align: center; color: #1e293b; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; font-size: 11px; }
+        th { bg-color: #f1f5f9; color: #334155; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f8fafc; }
+      </style>
+    </head>
+    <body>
+      <h1>Restaurant Reviews Report</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>SI</th>
+            <th>Order ID</th>
+            <th>Restaurant</th>
+            <th>Customer</th>
+            <th>Review</th>
+            <th>Rating</th>
+            <th>Parking</th>
+            <th>WiFi</th>
+            <th>Family</th>
+            <th>EV</th>
+            <th>Washroom</th>
+            <th>Date & Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${reviews.map(r => `
+            <tr>
+              <td>${r.sl}</td>
+              <td>${r.orderId}</td>
+              <td>${r.restaurant}</td>
+              <td>${r.customer}</td>
+              <td>${r.review || ""}</td>
+              <td>${r.rating}</td>
+              <td>${getFacilityRatingStr(r.parking)}</td>
+              <td>${getFacilityRatingStr(r.wifi)}</td>
+              <td>${getFacilityRatingStr(r.familyFriendly)}</td>
+              <td>${getFacilityRatingStr(r.evCharging)}</td>
+              <td>${getFacilityRatingStr(r.washroom)}</td>
+              <td>${new Date(r.submittedAt).toLocaleString("en-IN")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 250);
+}
+
+function exportReviewsToJSON(reviews) {
+  const jsonContent = JSON.stringify(reviews, null, 2);
+  const blob = new Blob([jsonContent], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", `Restaurant_Reviews_${new Date().toISOString().split('T')[0]}.json`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }

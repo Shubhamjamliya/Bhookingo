@@ -239,7 +239,10 @@ export default function Feedback() {
         }
 
         const transformedReviews = allOrders
-          .filter(order => normalizeOrderStatus(order) === 'delivered')
+          .filter(order => {
+            const status = normalizeOrderStatus(order);
+            return status === 'delivered' || status === 'completed';
+          })
           .map((order, index) => {
             const orderDate = new Date(order.createdAt || order.deliveredAt || Date.now())
             const day = orderDate.getDate()
@@ -266,6 +269,11 @@ export default function Feedback() {
               rating: rating,
               date: formattedDate,
               reviewText: reviewText,
+              parking: order.ratings?.parking || null,
+              wifi: order.ratings?.wifi || null,
+              familyFriendly: order.ratings?.familyFriendly || null,
+              evCharging: order.ratings?.evCharging || null,
+              washroom: order.ratings?.washroom || null,
               orderData: order
             }
           })
@@ -274,10 +282,39 @@ export default function Feedback() {
         const ratings = transformedReviews.map(r => r.rating).filter(r => r !== null)
         const averageRating = ratings.length > 0 ? (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(1) : 0
         
+        let pSum = 0, pCount = 0;
+        let wSum = 0, wCount = 0;
+        let fSum = 0, fCount = 0;
+        let eSum = 0, eCount = 0;
+        let wrSum = 0, wrCount = 0;
+
+        transformedReviews.forEach(r => {
+          if (r.parking && r.parking.availability !== false && typeof r.parking.rating === 'number') {
+            pSum += r.parking.rating; pCount++;
+          }
+          if (r.wifi && r.wifi.availability !== false && typeof r.wifi.rating === 'number') {
+            wSum += r.wifi.rating; wCount++;
+          }
+          if (r.familyFriendly && r.familyFriendly.availability !== false && typeof r.familyFriendly.rating === 'number') {
+            fSum += r.familyFriendly.rating; fCount++;
+          }
+          if (r.evCharging && r.evCharging.availability !== false && typeof r.evCharging.rating === 'number') {
+            eSum += r.evCharging.rating; eCount++;
+          }
+          if (r.washroom && r.washroom.availability !== false && typeof r.washroom.rating === 'number') {
+            wrSum += r.washroom.rating; wrCount++;
+          }
+        });
+
         setRatingSummary({
           averageRating: parseFloat(averageRating),
           totalRatings: ratings.length,
-          totalReviews: transformedReviews.length
+          totalReviews: transformedReviews.length,
+          parkingAvg: pCount > 0 ? Number((pSum / pCount).toFixed(1)) : 0,
+          wifiAvg: wCount > 0 ? Number((wSum / wCount).toFixed(1)) : 0,
+          familyFriendlyAvg: fCount > 0 ? Number((fSum / fCount).toFixed(1)) : 0,
+          evChargingAvg: eCount > 0 ? Number((eSum / eCount).toFixed(1)) : 0,
+          washroomAvg: wrCount > 0 ? Number((wrSum / wrCount).toFixed(1)) : 0,
         })
         setReviews(transformedReviews)
       } catch (error) {
@@ -512,6 +549,37 @@ export default function Feedback() {
               </button>
             </div>
 
+            {/* Dynamic Facility Rating Averages inside Restaurant Dashboard */}
+            {(() => {
+              const facStats = [
+                { key: 'parking', label: 'Parking', score: ratingSummary.parkingAvg || 0 },
+                { key: 'wifi', label: 'WiFi', score: ratingSummary.wifiAvg || 0 },
+                { key: 'familyFriendly', label: 'Family Friendly', score: ratingSummary.familyFriendlyAvg || 0 },
+                { key: 'evCharging', label: 'EV Charging', score: ratingSummary.evChargingAvg || 0 },
+                { key: 'washroom', label: 'Washroom', score: ratingSummary.washroomAvg || 0 },
+              ];
+
+              const activeStats = facStats.filter(f => restaurantData?.facilities?.[f.key] === true);
+              if (activeStats.length === 0) return null;
+
+              return (
+                <div className="bg-white dark:bg-gradient-to-br from-[#B80B3D] to-[#66001D] p-5 rounded-2xl border border-gray-150 dark:border-gray-800 shadow-sm space-y-4">
+                  <h3 className="text-xs font-bold text-gray-950 dark:text-white uppercase tracking-wider">Facility Averages</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {activeStats.map((stat) => (
+                      <div key={`stat-card-${stat.key}`} className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col gap-1">
+                        <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">{stat.label}</span>
+                        <span className="text-sm font-black text-gray-800 dark:text-white flex items-center gap-1">
+                          {stat.score > 0 ? stat.score.toFixed(1) : 'No ratings'} 
+                          {stat.score > 0 && <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="space-y-4 pb-20">
               {displayedReviews.map((review) => (
                 <div key={review.id} className="bg-white dark:bg-gradient-to-br from-[#B80B3D] to-[#66001D] rounded-2xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm space-y-3">
@@ -520,7 +588,7 @@ export default function Feedback() {
                     <span>{review.date}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <img src={review.userImage} className="w-8 h-8 rounded-full border border-gray-100 dark:border-gray-800" />
+                    <img src={review.userImage} className="w-8 h-8 rounded-full border border-gray-100 dark:border-gray-800" onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(review.userName)}`; }} />
                     <p className="font-bold text-gray-900 dark:text-white text-sm">{review.userName}</p>
                     <div className="ml-auto flex items-center gap-1 bg-green-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">
                       {review.rating} <Star className="w-2 h-2 fill-current" />
@@ -529,6 +597,39 @@ export default function Feedback() {
                   <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3">
                     <p className="text-sm text-gray-800 dark:text-gray-200 font-medium italic">"{review.reviewText}"</p>
                   </div>
+
+                  {/* Facility ratings for this review */}
+                  {(() => {
+                    const facList = [
+                      { key: 'parking', label: 'Parking', val: review.parking },
+                      { key: 'wifi', label: 'WiFi', val: review.wifi },
+                      { key: 'familyFriendly', label: 'Family Friendly', val: review.familyFriendly },
+                      { key: 'evCharging', label: 'EV Charging', val: review.evCharging },
+                      { key: 'washroom', label: 'Washroom', val: review.washroom },
+                    ].filter(f => f.val?.rating != null || f.val?.availability === false);
+
+                    if (facList.length === 0) return null;
+
+                    return (
+                      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-100 dark:border-gray-800">
+                        {facList.map((item) => (
+                          <div 
+                            key={`review-${review.id}-${item.key}`}
+                            className="inline-flex items-center gap-1 bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded text-[10px] font-bold"
+                          >
+                            <span className="text-gray-500">{item.label}:</span>
+                            {item.val.availability === false ? (
+                              <span className="text-rose-600 dark:text-rose-450 uppercase text-[8px] font-extrabold tracking-tighter">Not Available</span>
+                            ) : (
+                              <span className="flex items-center gap-0.5 text-yellow-600 dark:text-yellow-400">
+                                {item.val.rating} <Star className="w-2.5 h-2.5 fill-current" />
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
             </div>

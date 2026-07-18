@@ -1574,11 +1574,41 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, userId = null) =
         hasOrderedBefore = !!previousOrder;
     }
 
+    let reviewsList = [];
+    try {
+        const reviewsDocs = await FoodOrder.find({
+            restaurantId: doc._id,
+            'ratings.restaurant.rating': { $exists: true, $ne: null }
+        })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .populate('userId', 'name profileImage')
+        .lean();
+
+        reviewsList = reviewsDocs.map(r => ({
+            id: r._id.toString(),
+            orderId: r.orderId || r._id.toString(),
+            customerName: r.userId?.name || 'Customer',
+            customerImage: r.userId?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(r.userId?.name || 'Customer')}&background=random`,
+            rating: r.ratings?.restaurant?.rating || 0,
+            comment: r.ratings?.restaurant?.comment || '',
+            date: r.ratings?.restaurant?.ratedAt || r.createdAt || new Date(),
+            parking: r.ratings?.parking || null,
+            wifi: r.ratings?.wifi || null,
+            familyFriendly: r.ratings?.familyFriendly || null,
+            evCharging: r.ratings?.evCharging || null,
+            washroom: r.ratings?.washroom || null,
+        }));
+    } catch (err) {
+        console.error('Error fetching restaurant reviews in getApprovedRestaurantByIdOrSlug:', err);
+    }
+
     return {
         ...doc,
         rating: normalizeRatingValue(doc.rating),
         totalRatings: normalizeTotalRatingsValue(doc.totalRatings),
-        hasOrderedBefore
+        hasOrderedBefore,
+        reviewsList
     };
 };
 

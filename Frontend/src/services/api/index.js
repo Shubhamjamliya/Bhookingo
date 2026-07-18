@@ -166,6 +166,20 @@ export const notificationAPI = {
 
 /** Admin API - new backend only (GET /auth/me, PATCH /auth/admin/profile, POST /auth/admin/change-password) */
 export const adminAPI = {
+  listSubAdmins: (params) =>
+    apiClient.get("/food/admin/sub-admins", { params, contextModule: "admin" }),
+  getSubAdminById: (id) =>
+    apiClient.get(`/food/admin/sub-admins/${id}`, { contextModule: "admin" }),
+  createSubAdmin: (body) =>
+    apiClient.post("/food/admin/sub-admins", body, { contextModule: "admin" }),
+  updateSubAdmin: (id, body) =>
+    apiClient.patch(`/food/admin/sub-admins/${id}`, body, { contextModule: "admin" }),
+  deleteSubAdmin: (id) =>
+    apiClient.delete(`/food/admin/sub-admins/${id}`, { contextModule: "admin" }),
+  resetSubAdminPassword: (id, password) =>
+    apiClient.post(`/food/admin/sub-admins/${id}/reset-password`, { password }, { contextModule: "admin" }),
+  listSubAdminAuditLogs: (params) =>
+    apiClient.get("/food/admin/sub-admins/audit-logs", { params, contextModule: "admin" }),
   getSidebarBadges: () =>
     apiClient.get("/food/admin/sidebar-badges", { contextModule: "admin" }),
   getDrivingModeSettings: () =>
@@ -173,22 +187,27 @@ export const adminAPI = {
   updateDrivingModeSettings: (body) =>
     apiClient.patch("/food/admin/driving-mode/settings", body, { contextModule: "admin" }),
   login: (email, password) => authService.adminLogin(email, password),
-  /** POST /auth/admin/forgot-password/request-otp – only accepts registered admin email */
-  requestForgotPasswordOtp: (email) =>
+  requestForgotPasswordOtp: (email, phone) =>
     apiClient.post("/auth/admin/forgot-password/request-otp", {
-      email: String(email || "")
-        .trim()
-        .toLowerCase(),
+      email: String(email || "").trim().toLowerCase(),
+      phone: String(phone || "").trim()
     }),
-  /** POST /auth/admin/forgot-password/reset – verify OTP and set new password in one call */
-  resetPasswordWithOtp: (email, otp, newPassword) =>
+  verifyForgotPasswordOtp: (email, otp) =>
+    apiClient.post("/auth/admin/forgot-password/verify-otp", {
+      email: String(email || "").trim().toLowerCase(),
+      otp: String(otp || "").replace(/\D/g, "")
+    }),
+  resetPasswordWithOtp: (resetToken, newPassword) =>
     apiClient.post("/auth/admin/forgot-password/reset", {
-      email: String(email || "")
-        .trim()
-        .toLowerCase(),
-      otp: String(otp || "").replace(/\D/g, ""),
-      newPassword: String(newPassword || ""),
+      resetToken: String(resetToken || ""),
+      newPassword: String(newPassword || "")
     }),
+  getRecoverySettings: () =>
+    apiClient.get("/food/admin/recovery-settings", { contextModule: "admin" }),
+  requestRecoveryVerify: (type, value) =>
+    apiClient.post("/food/admin/recovery-settings/request-verify", { type, value }, { contextModule: "admin" }),
+  confirmRecoveryVerify: (type, value, otp) =>
+    apiClient.post("/food/admin/recovery-settings/confirm-verify", { type, value, otp }, { contextModule: "admin" }),
   /** Raw /auth/me for admin (e.g. navbar). For Profile & Settings use getAdminProfile. */
   getCurrentAdmin: () => authService.getMe("admin"),
   /** Single API for admin profile: GET /auth/me, returns { data: { admin } }. Use on Profile & Settings only. */

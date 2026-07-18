@@ -1,6 +1,7 @@
 import express from 'express';
 import { AuthError } from '../../../../core/auth/errors.js';
 import * as adminController from '../controllers/admin.controller.js';
+import { dynamicRbacMiddleware } from '../../../../core/admin/rbac.middleware.js';
 import * as foodApprovalController from '../controllers/foodApproval.controller.js';
 import * as addonsApprovalController from '../controllers/addonsApproval.controller.js';
 import * as businessSettingsController from '../controllers/businessSettings.controller.js';
@@ -34,13 +35,14 @@ router.get('/business-settings/public', businessSettingsController.getBusinessSe
 
 const requireAdmin = (req, _res, next) => {
     const user = req.user;
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUB_ADMIN')) {
         return next(new AuthError('Admin access required'));
     }
     return next();
 };
 
 router.use(requireAdmin);
+router.use(dynamicRbacMiddleware);
 
 // ----- Broadcast Notifications -----
 router.post('/notifications/broadcast', notificationBroadcastController.createBroadcastNotificationController);
@@ -206,5 +208,26 @@ router.get('/notifications/fssai-expired', adminController.getExpiredFssaiNotifi
 router.get('/customization-settings', systemConfigController.getCustomizationSettings);
 router.patch('/customization-settings', systemConfigController.updateCustomizationSettings);
 router.get('/customization-settings/takeaway-cod', systemConfigController.getTakeawayCodStatus);
+
+// ----- Sub-Admins Management -----
+router.get('/sub-admins', adminController.listSubAdmins);
+router.get('/sub-admins/audit-logs', adminController.listAuditLogs);
+router.get('/sub-admins/:id', adminController.getSubAdminById);
+router.post('/sub-admins', adminController.createSubAdmin);
+router.patch('/sub-admins/:id', adminController.updateSubAdmin);
+router.delete('/sub-admins/:id', adminController.deleteSubAdmin);
+router.post('/sub-admins/:id/reset-password', adminController.resetSubAdminPassword);
+
+// ----- Super-Admin Recovery Settings (Strictly ADMIN only, no sub-admin access) -----
+const requireSuperAdmin = (req, res, next) => {
+    if (!req.user || req.user.role !== 'ADMIN') {
+        return res.status(403).json({ success: false, message: "Access Denied: Super Admin access required" });
+    }
+    next();
+};
+
+router.get('/recovery-settings', requireSuperAdmin, adminController.getRecoverySettings);
+router.post('/recovery-settings/request-verify', requireSuperAdmin, adminController.requestRecoveryVerify);
+router.post('/recovery-settings/confirm-verify', requireSuperAdmin, adminController.confirmRecoveryVerify);
 
 export default router;

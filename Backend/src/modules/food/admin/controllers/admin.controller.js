@@ -1186,3 +1186,144 @@ export async function rejectWithdrawalRequest(req, res, next) {
         next(error);
     }
 }
+
+export async function listSubAdmins(req, res, next) {
+    try {
+        const { search, status, roleTitle, sortBy, sortOrder, page, limit } = req.query;
+        const result = await adminService.listSubAdmins({ search, status, roleTitle, sortBy, sortOrder, page, limit });
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function getSubAdminById(req, res, next) {
+    try {
+        const subAdmin = await adminService.getSubAdminById(req.params.id);
+        if (!subAdmin) {
+            return res.status(404).json({ success: false, message: 'Sub-Admin not found' });
+        }
+        res.status(200).json({ success: true, data: { subAdmin } });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function createSubAdmin(req, res, next) {
+    try {
+        const creator = req.user;
+        const creatorDoc = await mongoose.model('FoodAdmin').findById(creator.userId).lean();
+        if (!creatorDoc) {
+            return res.status(401).json({ success: false, message: 'Creator not found' });
+        }
+        const clientIp = req.ip || req.connection.remoteAddress || '';
+        const userAgent = req.headers['user-agent'] || '';
+
+        const result = await adminService.createSubAdmin(req.body, creatorDoc, clientIp, userAgent);
+        res.status(201).json({ success: true, message: 'Sub-Admin created successfully', data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function updateSubAdmin(req, res, next) {
+    try {
+        const updater = req.user;
+        const updaterDoc = await mongoose.model('FoodAdmin').findById(updater.userId).lean();
+        if (!updaterDoc) {
+            return res.status(401).json({ success: false, message: 'Updater not found' });
+        }
+        const clientIp = req.ip || req.connection.remoteAddress || '';
+        const userAgent = req.headers['user-agent'] || '';
+
+        const result = await adminService.updateSubAdmin(req.params.id, req.body, updaterDoc, clientIp, userAgent);
+        res.status(200).json({ success: true, message: 'Sub-Admin updated successfully', data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function deleteSubAdmin(req, res, next) {
+    try {
+        const deleter = req.user;
+        const deleterDoc = await mongoose.model('FoodAdmin').findById(deleter.userId).lean();
+        if (!deleterDoc) {
+            return res.status(401).json({ success: false, message: 'Deleter not found' });
+        }
+        const clientIp = req.ip || req.connection.remoteAddress || '';
+        const userAgent = req.headers['user-agent'] || '';
+
+        const result = await adminService.deleteSubAdmin(req.params.id, deleterDoc, clientIp, userAgent);
+        res.status(200).json({ success: true, message: 'Sub-Admin soft deleted successfully', data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function resetSubAdminPassword(req, res, next) {
+    try {
+        const updater = req.user;
+        const updaterDoc = await mongoose.model('FoodAdmin').findById(updater.userId).lean();
+        if (!updaterDoc) {
+            return res.status(401).json({ success: false, message: 'Updater not found' });
+        }
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ success: false, message: 'New password is required' });
+        }
+        const clientIp = req.ip || req.connection.remoteAddress || '';
+        const userAgent = req.headers['user-agent'] || '';
+
+        const result = await adminService.resetSubAdminPassword(req.params.id, password, updaterDoc, clientIp, userAgent);
+        res.status(200).json({ success: true, message: 'Password reset successfully', data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function listAuditLogs(req, res, next) {
+    try {
+        const result = await adminService.listAuditLogs(req.query);
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function getRecoverySettings(req, res, next) {
+    try {
+        const adminId = req.user.userId;
+        const result = await adminService.getRecoverySettings(adminId);
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function requestRecoveryVerify(req, res, next) {
+    try {
+        const adminId = req.user.userId;
+        const { type, value } = req.body;
+        const result = await adminService.requestRecoveryVerify(adminId, type, value);
+        res.status(200).json({ success: true, message: result.message });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export async function confirmRecoveryVerify(req, res, next) {
+    try {
+        const adminId = req.user.userId;
+        // Find admin user document to retrieve their email
+        const adminDoc = await mongoose.model('FoodAdmin').findById(adminId).lean();
+        const adminEmail = adminDoc ? adminDoc.email : '';
+        const { type, value, otp } = req.body;
+        const clientIp = req.ip || req.connection.remoteAddress || '';
+        const userAgent = req.headers['user-agent'] || '';
+
+        const result = await adminService.confirmRecoveryVerify(adminId, adminEmail, type, value, otp, clientIp, userAgent);
+        res.status(200).json({ success: true, message: 'Recovery details verified and updated successfully' });
+    } catch (error) {
+        next(error);
+    }
+}

@@ -110,6 +110,7 @@ const CustomizationSettings = lazy(() => import("@food/pages/admin/system/Custom
 const DrivingModeSettings = lazy(() => import("@food/pages/admin/system/DrivingModeSettings"));
 const ArchivedAccounts = lazy(() => import("@food/pages/admin/system/ArchivedAccounts"));
 const EditRestaurant = lazy(() => import("@food/pages/admin/restaurant/EditRestaurant"));
+const SubAdmins = lazy(() => import("@food/pages/admin/SubAdmins"));
 const AdminLogin = lazy(() => import("@food/pages/admin/auth/AdminLogin"));
 const AdminSignup = lazy(() => import("@food/pages/admin/auth/AdminSignup"));
 const AdminForgotPassword = lazy(() => import("@food/pages/admin/auth/AdminForgotPassword"));
@@ -269,6 +270,7 @@ export default function AdminRouter() {
             <Route path="customization-settings" element={<CustomizationSettings />} />
             <Route path="driving-mode-settings" element={<DrivingModeSettings />} />
             <Route path="archived-accounts" element={<ArchivedAccounts />} />
+            <Route path="sub-admins" element={<SubAdmins />} />
           </Route>
 
           {/* TAXI ADMIN - Placeholder for future implementation */}

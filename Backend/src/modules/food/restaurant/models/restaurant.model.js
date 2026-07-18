@@ -244,6 +244,11 @@ const restaurantSchema = new mongoose.Schema(
       set: normalizeRatingValue,
     },
     totalRatings: { type: Number, default: 0, min: 0 },
+    parkingRating: { type: Number, default: 0 },
+    wifiRating: { type: Number, default: 0 },
+    familyFriendlyRating: { type: Number, default: 0 },
+    evChargingRating: { type: Number, default: 0 },
+    washroomRating: { type: Number, default: 0 },
     diningSettings: {
       isEnabled: { type: Boolean, default: false },
       maxGuests: { type: Number, default: 6 },

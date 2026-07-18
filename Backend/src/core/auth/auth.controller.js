@@ -12,6 +12,7 @@ import {
   updateAdminProfile,
   changeAdminPassword,
   requestAdminForgotPasswordOtp,
+  verifyAdminForgotPasswordOtp,
   resetAdminPasswordWithOtp,
   deleteAccount,
   checkAccountBalance,
@@ -189,8 +190,11 @@ export const requestAdminForgotPasswordOtpController = async (
   next,
 ) => {
   try {
-    const { email } = validateAdminForgotPasswordRequestDto(req.body);
-    const result = await requestAdminForgotPasswordOtp(email);
+    const { email, phone } = req.body;
+    const clientIp = req.ip || req.connection.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+
+    const result = await requestAdminForgotPasswordOtp(email, phone, clientIp, userAgent);
     return sendResponse(
       res,
       200,
@@ -202,12 +206,35 @@ export const requestAdminForgotPasswordOtpController = async (
   }
 };
 
+export const verifyAdminForgotPasswordOtpController = async (
+  req,
+  res,
+  next,
+) => {
+  try {
+    const { email, otp } = req.body;
+    const clientIp = req.ip || req.connection.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+
+    const result = await verifyAdminForgotPasswordOtp(email, otp, clientIp, userAgent);
+    return sendResponse(
+      res,
+      200,
+      "OTP verified successfully",
+      result,
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const resetAdminPasswordWithOtpController = async (req, res, next) => {
   try {
-    const { email, otp, newPassword } = validateAdminForgotPasswordResetDto(
-      req.body,
-    );
-    await resetAdminPasswordWithOtp(email, otp, newPassword);
+    const { resetToken, newPassword } = req.body;
+    const clientIp = req.ip || req.connection.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+
+    await resetAdminPasswordWithOtp(resetToken, newPassword, clientIp, userAgent);
     return sendResponse(res, 200, "Password reset successfully", {
       success: true,
     });

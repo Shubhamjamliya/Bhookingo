@@ -31,6 +31,14 @@ export default function MasterLandingPage() {
     fetchContactInfo();
   }, []);
 
+  useEffect(() => {
+    const authStatus = localStorage.getItem("user_authenticated");
+    const token = localStorage.getItem("user_accessToken");
+    if (authStatus === "true" && token) {
+      navigate("/food/user", { replace: true });
+    }
+  }, [navigate]);
+
   const heroImages = [
     "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",

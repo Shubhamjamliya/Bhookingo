@@ -9,13 +9,13 @@ export default function AuthRedirect({ children, module, redirectTo = null }) {
   const isAuthenticated = isModuleAuthenticated(module)
 
   const moduleHomePages = {
-    user: "/food",
+    user: "/food/user",
     restaurant: "/food/restaurant",
     admin: "/food/admin",
   }
 
   if (isAuthenticated) {
-    const homePath = redirectTo || moduleHomePages[module] || "/food"
+    const homePath = redirectTo || moduleHomePages[module] || "/food/user"
     return <Navigate to={homePath} replace />
   }
 

@@ -6,6 +6,7 @@ import {
   ShoppingBag,
   Phone,
   Copy,
+  Shield,
   Download,
   User,
   CreditCard,
@@ -400,10 +401,33 @@ export default function UserOrderDetails() {
 
         {/* Pickup OTP Card */}
         {(order.status === 'ready_for_pickup' || order.orderStatus === 'ready_for_pickup') && order.pickupOtp?.code && (
-          <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-5 rounded-xl shadow-md border dark:border-gray-800 space-y-2 text-center">
-            <p className="text-xs font-semibold text-emerald-100 uppercase tracking-wider">Pickup OTP</p>
-            <h3 className="text-3xl font-mono font-bold tracking-widest leading-none my-1">{order.pickupOtp.code}</h3>
-            <p className="text-xs text-emerald-50">Show this OTP at restaurant while collecting your order.</p>
+          <div className="bg-[#f5f6ff] dark:bg-indigo-950/20 border border-[#e1e4ff] dark:border-indigo-900/30 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#e8eaff] dark:bg-indigo-950/50 flex items-center justify-center text-[#4f46e5] flex-shrink-0">
+                <Shield className="w-6 h-6 stroke-[2]" />
+              </div>
+              <div className="text-left">
+                <h4 className="text-sm font-black text-gray-900 dark:text-gray-100">Pickup Verification OTP</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                  Show this OTP to the restaurant to collect your order.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center flex-shrink-0">
+              <div className="border border-[#e1e4ff] dark:border-indigo-900/40 bg-white dark:bg-neutral-900 font-mono font-black text-xl text-[#4f46e5] px-4 py-2.5 rounded-l-xl select-all leading-none h-11 flex items-center">
+                {order.pickupOtp.code}
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(String(order.pickupOtp.code));
+                  toast.success("OTP copied to clipboard!");
+                }}
+                className="border-y border-r border-[#e1e4ff] dark:border-indigo-900/40 bg-[#f5f6ff] dark:bg-indigo-950/40 hover:bg-[#e8eaff] dark:hover:bg-indigo-900/50 text-[#4f46e5] p-3 rounded-r-xl transition-colors cursor-pointer flex items-center justify-center h-11"
+                title="Copy OTP"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 

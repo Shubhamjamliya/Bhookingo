@@ -216,9 +216,14 @@ export default function TransactionReport() {
                 className="w-full px-2.5 py-1.5 pr-5 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs appearance-none cursor-pointer"
               >
                 <option value="All Highways">All Highways</option>
-                {highways.map(zone => (
-                  <option key={highway._id} value={highway.name || zone.name}>{highway.name || zone.name}</option>
-                ))}
+                {highways.map(highway => {
+                  if (!highway) return null;
+                  return (
+                    <option key={highway._id} value={highway.name || "Unknown"}>
+                      {highway.name || "Unknown"}
+                    </option>
+                  );
+                })}
               </select>
               <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
             </div>

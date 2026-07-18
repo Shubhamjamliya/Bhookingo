@@ -219,16 +219,34 @@ export default function ViewOrderDialog({ isOpen, onOpenChange, order }) {
               )}
 
               {order.pickupOtp && (
-                <div className="space-y-1">
+                <div className="space-y-1 text-left">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pickup OTP Info</p>
-                  <p className="text-sm font-bold font-mono text-slate-900">
-                    {order.pickupOtp.code || "******"} ({order.pickupOtp.status || "PENDING"})
-                  </p>
-                  {order.pickupOtp.generatedAt && (
-                    <p className="text-[10px] text-slate-500">
-                      Generated: {new Date(order.pickupOtp.generatedAt).toLocaleString()}
+                  <div className="bg-slate-50 dark:bg-neutral-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-neutral-850 space-y-1 mt-1">
+                    <p className="text-sm font-bold font-mono text-slate-900 dark:text-gray-100">
+                      Code: <span className="text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 px-1.5 py-0.5 rounded">{order.pickupOtp.code || "******"}</span>
                     </p>
-                  )}
+                    <p className="text-xs text-slate-600 dark:text-gray-300">
+                      Status: <span className={`font-semibold ${
+                        order.pickupOtp.status === 'VERIFIED' ? 'text-green-600' :
+                        order.pickupOtp.status === 'EXPIRED' ? 'text-red-500' : 'text-amber-600'
+                      }`}>{order.pickupOtp.status || 'ACTIVE'}</span>
+                    </p>
+                    {order.pickupOtp.generatedAt && (
+                      <p className="text-[11px] text-slate-500">
+                        Generated At: {new Date(order.pickupOtp.generatedAt).toLocaleString('en-IN')}
+                      </p>
+                    )}
+                    {order.pickupOtp.status === 'VERIFIED' && order.pickupOtp.verifiedAt && (
+                      <p className="text-[11px] text-slate-500">
+                        Verified At: {new Date(order.pickupOtp.verifiedAt).toLocaleString('en-IN')}
+                      </p>
+                    )}
+                    {order.pickupOtp.status === 'VERIFIED' && order.pickupOtp.verifiedBy && (
+                      <p className="text-[11px] text-slate-500">
+                        Verified By: <span className="font-medium text-slate-700 dark:text-gray-200">{order.pickupOtp.verifiedBy}</span>
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
 

@@ -507,30 +507,30 @@ export async function getDashboardStats(query = {}) {
                             $cond: [{ $in: ['$orderStatus', DASHBOARD_PROCESSING_ORDER_STATUSES] }, 1, 0]
                         }
                     },
-                    revenueTotal: { 
-                        $sum: { 
-                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.total', 0] }, 0] 
-                        } 
+                    revenueTotal: {
+                        $sum: {
+                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.total', 0] }, 0]
+                        }
                     },
-                    commissionTotal: { 
-                        $sum: { 
-                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.restaurantCommission', 0] }, 0] 
-                        } 
+                    commissionTotal: {
+                        $sum: {
+                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.restaurantCommission', 0] }, 0]
+                        }
                     },
-                    platformFeeTotal: { 
-                        $sum: { 
-                            $cond: [DELIVERED_ORDER_STATUS_EXPR, DASHBOARD_PLATFORM_FEE_EXPR, 0] 
-                        } 
+                    platformFeeTotal: {
+                        $sum: {
+                            $cond: [DELIVERED_ORDER_STATUS_EXPR, DASHBOARD_PLATFORM_FEE_EXPR, 0]
+                        }
                     },
-                    gstTotal: { 
-                        $sum: { 
-                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.tax', 0] }, 0] 
-                        } 
+                    gstTotal: {
+                        $sum: {
+                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$pricing.tax', 0] }, 0]
+                        }
                     },
-                    adminNetProfit: { 
-                        $sum: { 
-                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$platformProfit', 0] }, 0] 
-                        } 
+                    adminNetProfit: {
+                        $sum: {
+                            $cond: [DELIVERED_ORDER_STATUS_EXPR, { $ifNull: ['$platformProfit', 0] }, 0]
+                        }
                     }
                 }
             }
@@ -552,10 +552,10 @@ export async function getDashboardStats(query = {}) {
                         month: { $month: '$createdAt' }
                     },
                     orders: { $sum: 1 },
-                    revenue: { 
-                        $sum: { 
-                            $cond: [{ $eq: ['$orderStatus', 'delivered'] }, { $ifNull: ['$pricing.total', 0] }, 0] 
-                        } 
+                    revenue: {
+                        $sum: {
+                            $cond: [{ $eq: ['$orderStatus', 'delivered'] }, { $ifNull: ['$pricing.total', 0] }, 0]
+                        }
                     },
                     commission: {
                         $sum: {
@@ -578,12 +578,12 @@ export async function getDashboardStats(query = {}) {
             ? FoodOrder.distinct('userId', { ...orderMatch, userId: { $ne: null } }).then((ids) => ids.length)
             : FoodUser.countDocuments({}),
         FoodRestaurant.find({ ...restaurantMatch, status: 'pending' }).sort({ createdAt: -1 }).limit(5).select('restaurantName createdAt').lean(),
-        FoodOrder.find({ 
+        FoodOrder.find({
             ...orderMatch,
             orderStatus: { $in: PENDING_ORDER_STATUSES },
         }).sort({ createdAt: -1 }).limit(5).select('orderId createdAt').lean(),
         FoodOrder.find({ ...orderMatch, orderStatus: 'delivered' }).sort({ updatedAt: -1 }).limit(5).select('orderId updatedAt').lean(),
-        FoodOrder.find({ 
+        FoodOrder.find({
             ...orderMatch,
             orderStatus: { $in: CANCELLED_ORDER_STATUSES },
         }).sort({ updatedAt: -1 }).limit(5).select('orderId updatedAt').lean(),
@@ -620,7 +620,7 @@ export async function getDashboardStats(query = {}) {
     ]);
 
     const liveSignals = [];
-    
+
     const safePendingRestaurants = Array.isArray(recentPendingRestaurants) ? recentPendingRestaurants : recentPendingRestaurants?.restaurants || [];
     safePendingRestaurants.forEach(r => {
         liveSignals.push({
@@ -701,7 +701,7 @@ export async function getDashboardStats(query = {}) {
                 delivered: { $sum: { $cond: [{ $in: ['$status', ['captured', 'settled']] }, 1, 0] } },
                 cancelled: { $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] } },
                 pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
-                
+
                 revenueTotal: {
                     $sum: {
                         $cond: [{ $in: ['$status', ['captured', 'settled']] }, { $ifNull: ['$amounts.totalCustomerPaid', 0] }, 0]
@@ -740,11 +740,11 @@ export async function getDashboardStats(query = {}) {
             cancelled: totals.cancelled || 0,
             pending: totals.pending || 0,
             dashboardPending: totals.dashboardPending || 0,
-            
+
             revenueTotal: txAgg[0].revenueTotal || totals.revenueTotal || 0,
             commissionTotal: txAgg[0].commissionTotal || totals.commissionTotal || 0,
             platformFeeTotal: txAgg[0].platformFeeTotal || totals.platformFeeTotal || 0,
-            
+
             gstTotal: txAgg[0].gstTotal || totals.gstTotal || 0,
             adminNetProfit: txAgg[0].adminNetProfit || totals.adminNetProfit || 0
         };
@@ -760,7 +760,7 @@ export async function getDashboardStats(query = {}) {
     if (highwayId) {
         txMonthlyMatch.restaurantId = { $in: highwayRestaurantIds || [] };
     }
-    
+
     const txMonthly = await FoodTransaction.aggregate([
         { $match: txMonthlyMatch },
         {
@@ -822,15 +822,15 @@ export async function getDashboardStats(query = {}) {
         revenue: { total: Number(totals.revenueTotal || 0) },
         commission: { total: Number(totals.commissionTotal || 0) },
         platformFee: { total: Number(totals.platformFeeTotal || 0) },
-        
+
         gst: { total: Number(totals.gstTotal || 0) },
         totalAdminEarnings: Number(totals.adminNetProfit || 0) + Number(totals.gstTotal || 0),
-        
+
         restaurants: {
             total: Number(restaurantsTotal || 0),
             pendingRequests: Number(restaurantsPending || 0)
         },
-        
+
         foods: { total: Number(foodsTotal || 0) },
         addons: { total: Number(addonsTotal || 0) },
         customers: { total: Number(customersTotal || 0) },
@@ -884,7 +884,7 @@ export async function getTransactionReport(query = {}) {
     let restaurantIds = null;
     if (zone || restaurant) {
         const restFilter = {};
-        
+
         // Robust Zone Handling (supports both Name string and ObjectId)
         if (zone && zone !== 'All Zones') {
             if (mongoose.Types.ObjectId.isValid(zone)) {
@@ -920,7 +920,7 @@ export async function getTransactionReport(query = {}) {
                 }
             }
         }
-        
+
         const restaurantsList = await FoodRestaurant.find(restFilter).select('_id').lean();
         restaurantIds = restaurantsList.map(r => r._id);
         match.restaurantId = { $in: restaurantIds };
@@ -940,7 +940,7 @@ export async function getTransactionReport(query = {}) {
         const pricing = order.pricing || {};
         const subtotal = Number(pricing.subtotal || 0) || 0;
         const packagingFee = Number(pricing.packagingFee || 0) || 0;
-        
+
         const tax = Number(pricing.tax || 0) || 0;
         const discount = Number(pricing.discount || 0) || 0;
         const total = Number(pricing.total || 0) || 0;
@@ -966,7 +966,7 @@ export async function getTransactionReport(query = {}) {
             referralDiscount: 0, // Placeholder
             discountedAmount: Math.max(0, (pricing.subtotal || 0) - (pricing.discount || 0)),
             vatTax: tx.amounts?.taxAmount || pricing.tax || 0,
-            
+
             platformFee,
             orderAmount: tx.amounts?.totalCustomerPaid || pricing.total || 0,
             status: tx.status
@@ -977,7 +977,7 @@ export async function getTransactionReport(query = {}) {
     let refundedTransaction = 0;
     let adminEarning = 0;
     let restaurantEarning = 0;
-    
+
 
     for (const tx of transactionRows) {
         // Calculate Summary
@@ -985,7 +985,7 @@ export async function getTransactionReport(query = {}) {
             completedTransaction += tx.amounts?.totalCustomerPaid || 0;
             adminEarning += tx.amounts?.platformNetProfit || 0;
             restaurantEarning += tx.amounts?.restaurantShare || 0;
-            
+
         }
         if (tx.status === 'refunded' || (tx.orderId && tx.orderId.orderStatus === 'cancelled_by_admin')) {
             // Count number of refunded transactions according to old logic or sum them
@@ -998,7 +998,7 @@ export async function getTransactionReport(query = {}) {
         refundedTransaction, // Returning amount instead of count for consistency, frontend might expect count though
         adminEarning,
         restaurantEarning,
-        
+
     };
 
     return { transactions, summary };
@@ -1402,20 +1402,20 @@ export async function getCustomers(query = {}) {
     let customers = docs.map((u) => {
         const stats = orderStatsMap.get(String(u._id)) || { totalOrder: 0, totalOrderAmount: 0 };
         return ({
-        id: u._id,
-        _id: u._id,
-        name: u.name || 'Unnamed',
-        email: u.email || '',
-        phone: u.phone || '',
-        profileImage: sanitizeUrl(u.profileImage || ''),
-        countryCode: u.countryCode || '+91',
-        status: u.isActive !== false,
-        isActive: u.isActive !== false,
-        isVerified: u.isVerified === true,
-        totalOrder: stats.totalOrder,
-        totalOrderAmount: stats.totalOrderAmount,
-        joiningDate: u.createdAt,
-        createdAt: u.createdAt
+            id: u._id,
+            _id: u._id,
+            name: u.name || 'Unnamed',
+            email: u.email || '',
+            phone: u.phone || '',
+            profileImage: sanitizeUrl(u.profileImage || ''),
+            countryCode: u.countryCode || '+91',
+            status: u.isActive !== false,
+            isActive: u.isActive !== false,
+            isVerified: u.isVerified === true,
+            totalOrder: stats.totalOrder,
+            totalOrderAmount: stats.totalOrderAmount,
+            joiningDate: u.createdAt,
+            createdAt: u.createdAt
         });
     });
 
@@ -1543,26 +1543,26 @@ export async function getSupportTickets(query = {}) {
     const [userList, userTotal, restaurantList, restaurantTotal] = await Promise.all([
         shouldFetchUser
             ? FoodSupportTicket.find(userFilter)
-                  .sort({ createdAt: -1 })
-                  .skip(source === 'all' ? 0 : skip)
-                  .limit(source === 'all' ? limit * page : limit)
-                  .populate('userId', 'name phone email')
-                  .populate('restaurantId', 'restaurantName city area')
-                  .populate({
-                      path: 'orderId',
-                      select: 'restaurantId',
-                      populate: { path: 'restaurantId', select: 'restaurantName city area' }
-                  })
-                  .lean()
+                .sort({ createdAt: -1 })
+                .skip(source === 'all' ? 0 : skip)
+                .limit(source === 'all' ? limit * page : limit)
+                .populate('userId', 'name phone email')
+                .populate('restaurantId', 'restaurantName city area')
+                .populate({
+                    path: 'orderId',
+                    select: 'restaurantId',
+                    populate: { path: 'restaurantId', select: 'restaurantName city area' }
+                })
+                .lean()
             : Promise.resolve([]),
         shouldFetchUser ? FoodSupportTicket.countDocuments(userFilter) : Promise.resolve(0),
         shouldFetchRestaurant
             ? FoodRestaurantSupportTicket.find(restaurantFilter)
-                  .sort({ createdAt: -1 })
-                  .skip(source === 'all' ? 0 : skip)
-                  .limit(source === 'all' ? limit * page : limit)
-                  .populate('restaurantId', 'restaurantName city area')
-                  .lean()
+                .sort({ createdAt: -1 })
+                .skip(source === 'all' ? 0 : skip)
+                .limit(source === 'all' ? limit * page : limit)
+                .populate('restaurantId', 'restaurantName city area')
+                .lean()
             : Promise.resolve([]),
         shouldFetchRestaurant ? FoodRestaurantSupportTicket.countDocuments(restaurantFilter) : Promise.resolve(0)
     ]);
@@ -1571,11 +1571,11 @@ export async function getSupportTickets(query = {}) {
         const user =
             t.userId && typeof t.userId === 'object' && t.userId !== null
                 ? {
-                      _id: t.userId._id,
-                      name: t.userId.name || '',
-                      phone: t.userId.phone || '',
-                      email: t.userId.email || ''
-                  }
+                    _id: t.userId._id,
+                    name: t.userId.name || '',
+                    phone: t.userId.phone || '',
+                    email: t.userId.email || ''
+                }
                 : null;
         const userId =
             t.userId && typeof t.userId === 'object' && t.userId !== null ? String(t.userId._id) : String(t.userId);
@@ -1593,21 +1593,21 @@ export async function getSupportTickets(query = {}) {
         const restaurant =
             restaurantDoc && typeof restaurantDoc === 'object'
                 ? {
-                      _id: restaurantDoc._id,
-                      name: restaurantDoc.restaurantName || '',
-                      city: restaurantDoc.city || '',
-                      area: restaurantDoc.area || ''
-                  }
+                    _id: restaurantDoc._id,
+                    name: restaurantDoc.restaurantName || '',
+                    city: restaurantDoc.city || '',
+                    area: restaurantDoc.area || ''
+                }
                 : null;
 
         const restaurantId =
             restaurant && restaurant._id
                 ? String(restaurant._id)
                 : t.restaurantId
-                ? String(t.restaurantId)
-                : t.orderId && typeof t.orderId === 'object' && t.orderId !== null && t.orderId.restaurantId
-                ? String(t.orderId.restaurantId)
-                : null;
+                    ? String(t.restaurantId)
+                    : t.orderId && typeof t.orderId === 'object' && t.orderId !== null && t.orderId.restaurantId
+                        ? String(t.orderId.restaurantId)
+                        : null;
 
         const restaurantName = restaurant ? restaurant.name : '';
 
@@ -1634,11 +1634,11 @@ export async function getSupportTickets(query = {}) {
         const restaurant =
             t.restaurantId && typeof t.restaurantId === 'object'
                 ? {
-                      _id: t.restaurantId._id,
-                      name: t.restaurantId.restaurantName || '',
-                      city: t.restaurantId.city || '',
-                      area: t.restaurantId.area || ''
-                  }
+                    _id: t.restaurantId._id,
+                    name: t.restaurantId.restaurantName || '',
+                    city: t.restaurantId.city || '',
+                    area: t.restaurantId.area || ''
+                }
                 : null;
         const restaurantId =
             restaurant && restaurant._id ? String(restaurant._id) : t.restaurantId ? String(t.restaurantId) : null;
@@ -1854,13 +1854,13 @@ export async function upsertFeeSettings(body) {
         const $set = {};
         const $unset = {};
 
-        
 
-        
 
-        
 
-        
+
+
+
+
 
         if (body.platformFee === null) $unset.platformFee = 1;
         else if (body.platformFee !== undefined) $set.platformFee = body.platformFee;
@@ -1883,12 +1883,12 @@ export async function upsertFeeSettings(body) {
     }
 
     const payload = {
-        
+
         isActive: body.isActive !== false
     };
-    
-    
-    
+
+
+
     if (body.platformFee !== undefined && body.platformFee !== null) payload.platformFee = body.platformFee;
     if (body.packagingFee !== undefined && body.packagingFee !== null) payload.packagingFee = body.packagingFee;
     if (body.gstRate !== undefined && body.gstRate !== null) payload.gstRate = body.gstRate;
@@ -1909,9 +1909,9 @@ export async function upsertReferralSettings(body = {}) {
         const $set = {};
 
         if (body.referralRewardUser !== undefined) $set.referralRewardUser = Math.max(0, Number(body.referralRewardUser) || 0);
-        
+
         if (body.referralLimitUser !== undefined) $set.referralLimitUser = Math.max(0, Number(body.referralLimitUser) || 0);
-        
+
         if (body.isActive !== undefined) $set.isActive = Boolean(body.isActive);
 
         if (!Object.keys($set).length) return existing.toObject();
@@ -2007,7 +2007,7 @@ export async function getContactMessages(query = {}) {
     if (query.search && String(query.search).trim()) {
         const term = String(query.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const searchRegex = new RegExp(term, 'i');
-        
+
         const [users, restaurants, partners] = await Promise.all([
             FoodUser.find({
                 $or: [{ name: searchRegex }, { email: searchRegex }, { phone: searchRegex }]
@@ -2081,11 +2081,11 @@ export async function getRestaurantReviews(query = {}) {
     if (query.search && String(query.search).trim()) {
         const term = String(query.search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const searchRegex = new RegExp(term, 'i');
-        
+
         const restaurants = await FoodRestaurant.find({
             $or: [{ restaurantName: searchRegex }]
         }).select('_id').lean();
-        
+
         const customers = await FoodUser.find({
             $or: [{ name: searchRegex }, { email: searchRegex }]
         }).select('_id').lean();
@@ -2490,7 +2490,7 @@ export async function updateRestaurantLocation(id, body = {}) {
 
     await doc.save();
     // Fire-and-forget highway re-assignment when location changes
-    setImmediate(() => assignHighwayToRestaurant(id).catch(() => {}));
+    setImmediate(() => assignHighwayToRestaurant(id).catch(() => { }));
     return FoodRestaurant.findById(id).select('-__v').lean();
 }
 
@@ -2810,7 +2810,7 @@ export async function getRestaurantAddonsAdmin(query = {}) {
 export async function updateRestaurantAddonAdmin(addonId, body) {
     if (!addonId || !mongoose.Types.ObjectId.isValid(String(addonId))) return null;
     const _id = new mongoose.Types.ObjectId(String(addonId));
-    
+
     const addon = await FoodAddon.findOne({ _id, isDeleted: { $ne: true } });
     if (!addon) return null;
 
@@ -3736,14 +3736,14 @@ export async function getCashLimitSettlements(query = {}) {
         razorpayPaymentId: d.razorpayPaymentId || '-'
     }));
 
-    return { 
-        transactions, 
-        pagination: { 
-            total, 
-            page, 
-            limit, 
-            pages: Math.ceil(total / limit) || 1 
-        } 
+    return {
+        transactions,
+        pagination: {
+            total,
+            page,
+            limit,
+            pages: Math.ceil(total / limit) || 1
+        }
     };
 }
 

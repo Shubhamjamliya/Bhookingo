@@ -15,6 +15,7 @@ const MAP_CONTAINER_STYLE = {
 };
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
+const GOOGLE_MAPS_LIBRARIES = ['drawing'];
 
 const POLYLINE_OPTIONS = {
   strokeColor: "#3b82f6",
@@ -118,7 +119,7 @@ export default function HighwayMapModal({
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: ['drawing']
+    libraries: GOOGLE_MAPS_LIBRARIES
   });
 
   const onLoad = useCallback((map) => {

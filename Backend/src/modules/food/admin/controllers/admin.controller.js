@@ -1083,15 +1083,15 @@ export async function processRefund(req, res, next) {
         if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
             return res.status(400).json({ success: false, message: 'Invalid order id' });
         }
-        
+
         // This is a stub for the actual refund logic.
         // We will assume adminService.processRefund exists and handles the refund.
         const updated = await adminService.processRefund(orderId, refundAmount);
-        
+
         // Let's add the push notification here if we have access to the user ID
         // First we need to get the order to find the user ID
         const order = await mongoose.model('FoodOrder').findById(orderId).lean();
-        
+
         if (order && order.userId) {
             const { notifyOwnersSafely } = await import('../../notifications/firebase.service.js');
             await notifyOwnersSafely(
@@ -1108,7 +1108,7 @@ export async function processRefund(req, res, next) {
                 }
             );
         }
-        
+
         res.status(200).json({ success: true, message: 'Refund processed successfully', data: updated });
     } catch (error) {
         next(error);

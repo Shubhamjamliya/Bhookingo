@@ -61,7 +61,7 @@ export async function getOrderByIdUserController(req, res, next) {
         const userId = req.user?.userId;
         const orderId = req.params.orderId;
         const order = await orderService.getOrderById(orderId, { userId });
-        
+
         const restaurant = order?.restaurantId || null;
         const restaurantLocation = restaurant?.location || null;
         const userLocation = order?.userLocation || null;
@@ -187,7 +187,13 @@ export async function updateOrderStatusRestaurantController(req, res, next) {
         const restaurantId = req.user?.userId;
         const orderId = req.params.orderId;
         const dto = validateOrderStatusDto(req.body);
-        const order = await orderService.updateOrderStatusRestaurant(orderId, restaurantId, dto.orderStatus, dto.note);
+        const order = await orderService.updateOrderStatusRestaurant(
+            orderId,
+            restaurantId,
+            dto.orderStatus,
+            dto.note,
+            dto.paymentStatus
+        );
         return sendResponse(res, 200, 'Order status updated', { order });
     } catch (err) {
         next(err);

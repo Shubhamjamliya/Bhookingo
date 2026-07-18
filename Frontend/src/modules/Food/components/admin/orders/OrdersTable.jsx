@@ -215,10 +215,40 @@ export default function OrdersTable({
                   </td>
                 )}
                 {visibleColumns.orderOtp && (
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-semibold text-slate-900">
-                      {order.orderOtp || "--"}
-                    </span>
+                  <td className="px-6 py-4">
+                    {order.pickupOtp ? (
+                      <div className="flex flex-col gap-1 text-sm text-left">
+                        <span className="font-mono font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 px-2 py-0.5 rounded w-max select-all">
+                          {order.pickupOtp.code || "--"}
+                        </span>
+                        <div className="flex flex-col gap-0.5 mt-1 text-[11px] text-slate-500">
+                          <div>
+                            <span className="font-bold text-slate-600">Status: </span>
+                            <span className={`font-semibold ${
+                              order.pickupOtp.status === 'VERIFIED' ? 'text-green-600' :
+                              order.pickupOtp.status === 'EXPIRED' ? 'text-red-500' : 'text-amber-600'
+                            }`}>{order.pickupOtp.status || 'ACTIVE'}</span>
+                          </div>
+                          {order.pickupOtp.generatedAt && (
+                            <div>
+                              <span className="font-bold text-slate-600">Gen: </span>
+                              <span>{new Date(order.pickupOtp.generatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          )}
+                          {order.pickupOtp.status === 'VERIFIED' && order.pickupOtp.verifiedAt && (
+                            <div>
+                              <span className="font-bold text-slate-600">Verified: </span>
+                              <span>{new Date(order.pickupOtp.verifiedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                              {order.pickupOtp.verifiedBy && (
+                                <span className="block text-[10px] text-slate-400">By: {order.pickupOtp.verifiedBy}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-slate-400">--</span>
+                    )}
                   </td>
                 )}
                 {visibleColumns.customer && (

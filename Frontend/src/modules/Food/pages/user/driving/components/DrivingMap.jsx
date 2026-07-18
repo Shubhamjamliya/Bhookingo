@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, useJsApiLoader, Polyline, Marker } from "@react-google-maps/api";
 import { Loader2 } from "lucide-react";
 
@@ -8,6 +8,7 @@ const MAP_CONTAINER_STYLE = {
 };
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
+const GOOGLE_MAPS_LIBRARIES = [];
 
 const POLYLINE_OPTIONS = {
   strokeColor: "#0284c7",
@@ -21,12 +22,14 @@ export default function DrivingMap({ userLocation, heading, highway, restaurants
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: []
+    libraries: GOOGLE_MAPS_LIBRARIES
   });
 
-  const center = userLocation
-    ? { lat: userLocation.latitude, lng: userLocation.longitude }
-    : DEFAULT_CENTER;
+  const center = useMemo(() => {
+    return userLocation
+      ? { lat: userLocation.latitude, lng: userLocation.longitude }
+      : DEFAULT_CENTER;
+  }, [userLocation?.latitude, userLocation?.longitude]);
 
   // Fit bounds to cover user location and all restaurants ahead
   const fitMapBounds = useCallback(() => {

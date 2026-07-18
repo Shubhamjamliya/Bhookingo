@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from "@react-google-maps/api";
 import { Loader2 } from "lucide-react";
 
@@ -8,6 +8,7 @@ const MAP_CONTAINER_STYLE = {
 };
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
+const GOOGLE_MAPS_LIBRARIES = [];
 
 function getDistanceMeters(p1, p2) {
   if (!p1 || !p2) return 0;
@@ -21,7 +22,7 @@ function getDistanceMeters(p1, p2) {
   return R * c;
 }
 
-export default function OrderTrackingMap({
+function OrderTrackingMap({
   userLocation,
   restaurantLocation,
   restaurantName,
@@ -36,12 +37,14 @@ export default function OrderTrackingMap({
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: []
+    libraries: GOOGLE_MAPS_LIBRARIES
   });
 
-  const center = userLocation
-    ? { lat: userLocation.lat, lng: userLocation.lng }
-    : (restaurantLocation ? { lat: restaurantLocation.lat, lng: restaurantLocation.lng } : DEFAULT_CENTER);
+  const center = useMemo(() => {
+    return userLocation
+      ? { lat: userLocation.lat, lng: userLocation.lng }
+      : (restaurantLocation ? { lat: restaurantLocation.lat, lng: restaurantLocation.lng } : DEFAULT_CENTER);
+  }, [userLocation?.lat, userLocation?.lng, restaurantLocation?.lat, restaurantLocation?.lng]);
 
   // Compute route directions from user to restaurant
   useEffect(() => {
@@ -88,12 +91,12 @@ export default function OrderTrackingMap({
     const bounds = new window.google.maps.LatLngBounds();
     let count = 0;
 
-    if (userLocation) {
+    if (userLocation?.lat && userLocation?.lng) {
       bounds.extend(userLocation);
       count++;
     }
 
-    if (restaurantLocation) {
+    if (restaurantLocation?.lat && restaurantLocation?.lng) {
       bounds.extend(restaurantLocation);
       count++;
     }
@@ -117,7 +120,7 @@ export default function OrderTrackingMap({
       mapRef.current.setCenter(center);
       mapRef.current.setZoom(14);
     }
-  }, [userLocation, restaurantLocation, restaurantsAhead, center]);
+  }, [userLocation?.lat, userLocation?.lng, restaurantLocation?.lat, restaurantLocation?.lng, restaurantsAhead, center]);
 
   const onLoad = useCallback((map) => {
     mapRef.current = map;
@@ -134,6 +137,55 @@ export default function OrderTrackingMap({
       fitMapBounds();
     }
   }, [isLoaded, userLocation?.lat, userLocation?.lng, restaurantLocation?.lat, restaurantLocation?.lng, fitMapBounds]);
+
+  const mapOptions = useMemo(() => ({
+    streetViewControl: false,
+    mapTypeControl: false,
+    fullscreenControl: false,
+    zoomControl: true,
+  }), []);
+
+  const directionsOptions = useMemo(() => ({
+    suppressMarkers: true,
+    polylineOptions: {
+      strokeColor: "#0284c7",
+      strokeOpacity: 0.85,
+      strokeWeight: 6,
+    },
+  }), []);
+
+  const userMarkerOptions = useMemo(() => {
+    if (!window.google?.maps) return {};
+    return {
+      icon: {
+        path: window.google?.maps?.SymbolPath?.CIRCLE,
+        scale: 8,
+        fillColor: "#3b82f6",
+        fillOpacity: 1,
+        strokeColor: "#ffffff",
+        strokeWeight: 3,
+      },
+      title: "Your Location",
+      zIndex: 100,
+    };
+  }, [isLoaded]);
+
+  const restaurantMarkerOptions = useMemo(() => {
+    if (!window.google?.maps) return {};
+    return {
+      icon: {
+        path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+        fillColor: "#ea580c",
+        fillOpacity: 1,
+        strokeColor: "#ffffff",
+        strokeWeight: 1.5,
+        scale: 1.6,
+        anchor: new window.google.maps.Point(12, 24),
+      },
+      title: restaurantName,
+      zIndex: 90,
+    };
+  }, [isLoaded, restaurantName]);
 
   if (!isLoaded) {
     return (
@@ -153,25 +205,13 @@ export default function OrderTrackingMap({
       zoom={14}
       onLoad={onLoad}
       onUnmount={onUnmount}
-      options={{
-        streetViewControl: false,
-        mapTypeControl: false,
-        fullscreenControl: false,
-        zoomControl: true,
-      }}
+      options={mapOptions}
     >
       {/* Route directions line */}
       {directions && (
         <DirectionsRenderer
           directions={directions}
-          options={{
-            suppressMarkers: true,
-            polylineOptions: {
-              strokeColor: "#0284c7",
-              strokeOpacity: 0.85,
-              strokeWeight: 6,
-            },
-          }}
+          options={directionsOptions}
         />
       )}
 
@@ -179,18 +219,7 @@ export default function OrderTrackingMap({
       {userLocation && (
         <Marker
           position={userLocation}
-          options={{
-            icon: {
-              path: window.google?.maps?.SymbolPath?.CIRCLE,
-              scale: 8,
-              fillColor: "#3b82f6",
-              fillOpacity: 1,
-              strokeColor: "#ffffff",
-              strokeWeight: 3,
-            },
-            title: "Your Location",
-            zIndex: 100,
-          }}
+          options={userMarkerOptions}
         />
       )}
 
@@ -198,19 +227,7 @@ export default function OrderTrackingMap({
       {restaurantLocation && (
         <Marker
           position={restaurantLocation}
-          options={{
-            icon: {
-              path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
-              fillColor: "#ea580c",
-              fillOpacity: 1,
-              strokeColor: "#ffffff",
-              strokeWeight: 1.5,
-              scale: 1.6,
-              anchor: new window.google.maps.Point(12, 24),
-            },
-            title: restaurantName,
-            zIndex: 90,
-          }}
+          options={restaurantMarkerOptions}
         />
       )}
 
@@ -247,3 +264,5 @@ export default function OrderTrackingMap({
     </GoogleMap>
   );
 }
+
+export default React.memo(OrderTrackingMap);

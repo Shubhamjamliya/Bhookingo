@@ -66,6 +66,8 @@ export default function OrderDetails() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const [otpInput, setOtpInput] = useState("")
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
+  const [showPaymentConfirm, setShowPaymentConfirm] = useState(false)
+  const [isCollectingPayment, setIsCollectingPayment] = useState(false)
 
   // Fetch order data from API
   useEffect(() => {
@@ -204,6 +206,8 @@ export default function OrderDetails() {
             restaurant: restaurantName,
             address: fullAddress,
             orderType: order.orderType || "DELIVERY",
+            paymentMethod: order.payment?.method || "cash",
+            paymentStatus: order.payment?.status || "cod_pending",
             pickupOtp: order.pickupOtp || null,
             customer: {
               name: customerName,
@@ -338,8 +342,8 @@ export default function OrderDetails() {
   }
 
   const handleVerifyOtp = async () => {
-    if (!otpInput || otpInput.length !== 6) {
-      setToastMessage("Please enter a valid 6-digit OTP");
+    if (!otpInput || (otpInput.length !== 6 && otpInput.length !== 4)) {
+      setToastMessage("Please enter a valid 4 or 6-digit OTP");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
       return;
@@ -365,6 +369,42 @@ export default function OrderDetails() {
       setTimeout(() => setShowToast(false), 3000);
     } finally {
       setIsVerifyingOtp(false);
+    }
+  }
+
+  const handleCollectPayment = async () => {
+    try {
+      setIsCollectingPayment(true);
+      const response = await restaurantAPI.updateOrderStatus(orderId, {
+        paymentStatus: 'paid'
+      });
+      if (response.data?.success) {
+        setToastMessage("Payment status updated: Cash Received");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2000);
+        setOrderData(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            paymentStatus: 'paid',
+            billing: {
+              ...prev.billing,
+              paymentStatus: 'PAID'
+            }
+          };
+        });
+      } else {
+        setToastMessage(response.data?.message || "Failed to collect payment");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      }
+    } catch (err) {
+      setToastMessage(err.response?.data?.message || err.message || "Failed to update payment status");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setIsCollectingPayment(false);
+      setShowPaymentConfirm(false);
     }
   }
 
@@ -910,55 +950,157 @@ export default function OrderDetails() {
 
         {/* OTP Verification Section for TAKEAWAY and DINING */}
         {(orderData.orderType === "TAKEAWAY" || orderData.orderType === "DINING") && (
-          <div className="bg-white rounded-lg p-4 border border-orange-200 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Pickup OTP Handoff</h3>
-            
-            {orderData.status === "READY_FOR_PICKUP" || orderData.status === "READY" ? (
-              <div className="space-y-3">
-                <div className="flex justify-between items-center bg-orange-50 border border-orange-100 rounded-lg p-3">
-                  <span className="text-xs text-orange-850 font-medium">Customer's Pickup OTP:</span>
-                  <span className="text-xl font-mono font-bold text-orange-950 tracking-wider">
-                    {orderData.pickupOtp?.code || "******"}
-                  </span>
-                </div>
-                
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    pattern="\d*"
-                    placeholder="Enter 6-digit OTP"
-                    value={otpInput}
-                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').substring(0, 6))}
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 font-mono text-center tracking-widest text-lg"
-                  />
-                  <button
-                    type="button"
-                    disabled={isVerifyingOtp}
-                    onClick={handleVerifyOtp}
-                    className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50"
-                  >
-                    {isVerifyingOtp ? "Verifying..." : "Verify"}
-                  </button>
-                </div>
-                <p className="text-[10px] text-gray-500">Verify client's OTP before handing over food collection.</p>
-              </div>
-            ) : orderData.pickupOtp?.status === "VERIFIED" || orderData.status === "COMPLETED" || orderData.status === "DELIVERED" ? (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-1">
-                <div className="flex justify-between text-xs text-green-850 font-semibold">
-                  <span>Pickup OTP Status:</span>
-                  <span>VERIFIED</span>
-                </div>
-                {orderData.pickupOtp?.code && (
-                  <div className="flex justify-between text-xs text-green-700">
-                    <span>Verified OTP Code:</span>
-                    <span className="font-mono font-bold">{orderData.pickupOtp.code}</span>
+          <>
+            <div className="bg-white rounded-lg p-4 border border-orange-200 shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Customer Pickup Verification</h3>
+              
+              {orderData.status === "READY_FOR_PICKUP" || orderData.status === "READY" ? (
+                <div className="space-y-4">
+                  {/* Meta details list */}
+                  <div className="bg-slate-50 rounded-lg p-3 space-y-2 border border-slate-100">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-500 font-medium">Order Status:</span>
+                      <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${getStatusColor(orderData.status)} uppercase tracking-wider`}>
+                        {orderData.status}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-500 font-medium">Payment Method:</span>
+                      <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-800 uppercase">
+                        {orderData.paymentMethod === 'cash' ? 'CASH (COD)' : 'ONLINE'}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-500 font-medium">Payment Status:</span>
+                      {orderData.paymentMethod !== 'cash' ? (
+                        <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-green-105 bg-emerald-50 text-emerald-800 border border-emerald-100 uppercase">
+                          ONLINE PAID
+                        </span>
+                      ) : (
+                        orderData.paymentStatus === 'paid' ? (
+                          <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-100 uppercase">
+                            Cash Received
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-amber-55 bg-amber-50 text-amber-800 border border-amber-100 uppercase animate-pulse">
+                            Payment Pending
+                          </span>
+                        )
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-xs text-gray-500 italic">OTP verification will become active when the order is marked ready for pickup.</p>
-            )}
-          </div>
+
+                  {/* Cash Payment Flow logic */}
+                  {orderData.paymentMethod === 'cash' && orderData.paymentStatus !== 'paid' && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg p-2.5 font-medium leading-relaxed">
+                        ⚠️ Collect cash payment first. OTP verification will become enabled once cash payment is received.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowPaymentConfirm(true)}
+                        className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-2.5 rounded-lg text-sm font-bold shadow hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
+                      >
+                        Collect Cash (₹{orderData.billing.total})
+                      </button>
+                    </div>
+                  )}
+
+                  {/* OTP Input Handoff container */}
+                  <div className={`space-y-3 transition-opacity ${
+                    orderData.paymentMethod === 'cash' && orderData.paymentStatus !== 'paid' ? 'opacity-40 pointer-events-none' : ''
+                  }`}>
+                    <div className="flex justify-between items-center bg-orange-50 border border-orange-100 rounded-lg p-3">
+                      <span className="text-xs text-orange-850 font-medium">Customer's Pickup OTP:</span>
+                      <span className="text-xl font-mono font-bold text-orange-950 tracking-wider">
+                        {orderData.pickupOtp?.code || "******"}
+                      </span>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        pattern="\d*"
+                        placeholder="Enter 6-digit OTP"
+                        disabled={orderData.paymentMethod === 'cash' && orderData.paymentStatus !== 'paid'}
+                        value={otpInput}
+                        onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 font-mono text-center tracking-widest text-lg disabled:bg-gray-150"
+                      />
+                      <button
+                        type="button"
+                        disabled={isVerifyingOtp || (orderData.paymentMethod === 'cash' && orderData.paymentStatus !== 'paid')}
+                        onClick={handleVerifyOtp}
+                        className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50"
+                      >
+                        {isVerifyingOtp ? "Verifying..." : "Verify & Complete Order"}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-gray-500">Ask the customer for the OTP code shown in their User App.</p>
+                  </div>
+                </div>
+              ) : orderData.pickupOtp?.status === "VERIFIED" || orderData.status === "COMPLETED" || orderData.status === "DELIVERED" ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                  <div className="flex justify-between text-xs text-green-850 font-semibold">
+                    <span>Pickup OTP Status:</span>
+                    <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-green-100 text-green-900 uppercase">VERIFIED</span>
+                  </div>
+                  {orderData.pickupOtp?.code && (
+                    <div className="flex justify-between text-xs text-green-700">
+                      <span>Verified OTP Code:</span>
+                      <span className="font-mono font-bold">{orderData.pickupOtp.code}</span>
+                    </div>
+                  )}
+                  {orderData.pickupOtp?.verifiedAt && (
+                    <div className="flex justify-between text-[11px] text-gray-500">
+                      <span>Verified At:</span>
+                      <span>{new Date(orderData.pickupOtp.verifiedAt).toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 italic">OTP verification will become active when the order is marked ready for pickup.</p>
+              )}
+            </div>
+
+            {/* Payment Confirmation Dialog */}
+            <AnimatePresence>
+              {showPaymentConfirm && (
+                <div className="fixed inset-0 bg-black/55 z-55 flex items-center justify-center p-4">
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="bg-white rounded-xl p-5 max-w-md w-full shadow-2xl border border-gray-100 space-y-4"
+                  >
+                    <h3 className="text-base font-bold text-gray-900">Confirm Cash Payment</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Confirm you have received <span className="font-bold text-gray-900">₹{orderData.billing.total}</span> from the customer.
+                    </p>
+                    <div className="flex gap-3 justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setShowPaymentConfirm(false)}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isCollectingPayment}
+                        onClick={handleCollectPayment}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {isCollectingPayment ? "Processing..." : "Confirm Payment"}
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
+          </>
         )}
 
         {/* Customer Details Section */}

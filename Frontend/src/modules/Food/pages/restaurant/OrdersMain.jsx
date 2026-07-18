@@ -92,6 +92,8 @@ const transformOrderForList = (order) => ({
   photoUrl: order.items?.[0]?.image || null,
   photoAlt: order.items?.[0]?.name || "Order",
   paymentMethod: order.paymentMethod || order.payment?.method || null,
+  paymentStatus: order.paymentStatus || order.payment?.status || null,
+  totalAmount: order.pricing?.total || order.totalAmount || order.total || order.amount || 0,
   preparingTimestamp: order.tracking?.preparing?.timestamp
     ? new Date(order.tracking.preparing.timestamp)
     : new Date(order.createdAt || Date.now()),
@@ -1095,6 +1097,13 @@ export default function OrdersMain() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [completionWorkflowActive, setCompletionWorkflowActive] = useState(false);
+  const [cashCollected, setCashCollected] = useState(false);
+  const [otpVal, setOtpVal] = useState("");
+  const [isVerifyingCompletionOtp, setIsVerifyingCompletionOtp] = useState(false);
+  const [isMarkingCashReceived, setIsMarkingCashReceived] = useState(false);
+  const [showCompletionCashConfirm, setShowCompletionCashConfirm] = useState(false);
+  const [completionError, setCompletionError] = useState("");
   const contentRef = useRef(null);
   const filterBarRef = useRef(null);
   const touchStartX = useRef(0);
@@ -2268,6 +2277,71 @@ export default function OrdersMain() {
   const handleSelectOrder = (order) => {
     setSelectedOrder(order);
     setIsSheetOpen(true);
+    setCompletionWorkflowActive(false);
+    const orderPaymentStatus = order?.paymentStatus || "";
+    setCashCollected(
+      orderPaymentStatus.toLowerCase() === 'paid' || 
+      orderPaymentStatus.toLowerCase() === 'collected'
+    );
+    setOtpVal("");
+    setIsVerifyingCompletionOtp(false);
+    setIsMarkingCashReceived(false);
+    setShowCompletionCashConfirm(false);
+    setCompletionError("");
+  };
+
+  const handleCollectCompletionCash = async () => {
+    try {
+      setIsMarkingCashReceived(true);
+      setCompletionError("");
+      const response = await restaurantAPI.updateOrderStatus(selectedOrder.mongoId || selectedOrder.orderId, {
+        paymentStatus: 'paid'
+      });
+      if (response.data?.success) {
+        setCashCollected(true);
+        toast.success("Cash payment collected successfully");
+        requestOrdersRefresh();
+      } else {
+        const msg = response.data?.message || "Failed to update payment status";
+        setCompletionError(msg);
+        toast.error(msg);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Failed to update payment status";
+      setCompletionError(msg);
+      toast.error(msg);
+    } finally {
+      setIsMarkingCashReceived(false);
+      setShowCompletionCashConfirm(false);
+    }
+  };
+
+  const handleVerifyCompletionOtp = async () => {
+    if (!otpVal || otpVal.length !== 6) {
+      setCompletionError("Please enter a valid 6-digit OTP");
+      toast.error("Please enter a valid 6-digit OTP");
+      return;
+    }
+    try {
+      setIsVerifyingCompletionOtp(true);
+      setCompletionError("");
+      const response = await restaurantAPI.verifyOtp(selectedOrder.mongoId || selectedOrder.orderId, otpVal);
+      if (response.data?.success) {
+        toast.success("OTP Verified! Order completed successfully.");
+        requestOrdersRefresh();
+        setIsSheetOpen(false);
+      } else {
+        const msg = response.data?.message || "Failed to verify OTP";
+        setCompletionError(msg);
+        toast.error(msg);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Failed to verify OTP";
+      setCompletionError(msg);
+      toast.error(msg);
+    } finally {
+      setIsVerifyingCompletionOtp(false);
+    }
   };
 
   const renderContent = () => {
@@ -3327,11 +3401,177 @@ export default function OrdersMain() {
                 </div>
               )}
 
-              <button
-                className="w-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white py-2.5 rounded-xl text-sm font-medium hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D]/90 transition-colors"
-                onClick={() => setIsSheetOpen(false)}>
-                Close
-              </button>
+              {(() => {
+                const isReady = String(selectedOrder.status || "").toLowerCase() === "ready" || String(selectedOrder.status || "").toLowerCase() === "ready_for_pickup";
+                const isCash = String(selectedOrder.paymentMethod || "").toLowerCase() === "cash" || String(selectedOrder.paymentMethod || "").toLowerCase() === "cod";
+                
+                if (isReady && completionWorkflowActive) {
+                  return (
+                    <div className="space-y-4">
+                      <div className="border-t border-gray-150 my-3" />
+                      <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider text-left">Customer Pickup Verification</h4>
+                      
+                      <div className="bg-slate-50 rounded-xl p-3 space-y-2 border border-slate-100 text-left">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-gray-500 font-medium">Payment Method:</span>
+                          <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-800 uppercase font-bold">
+                            {isCash ? 'CASH (COD)' : 'ONLINE'}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-gray-500 font-medium">{isCash ? "Amount to Collect:" : "Amount Paid:"}</span>
+                          <span className="px-2 py-0.5 rounded font-black text-[12px] text-slate-800 font-black">
+                            ₹{selectedOrder.totalAmount}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-gray-500 font-medium">Payment Status:</span>
+                          {!isCash ? (
+                            <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-100 uppercase">
+                              ONLINE PAID
+                            </span>
+                          ) : (
+                            cashCollected ? (
+                              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-100 uppercase font-bold">
+                                Cash Received
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-amber-50 text-amber-800 border border-amber-100 uppercase animate-pulse font-bold">
+                                Payment Pending
+                              </span>
+                            )
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Cash collection section */}
+                      {isCash && !cashCollected && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg p-2.5 font-medium text-left leading-relaxed">
+                            ⚠️ Collect payment first. OTP verification will be unlocked once cash is received.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setShowCompletionCashConfirm(true)}
+                            className="w-full bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-2 rounded-lg text-xs font-bold shadow transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            Collect Cash (₹{selectedOrder.totalAmount})
+                          </button>
+                        </div>
+                      )}
+
+                      {/* OTP input section */}
+                      <div className={`space-y-3 transition-opacity ${
+                        isCash && !cashCollected ? 'opacity-40 pointer-events-none' : ''
+                      }`}>
+                        <p className="text-xs text-gray-500 text-left">
+                          Ask the customer for the Pickup OTP shown in their app.
+                        </p>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            pattern="\d*"
+                            placeholder="Enter 6-digit OTP"
+                            disabled={isCash && !cashCollected}
+                            value={otpVal}
+                            onChange={(e) => setOtpVal(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 font-mono text-center tracking-widest text-lg disabled:bg-gray-100"
+                          />
+                          <button
+                            type="button"
+                            disabled={isVerifyingCompletionOtp || (isCash && !cashCollected)}
+                            onClick={handleVerifyCompletionOtp}
+                            className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+                          >
+                            {isVerifyingCompletionOtp ? "Verifying..." : "Verify OTP & Complete"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {completionError && (
+                        <p className="text-xs text-red-650 bg-red-50 border border-red-100 rounded-lg p-2 font-medium text-left">
+                          ⚠️ {completionError}
+                        </p>
+                      )}
+
+                      <button
+                        type="button"
+                        className="w-full border border-gray-300 text-gray-700 py-2 rounded-xl text-xs font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => setCompletionWorkflowActive(false)}
+                      >
+                        Back to Details
+                      </button>
+                    </div>
+                  );
+                }
+
+                if (isReady && !completionWorkflowActive) {
+                  return (
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        className="w-full bg-gradient-to-br from-green-600 to-green-700 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:from-green-700 hover:to-green-800 transition-colors cursor-pointer"
+                        onClick={() => setCompletionWorkflowActive(true)}
+                      >
+                        Complete Order
+                      </button>
+                      <button
+                        type="button"
+                        className="w-full border border-gray-300 text-gray-700 py-2 rounded-xl text-xs font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => setIsSheetOpen(false)}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <button
+                    className="w-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white py-2.5 rounded-xl text-sm font-medium hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D]/90 transition-colors cursor-pointer"
+                    onClick={() => setIsSheetOpen(false)}>
+                    Close
+                  </button>
+                );
+              })()}
+
+              {/* Payment Confirmation Dialog inside sheet */}
+              <AnimatePresence>
+                {showCompletionCashConfirm && (
+                  <div className="fixed inset-0 bg-black/55 z-55 flex items-center justify-center p-4">
+                    <motion.div
+                      initial={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.95, opacity: 0 }}
+                      className="bg-white rounded-xl p-5 max-w-md w-full shadow-2xl border border-gray-100 space-y-4"
+                    >
+                      <h3 className="text-base font-bold text-gray-900">Confirm Cash Payment</h3>
+                      <p className="text-sm text-gray-600 leading-relaxed text-left">
+                        Confirm you have received <span className="font-bold text-gray-900">₹{selectedOrder.totalAmount}</span> from the customer.
+                      </p>
+                      <div className="flex gap-3 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setShowCompletionCashConfirm(false)}
+                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isMarkingCashReceived}
+                          onClick={handleCollectCompletionCash}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                        >
+                          {isMarkingCashReceived ? "Processing..." : "Confirm Cash Received"}
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         )}
@@ -3356,6 +3596,8 @@ function OrderCard({
   eta,
   itemsSummary,
   paymentMethod,
+  paymentStatus,
+  totalAmount,
   photoUrl,
   photoAlt,
 
@@ -3384,7 +3626,7 @@ function OrderCard({
       />
       
       <div
-        onClick={() => onSelect?.({ orderId, status, customerName, type, tableOrToken, timePlaced, eta, itemsSummary, paymentMethod, scheduledAt, restaurantNote })}
+        onClick={() => onSelect?.({ orderId, mongoId, status, customerName, type, tableOrToken, timePlaced, eta, itemsSummary, paymentMethod, paymentStatus, totalAmount, scheduledAt, restaurantNote })}
         className="flex gap-3 items-start cursor-pointer pl-1">
         
         {/* Photo Container - Smaller for mobile */}
@@ -3479,6 +3721,12 @@ function OrderCard({
                       hour12: true,
                     })}
                   </span>
+                  {totalAmount > 0 && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase">Amount</span>
+                      <span className="text-[10px] font-black text-slate-800">₹{totalAmount}</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col gap-0.5">
@@ -3486,6 +3734,12 @@ function OrderCard({
                     <div className="flex items-center gap-1">
                       <span className="text-[8px] font-bold text-slate-400 uppercase">ETA</span>
                       <span className="text-[11px] font-black text-slate-800">{eta}</span>
+                    </div>
+                  )}
+                  {totalAmount > 0 && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase">Amount</span>
+                      <span className="text-[11px] font-black text-slate-800">₹{totalAmount}</span>
                     </div>
                   )}
                   <span className="text-[7px] text-slate-300 font-bold uppercase">{timePlaced}</span>
@@ -3572,6 +3826,8 @@ function PreparingOrders({
               photoAlt: order.items?.[0]?.name || "Order",
               paymentMethod:
                 order.paymentMethod || order.payment?.method || null,
+              paymentStatus: order.paymentStatus || order.payment?.status || null,
+              totalAmount: order.pricing?.total || order.totalAmount || order.total || order.amount || 0,
               scheduledAt: order.scheduledAt || null,
               restaurantNote: order.restaurantNote || null,
             };
@@ -3874,6 +4130,8 @@ function ReadyOrders({ onSelectOrder, refreshToken = 0 }) {
             photoUrl: order.items?.[0]?.image || null,
             photoAlt: order.items?.[0]?.name || "Order",
             paymentMethod: order.paymentMethod || order.payment?.method || null,
+            paymentStatus: order.paymentStatus || order.payment?.status || null,
+            totalAmount: order.pricing?.total || order.totalAmount || 0,
             scheduledAt: order.scheduledAt || null,
             restaurantNote: order.restaurantNote || null,
             type: order.orderType || "DELIVERY",

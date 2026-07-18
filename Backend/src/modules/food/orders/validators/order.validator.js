@@ -133,7 +133,16 @@ export function validateOrderStatusDto(body) {
             'picked_up',
             'delivered',
             'cancelled_by_restaurant'
-        ]),
+        ]).optional(),
+        paymentStatus: z.enum([
+            'cod_pending',
+            'created',
+            'authorized',
+            'paid',
+            'failed',
+            'refunded',
+            'pending_qr'
+        ]).optional(),
         note: z.string().optional()
     });
     const result = schema.safeParse(body);

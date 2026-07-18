@@ -123,6 +123,7 @@ export const useUserNotifications = () => {
           orderId: data.orderId,
           status: data.orderStatus,
           orderStatus: data.orderStatus, // Ensure compatibility with different UI checks
+          pickupOtp: data.pickupOtp,
           title,
           message,
           timestamp: new Date().toISOString()

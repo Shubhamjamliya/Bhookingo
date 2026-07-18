@@ -16,6 +16,7 @@ import {
   X,
   Check,
   Shield,
+  Copy,
   Receipt,
   CircleSlash,
   Loader2,
@@ -274,6 +275,8 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
     cancellationReason: apiOrder?.cancellationReason || previousOrder?.cancellationReason || null,
     ratings: apiOrder?.ratings || previousOrder?.ratings || {},
     restaurantRating: apiOrder?.ratings?.restaurant?.rating || apiOrder?.restaurantRating || previousOrder?.restaurantRating || null,
+    orderType: apiOrder?.orderType || previousOrder?.orderType || "DELIVERY",
+    pickupOtp: apiOrder?.pickupOtp || previousOrder?.pickupOtp || null,
   }
 }
 
@@ -971,6 +974,17 @@ export default function OrderTracking() {
     return userLiveCoords || fallbackCustomerCoords;
   }, [userLiveCoords, fallbackCustomerCoords]);
 
+  const handleDirectionsCalculated = useCallback(({ distanceText, durationText, durationValue }) => {
+    setRemainingDistance(distanceText);
+    if (durationValue) {
+      const etaVal = Math.ceil(durationValue / 60);
+      setEstimatedTime(etaVal);
+      if (typeof updateDirections === 'function') {
+        updateDirections(distanceText, durationText, etaVal);
+      }
+    }
+  }, [updateDirections]);
+
   useEffect(() => {
     if (!order || !userLiveLocation?.latitude || !userLiveLocation?.longitude) return;
 
@@ -1020,6 +1034,22 @@ export default function OrderTracking() {
           orderStatus: payload.orderStatus || status,
         });
         setOrderStatus(next);
+
+        setOrder(prev => {
+          if (!prev) return prev;
+          const updated = {
+            ...prev,
+            status: status || prev.status,
+            orderStatus: payload.orderStatus || status || prev.orderStatus
+          };
+          if (payload.pickupOtp) {
+            updated.pickupOtp = {
+              ...(prev.pickupOtp || {}),
+              ...payload.pickupOtp
+            };
+          }
+          return updated;
+        });
 
         // Pull latest order state without refresh spam on bursty socket events.
         const now = Date.now();
@@ -1409,14 +1439,7 @@ export default function OrderTracking() {
               restaurantName={order.restaurant || "Restaurant"}
               restaurantsAhead={restaurantsAhead}
               orderType={order.orderType || "TAKEAWAY"}
-              onDirectionsCalculated={({ distanceText, durationText, durationValue }) => {
-                setRemainingDistance(distanceText);
-                if (durationValue) {
-                  const etaVal = Math.ceil(durationValue / 60);
-                  setEstimatedTime(etaVal);
-                  updateDirections(distanceText, durationText, etaVal);
-                }
-              }}
+              onDirectionsCalculated={handleDirectionsCalculated}
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-neutral-900 p-4">
@@ -1537,19 +1560,33 @@ export default function OrderTracking() {
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 pb-12">
           {/* OTP Section (only if status is ready/ready_for_pickup) */}
           {showPickupOtp && orderStatus !== 'delivered' && orderStatus !== 'cancelled' && (
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl p-5 shadow-md border border-emerald-400/30 text-center space-y-2">
-              <div className="bg-white/20 text-white rounded-full px-3 py-0.5 text-[9px] font-black uppercase tracking-widest inline-block">
-                {String(order?.orderType || "").toUpperCase() === "DINING" ? "Dine-In Verification" : "Order Ready for Pickup"}
+            <div className="bg-[#f5f6ff] dark:bg-indigo-950/20 border border-[#e1e4ff] dark:border-indigo-900/30 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-[#e8eaff] dark:bg-indigo-950/50 flex items-center justify-center text-[#4f46e5] flex-shrink-0">
+                  <Shield className="w-6 h-6 stroke-[2]" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-gray-900 dark:text-gray-100 text-left">Pickup Verification OTP</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-left mt-0.5 leading-relaxed">
+                    Show this OTP to the restaurant to collect your order.
+                  </p>
+                </div>
               </div>
-              <p className="text-[10px] font-bold text-emerald-100 uppercase tracking-widest leading-none">
-                {String(order?.orderType || "").toUpperCase() === "DINING" ? "Dining OTP" : "Pickup OTP"}
-              </p>
-              <p className="text-4xl font-mono font-black tracking-[0.2em] leading-none my-1">{showPickupOtp}</p>
-              <p className="text-[10px] text-emerald-50">
-                {String(order?.orderType || "").toUpperCase() === "DINING" 
-                  ? "Show this OTP to check in and check table assignment." 
-                  : "Show this OTP to collect your order."}
-              </p>
+              <div className="flex items-center flex-shrink-0">
+                <div className="border border-[#e1e4ff] dark:border-indigo-900/40 bg-white dark:bg-neutral-900 font-mono font-black text-xl text-[#4f46e5] px-4 py-2.5 rounded-l-xl select-all leading-none h-11 flex items-center">
+                  {showPickupOtp}
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(String(showPickupOtp));
+                    toast.success("OTP copied to clipboard!");
+                  }}
+                  className="border-y border-r border-[#e1e4ff] dark:border-indigo-900/40 bg-[#f5f6ff] dark:bg-indigo-950/40 hover:bg-[#e8eaff] dark:hover:bg-indigo-900/50 text-[#4f46e5] p-3 rounded-r-xl transition-colors cursor-pointer flex items-center justify-center h-11"
+                  title="Copy OTP"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
 

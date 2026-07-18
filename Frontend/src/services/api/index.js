@@ -257,9 +257,9 @@ export const adminAPI = {
       { reason },
       { contextModule: "admin" },
     ),
-  
-  
-  
+
+
+
   getContactMessages: (params = {}) =>
     apiClient.get("/food/admin/contact-messages", {
       params,
@@ -291,8 +291,8 @@ export const adminAPI = {
     apiClient.patch(`/food/admin/withdrawals/${id}/reject`, { rejectionReason }, {
       contextModule: "admin",
     }),
-  
-  
+
+
 
   getExpiredFssaiNotifications: (params = {}) =>
     apiClient.get("/food/admin/notifications/fssai-expired", {
@@ -1902,7 +1902,7 @@ const collectRestaurantBookingKeys = (candidate) => {
     raw?.name,
     raw?.restaurantName,
     raw?.restaurantNameNormalized,
-    
+
     // Check nested restaurant object if it exists
     raw?.restaurant?._id,
     raw?.restaurant?.id,
@@ -1911,7 +1911,7 @@ const collectRestaurantBookingKeys = (candidate) => {
     raw?.restaurant?.name,
     raw?.restaurant?.restaurantName,
     raw?.restaurant?.restaurantNameNormalized,
-    
+
     // Check restaurantRef if it exists
     raw?.restaurantRef?._id,
     raw?.restaurantRef?.id,

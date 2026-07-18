@@ -295,3 +295,18 @@ export const verifyOtp = async (phone, otp, preserveOtp = false) => {
     return { valid: true };
 };
 
+export const sendOrderSms = async (phone, otp) => {
+    // Only send SMS if not in default OTP mode
+    if (!config.useDefaultOtp) {
+        if (config.msg91Enabled) {
+            await sendSmsViaMsg91(phone, otp);
+        } else if (config.smsHubEnabled) {
+            await sendSmsViaIndiaHub(phone, otp);
+        } else {
+            logger.warn('No SMS provider is enabled (MSG91_ENABLED and SMS_HUB_ENABLED are both false/missing).');
+        }
+    } else {
+        logger.info(`[SMS DEV BYPASS] Skipping real SMS for ${phone} (OTP: ${otp}) because USE_DEFAULT_OTP is enabled.`);
+    }
+};
+

@@ -18,11 +18,11 @@ import { FoodTransaction } from '../models/foodTransaction.model.js';
 import { FoodSupportTicket } from '../../user/models/supportTicket.model.js';
 import { config } from '../../../../config/env.js';
 import {
-    createRazorpayOrder,
-    verifyPaymentSignature,
-    getRazorpayKeyId,
-    isRazorpayConfigured,
-    initiateRazorpayRefund
+  createRazorpayOrder,
+  verifyPaymentSignature,
+  getRazorpayKeyId,
+  isRazorpayConfigured,
+  initiateRazorpayRefund
 } from '../helpers/razorpay.helper.js';
 import { getIO, rooms } from '../../../../config/socket.js';
 import { addOrderJob } from '../../../../queues/producers/order.producer.js';
@@ -34,6 +34,7 @@ import { calculateOrderPricing } from './order-pricing.service.js';
 
 
 import { decryptOtp } from '../utils/otpSecurity.js';
+import { sendOrderSms } from '../../../../core/otp/otp.service.js';
 import * as paymentService from './order-payment.service.js';
 import * as dispatchService from './dispatch.service.js';
 import {
@@ -251,16 +252,16 @@ export async function createOrder(userId, dto) {
     (Number.isFinite(normalizedPricing.subtotal)
       ? normalizedPricing.subtotal
       : 0) +
-      (Number.isFinite(normalizedPricing.tax) ? normalizedPricing.tax : 0) +
-      (Number.isFinite(normalizedPricing.packagingFee)
-        ? normalizedPricing.packagingFee
-        : 0) +
-      (Number.isFinite(normalizedPricing.platformFee)
-        ? normalizedPricing.platformFee
-        : 0) -
-      (Number.isFinite(normalizedPricing.discount)
-        ? normalizedPricing.discount
-        : 0),
+    (Number.isFinite(normalizedPricing.tax) ? normalizedPricing.tax : 0) +
+    (Number.isFinite(normalizedPricing.packagingFee)
+      ? normalizedPricing.packagingFee
+      : 0) +
+    (Number.isFinite(normalizedPricing.platformFee)
+      ? normalizedPricing.platformFee
+      : 0) -
+    (Number.isFinite(normalizedPricing.discount)
+      ? normalizedPricing.discount
+      : 0),
   );
   if (
     !Number.isFinite(normalizedPricing.total) ||
@@ -284,7 +285,7 @@ export async function createOrder(userId, dto) {
   }
 
   const riderEarning = (orderType === "TAKEAWAY" || orderType === "DINING") ? 0 : await getRiderEarning(distanceKm);
-  
+
   // Calculate restaurant commission from subtotal
   const { commissionAmount: restaurantCommission } = await foodTransactionService.getRestaurantCommissionSnapshot({
     pricing: normalizedPricing,
@@ -295,9 +296,9 @@ export async function createOrder(userId, dto) {
 
   const platformProfit = Math.max(
     0,
-      (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) +
-      restaurantCommission -
-      riderEarning,
+    (Number.isFinite(normalizedPricing.platformFee) ? normalizedPricing.platformFee : 0) +
+    restaurantCommission -
+    riderEarning,
   );
 
   const order = new FoodOrder({
@@ -521,7 +522,7 @@ export async function verifyPayment(userId, dto) {
   if (order.orderType === "DELIVERY" && settings.dispatchMode === "auto" && dispatchableStatuses.includes(order.orderStatus)) {
     try {
       await tryAutoAssign(order._id);
-    } catch {}
+    } catch { }
   }
 
   return { order: normalizeOrderForClient(order), payment: order.payment };
@@ -535,14 +536,14 @@ export async function verifyPayment(userId, dto) {
  * @param {object} options - Options (retry count, etc)
  */
 export async function tryAutoAssign(orderId, options = {}) {
-    return dispatchService.tryAutoAssign(orderId, options);
+  return dispatchService.tryAutoAssign(orderId, options);
 }
 
 /**
  * Triggered by worker after 60 seconds of zero response.
  */
 export async function processDispatchTimeout(orderId, partnerId, options = {}) {
-    return dispatchService.processDispatchTimeout(orderId, partnerId, options);
+  return dispatchService.processDispatchTimeout(orderId, partnerId, options);
 }
 
 // ----- User: list, get, cancel -----
@@ -802,10 +803,10 @@ export async function cancelOrder(orderId, userId, reason, refundDestination = "
       finalPaymentMethod === "razorpay" &&
       (finalPaymentStatus === "paid" || finalPaymentStatus === "refunded");
     await foodTransactionService.updateTransactionStatus(order._id, 'cancelled_by_user', {
-        status: isOnlinePaid ? 'refunded' : 'failed',
-        note: `Order cancelled by user: ${reason || "No reason"}`,
-        recordedByRole: 'USER',
-        recordedById: userId
+      status: isOnlinePaid ? 'refunded' : 'failed',
+      note: `Order cancelled by user: ${reason || "No reason"}`,
+      recordedByRole: 'USER',
+      recordedById: userId
     });
   } catch (err) {
     logger.warn(`cancelOrder transaction sync failed: ${err?.message || err}`);
@@ -826,7 +827,7 @@ export async function cancelOrder(orderId, userId, reason, refundDestination = "
       ? ` Your refund of ₹${order.pricing.total} has been credited to your wallet.`
       : ` Your refund of ₹${order.pricing.total} is being processed and will be credited to your original payment method within 5-7 working days.`
     : "";
-  
+
   await notifyOwnersSafely(
     [
       { ownerType: "USER", ownerId: userId },
@@ -903,13 +904,13 @@ export async function submitOrderRatings(orderId, userId, dto) {
     Promise.resolve(),
   ]);
 
-    await order.save();
-    enqueueOrderEvent('order_ratings_submitted', {
-        orderMongoId: order._id?.toString?.(),
-        orderId: order._id.toString(),
-        userId,
-        restaurantRating: dto.restaurantRating,
-    });
+  await order.save();
+  enqueueOrderEvent('order_ratings_submitted', {
+    orderMongoId: order._id?.toString?.(),
+    orderId: order._id.toString(),
+    userId,
+    restaurantRating: dto.restaurantRating,
+  });
 }
 
 export async function updateOrderInstructions(orderId, userId, instructions) {
@@ -921,7 +922,7 @@ export async function updateOrderInstructions(orderId, userId, instructions) {
     userId: new mongoose.Types.ObjectId(userId),
   });
   if (!order) throw new NotFoundError("Order not found");
-  
+
   const allowedStatuses = ['created', 'confirmed', 'preparing'];
   if (!allowedStatuses.includes(order.orderStatus)) {
     throw new ValidationError("Instructions can no longer be updated for this order");
@@ -958,7 +959,8 @@ export async function updateOrderStatusRestaurant(
   orderId,
   restaurantId,
   orderStatus,
-  note = ""
+  note = "",
+  paymentStatus = null
 ) {
   const identity = buildOrderIdentityFilter(orderId);
   let order = await FoodOrder.findOne({
@@ -966,19 +968,77 @@ export async function updateOrderStatusRestaurant(
     restaurantId: new mongoose.Types.ObjectId(restaurantId),
   });
   if (!order) throw new NotFoundError("Order not found");
+
   const from = order.orderStatus;
-  if (!isStatusAdvance(from, orderStatus)) {
+  let modified = false;
+
+  if (orderStatus) {
+    if (!isStatusAdvance(from, orderStatus)) {
       throw new ValidationError(`Current order status '${from}' is further ahead than '${orderStatus}'. Order cannot be moved backwards.`);
+    }
+    order.orderStatus = orderStatus;
+    pushStatusHistory(order, {
+      byRole: "RESTAURANT",
+      byId: restaurantId,
+      from,
+      to: orderStatus,
+      note: note || ""
+    });
+    modified = true;
   }
-  order.orderStatus = orderStatus;
-  pushStatusHistory(order, {
-    byRole: "RESTAURANT",
-    byId: restaurantId,
-    from,
-    to: orderStatus,
-    note: note || ""
-  });
+
+  if (paymentStatus) {
+    const prevPaymentStatus = order.payment?.status || 'cod_pending';
+    if (!order.payment) {
+      order.payment = { method: 'cash', status: 'cod_pending' };
+    }
+    order.payment.status = paymentStatus;
+
+    if (paymentStatus === 'paid') {
+      await foodTransactionService.updateTransactionStatus(order._id, 'captured', {
+        status: 'captured',
+        recordedByRole: "RESTAURANT",
+        recordedById: restaurantId,
+        note: "COD Cash payment collected by restaurant"
+      });
+    }
+
+    pushStatusHistory(order, {
+      byRole: "RESTAURANT",
+      byId: restaurantId,
+      from: order.orderStatus,
+      to: order.orderStatus,
+      note: `Payment status updated from ${prevPaymentStatus} to ${paymentStatus}`
+    });
+    modified = true;
+  }
+
+  if (!modified) {
+    throw new ValidationError("No status or payment status updates specified");
+  }
+
   await order.save();
+
+  // Send Pickup OTP SMS if status changed to ready_for_pickup
+  if (orderStatus === 'ready_for_pickup' && ['TAKEAWAY', 'DINING'].includes(order.orderType)) {
+    try {
+      if (order.pickupOtp && order.pickupOtp.hash) {
+        const otpCode = decryptOtp(order.pickupOtp.hash);
+        if (otpCode) {
+          let phone = order.customerPhone;
+          if (!phone && order.userId) {
+            const user = await FoodUser.findById(order.userId).select('phone').lean();
+            phone = user?.phone;
+          }
+          if (phone) {
+            await sendOrderSms(phone, otpCode);
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn(`Failed to send order ready SMS: ${err.message}`);
+    }
+  }
 
   // Custom messages / titles for status updates
   let title = `Order ${order._id.toString()} updated`;
@@ -996,7 +1056,7 @@ export async function updateOrderStatusRestaurant(
   } else if (String(orderStatus).includes("cancel")) {
     const isOnlinePaid = order.payment.method === "razorpay" && (order.payment.status === "paid" || order.payment.status === "refunded");
     const refundDetail = isOnlinePaid ? ` Your refund of ₹${order.pricing.total} is being processed and will be credited to your original payment method within 5-7 working days.` : "";
-    
+
     title = "Order Cancelled ❌";
     body = `Unfortunately, your order has been cancelled by the restaurant.${refundDetail}`;
   }
@@ -1012,23 +1072,37 @@ export async function updateOrderStatusRestaurant(
         orderMongoId: order._id?.toString?.(),
         orderId: order._id.toString(),
         orderStatus: order.orderStatus,
+        paymentStatus: order.payment?.status,
+        paymentMethod: order.payment?.method,
         title,
         message: body,
       };
-      
+
+      if (order.pickupOtp && order.pickupOtp.hash) {
+        const otpCode = decryptOtp(order.pickupOtp.hash);
+        if (otpCode) {
+          payload.pickupOtp = {
+            code: otpCode,
+            status: order.pickupOtp.status || 'ACTIVE',
+            generatedAt: order.pickupOtp.generatedAt,
+            attempts: order.pickupOtp.attempts || 0
+          };
+        }
+      }
+
       const restRoom = rooms.restaurant(restaurantId);
       const userRoom = rooms.user(order.userId);
-      
+
       console.log(`[DEBUG] Emitting order_status_update to rooms: ${restRoom}, ${userRoom}`);
       io.to(restRoom).emit("order_status_update", payload);
       io.to(userRoom).emit("order_status_update", payload);
-      
+
       // Notify assigned rider via socket if they exist (only for DELIVERY)
       if (order.orderType === "DELIVERY" && order.dispatch?.riderId) {
-          const assignedRiderId = order.dispatch.riderId;
-          const riderRoom = `rider:${assignedRiderId}`;
-          console.log(`[DEBUG] Emitting order_status_update to rider room: ${riderRoom}`);
-          io.to(riderRoom).emit("order_status_update", payload);
+        const assignedRiderId = order.dispatch.riderId;
+        const riderRoom = `rider:${assignedRiderId}`;
+        console.log(`[DEBUG] Emitting order_status_update to rider room: ${riderRoom}`);
+        io.to(riderRoom).emit("order_status_update", payload);
       }
     }
 
@@ -1036,8 +1110,8 @@ export async function updateOrderStatusRestaurant(
       await notifyOwnerSafely(
         { ownerType: "USER", ownerId: order.userId },
         {
-          title: "Your order is ready! 🛍️",
-          body: "Your order is ready. Show this OTP at the restaurant while collecting your order.",
+          title: "Your food is ready for pickup.",
+          body: "Show this OTP while collecting your order.",
           image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
           data: {
             type: "order_status_update",
@@ -1089,103 +1163,103 @@ export async function updateOrderStatusRestaurant(
     if (io) {
       if (
         order.orderType === "DELIVERY" &&
-        (String(orderStatus) === "preparing" || String(orderStatus) === "confirmed") && 
+        (String(orderStatus) === "preparing" || String(orderStatus) === "confirmed") &&
         (String(from) !== "preparing" && String(from) !== "confirmed")
       ) {
         console.log(
         );
-        
+
         try {
-            await tryAutoAssign(order._id);
-            // Refresh local order state after assignment search
-            order = await FoodOrder.findById(order._id); 
+          await tryAutoAssign(order._id);
+          // Refresh local order state after assignment search
+          order = await FoodOrder.findById(order._id);
         } catch (err) {
-            console.error(`[DEBUG] Auto-assign in updateOrderStatusRestaurant failed:`, err);
+          console.error(`[DEBUG] Auto-assign in updateOrderStatusRestaurant failed:`, err);
         }
       }
 
-            if (String(orderStatus) === 'ready_for_pickup' && String(from) !== 'ready_for_pickup') {
-                console.log(`[DEBUG] Order ${order._id.toString()} changed to 'ready_for_pickup'.`);
-                if (assignedId) {
-                    console.log(`[DEBUG] Notifying assigned partner ${assignedId} that order is ready.`);
-                    const restaurant = await FoodRestaurant.findById(order.restaurantId).select('restaurantName location addressLine1 area city state').lean();
-                    logger.info(
-                    );
-                } else {
-                    console.log(`[DEBUG] Order ${order._id.toString()} is ready but no partner assigned.`);
-                }
-            }
-        }
-    } catch (err) {
-    }
-
-    enqueueOrderEvent('restaurant_order_status_updated', {
-        orderMongoId: order._id?.toString?.(),
-        orderId: order._id.toString(),
-        restaurantId,
-        from,
-        to: orderStatus
-    });
-
-    // ✅ NEW: Automated Razorpay Refund on Restaurant Cancel
-    // Triggers if the restaurant sets status to a cancelled state (e.g., cancelled_by_restaurant)
-    if (
-      String(orderStatus).includes("cancel") &&
-      order.payment.status === "paid" &&
-      order.payment.method === "razorpay" &&
-      order.payment.razorpay?.paymentId &&
-      (!order.payment.refund || order.payment.refund.status !== "processed")
-    ) {
-      try {
-        const refundResult = await initiateRazorpayRefund(
-          order.payment.razorpay.paymentId,
-          order.pricing.total
-        );
-
-        if (refundResult.success) {
-          order.payment.status = "refunded";
-          order.payment.refund = {
-            status: "processed",
-            amount: order.pricing.total,
-            refundId: refundResult.refundId,
-            processedAt: new Date()
-          };
+      if (String(orderStatus) === 'ready_for_pickup' && String(from) !== 'ready_for_pickup') {
+        console.log(`[DEBUG] Order ${order._id.toString()} changed to 'ready_for_pickup'.`);
+        if (assignedId) {
+          console.log(`[DEBUG] Notifying assigned partner ${assignedId} that order is ready.`);
+          const restaurant = await FoodRestaurant.findById(order.restaurantId).select('restaurantName location addressLine1 area city state').lean();
+          logger.info(
+          );
         } else {
-          // Record failure so admin knows a manual refund might be needed
-          order.payment.refund = {
-            status: "failed",
-            amount: order.pricing.total
-          };
+          console.log(`[DEBUG] Order ${order._id.toString()} is ready but no partner assigned.`);
         }
-      } catch (err) {
-        console.error(`Automated refund failed for Order ${order._id.toString()} (Restaurant Cancel):`, err);
-        order.payment.refund = { status: "failed", amount: order.pricing.total };
       }
-      // Re-save order with updated payment status
-      await order.save();
-    } else if (
-      String(orderStatus).includes("cancel") &&
-      order.payment.status === "paid" &&
-      order.payment.method === "wallet" &&
-      (!order.payment.refund || order.payment.refund.status !== "processed")
-    ) {
-      try {
-        await userWalletService.refundWalletBalance(order.userId, order.pricing.total, `Refund for order #${order.order_id || order._id} cancelled by restaurant`, { orderId: order._id });
+    }
+  } catch (err) {
+  }
+
+  enqueueOrderEvent('restaurant_order_status_updated', {
+    orderMongoId: order._id?.toString?.(),
+    orderId: order._id.toString(),
+    restaurantId,
+    from,
+    to: orderStatus
+  });
+
+  // ✅ NEW: Automated Razorpay Refund on Restaurant Cancel
+  // Triggers if the restaurant sets status to a cancelled state (e.g., cancelled_by_restaurant)
+  if (
+    String(orderStatus).includes("cancel") &&
+    order.payment.status === "paid" &&
+    order.payment.method === "razorpay" &&
+    order.payment.razorpay?.paymentId &&
+    (!order.payment.refund || order.payment.refund.status !== "processed")
+  ) {
+    try {
+      const refundResult = await initiateRazorpayRefund(
+        order.payment.razorpay.paymentId,
+        order.pricing.total
+      );
+
+      if (refundResult.success) {
         order.payment.status = "refunded";
         order.payment.refund = {
           status: "processed",
           amount: order.pricing.total,
+          refundId: refundResult.refundId,
           processedAt: new Date()
         };
-      } catch (err) {
-        console.error(`Wallet refund processing error for Order ${order._id.toString()}:`, err);
-        order.payment.refund = { status: "failed", amount: order.pricing.total };
+      } else {
+        // Record failure so admin knows a manual refund might be needed
+        order.payment.refund = {
+          status: "failed",
+          amount: order.pricing.total
+        };
       }
-      // Re-save order with updated payment status
-      await order.save();
+    } catch (err) {
+      console.error(`Automated refund failed for Order ${order._id.toString()} (Restaurant Cancel):`, err);
+      order.payment.refund = { status: "failed", amount: order.pricing.total };
     }
+    // Re-save order with updated payment status
+    await order.save();
+  } else if (
+    String(orderStatus).includes("cancel") &&
+    order.payment.status === "paid" &&
+    order.payment.method === "wallet" &&
+    (!order.payment.refund || order.payment.refund.status !== "processed")
+  ) {
+    try {
+      await userWalletService.refundWalletBalance(order.userId, order.pricing.total, `Refund for order #${order.order_id || order._id} cancelled by restaurant`, { orderId: order._id });
+      order.payment.status = "refunded";
+      order.payment.refund = {
+        status: "processed",
+        amount: order.pricing.total,
+        processedAt: new Date()
+      };
+    } catch (err) {
+      console.error(`Wallet refund processing error for Order ${order._id.toString()}:`, err);
+      order.payment.refund = { status: "failed", amount: order.pricing.total };
+    }
+    // Re-save order with updated payment status
+    await order.save();
+  }
 
-    return normalizeOrderForClient(order);
+  return normalizeOrderForClient(order);
 }
 
 /**
@@ -1302,7 +1376,7 @@ export async function listOrdersAdmin(query) {
       .lean(),
     FoodOrder.countDocuments(filter),
   ]);
-  const paginated = buildPaginatedResult({ docs: docs.map(d => normalizeOrderForClient(d)), total, page, limit });
+  const paginated = buildPaginatedResult({ docs: docs.map(d => normalizeOrderForClient(d, { includeOtp: true, admin: true })), total, page, limit });
   return { ...paginated, orders: paginated.data };
 }
 
@@ -1379,7 +1453,7 @@ export async function acceptOrderAdmin(orderId, adminId) {
   const to = "confirmed";
 
   if (!isStatusAdvance(from, to)) {
-      throw new ValidationError(`Current order status '${from}' is further ahead than '${to}'. Order cannot be moved backwards.`);
+    throw new ValidationError(`Current order status '${from}' is further ahead than '${to}'. Order cannot be moved backwards.`);
   }
 
   order.orderStatus = to;
@@ -1438,7 +1512,7 @@ export async function acceptOrderAdmin(orderId, adminId) {
   ) {
     try {
       await tryAutoAssign(order._id);
-    } catch {}
+    } catch { }
   }
 
   return normalizeOrderForClient(order);
@@ -1485,10 +1559,10 @@ export async function rejectOrderAdmin(orderId, adminId, reason = "") {
 
     try {
       await foodTransactionService.updateTransactionStatus(order._id, 'cancelled_by_restaurant', {
-          status: isOnlinePaid ? 'refunded' : 'failed',
-          note: `Order cancelled by admin: ${reason}`,
-          recordedByRole: 'ADMIN',
-          recordedById: adminId
+        status: isOnlinePaid ? 'refunded' : 'failed',
+        note: `Order cancelled by admin: ${reason}`,
+        recordedByRole: 'ADMIN',
+        recordedById: adminId
       });
     } catch (err) {
       logger.warn(`rejectOrderAdmin transaction sync failed: ${err?.message || err}`);
@@ -1568,11 +1642,11 @@ export async function rejectOrderAdmin(orderId, adminId, reason = "") {
   }
 
   enqueueOrderEvent('restaurant_order_status_updated', {
-      orderMongoId: order._id?.toString?.(),
-      orderId: order._id.toString(),
-      restaurantId: order.restaurantId,
-      from,
-      to,
+    orderMongoId: order._id?.toString?.(),
+    orderId: order._id.toString(),
+    restaurantId: order.restaurantId,
+    from,
+    to,
   });
 
   return normalizeOrderForClient(order);
@@ -1586,38 +1660,42 @@ export async function verifyOtp(orderId, otpCode, verifier) {
   if (!order) throw new NotFoundError("Order not found");
 
   if (order.orderType !== 'TAKEAWAY' && order.orderType !== 'DINING') {
-      throw new ValidationError("OTP verification is not supported for this order type");
+    throw new ValidationError("OTP verification is not supported for this order type");
   }
 
   if (!order.pickupOtp || !order.pickupOtp.hash) {
-      throw new ValidationError("No OTP has been generated for this order");
+    throw new ValidationError("No OTP has been generated for this order");
+  }
+
+  if (order.payment?.method === 'cash' && order.payment?.status !== 'paid') {
+    throw new ValidationError("Please collect payment and mark as cash received before verifying OTP.");
   }
 
   if (order.pickupOtp.status === 'VERIFIED') {
-      throw new ValidationError("OTP has already been verified");
+    throw new ValidationError("OTP has already been verified");
   }
 
   if (order.pickupOtp.attempts >= 5) {
-      throw new ValidationError("Too many failed attempts. This OTP is locked.");
+    throw new ValidationError("Too many failed attempts. This OTP is locked.");
   }
 
   const expiryWindowMs = 2 * 60 * 60 * 1000;
   const now = new Date();
   if (order.pickupOtp.generatedAt && (now - order.pickupOtp.generatedAt > expiryWindowMs)) {
-      order.pickupOtp.status = 'EXPIRED';
-      await order.save();
-      throw new ValidationError("OTP has expired");
+    order.pickupOtp.status = 'EXPIRED';
+    await order.save();
+    throw new ValidationError("OTP has expired");
   }
 
   if (order.pickupOtp.status === 'EXPIRED') {
-      throw new ValidationError("OTP has expired");
+    throw new ValidationError("OTP has expired");
   }
 
   const decrypted = decryptOtp(order.pickupOtp.hash);
   if (decrypted !== otpCode) {
-      order.pickupOtp.attempts = (order.pickupOtp.attempts || 0) + 1;
-      await order.save();
-      throw new ValidationError("Invalid OTP code");
+    order.pickupOtp.attempts = (order.pickupOtp.attempts || 0) + 1;
+    await order.save();
+    throw new ValidationError("Invalid OTP code");
   }
 
   const fromStatus = order.orderStatus;
@@ -1627,62 +1705,68 @@ export async function verifyOtp(orderId, otpCode, verifier) {
   order.orderStatus = 'completed';
 
   pushStatusHistory(order, {
-      byRole: verifier.role,
-      byId: verifier.userId,
-      from: fromStatus,
-      to: 'completed',
-      note: 'OTP verified. Order completed.'
+    byRole: verifier.role,
+    byId: verifier.userId,
+    from: fromStatus,
+    to: 'completed',
+    note: 'OTP verified. Order completed.'
   });
 
   await order.save();
 
   try {
-      const io = getIO();
-      if (io) {
-          const payload = {
-              orderMongoId: order._id.toString(),
-              orderId: order._id.toString(),
-              orderStatus: 'completed',
-              title: "Order Completed! 🎉",
-              message: "Your OTP has been verified and your order is complete.",
-          };
-          io.to(rooms.user(order.userId)).emit("order_status_update", payload);
-          io.to(rooms.restaurant(order.restaurantId)).emit("order_status_update", payload);
+    const io = getIO();
+    if (io) {
+      const payload = {
+        orderMongoId: order._id.toString(),
+        orderId: order._id.toString(),
+        orderStatus: 'completed',
+        title: "Order Completed! 🎉",
+        message: "Your OTP has been verified and your order is complete.",
+        pickupOtp: {
+          code: decrypted,
+          status: 'VERIFIED',
+          verifiedAt: order.pickupOtp.verifiedAt,
+          verifiedBy: order.pickupOtp.verifiedBy
+        }
+      };
+      io.to(rooms.user(order.userId)).emit("order_status_update", payload);
+      io.to(rooms.restaurant(order.restaurantId)).emit("order_status_update", payload);
+    }
+
+    // Send push notifications
+    await notifyOwnerSafely(
+      { ownerType: "USER", ownerId: order.userId },
+      {
+        title: "Order Completed! 🎉",
+        body: "Your order is successfully collected and completed.",
+        image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
+        data: {
+          type: "order_status_update",
+          orderId: order._id.toString(),
+          orderMongoId: order._id.toString(),
+          orderStatus: 'completed',
+          link: `/food/user/orders/${order._id.toString()}`
+        }
       }
-      
-      // Send push notifications
-      await notifyOwnerSafely(
-          { ownerType: "USER", ownerId: order.userId },
-          {
-              title: "Order Completed! 🎉",
-              body: "Your order is successfully collected and completed.",
-              image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
-              data: {
-                  type: "order_status_update",
-                  orderId: order._id.toString(),
-                  orderMongoId: order._id.toString(),
-                  orderStatus: 'completed',
-                  link: `/food/user/orders/${order._id.toString()}`
-              }
-          }
-      );
-      await notifyOwnerSafely(
-          { ownerType: "RESTAURANT", ownerId: order.restaurantId },
-          {
-              title: "OTP Verified Successfully",
-              body: `OTP verified for Order #${order.order_id || order._id}. Order marked as completed.`,
-              image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
-              data: {
-                  type: "order_status_update",
-                  orderId: order._id.toString(),
-                  orderMongoId: order._id.toString(),
-                  orderStatus: 'completed',
-                  link: `/restaurant/orders/${order._id.toString()}`
-              }
-          }
-      );
+    );
+    await notifyOwnerSafely(
+      { ownerType: "RESTAURANT", ownerId: order.restaurantId },
+      {
+        title: "OTP Verified Successfully",
+        body: `OTP verified for Order #${order.order_id || order._id}. Order marked as completed.`,
+        image: "https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png",
+        data: {
+          type: "order_status_update",
+          orderId: order._id.toString(),
+          orderMongoId: order._id.toString(),
+          orderStatus: 'completed',
+          link: `/restaurant/orders/${order._id.toString()}`
+        }
+      }
+    );
   } catch (err) {
-      logger.warn(`verifyOtp socket emit or notifications failed: ${err.message}`);
+    logger.warn(`verifyOtp socket emit or notifications failed: ${err.message}`);
   }
 
   return normalizeOrderForClient(order, { includeOtp: true, admin: verifier.role === 'ADMIN' });
@@ -1691,10 +1775,10 @@ export async function verifyOtp(orderId, otpCode, verifier) {
 export async function updateOrderLocation(orderId, lat, lng, distanceText, durationText, etaMins) {
   const identity = buildOrderIdentityFilter(orderId);
   if (!identity) throw new ValidationError("Order id required");
-  
+
   const order = await FoodOrder.findOne(identity);
   if (!order) throw new NotFoundError("Order not found");
-  
+
   if (lat != null && lng != null) {
     order.customerLocation = { latitude: lat, longitude: lng };
   }
@@ -1707,7 +1791,7 @@ export async function updateOrderLocation(orderId, lat, lng, distanceText, durat
   if (durationText) {
     order.arrivalEstimate = durationText;
   }
-  
+
   await order.save();
   return order;
 }

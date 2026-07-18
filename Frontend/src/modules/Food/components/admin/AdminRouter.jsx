@@ -144,7 +144,7 @@ export default function AdminRouter() {
             <Route path="point-of-sale" element={<PointOfSale />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="settings" element={<AdminSettings />} />
-            
+
             {/* ORDER MANAGEMENT */}
             <Route path="orders/all" element={<OrdersPage statusKey="all" />} />
             <Route path="orders/scheduled" element={<OrdersPage statusKey="scheduled" />} />
@@ -195,11 +195,11 @@ export default function AdminRouter() {
             <Route path="advertisement" element={<AdsList />} />
             <Route path="advertisement/new" element={<NewAdvertisement />} />
             <Route path="advertisement/requests" element={<AdRequests />} />
-            
+
             <Route path="chattings" element={<Chattings />} />
             <Route path="contact-messages" element={<ContactMessages />} />
             <Route path="safety-emergency-reports" element={<SafetyEmergencyReports />} />
-            
+
             <Route path="customers" element={<Customers />} />
             <Route path="support-tickets" element={<SupportTickets />} />
             <Route path="wallet/add-fund" element={<AddFund />} />
@@ -221,10 +221,10 @@ export default function AdminRouter() {
             <Route path="customer-report/feedback-experience" element={<FeedbackExperienceReport />} />
             <Route path="tax-report" element={<TaxReport />} />
             <Route path="restaurant-vat-report" element={<RestaurantVATReport />} />
-            
+
             <Route path="restaurant-withdraws" element={<RestaurantWithdraws />} />
             <Route path="withdraw-method" element={<WithdrawMethod />} />
-            
+
             <Route path="employee-role" element={<EmployeeRole />} />
             <Route path="employees" element={<EmployeeList />} />
             <Route path="employees/add" element={<AddEmployee />} />
@@ -245,7 +245,7 @@ export default function AdminRouter() {
             <Route path="pages-social-media/support" element={<SupportCMS />} />
             <Route path="pages-social-media/contact" element={<ContactInfoCMS />} />
             <Route path="pages-social-media/react-registration" element={<ReactRegistration />} />
-            
+
             <Route path="3rd-party-configurations/party" element={<ThirdParty />} />
             <Route path="3rd-party-configurations/firebase" element={<FirebaseNotification />} />
             <Route path="3rd-party-configurations/offline-payment" element={<OfflinePaymentSetup />} />

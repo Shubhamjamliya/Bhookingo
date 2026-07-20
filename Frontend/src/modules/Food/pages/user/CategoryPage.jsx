@@ -834,22 +834,6 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
           params.lng = parseFloat(location.longitude.toFixed(4));
         }
 
-        if (zoneId) {
-          params.zoneId = zoneId;
-        }
-
-        const normalizedUserCity = String(location?.city || "")
-          .trim()
-          .toLowerCase();
-        const hasUsableUserCity =
-          normalizedUserCity &&
-          normalizedUserCity !== "current location" &&
-          normalizedUserCity !== "unknown city" &&
-          normalizedUserCity !== "select location";
-        if (hasUsableUserCity) {
-          params.city = String(location.city).trim();
-        }
-
         // Compute active category inside the effect to avoid it as a dependency
         const resolvedCategory = (selectedCategory && selectedCategory !== 'all' && categories?.length > 0)
           ? categories.find(c =>
@@ -864,7 +848,6 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
           if (resolvedCategory && resolvedCategory.id && resolvedCategory.id !== 'all' && /^[0-9a-fA-F]{24}$/.test(resolvedCategory.id)) {
             response = await searchAPI.unifiedSearch({
               categoryId: resolvedCategory.id,
-              zoneId: params.zoneId,
               lat: params.lat,
               lng: params.lng,
               limit: 100
@@ -873,7 +856,6 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
             // Fallback to text query if categories are still loading or if ID is not ObjectId
             response = await searchAPI.unifiedSearch({
               q: selectedCategory,
-              zoneId: params.zoneId,
               lat: params.lat,
               lng: params.lng,
               limit: 100

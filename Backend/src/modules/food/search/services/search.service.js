@@ -2,6 +2,12 @@ import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { FoodCategory } from '../../admin/models/category.model.js';
 import mongoose from 'mongoose';
+import { getNearbyRestaurantsPipeline } from '../../restaurant/services/restaurant.service.js';
+
+const toFiniteNumber = (value) => {
+    const n = typeof value === 'number' ? value : parseFloat(String(value));
+    return Number.isFinite(n) ? n : null;
+};
 
 /**
  * Unified Search Service
@@ -18,22 +24,35 @@ export const searchUnified = async (query = {}, options = {}) => {
         minRating, 
         isVeg,
         page = 1,
-        limit = 20,
-        highwayId
+        limit = 20
     } = query;
 
     const skip = (page - 1) * limit;
     const term = String(q || '').trim();
     const regex = term ? new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : null;
 
+    const latNum = toFiniteNumber(lat);
+    const lngNum = toFiniteNumber(lng);
+    let eligibleIds = null;
+    let distanceMap = new Map();
+    let currentHighwayId = null;
+
+    if (latNum !== null && lngNum !== null) {
+        const { pipeline, currentHighwayId: hId } = await getNearbyRestaurantsPipeline(latNum, lngNum, { status: 'approved' });
+        currentHighwayId = hId;
+        pipeline.push({ $project: { _id: 1, highwayId: 1, distanceMeters: 1 } });
+        const eligibleDocs = await FoodRestaurant.aggregate(pipeline);
+        eligibleIds = eligibleDocs.map(d => d._id);
+        distanceMap = new Map(eligibleDocs.map(d => [String(d._id), d.distanceMeters]));
+    }
+
     // 1. Initial Filter (approved status and basic conditions)
     const restaurantFilter = { status: 'approved' };
-    
-    console.log(`[Search-Service] Querying with term: "${term}", categoryId: "${categoryId}", highwayId: "${highwayId}"`);
-
-    if (highwayId && mongoose.Types.ObjectId.isValid(highwayId)) {
-        restaurantFilter.highwayId = new mongoose.Types.ObjectId(highwayId);
+    if (eligibleIds !== null) {
+        restaurantFilter._id = { $in: eligibleIds };
     }
+    
+    console.log(`[Search-Service] Querying with term: "${term}", categoryId: "${categoryId}", coordinates: [${latNum}, ${lngNum}]`);
 
     if (isVeg === 'true') {
         restaurantFilter.pureVegRestaurant = true;
@@ -61,10 +80,15 @@ export const searchUnified = async (query = {}, options = {}) => {
             }
         }
 
-        const catFoodItems = await FoodItem.find({ 
+        const foodItemQuery = { 
             categoryId: { $in: categoryIdsToMatch },
             approvalStatus: 'approved' 
-        }).select('restaurantId').lean();
+        };
+        if (eligibleIds !== null) {
+            foodItemQuery.restaurantId = { $in: eligibleIds };
+        }
+
+        const catFoodItems = await FoodItem.find(foodItemQuery).select('restaurantId').lean();
         
         const catRestaurantIds = [...new Set(catFoodItems.map(f => f.restaurantId.toString()))];
         if (catRestaurantIds.length > 0) {
@@ -97,6 +121,9 @@ export const searchUnified = async (query = {}, options = {}) => {
         // B. Search by Food Item Name
         const foodFilters = { approvalStatus: 'approved' };
         if (isVeg === 'true') foodFilters.foodType = 'Veg';
+        if (eligibleIds !== null) {
+            foodFilters.restaurantId = { $in: eligibleIds };
+        }
         
         const matchedFoods = await FoodItem.find({
             ...foodFilters,
@@ -126,7 +153,7 @@ export const searchUnified = async (query = {}, options = {}) => {
             }
         }
     } else {
-        // No search text -> List all restaurants matching filters (category/zone)
+        // No search text -> List all restaurants matching filters
         const allMatching = await FoodRestaurant.find(restaurantFilter)
             .sort({ rating: -1, createdAt: -1 })
             .limit(limit * 2)
@@ -138,36 +165,43 @@ export const searchUnified = async (query = {}, options = {}) => {
         });
     }
 
-    // 4. Final Result Formatting
+    // 4. Final Result Formatting and Sorting
     let results = Array.from(restaurantDetailsMap.values());
 
-    // Simple distance sorting if lat/lng are provided
-    if (lat && lng && results.length > 0) {
+    // Sort: Highway priority first, then by nearest distance
+    if (latNum !== null && lngNum !== null && results.length > 0) {
         results.forEach(res => {
-            if (res.location && res.location.latitude && res.location.longitude) {
-                const dLat = (res.location.latitude - lat) * Math.PI / 180;
-                const dLon = (res.location.longitude - lng) * Math.PI / 180;
-                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                          Math.cos(lat * Math.PI / 180) * Math.cos(res.location.latitude * Math.PI / 180) *
-                          Math.sin(dLon/2) * Math.sin(dLon/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                res.distanceScore = 6371 * c; // Km
+            const distMeters = distanceMap.get(String(res._id || res.restaurantId)) ?? null;
+            if (distMeters !== null) {
+                res.distanceInKm = Number((distMeters / 1000).toFixed(2));
+                res.distance = distMeters >= 1000 
+                    ? `${(distMeters / 1000).toFixed(1)} km` 
+                    : `${Math.round(distMeters)} m`;
             } else {
-                res.distanceScore = 999;
+                res.distanceInKm = null;
+                res.distance = null;
             }
         });
-        results.sort((a, b) => (a.distanceScore || 999) - (b.distanceScore || 999));
+
+        results.sort((a, b) => {
+            const aOnHighway = currentHighwayId && String(a.highwayId) === String(currentHighwayId) ? 1 : 0;
+            const bOnHighway = currentHighwayId && String(b.highwayId) === String(currentHighwayId) ? 1 : 0;
+            if (aOnHighway !== bOnHighway) {
+                return bOnHighway - aOnHighway;
+            }
+            const aDist = distanceMap.get(String(a._id || a.restaurantId)) ?? 9999999;
+            const bDist = distanceMap.get(String(b._id || b.restaurantId)) ?? 9999999;
+            return aDist - bDist;
+        });
     }
 
-    // ... (rest of logic up to result formation)
     const finalResult = {
         success: true,
         data: {
             restaurants: results.slice(skip, skip + limit),
             total: results.length,
             page: parseInt(page),
-            limit: parseInt(limit),
-            highwayFiltered: !!(highwayId && mongoose.Types.ObjectId.isValid(highwayId))
+            limit: parseInt(limit)
         }
     };
 

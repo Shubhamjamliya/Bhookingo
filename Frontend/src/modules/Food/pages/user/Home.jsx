@@ -1497,9 +1497,7 @@ export default function Home() {
           params.sortBy = filters.sortBy || sortBy;
         }
 
-        if (orderType) {
-          params.orderType = orderType;
-        }
+
 
         // Cuisine
         if (filters.selectedCuisine) {
@@ -1541,21 +1539,7 @@ export default function Home() {
           params.trusted = "true";
         }
 
-        if (effectiveZoneId) {
-          params.zoneId = effectiveZoneId;
-        }
 
-        const normalizedUserCity = String(effectiveLocation?.city || "")
-          .trim()
-          .toLowerCase();
-        const hasUsableUserCity =
-          normalizedUserCity &&
-          normalizedUserCity !== "current location" &&
-          normalizedUserCity !== "unknown city" &&
-          normalizedUserCity !== "select location";
-        if (hasUsableUserCity) {
-          params.city = String(effectiveLocation.city).trim();
-        }
 
         debugLog("Fetching restaurants with params:", params);
         const response = await restaurantAPI.getRestaurants(params);
@@ -1592,38 +1576,7 @@ export default function Home() {
           const userLat = effectiveLocation?.latitude;
           const userLng = effectiveLocation?.longitude;
 
-          const strictCityRestaurants = restaurantsArray.filter((restaurant) => {
-            if (!hasUsableUserCity) return true;
-
-            const cityCandidates = [
-              restaurant?.city,
-              restaurant?.location?.city,
-              restaurant?.address?.city,
-              restaurant?.onboarding?.step1?.city,
-              restaurant?.onboarding?.step1?.location?.city,
-            ];
-
-            const restaurantCity = cityCandidates
-              .map((candidate) => normalizeCityValue(candidate))
-              .find(Boolean);
-
-            if (!restaurantCity) return false;
-
-            const userCity = normalizeCityValue(effectiveLocation?.city);
-            return restaurantCity === userCity;
-          });
-
-          const transformedRestaurants = strictCityRestaurants
-            .filter((restaurant) => {
-              // Apply Takeaway filter if orderType is takeaway
-              if (orderType === "takeaway" || isTakeawayPage) {
-                if (!restaurant.takeawaySettings?.isEnabled && !restaurant.takeawayAvailable) {
-                  return false;
-                }
-              }
-              const name = (restaurant.restaurantName || restaurant.name || "").toLowerCase()
-              return true
-            })
+          const transformedRestaurants = restaurantsArray
             .map((restaurant, index) => {
               // Use restaurant data if available, otherwise use defaults
 

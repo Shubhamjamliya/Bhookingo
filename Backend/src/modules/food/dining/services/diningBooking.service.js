@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import { FoodDiningBooking } from '../models/diningBooking.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { FoodUser } from '../../../../core/users/user.model.js';
+import { ForbiddenError } from '../../../../core/auth/errors.js';
+import { haversineKm } from '../../orders/services/order.helpers.js';
 
 // Format database booking document into the exact JSON shape required by the frontend
 function formatBooking(bookingDoc) {
@@ -91,6 +93,16 @@ export async function createBooking(userId, payload) {
     const restaurant = await FoodRestaurant.findById(restaurantId).lean();
     if (!restaurant) {
         throw new Error('Restaurant not found');
+    }
+
+    if (payload.userLocation && payload.userLocation.latitude != null && payload.userLocation.longitude != null && restaurant.location?.coordinates?.length === 2) {
+        const [rLng, rLat] = restaurant.location.coordinates;
+        const d = haversineKm(rLat, rLng, payload.userLocation.latitude, payload.userLocation.longitude);
+        if (Number.isFinite(d) && d > 50) {
+            throw new ForbiddenError(
+                "This restaurant is more than 50 KM away from your current location and cannot be booked."
+            );
+        }
     }
 
     // Generate unique display-friendly booking ID: TB + 8 digits

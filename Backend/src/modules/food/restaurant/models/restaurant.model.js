@@ -261,7 +261,7 @@ const restaurantSchema = new mongoose.Schema(
       diningType: { type: [String], default: ["family-dining"] },
     },
     takeawaySettings: {
-      isEnabled: { type: Boolean, default: false },
+      isEnabled: { type: Boolean, default: true },
     },
     facilities: {
       parking: {

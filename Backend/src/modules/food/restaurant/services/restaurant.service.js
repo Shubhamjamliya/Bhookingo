@@ -8,7 +8,7 @@ import { FoodDiningRestaurant } from '../../dining/models/diningRestaurant.model
 import { FoodItem } from '../../admin/models/food.model.js';
 import { getFoodDisplayPrice } from '../../admin/services/foodVariant.service.js';
 import { FoodOrder } from '../../orders/models/order.model.js';
-import { assignHighwayToRestaurant } from '../../admin/services/highway.service.js';
+import { assignHighwayToRestaurant, findNearestHighway } from '../../admin/services/highway.service.js';
 import { FoodRestaurantOutletTimings } from '../models/outletTimings.model.js';
 
 const normalizeName = (value) =>
@@ -398,7 +398,7 @@ export const registerRestaurant = async (payload, files) => {
             accountType,
             menuImages,
             takeawaySettings: {
-                isEnabled: isTakeawayEnabled === 'true' || isTakeawayEnabled === true
+                isEnabled: isTakeawayEnabled === undefined ? true : (isTakeawayEnabled === 'true' || isTakeawayEnabled === true)
             },
             facilities: facilities ? {
                 parking: facilities.parking === true || facilities.parking === 'true',
@@ -1363,23 +1363,112 @@ export const uploadRestaurantMenuImages = async (restaurantId, files = []) => {
     };
 };
 
+export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}) => {
+    const filter = {
+        status: 'approved',
+        ...queryFilter
+    };
+
+    let currentHighwayId = null;
+
+    if (lat !== null && lng !== null) {
+        // Detect if user is within 2 KM of a National Highway
+        const nearestResult = await findNearestHighway(lat, lng, 2000);
+        if (nearestResult) {
+            currentHighwayId = nearestResult.highway._id;
+        }
+    }
+
+    const pipeline = [];
+
+    // Use $geoNear if coordinates are provided
+    if (lat !== null && lng !== null) {
+        pipeline.push({
+            $geoNear: {
+                near: { type: 'Point', coordinates: [lng, lat] },
+                distanceField: 'distanceMeters',
+                spherical: true,
+                key: 'location',
+                query: filter
+            }
+        });
+
+        // Filter: Within 100 KM OR on the user's highway
+        const matchConditions = [
+            { distanceMeters: { $lte: 100000 } }
+        ];
+        if (currentHighwayId) {
+            matchConditions.push({ highwayId: currentHighwayId });
+        }
+        pipeline.push({
+            $match: {
+                $or: matchConditions
+            }
+        });
+
+        // Add fields for highway priority sorting and distance formatting
+        pipeline.push({
+            $addFields: {
+                isOnCurrentHighway: currentHighwayId
+                    ? { $cond: [{ $eq: ['$highwayId', currentHighwayId] }, 1, 0] }
+                    : 0,
+                distanceInKm: { $round: [{ $divide: ['$distanceMeters', 1000] }, 2] },
+                distance: {
+                    $cond: [
+                        { $gte: ['$distanceMeters', 1000] },
+                        { $concat: [{ $toString: { $round: [{ $divide: ['$distanceMeters', 1000] }, 1] } }, ' km'] },
+                        { $concat: [{ $toString: { $round: ['$distanceMeters', 0] } }, ' m'] }
+                    ]
+                }
+            }
+        });
+
+        // Sort Stage: Current highway restaurants first, then by nearest distance
+        pipeline.push({
+            $sort: {
+                isOnCurrentHighway: -1,
+                distanceMeters: 1,
+                createdAt: -1
+            }
+        });
+    } else {
+        pipeline.push({ $match: filter });
+
+        // Sort Stage without location/distance
+        pipeline.push({
+            $sort: {
+                createdAt: -1
+            }
+        });
+    }
+
+    return { pipeline, currentHighwayId };
+};
+
 export const listApprovedRestaurants = async (query = {}) => {
-    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 40, 1), 1000);
+    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 20, 1), 1000);
     const page = Math.max(parseInt(query.page, 10) || 1, 1);
     const skip = (page - 1) * limit;
 
     const filter = { status: 'approved' };
 
-    if (query.city && String(query.city).trim()) {
-        const city = String(query.city).trim().slice(0, 80);
-        const rx = { $regex: escapeRegex(city), $options: 'i' };
-        filter.$and = [...(filter.$and || []), { $or: [{ 'location.city': rx }, { city: rx }] }];
+    const lat = toFiniteNumber(query.lat);
+    const lng = toFiniteNumber(query.lng);
+
+    // Only apply city, area filters if coordinates are NOT provided (legacy fallback)
+    if (lat === null || lng === null) {
+        if (query.city && String(query.city).trim()) {
+            const city = String(query.city).trim().slice(0, 80);
+            const rx = { $regex: escapeRegex(city), $options: 'i' };
+            filter.$and = [...(filter.$and || []), { $or: [{ 'location.city': rx }, { city: rx }] }];
+        }
+        if (query.area && String(query.area).trim()) {
+            const area = String(query.area).trim().slice(0, 80);
+            const rx = { $regex: escapeRegex(area), $options: 'i' };
+            filter.$and = [...(filter.$and || []), { $or: [{ 'location.area': rx }, { area: rx }] }];
+        }
     }
-    if (query.area && String(query.area).trim()) {
-        const area = String(query.area).trim().slice(0, 80);
-        const rx = { $regex: escapeRegex(area), $options: 'i' };
-        filter.$and = [...(filter.$and || []), { $or: [{ 'location.area': rx }, { area: rx }] }];
-    }
+
     if (query.cuisine && String(query.cuisine).trim()) {
         const cuisine = normalizeCuisine(query.cuisine);
         filter.cuisines = { $in: [new RegExp(escapeRegex(cuisine), 'i')] };
@@ -1417,28 +1506,11 @@ export const listApprovedRestaurants = async (query = {}) => {
         }
     }
 
-    if (query.orderType === 'takeaway') {
-        filter['takeawaySettings.isEnabled'] = true;
-    } else if (query.orderType === 'dining') {
-        filter['diningSettings.isEnabled'] = true;
-    }
 
-    const highwayIdRaw = String(query.highwayId || '').trim();
-    if (highwayIdRaw && mongoose.Types.ObjectId.isValid(highwayIdRaw)) {
-        filter.$or = [{ highwayId: new mongoose.Types.ObjectId(highwayIdRaw) }];
-        const highwayDoc = await FoodHighway.findById(highwayIdRaw).select('isActive coordinates location').lean();
-        if (highwayDoc && highwayDoc.isActive) {
-            const polygon = zoneToPolygon(highwayDoc);
-            if (polygon) {
-                filter.$or.push({ location: { $geoWithin: { $geometry: polygon } } });
-            }
-        }
-    }
-
-    const lat = toFiniteNumber(query.lat);
-    const lng = toFiniteNumber(query.lng);
-    const radiusKm = toFiniteNumber(query.radiusKm) ?? toFiniteNumber(query.maxDistance);
     const sortBy = parseSortBy(query.sortBy);
+
+    // Call the shared helper function
+    const { pipeline } = await getNearbyRestaurantsPipeline(lat, lng, filter);
 
     const projection = {
         restaurantName: 1,
@@ -1467,36 +1539,6 @@ export const listApprovedRestaurants = async (query = {}) => {
         outletTimings: { $arrayElemAt: ['$outletTimingsData.timings', 0] }
     };
 
-    const pipeline = [];
-
-    // Use $geoNear if coordinates are provided
-    if (lat !== null && lng !== null) {
-        pipeline.push({
-            $geoNear: {
-                near: { type: 'Point', coordinates: [lng, lat] },
-                distanceField: 'distanceMeters',
-                spherical: true,
-                key: 'location',
-                query: filter,
-                maxDistance: radiusKm !== null ? Math.max(0.1, radiusKm) * 1000 : 10000000 // Default 10000km if no radius
-            }
-        });
-        pipeline.push({
-            $addFields: {
-                distanceInKm: { $round: [{ $divide: ['$distanceMeters', 1000] }, 2] },
-                distance: {
-                    $cond: [
-                        { $gte: ['$distanceMeters', 1000] },
-                        { $concat: [{ $toString: { $round: [{ $divide: ['$distanceMeters', 1000] }, 1] } }, ' km'] },
-                        { $concat: [{ $toString: { $round: ['$distanceMeters', 0] } }, ' m'] }
-                    ]
-                }
-            }
-        });
-    } else {
-        pipeline.push({ $match: filter });
-    }
-
     // Lookup outlet timings
     pipeline.push({
         $lookup: {
@@ -1507,16 +1549,18 @@ export const listApprovedRestaurants = async (query = {}) => {
         }
     });
 
-    // Sorting Stage
-    const sortStage = (() => {
-        if (sortBy === 'rating' || sortBy === 'rating-high') return { $sort: { rating: -1, distanceMeters: 1, createdAt: -1 } };
-        if (sortBy === 'rating-low') return { $sort: { rating: 1, distanceMeters: 1, createdAt: -1 } };
-        if (sortBy === 'price-low') return { $sort: { featuredPrice: 1, distanceMeters: 1, createdAt: -1 } };
-        if (sortBy === 'price-high') return { $sort: { featuredPrice: -1, distanceMeters: 1, createdAt: -1 } };
-        if (sortBy === 'newest') return { $sort: { createdAt: -1 } };
-        return { $sort: { distanceMeters: 1, createdAt: -1 } };
-    })();
-    pipeline.push(sortStage);
+    // Custom Sorting override if coordinates are NOT provided but sortBy is set
+    if (lat === null || lng === null) {
+        if (sortBy === 'rating' || sortBy === 'rating-high') {
+            pipeline.push({ $sort: { rating: -1, createdAt: -1 } });
+        } else if (sortBy === 'rating-low') {
+            pipeline.push({ $sort: { rating: 1, createdAt: -1 } });
+        } else if (sortBy === 'price-low') {
+            pipeline.push({ $sort: { featuredPrice: 1, createdAt: -1 } });
+        } else if (sortBy === 'price-high') {
+            pipeline.push({ $sort: { featuredPrice: -1, createdAt: -1 } });
+        }
+    }
 
     // Final Facet for Pagination
     pipeline.push({
@@ -1572,7 +1616,14 @@ export const listApprovedRestaurants = async (query = {}) => {
         recommendedDishes: recommendedMap[String(r._id)] || []
     }));
 
-    return { restaurants, total, page, limit };
+    return {
+        restaurants,
+        total,
+        totalCount: total,
+        page,
+        limit,
+        hasMore: (page * limit) < total
+    };
 };
 
 export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, userId = null) => {

@@ -286,10 +286,10 @@ export default function SearchResults() {
       try {
         setLoadingRestaurants(true)
         debugLog('?? Fetching restaurants from API...')
-        // Optional: Add zoneId if available (for sorting/filtering, but show all restaurants)
-        const params = {}
-        if (zoneId) {
-          params.zoneId = zoneId
+        const params = { limit: 1000 }
+        if (Number.isFinite(location?.latitude) && Number.isFinite(location?.longitude)) {
+          params.lat = parseFloat(location.latitude.toFixed(4))
+          params.lng = parseFloat(location.longitude.toFixed(4))
         }
         const response = await restaurantAPI.getRestaurants(params)
 

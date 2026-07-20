@@ -5,6 +5,7 @@ import { Button } from "@food/components/ui/button"
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import { diningAPI, authAPI } from "@food/api"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
+import { useLocation as useGeoLocation } from "@food/hooks/useLocation"
 import { useEffect } from "react"
 import { toast } from "sonner"
 import Loader from "@food/components/Loader"
@@ -18,6 +19,7 @@ export default function TableBookingConfirmation() {
   const location = useLocation()
   const navigate = useNavigate()
   const goBack = useAppBackNavigation()
+  const { location: geoLocation } = useGeoLocation()
     const fallbackDraft = useMemo(() => {
         try {
             const raw = sessionStorage.getItem(BOOKING_DRAFT_KEY)
@@ -90,7 +92,11 @@ export default function TableBookingConfirmation() {
                 guests,
                 date,
                 timeSlot,
-                specialRequest
+                specialRequest,
+                userLocation: geoLocation?.latitude && geoLocation?.longitude ? {
+                    latitude: geoLocation.latitude,
+                    longitude: geoLocation.longitude
+                } : null
             })
 
             if (response.data.success) {

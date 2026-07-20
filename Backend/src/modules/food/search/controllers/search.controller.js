@@ -6,6 +6,19 @@ import { sendResponse, sendError } from '../../../../utils/response.js';
  */
 export const searchController = async (req, res, next) => {
     try {
+        const {
+            q,
+            lat,
+            lng,
+            radiusKm,
+            categoryId,
+            minRating,
+            isVeg,
+            page,
+            limit,
+            highwayId
+        } = req.query;
+
         console.log(`[Search-Debug] q="${q}", catId="${categoryId}", zone="${highwayId}", coords=[${lat}, ${lng}]`);
 
         const results = await searchUnified({

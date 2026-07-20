@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
 import { Label } from "@food/components/ui/label"
-import { Image as ImageIcon, Upload, Clock, Calendar as CalendarIcon, Sparkles, X, LogOut, FileText, ShoppingBag, ArrowLeft } from "lucide-react"
+import { Image as ImageIcon, Upload, Clock, Calendar as CalendarIcon, Sparkles, X, LogOut, FileText, ShoppingBag, ArrowLeft, MapPin, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@food/components/ui/popover"
 import { Calendar } from "@food/components/ui/calendar"
 import {
@@ -507,6 +507,86 @@ function TimeSelector({ label, value, onChange }) {
   )
 }
 
+const isGoogleMapsUrl = (urlStr) => {
+  try {
+    const url = new URL(urlStr);
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname;
+    return (
+      host.includes("google.com") && (path.includes("/maps") || path.includes("/place") || path === "/") ||
+      host === "maps.google.com" ||
+      host === "maps.app.goo.gl" ||
+      host === "goo.gl" && path.startsWith("/maps")
+    );
+  } catch (e) {
+    return false;
+  }
+};
+
+const extractCoordsFromUrl = (url) => {
+  // 1. Check for @lat,lng
+  const atMatch = url.match(/@(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+  if (atMatch) {
+    return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+  }
+
+  // 2. Check for !3d lat and !4d/!2d lng
+  const match3d = url.match(/!3d(-?\d+\.\d+)/);
+  const match4d = url.match(/!4d(-?\d+\.\d+)/);
+  const match2d = url.match(/!2d(-?\d+\.\d+)/);
+  if (match3d && (match4d || match2d)) {
+    return {
+      lat: parseFloat(match3d[1]),
+      lng: parseFloat(match4d ? match4d[1] : match2d[1])
+    };
+  }
+
+  // 3. Check for ?q=lat,lng or &q=lat,lng
+  try {
+    const urlObj = new URL(url);
+    const q = urlObj.searchParams.get("q") || urlObj.searchParams.get("query");
+    if (q) {
+      const qMatch = q.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+      if (qMatch) {
+        return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
+      }
+    }
+  } catch (e) {}
+
+  // 4. Check for place/lat,lng or place/name/lat,lng
+  const placeMatch = url.match(/\/place\/.*?(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+  if (placeMatch) {
+    return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
+  }
+
+  // 5. General search for any pair of coordinates in the format lat,lng in the string
+  const generalMatch = url.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+  if (generalMatch) {
+    const lat = parseFloat(generalMatch[1]);
+    const lng = parseFloat(generalMatch[2]);
+    if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      return { lat, lng };
+    }
+  }
+
+  return null;
+};
+
+const extractPlaceNameFromUrl = (url) => {
+  const placeNameMatch = url.match(/\/place\/([^/]+)/);
+  if (placeNameMatch && placeNameMatch[1]) {
+    const segment = placeNameMatch[1];
+    if (!segment.match(/^-?\d+\.\d+,\s*-?\d+\.\d+$/)) {
+      try {
+        return decodeURIComponent(segment.replace(/\+/g, " "));
+      } catch (e) {
+        return segment.replace(/\+/g, " ");
+      }
+    }
+  }
+  return "";
+};
+
 export default function RestaurantOnboarding() {
   const companyName = useCompanyName()
   const navigate = useNavigate()
@@ -619,6 +699,7 @@ export default function RestaurantOnboarding() {
       washroom: false
     },
 
+    locationSource: "google_places",
     location: {
       formattedAddress: "",
       addressLine1: "",
@@ -630,6 +711,7 @@ export default function RestaurantOnboarding() {
       landmark: "",
       latitude: "",
       longitude: "",
+      placeId: "",
     },
   })
 
@@ -684,6 +766,10 @@ export default function RestaurantOnboarding() {
   const [locationSearchValue, setLocationSearchValue] = useState("")
   const [locationSuggestions, setLocationSuggestions] = useState([])
   const [isSearchingLocation, setIsSearchingLocation] = useState(false)
+  const [isGoogleMapsValid, setIsGoogleMapsValid] = useState(true)
+  const [mapsLinkValue, setMapsLinkValue] = useState("")
+  const [isProcessingLink, setIsProcessingLink] = useState(false)
+  const isPlaceSelectedRef = useRef(false)
 
   const [highwayInfo, setHighwayInfo] = useState({
     loading: false,
@@ -695,6 +781,98 @@ export default function RestaurantOnboarding() {
     distanceMeters: null,
   })
   const highwayDetectTimerRef = useRef(null)
+
+  const handleMapsLinkChange = async (e) => {
+    const value = e.target.value;
+    setMapsLinkValue(value);
+    if (!value.trim()) return;
+
+    let urlStr = value.trim();
+    if (!/^https?:\/\//i.test(urlStr)) {
+      urlStr = "https://" + urlStr;
+    }
+
+    if (!isGoogleMapsUrl(urlStr)) {
+      toast.error("Invalid Google Maps link. Please enter a valid Google Maps URL.");
+      return;
+    }
+
+    setIsProcessingLink(true);
+    try {
+      let resolvedUrl = urlStr;
+      if (urlStr.includes("maps.app.goo.gl") || urlStr.includes("goo.gl/maps")) {
+        const response = await restaurantAPI.resolveMapsLink({ url: urlStr });
+        if (response?.data?.success && response?.data?.url) {
+          resolvedUrl = response.data.url;
+        } else {
+          throw new Error("Unable to resolve shortened URL");
+        }
+      }
+
+      const coords = extractCoordsFromUrl(resolvedUrl);
+      if (!coords) {
+        toast.error("Unable to detect location from this link.");
+        setIsProcessingLink(false);
+        return;
+      }
+
+      // Perform Reverse Geocoding
+      if (!window.google?.maps?.Geocoder) {
+        toast.error("Google Maps SDK not loaded. Cannot reverse geocode.");
+        setIsProcessingLink(false);
+        return;
+      }
+
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat: coords.lat, lng: coords.lng } }, (results, status) => {
+        if (status === "OK" && results[0]) {
+          const place = results[0];
+          const comps = Array.isArray(place?.address_components) ? place.address_components : [];
+          const get = (types) => comps.find((c) => types.some((t) => c.types?.includes(t)))?.long_name || "";
+
+          const area = get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"]);
+          const city = get(["locality"]) || get(["administrative_area_level_2"]);
+          const state = get(["administrative_area_level_1"]) || get(["administrative_area_level_2"]);
+          const pincode = get(["postal_code"]);
+
+          const extractedPlaceName = extractPlaceNameFromUrl(resolvedUrl);
+
+          setStep1((prev) => {
+            const updated = {
+              ...prev,
+              location: {
+                ...prev.location,
+                formattedAddress: place.formatted_address || prev.location.formattedAddress,
+                addressLine1: place.formatted_address || prev.location.addressLine1 || "",
+                area: area || prev.location.area,
+                city: city || prev.location.city,
+                state: state || prev.location.state,
+                pincode: pincode || prev.location.pincode,
+                latitude: coords.lat,
+                longitude: coords.lng,
+                placeId: place.place_id || "",
+              },
+              locationSource: "google_maps_link",
+            };
+            if (extractedPlaceName) {
+              updated.restaurantName = extractedPlaceName;
+            }
+            return updated;
+          });
+
+          setLocationSearchValue(place.formatted_address || "");
+          toast.success("Location details populated from Google Maps link!");
+        } else {
+          toast.error("Unable to retrieve location details from coordinates.");
+        }
+      });
+    } catch (err) {
+      console.error("Failed to process Google Maps link:", err);
+      toast.error(err?.response?.data?.message || "Unable to detect location from this link.");
+    } finally {
+      setIsProcessingLink(false);
+    }
+  };
 
   const getPreviewImageUrl = (value) => {
     if (!value) return null
@@ -941,6 +1119,7 @@ export default function RestaurantOnboarding() {
               washroom: s1.facilities?.washroom ?? apiData.facilities?.washroom ?? false
             },
 
+            locationSource: apiData.locationSource || s1.locationSource || "google_places",
             location: {
               ...prev.location,
               formattedAddress: loc.formattedAddress || loc.address || apiData.address || "",
@@ -953,8 +1132,11 @@ export default function RestaurantOnboarding() {
               landmark: loc.landmark || "",
               latitude: loc.latitude || "",
               longitude: loc.longitude || "",
+              placeId: loc.placeId || "",
             }
           }))
+
+          setLocationSearchValue(loc.formattedAddress || loc.address || apiData.address || "")
 
           setStep2(prev => ({
             ...prev,
@@ -999,6 +1181,9 @@ export default function RestaurantOnboarding() {
             
             if (localData.step1) {
               setStep1(prev => ({ ...prev, ...localData.step1, location: { ...prev.location, ...localData.step1.location } }));
+              if (localData.step1.location?.formattedAddress) {
+                setLocationSearchValue(localData.step1.location.formattedAddress);
+              }
             }
             if (localData.step2) {
               // Note: Files/Images must be re-hydrated from IndexedDB (handled below)
@@ -1293,14 +1478,7 @@ export default function RestaurantOnboarding() {
     } else if (highwayInfo.loading) {
       errors.push("Checking highway proximity — please wait a moment")
     } else if (highwayInfo.status !== "IN_SERVICE") {
-      const threshold = highwayInfo.thresholdMeters || 1000
-      if (highwayInfo.highwayRef && Number.isFinite(highwayInfo.distanceMeters)) {
-        errors.push(
-          `Restaurant must be within ${threshold} m of a national highway. Nearest ${highwayInfo.highwayRef} is ${highwayInfo.distanceMeters} m away.`
-        )
-      } else {
-        errors.push(`Restaurant must be within ${threshold} m of an active national highway`)
-      }
+      errors.push("Restaurant must be within 2 KM of a highway.")
     }
 
     return errors
@@ -1542,7 +1720,9 @@ export default function RestaurantOnboarding() {
               landmark: step1.location?.landmark || "",
               latitude: step1.location?.latitude || "",
               longitude: step1.location?.longitude || "",
+              placeId: step1.location?.placeId || "",
             },
+            locationSource: step1.locationSource || "google_places",
             ...(highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId
               ? { highwayId: String(highwayInfo.highwayId) }
               : {}),
@@ -1621,6 +1801,8 @@ export default function RestaurantOnboarding() {
         formData.append("formattedAddress", step1.location?.formattedAddress || "")
         formData.append("latitude", String(step1.location?.latitude || ""))
         formData.append("longitude", String(step1.location?.longitude || ""))
+        formData.append("locationSource", step1.locationSource || "google_places")
+        formData.append("placeId", step1.location?.placeId || "")
         if (highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId) {
           formData.append("highwayId", String(highwayInfo.highwayId))
         }
@@ -1939,23 +2121,34 @@ export default function RestaurantOnboarding() {
           <div className="relative">
             <Label className="text-xs text-gray-700">Search location</Label>
             <div className="relative">
-              <Input
-                ref={locationSearchInputRef}
-                value={locationSearchValue}
-                onChange={(e) => setLocationSearchValue(e.target.value)}
-                className="mt-1 bg-white text-sm text-black! dark:text-white! placeholder:text-gray-500 dark:placeholder:text-gray-400 caret-black dark:caret-white"
-                style={{ color: "#000", WebkitTextFillColor: "#000" }}
-                placeholder="Start typing your restaurant address..."
-              />
-              {isSearchingLocation && (
+              {isGoogleMapsValid ? (
+                <Input
+                  key="google-input"
+                  ref={locationSearchInputRef}
+                  value={locationSearchValue}
+                  onChange={(e) => setLocationSearchValue(e.target.value)}
+                  className="mt-1 bg-white text-sm"
+                  placeholder="Search and select restaurant address..."
+                  disabled={!isEditing}
+                />
+              ) : (
+                <Input
+                  key="fallback-input"
+                  value={locationSearchValue}
+                  onChange={(e) => setLocationSearchValue(e.target.value)}
+                  className="mt-1 bg-white text-sm"
+                  placeholder="Search and select restaurant address..."
+                  disabled={!isEditing}
+                />
+              )}
+              {!isGoogleMapsValid && isSearchingLocation && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent" />
+                  <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
                 </div>
               )}
             </div>
 
-            {/* Fallback suggestions dropdown */}
-            {locationSuggestions.length > 0 && (
+            {!isGoogleMapsValid && locationSuggestions.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-xl z-[999999] overflow-hidden max-h-60 overflow-y-auto">
                 {locationSuggestions.map((s) => (
                   <button
@@ -1967,6 +2160,8 @@ export default function RestaurantOnboarding() {
                       const city = addr.city || addr.town || addr.village || ""
                       const state = addr.state || ""
                       const pincode = addr.postcode || ""
+
+                      isPlaceSelectedRef.current = true
 
                       setStep1((prev) => ({
                         ...prev,
@@ -1980,23 +2175,115 @@ export default function RestaurantOnboarding() {
                           pincode: pincode || prev.location.pincode,
                           latitude: lat,
                           longitude: lng,
+                          placeId: s.place_id || "",
                         },
+                        locationSource: "google_places",
                       }))
+                      setMapsLinkValue("")
                       setLocationSearchValue(display)
                       setLocationSuggestions([])
+
+                      if (locationSearchInputRef.current) {
+                        locationSearchInputRef.current.blur()
+                      }
                     }}
-                    className="w-full px-4 py-2 text-left text-[13px] hover:bg-orange-50 border-b border-gray-100 last:border-none font-medium text-gray-700"
+                    className="w-full px-4 py-2 text-left text-[13px] font-medium text-gray-700 hover:bg-orange-50 border-b border-gray-100 last:border-none"
                   >
                     <span className="truncate">{s.display}</span>
                   </button>
                 ))}
               </div>
             )}
-            
+
             <p className="text-[11px] text-gray-500 mt-1">
-              Select a suggestion to auto-fill area/city/state/pincode and coordinates.
+              Search to auto-fill Area, City, State, Pincode and coordinates.
             </p>
           </div>
+
+          <div className="flex items-center my-4">
+            <hr className="flex-grow border-t border-gray-200" />
+            <span className="px-3 text-xs font-semibold text-gray-400 tracking-wider uppercase">OR</span>
+            <hr className="flex-grow border-t border-gray-200" />
+          </div>
+
+          <div>
+            <Label className="text-xs text-gray-700">Google Maps Location Link (Optional)</Label>
+            <div className="relative mt-1">
+              <Input
+                value={mapsLinkValue}
+                onChange={handleMapsLinkChange}
+                className="bg-white text-sm pr-10"
+                placeholder="Paste Google Maps URL here"
+                disabled={isProcessingLink || !isEditing}
+              />
+              {isProcessingLink && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="h-4 w-4 animate-spin text-[#B80B3D]" />
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1">
+              You can either search the restaurant above or paste a Google Maps location link.
+            </p>
+          </div>
+
+          {step1.locationSource && (
+            <div className="mt-3 text-xs flex items-center gap-1.5 font-medium text-slate-600 bg-slate-50/70 border border-slate-100 rounded px-2.5 py-1.5 w-fit">
+              <MapPin className="w-3.5 h-3.5 text-slate-500" />
+              <span>Location Source:</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                step1.locationSource === "google_maps_link"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-orange-100 text-orange-700"
+              }`}>
+                {step1.locationSource === "google_maps_link" ? "Google Maps Link" : "Google Search"}
+              </span>
+            </div>
+          )}
+
+          {/* Premium Highway Proximity Validation Box */}
+          {(highwayInfo.loading || highwayInfo.status) && (
+            <div
+              className={`rounded-xl border px-4 py-3 text-sm ${
+                highwayInfo.loading
+                  ? "bg-slate-50 border-slate-200 text-slate-600"
+                  : highwayInfo.status === "IN_SERVICE"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    : "bg-rose-50 border-rose-200 text-rose-800"
+              }`}
+            >
+              {highwayInfo.loading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                  <span>Checking highway proximity...</span>
+                </div>
+              ) : highwayInfo.status === "IN_SERVICE" ? (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Restaurant location verified. Located within highway range.</span>
+                  </div>
+                  <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
+                    <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef}</span></p>
+                    <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <AlertCircle className="w-4 h-4 text-rose-600" />
+                    <span>Restaurant must be within 2 KM of a highway.</span>
+                  </div>
+                  {highwayInfo.highwayRef && (
+                    <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
+                      <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef}</span></p>
+                      <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <Input
             value={step1.location?.addressLine1 || ""}
             onChange={(e) =>
@@ -2092,45 +2379,6 @@ export default function RestaurantOnboarding() {
               placeholder="Pincode"
             />
           </div>
-
-          {(highwayInfo.loading || highwayInfo.status) && (
-            <div
-              className={`rounded-lg border px-3 py-2.5 text-sm ${
-                highwayInfo.loading
-                  ? "bg-gray-50 border-gray-200 text-gray-600"
-                  : highwayInfo.status === "IN_SERVICE"
-                    ? "bg-green-50 border-green-200 text-green-800"
-                    : "bg-amber-50 border-amber-200 text-amber-800"
-              }`}
-            >
-              {highwayInfo.loading ? (
-                <span>Checking if location is within the national highway service range...</span>
-              ) : highwayInfo.status === "IN_SERVICE" ? (
-                <span>
-                  Within service range ({highwayInfo.thresholdMeters ?? 1000} m): assigned to{" "}
-                  <strong>{highwayInfo.highwayRef || highwayInfo.highwayName}</strong>
-                  {Number.isFinite(highwayInfo.distanceMeters)
-                    ? ` — ${highwayInfo.distanceMeters} m from highway`
-                    : ""}
-                </span>
-              ) : (
-                <span>
-                  {highwayInfo.highwayRef && Number.isFinite(highwayInfo.distanceMeters) ? (
-                    <>
-                      Too far from highway service area. Nearest{" "}
-                      <strong>{highwayInfo.highwayRef}</strong> is {highwayInfo.distanceMeters} m away
-                      (max allowed: {highwayInfo.thresholdMeters ?? 1000} m). Choose a location closer to the highway.
-                    </>
-                  ) : (
-                    <>
-                      No active national highway within {highwayInfo.thresholdMeters ?? 1000} m of this location.
-                      Choose a location closer to a mapped highway.
-                    </>
-                  )}
-                </span>
-              )}
-            </div>
-          )}
 
           <p className="text-[11px] text-gray-500 mt-1">
             Please ensure that this address is the same as mentioned on your FSSAI license.
@@ -2330,13 +2578,22 @@ export default function RestaurantOnboarding() {
     </div>
   )
 
-
   // Initialize Google Places Autocomplete for Step 1 location search.
   useEffect(() => {
     if (step !== 1) return
 
     let cancelled = false
     let autocomplete = null
+
+    // Pre-cleanup of any existing instance/listeners to prevent duplicates/memory leaks
+    if (placesAutocompleteRef.current) {
+      try {
+        window.google?.maps?.event?.clearInstanceListeners(placesAutocompleteRef.current)
+      } catch (e) {
+        debugError("Error cleaning up previous autocomplete listeners:", e)
+      }
+      placesAutocompleteRef.current = null
+    }
 
     const init = async () => {
       // Wait for the input ref to be attached
@@ -2350,7 +2607,6 @@ export default function RestaurantOnboarding() {
       }
 
       if (!inputElement || cancelled) return
-
       const loadMaps = async () => {
         // 1. If already available with places, return true
         if (window.google?.maps?.places?.Autocomplete) {
@@ -2362,13 +2618,14 @@ export default function RestaurantOnboarding() {
         const apiKey = await getGoogleMapsApiKey()
         if (!apiKey) {
           debugError("Google Maps API Key missing or invalid")
+          setIsGoogleMapsValid(false)
           return false
         }
 
         // 3. Handle Auth Failure
         window.gm_authFailure = () => {
           debugError("Google Maps authentication failed.")
-          // Don't show toast here as we have Nominatim fallback
+          setIsGoogleMapsValid(false)
         }
 
         // 4. Check for existing script and force libraries=places if needed
@@ -2379,13 +2636,13 @@ export default function RestaurantOnboarding() {
           debugLog("Found maps script without places, removing to reload properly.")
           mapsScript.remove()
         } else if (mapsScript && mapsScript.src.includes("libraries=places")) {
-           // Wait if it's still loading
-           for (let i = 0; i < 60; i++) {
-             if (window.google?.maps?.places?.Autocomplete) return true
-             if (cancelled) return false
-             await new Promise(r => setTimeout(r, 100))
-           }
-        }
+            // Wait if it's still loading
+            for (let i = 0; i < 60; i++) {
+              if (window.google?.maps?.places?.Autocomplete) return true
+              if (cancelled) return false
+              await new Promise(r => setTimeout(r, 100))
+            }
+          }
 
         // 5. Create and append new script
         return new Promise((resolve) => {
@@ -2398,10 +2655,16 @@ export default function RestaurantOnboarding() {
             setTimeout(() => {
               const ok = !!window.google?.maps?.places?.Autocomplete
               mapsScriptLoadedRef.current = ok
+              if (!ok) {
+                setIsGoogleMapsValid(false)
+              }
               resolve(ok)
             }, 200)
           }
-          script.onerror = () => resolve(false)
+          script.onerror = () => {
+            setIsGoogleMapsValid(false)
+            resolve(false)
+          }
           document.head.appendChild(script)
         })
       }
@@ -2415,6 +2678,7 @@ export default function RestaurantOnboarding() {
         const city = get(["locality"]) || get(["administrative_area_level_2"])
         const state = get(["administrative_area_level_1"]) || get(["administrative_area_level_2"])
         const pincode = get(["postal_code"])
+        const country = get(["country"])
         const lat = place?.geometry?.location?.lat?.()
         const lng = place?.geometry?.location?.lng?.()
 
@@ -2423,31 +2687,43 @@ export default function RestaurantOnboarding() {
           area,
           city,
           state,
+          country,
+          postalCode: pincode,
           pincode,
           latitude: typeof lat === "number" ? Number(lat.toFixed(6)) : "",
           longitude: typeof lng === "number" ? Number(lng.toFixed(6)) : "",
+          placeId: place?.place_id || "",
         }
       }
 
       const ok = await loadMaps()
       if (!ok || cancelled || !inputElement) return
 
+      // Double-verify that Google Maps and places library are fully loaded
+      if (!window.google?.maps?.places) {
+        debugError("Google Maps Places API not loaded.")
+        return
+      }
+
       if (inputElement.hasAttribute("data-google-places-initialized")) return
 
       try {
         autocomplete = new window.google.maps.places.Autocomplete(inputElement, {
-          fields: ["formatted_address", "address_components", "geometry"],
+          fields: ["formatted_address", "address_components", "geometry", "place_id"],
           componentRestrictions: { country: "in" },
           types: ["geocode", "establishment"]
         })
 
         inputElement.setAttribute("data-google-places-initialized", "true")
         placesAutocompleteRef.current = autocomplete
+        isPlaceSelectedRef.current = false
 
         autocomplete.addListener("place_changed", () => {
+          if (cancelled) return
           const place = autocomplete.getPlace()
           if (!place?.geometry) return
 
+          isPlaceSelectedRef.current = true
           const parsed = parsePlace(place)
           setStep1((prev) => ({
             ...prev,
@@ -2461,22 +2737,60 @@ export default function RestaurantOnboarding() {
               pincode: parsed.pincode || prev.location.pincode,
               latitude: parsed.latitude !== "" ? parsed.latitude : prev.location.latitude,
               longitude: parsed.longitude !== "" ? parsed.longitude : prev.location.longitude,
+              placeId: parsed.placeId || prev.location.placeId || "",
             },
+            locationSource: "google_places",
           }))
           
-          setLocationSearchValue(parsed.formattedAddress)
-          inputElement.blur()
+          setMapsLinkValue("")
+          setLocationSearchValue(parsed.formattedAddress || "")
+          
+          if (inputElement) {
+            inputElement.blur()
+          }
+
+          // Force hide autocomplete dropdown container
+          const containers = document.querySelectorAll(".pac-container")
+          containers.forEach((container) => {
+            if (container) {
+              container.style.display = "none"
+              container.style.visibility = "hidden"
+            }
+          })
         })
 
         const pacContainerFix = () => {
+          if (cancelled) return
+          if (isPlaceSelectedRef.current) {
+            const containers = document.querySelectorAll(".pac-container")
+            containers.forEach((container) => {
+              if (container) {
+                container.style.display = "none"
+                container.style.visibility = "hidden"
+              }
+            })
+            return
+          }
           const applyFix = () => {
+            if (cancelled || isPlaceSelectedRef.current) {
+              const containers = document.querySelectorAll(".pac-container")
+              containers.forEach((container) => {
+                if (container) {
+                  container.style.display = "none"
+                  container.style.visibility = "hidden"
+                }
+              })
+              return
+            }
             const containers = document.querySelectorAll(".pac-container")
             if (containers.length > 0) {
               containers.forEach((container) => {
-                container.style.zIndex = "999999"
-                container.style.pointerEvents = "auto"
-                container.style.visibility = "visible"
-                container.style.display = "block"
+                if (container) {
+                  container.style.zIndex = "999999"
+                  container.style.pointerEvents = "auto"
+                  container.style.visibility = "visible"
+                  container.style.display = "block"
+                }
               })
             }
           }
@@ -2485,8 +2799,16 @@ export default function RestaurantOnboarding() {
           setTimeout(applyFix, 300)
         }
 
-        inputElement.addEventListener("focus", pacContainerFix)
-        inputElement.addEventListener("input", pacContainerFix)
+        inputElement.addEventListener("focus", () => {
+          if (cancelled) return
+          isPlaceSelectedRef.current = false
+          pacContainerFix()
+        })
+        inputElement.addEventListener("input", () => {
+          if (cancelled) return
+          isPlaceSelectedRef.current = false
+          pacContainerFix()
+        })
       } catch (e) {
         debugError("Autocomplete error:", e)
       }
@@ -2504,11 +2826,16 @@ export default function RestaurantOnboarding() {
       }
       placesAutocompleteRef.current = null
     }
-  }, [step])
+  }, [step, isOnboardingHydrated, isEditing])
 
   // Hybrid Search Fallback (Nominatim)
   useEffect(() => {
     if (step !== 1) return
+    if (isGoogleMapsValid) {
+      setLocationSuggestions([])
+      setIsSearchingLocation(false)
+      return
+    }
     const q = String(locationSearchValue || "").trim()
     if (q.length < 3) {
       setLocationSuggestions([])
@@ -2538,7 +2865,7 @@ export default function RestaurantOnboarding() {
     }, 400)
 
     return () => clearTimeout(t)
-  }, [locationSearchValue, step])
+  }, [locationSearchValue, step, isGoogleMapsValid])
 
 
 

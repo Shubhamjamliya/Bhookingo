@@ -869,6 +869,10 @@ export const restaurantAPI = {
         restaurantCurrentCacheTime = Date.now();
         return res;
       }),
+  resolveMapsLink: (body) =>
+    apiClient.post("/food/restaurant/resolve-maps-link", body ?? {}, {
+      contextModule: "restaurant",
+    }),
   updateDiningSettings: (body) =>
     apiClient
       .patch("/food/restaurant/dining-settings", body ?? {}, {

@@ -1,4 +1,5 @@
 import express from 'express';
+import { resolveMapsLink } from '../../admin/controllers/admin.controller.js';
 import { upload } from '../../../../middleware/upload.js';
 import {
     registerRestaurantController,
@@ -76,6 +77,7 @@ const uploadFields = upload.fields([
 ]);
 
 router.post('/register', uploadFields, registerRestaurantController);
+router.post('/resolve-maps-link', resolveMapsLink);
 
 // Public: approved restaurants list (for user app)
 router.get('/restaurants', cacheResponse(300, 'restaurants'), listApprovedRestaurantsController);

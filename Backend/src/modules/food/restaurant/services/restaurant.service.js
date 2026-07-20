@@ -120,7 +120,8 @@ const toRestaurantProfile = (doc) => {
                 city: loc?.city || doc.city || '',
                 state: loc?.state || doc.state || '',
                 pincode: loc?.pincode || doc.pincode || '',
-                landmark: loc?.landmark || doc.landmark || ''
+                landmark: loc?.landmark || doc.landmark || '',
+                placeId: loc?.placeId || ''
             }
             : null;
 
@@ -140,6 +141,7 @@ const toRestaurantProfile = (doc) => {
         highwayId: doc.highwayId ? String(doc.highwayId) : '',
         cuisines: Array.isArray(doc.cuisines) ? doc.cuisines : [],
         location,
+        locationSource: doc.locationSource || 'google_places',
         ownerName: doc.ownerName || '',
         ownerEmail: doc.ownerEmail || '',
         ownerPhone: doc.ownerPhone || '',
@@ -270,6 +272,8 @@ export const registerRestaurant = async (payload, files) => {
         formattedAddress,
         latitude,
         longitude,
+        locationSource,
+        placeId,
         highwayId,
         cuisines,
         openingTime,
@@ -358,6 +362,7 @@ export const registerRestaurant = async (payload, files) => {
             highwayId: highwayId && mongoose.Types.ObjectId.isValid(String(highwayId).trim())
                 ? new mongoose.Types.ObjectId(String(highwayId).trim())
                 : undefined,
+            locationSource: locationSource || 'google_places',
             // Store unified location object (geo + address).
             location: {
                 type: 'Point',
@@ -372,7 +377,8 @@ export const registerRestaurant = async (payload, files) => {
                 city: city || '',
                 state: state || '',
                 pincode: pincode || '',
-                landmark: landmark || ''
+                landmark: landmark || '',
+                placeId: placeId || ''
             },
             cuisines: cuisines || [],
             openingTime: normalizedOpeningTime || undefined,
@@ -930,8 +936,13 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             city: toStr(loc.city),
             state: toStr(loc.state),
             pincode: toStr(loc.pincode),
-            landmark: toStr(loc.landmark)
+            landmark: toStr(loc.landmark),
+            placeId: toStr(loc.placeId)
         };
+    }
+
+    if (body.locationSource !== undefined) {
+        update.locationSource = String(body.locationSource || 'google_places').trim();
     }
 
     if (body.openingTime !== undefined) {

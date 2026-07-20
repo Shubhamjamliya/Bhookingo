@@ -718,6 +718,28 @@ export const useRestaurantNotifications = () => {
       dispatchNotificationInboxRefresh();
     });
 
+    socketRef.current.on('restaurant_onboarding_approved', (data) => {
+      debugLog('?? Restaurant onboarding approved:', data);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('restaurantOnboardingApproved', {
+            detail: data || {},
+          }),
+        );
+      }
+    });
+
+    socketRef.current.on('restaurant_onboarding_rejected', (data) => {
+      debugLog('?? Restaurant onboarding rejected:', data);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('restaurantOnboardingRejected', {
+            detail: data || {},
+          }),
+        );
+      }
+    });
+
     // Load notification sound
     audioRef.current = new Audio(resolveAudioSource(alertSound));
     audioRef.current.preload = 'auto';

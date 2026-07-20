@@ -303,6 +303,19 @@ const restaurantSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    adminId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "FoodAdmin",
+    },
+    rejectionHistory: [
+      {
+        reason: { type: String, trim: true },
+        rejectedAt: { type: Date },
+        rejectedBy: { type: mongoose.Schema.Types.ObjectId, ref: "FoodAdmin" },
+        adminName: { type: String, trim: true },
+        previousStatus: { type: String, trim: true },
+      }
+    ],
     deletedAt: {
       type: Date,
     },

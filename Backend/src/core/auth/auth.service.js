@@ -693,12 +693,9 @@ export const verifyRestaurantOtpAndLogin = async (phone, otp, fcmToken, platform
     }
   }
 
-  // If restaurant approval status is used, only allow login for approved restaurants.
-  if (restaurant.status && restaurant.status !== "approved") {
-    const message = restaurant.status === "pending"
-      ? "Your restaurant registration is pending approval."
-      : "Your restaurant registration has been rejected. Please contact support.";
-    
+  // If restaurant is deleted, block login. Pending and rejected restaurants are allowed to log in so they can view status and resubmit.
+  if (restaurant.status && restaurant.status === "deleted") {
+    const message = "Your restaurant account has been deleted.";
     console.warn(`⚠️ [Auth-Restaurant] Login blocked for ${phone}: status=${restaurant.status}, message=${message}`);
     throw new AuthError(message);
   }

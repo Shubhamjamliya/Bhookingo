@@ -192,6 +192,13 @@ const toRestaurantProfile = (doc) => {
         },
         isAcceptingOrders: doc.isAcceptingOrders !== false,
         status: doc.status || null,
+        approvalStatus: doc.status || null,
+        rejectionReason: doc.rejectionReason || '',
+        adminMessage: doc.rejectionReason || '',
+        rejectionHistory: doc.rejectionHistory || [],
+        approvedAt: doc.approvedAt || null,
+        rejectedAt: doc.rejectedAt || null,
+        adminId: doc.adminId || null,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
         rating: normalizeRatingValue(doc.rating),
@@ -478,6 +485,11 @@ export const getCurrentRestaurantProfile = async (restaurantId) => {
                 'rating',
                 'totalRatings',
                 'status',
+                'rejectionReason',
+                'rejectedAt',
+                'approvedAt',
+                'rejectionHistory',
+                'adminId',
                 'facilities',
                 'createdAt',
                 'updatedAt'
@@ -1096,7 +1108,12 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                     'upiId',
                     'upiQrImage',
                     'highwayId',
-                    'facilities'
+                    'facilities',
+                    'rejectionReason',
+                    'rejectedAt',
+                    'approvedAt',
+                    'rejectionHistory',
+                    'adminId'
                 ].join(' ')
             }
         ).lean();
@@ -1158,7 +1175,12 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                         'highwayName',
                         'highwayRef',
                         'isHighwayRestaurant',
-                        'facilities'
+                        'facilities',
+                        'rejectionReason',
+                        'rejectedAt',
+                        'approvedAt',
+                        'rejectionHistory',
+                        'adminId'
                     ].join(' ')
                 )
                 .lean();

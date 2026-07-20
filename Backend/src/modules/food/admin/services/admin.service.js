@@ -3352,13 +3352,27 @@ export async function approveRestaurant(id) {
     ).lean();
 
     if (updated) {
+        // Socket.io Real-time update
+        try {
+            const { getIO, rooms } = await import('../../../../config/socket.js');
+            const io = getIO();
+            if (io) {
+                io.to(rooms.restaurant(updated._id)).emit('restaurant_onboarding_approved', {
+                    restaurantId: String(updated._id),
+                    status: 'approved'
+                });
+            }
+        } catch (e) {
+            console.error('Failed to emit restaurant onboarding approval via socket:', e);
+        }
+
         try {
             const { notifyOwnersSafely } = await import('../../../../core/notifications/firebase.service.js');
             await notifyOwnersSafely(
                 [{ ownerType: 'RESTAURANT', ownerId: updated._id }],
                 {
-                    title: 'Congratulations! Ã°Å¸Å½â€°',
-                    body: `Your restaurant "${updated.restaurantName}" has been approved. You can now start receiving orders!`,
+                    title: 'Restaurant Approved',
+                    body: 'Your restaurant has been approved.',
                     image: updated.profileImage || 'https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png',
                     data: {
                         type: 'restaurant_approved',
@@ -3373,8 +3387,25 @@ export async function approveRestaurant(id) {
     return updated;
 }
 
-export async function rejectRestaurant(id, reason) {
+export async function rejectRestaurant(id, reason, adminId) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
+
+    let adminName = 'Admin';
+    if (adminId) {
+        try {
+            const FoodAdminModel = mongoose.model('FoodAdmin');
+            const admin = await FoodAdminModel.findById(adminId).select('name email').lean();
+            if (admin) {
+                adminName = admin.name || admin.email || 'Admin';
+            }
+        } catch (err) {
+            console.error('Failed to fetch admin details for rejection log:', err);
+        }
+    }
+
+    const currentRestaurant = await FoodRestaurant.findById(id).select('status').lean();
+    const previousStatus = currentRestaurant?.status || 'pending';
+
     const updated = await FoodRestaurant.findByIdAndUpdate(
         id,
         {
@@ -3382,20 +3413,46 @@ export async function rejectRestaurant(id, reason) {
                 status: 'rejected',
                 rejectedAt: new Date(),
                 rejectionReason: typeof reason === 'string' ? reason.trim() : undefined,
+                adminId: adminId || undefined,
                 approvedAt: null
+            },
+            $push: {
+                rejectionHistory: {
+                    reason: typeof reason === 'string' ? reason.trim() : '',
+                    rejectedAt: new Date(),
+                    rejectedBy: adminId || null,
+                    adminName,
+                    previousStatus
+                }
             }
         },
         { new: true, runValidators: false }
     ).lean();
 
     if (updated) {
+        // Socket.io Real-time update
+        try {
+            const { getIO, rooms } = await import('../../../../config/socket.js');
+            const io = getIO();
+            if (io) {
+                io.to(rooms.restaurant(updated._id)).emit('restaurant_onboarding_rejected', {
+                    restaurantId: String(updated._id),
+                    status: 'rejected',
+                    rejectionReason: updated.rejectionReason || '',
+                    adminMessage: updated.rejectionReason || ''
+                });
+            }
+        } catch (e) {
+            console.error('Failed to emit restaurant onboarding rejection via socket:', e);
+        }
+
         try {
             const { notifyOwnersSafely } = await import('../../../../core/notifications/firebase.service.js');
             await notifyOwnersSafely(
                 [{ ownerType: 'RESTAURANT', ownerId: updated._id }],
                 {
-                    title: 'Update on Registration Ã°Å¸â€œâ€¹',
-                    body: `Your restaurant registration for "${updated.restaurantName}" has been rejected. Reason: ${reason || 'Incomplete documents'}.`,
+                    title: 'Restaurant Request Rejected',
+                    body: 'Your onboarding request has been rejected. Please review the reason and update your details.',
                     image: 'https://i.ibb.co/3m2Yh7r/Appzeto-Brand-Image.png',
                     data: {
                         type: 'restaurant_rejected',

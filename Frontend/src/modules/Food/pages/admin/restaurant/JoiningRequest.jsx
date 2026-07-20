@@ -1277,6 +1277,27 @@ export default function JoiningRequest() {
                       </div>
                     </div>
                   )}
+
+                  {/* Previous Rejection History */}
+                  {r?.rejectionHistory && r.rejectionHistory.length > 0 && (
+                    <div className="pt-6 border-t border-slate-200 mt-6">
+                      <h4 className="text-base font-bold text-slate-900 mb-3">Previous Rejection History</h4>
+                      <div className="space-y-3">
+                        {[...r.rejectionHistory].reverse().map((history, idx) => (
+                          <div key={idx} className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                            <p className="text-sm font-semibold text-slate-800">
+                              Reason: <span className="font-normal text-slate-600">"{history.reason || 'N/A'}"</span>
+                            </p>
+                            <div className="flex flex-wrap gap-x-4 mt-2 text-xs text-slate-500">
+                              <span>Rejected on: {history.rejectedAt ? new Date(history.rejectedAt).toLocaleString('en-IN') : 'N/A'}</span>
+                              {history.adminName && <span>Rejected by: {history.adminName}</span>}
+                              {history.previousStatus && <span>Previous Status: {history.previousStatus}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 )
               })()}

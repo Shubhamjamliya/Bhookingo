@@ -50,6 +50,7 @@ import {
   applyAggregateRating,
   notifyRestaurantNewOrder,
   isStatusAdvance,
+  validateBookingDistance,
 } from './order.helpers.js';
 
 
@@ -127,27 +128,11 @@ export async function calculateOrder(userId, dto) {
   if (!restaurant) throw new ValidationError("Restaurant not found");
 
   const orderType = String(dto.orderType || (dto.address ? "DELIVERY" : "TAKEAWAY")).toUpperCase();
-  const hasUserLoc = dto.userLocation?.latitude != null && dto.userLocation?.longitude != null;
-  const hasAddrLoc = dto.address?.location?.coordinates?.length === 2;
-
-  let distanceKm = null;
-  if (restaurant.location?.coordinates?.length === 2) {
-    const [rLng, rLat] = restaurant.location.coordinates;
-    if (hasAddrLoc && orderType === "DELIVERY") {
-      const [dLng, dLat] = dto.address.location.coordinates;
-      const d = haversineKm(rLat, rLng, dLat, dLng);
-      distanceKm = Number.isFinite(d) ? d : null;
-    } else if (hasUserLoc) {
-      const d = haversineKm(rLat, rLng, dto.userLocation.latitude, dto.userLocation.longitude);
-      distanceKm = Number.isFinite(d) ? d : null;
-    }
-  }
-
-  if (distanceKm !== null && distanceKm > 50) {
-    throw new ForbiddenError(
-      "This restaurant is more than 50 KM away from your current location and cannot be booked."
-    );
-  }
+  validateBookingDistance(
+    orderType === "DELIVERY" ? { address: dto.address } : dto.userLocation,
+    restaurant.location,
+    orderType
+  );
 
   return calculateOrderPricing(userId, dto);
 }
@@ -170,28 +155,11 @@ export async function createOrder(userId, dto) {
 
   const orderType = String(dto.orderType || (dto.address ? "DELIVERY" : "TAKEAWAY")).toUpperCase();
 
-  // Validate booking radius early
-  let distanceKm = null;
-  const hasUserLoc = dto.userLocation?.latitude != null && dto.userLocation?.longitude != null;
-  const hasAddrLoc = dto.address?.location?.coordinates?.length === 2;
-
-  if (restaurant.location?.coordinates?.length === 2) {
-    const [rLng, rLat] = restaurant.location.coordinates;
-    if (hasAddrLoc && orderType === "DELIVERY") {
-      const [dLng, dLat] = dto.address.location.coordinates;
-      const d = haversineKm(rLat, rLng, dLat, dLng);
-      distanceKm = Number.isFinite(d) ? d : null;
-    } else if (hasUserLoc) {
-      const d = haversineKm(rLat, rLng, dto.userLocation.latitude, dto.userLocation.longitude);
-      distanceKm = Number.isFinite(d) ? d : null;
-    }
-  }
-
-  if (distanceKm !== null && distanceKm > 50) {
-    throw new ForbiddenError(
-      "This restaurant is more than 50 KM away from your current location and cannot be booked."
-    );
-  }
+  validateBookingDistance(
+    orderType === "DELIVERY" ? { address: dto.address } : dto.userLocation,
+    restaurant.location,
+    orderType
+  );
 
   if (orderType === "TAKEAWAY") {
     if (restaurant.takeawaySettings?.isEnabled === false) {

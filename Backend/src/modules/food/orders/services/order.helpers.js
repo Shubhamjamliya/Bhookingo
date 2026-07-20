@@ -284,3 +284,39 @@ export function isStatusAdvance(current, next) {
 
   return nextPrio > currentPrio;
 }
+
+import { ForbiddenError } from '../../../../core/auth/errors.js';
+
+export const BOOKING_RADIUS_KM = 50;
+export const DISCOVERY_RADIUS_KM = 100;
+export const UNDER250_RADIUS_KM = 50;
+
+export function validateBookingDistance(userLocation, restaurantLocation, orderType) {
+  let distanceKm = null;
+  const hasUserLoc = userLocation?.latitude != null && userLocation?.longitude != null;
+  const hasAddrLoc = userLocation?.address?.location?.coordinates?.length === 2;
+
+  const restLat = restaurantLocation?.coordinates?.[1] ?? restaurantLocation?.latitude;
+  const restLng = restaurantLocation?.coordinates?.[0] ?? restaurantLocation?.longitude;
+
+  if (restLat !== undefined && restLng !== undefined) {
+    if (userLocation?.address?.location?.coordinates?.length === 2 && orderType === "DELIVERY") {
+      const [dLng, dLat] = userLocation.address.location.coordinates;
+      const d = haversineKm(restLat, restLng, dLat, dLng);
+      distanceKm = Number.isFinite(d) ? d : null;
+    } else if (hasUserLoc) {
+      const d = haversineKm(restLat, restLng, userLocation.latitude, userLocation.longitude);
+      distanceKm = Number.isFinite(d) ? d : null;
+    } else if (userLocation?.latitude != null && userLocation?.longitude != null) {
+      const d = haversineKm(restLat, restLng, userLocation.latitude, userLocation.longitude);
+      distanceKm = Number.isFinite(d) ? d : null;
+    }
+  }
+
+  if (distanceKm !== null && distanceKm > BOOKING_RADIUS_KM) {
+    throw new ForbiddenError(
+      "This restaurant is more than 50 KM away from your current location and cannot be booked."
+    );
+  }
+}
+

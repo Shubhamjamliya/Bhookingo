@@ -14,6 +14,7 @@ import { useLocation } from "@food/hooks/useLocation"
 import { restaurantAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
+import BookingRangeBadge, { getRestaurantDistanceKm } from "@food/components/user/BookingRangeBadge"
 
 const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "")
 
@@ -244,14 +245,27 @@ export default function Restaurants() {
                                     <span className="font-medium whitespace-nowrap">{restaurant.distance}</span>
                                   </div>
                                 </div>
-                                <Button className="bg-[var(--primary)] hover:opacity-90 dark:hover:opacity-80 text-white text-xs sm:text-sm h-7 sm:h-8 px-3 sm:px-4 flex-shrink-0 transition-opacity">
-                                  Order Now
-                                </Button>
+                                {(() => {
+                                  const dVal = getRestaurantDistanceKm(restaurant);
+                                  if (dVal !== null && dVal > 50) {
+                                    return (
+                                      <Button disabled className="bg-gray-300 dark:bg-gray-800 text-gray-500 text-xs sm:text-sm h-7 sm:h-8 px-3 sm:px-4 flex-shrink-0 cursor-not-allowed">
+                                        Booking Unavailable
+                                      </Button>
+                                    );
+                                  }
+                                  return (
+                                    <Button className="bg-[var(--primary)] hover:opacity-90 dark:hover:opacity-80 text-white text-xs sm:text-sm h-7 sm:h-8 px-3 sm:px-4 flex-shrink-0 transition-opacity">
+                                      Order Now
+                                    </Button>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </CardContent>
 
                           <div className="w-36 sm:w-44 md:w-56 lg:w-64 xl:w-72 flex-shrink-0 relative overflow-hidden group/image">
+                            <BookingRangeBadge restaurant={restaurant} className="top-2 left-2 text-[8px] px-1.5 py-0.5" />
                             <img
                               src={restaurant.image || "https://via.placeholder.com/400x300?text=Restaurant"}
                               alt={restaurant.name}

@@ -44,6 +44,7 @@ import VoiceSearchOverlay from "@food/components/user/VoiceSearchOverlay";
 import AddToCartButton from "@food/components/user/AddToCartButton";
 import StickyCartCard from "@food/components/user/StickyCartCard";
 import OrderTrackingCard from "@food/components/user/OrderTrackingCard";
+import BookingRangeBadge, { getRestaurantDistanceKm } from "@food/components/user/BookingRangeBadge";
 import {
   CategoryChipRowSkeleton,
   ExploreGridSkeleton,
@@ -2704,6 +2705,7 @@ export default function Home() {
                       to={`/user/restaurants/${restaurantSlug}`}
                       className="block rounded-[20px] overflow-hidden border border-border/70 dark:border-gray-800 bg-surface dark:bg-[#1a1a1a] shadow-md hover:shadow-lg transition-all duration-300">
                       <div className="relative h-24 sm:h-28 md:h-32 bg-gray-50">
+                        <BookingRangeBadge restaurant={restaurant} className="top-2 left-2 text-[8px] px-1.5 py-0.5" />
                         <RestaurantImageCarousel
                           restaurant={restaurant}
                           backendOrigin={BACKEND_ORIGIN}
@@ -2911,6 +2913,7 @@ export default function Home() {
                             }`}>
                           {/* Image Section with Carousel */}
                           <div className="relative">
+                            <BookingRangeBadge restaurant={restaurant} className="top-4 left-4" />
                             <RestaurantImageCarousel
                               restaurant={restaurant}
                               priority={index < 2}

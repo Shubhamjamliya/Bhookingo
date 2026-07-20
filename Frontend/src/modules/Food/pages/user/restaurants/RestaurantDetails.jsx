@@ -35,6 +35,7 @@ import {
   MessageCircle,
   Send,
   Mail,
+  Info,
 } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Badge } from "@food/components/ui/badge"
@@ -43,7 +44,7 @@ import AnimatedPage from "@food/components/user/AnimatedPage"
 import { useCart } from "@food/context/CartContext"
 import { useProfile } from "@food/context/ProfileContext"
 import AddToCartAnimation from "@food/components/user/AddToCartAnimation"
-import { checkRestaurantBookingEligibility } from "@food/utils/common"
+import { checkRestaurantBookingEligibility, calculateDistance, getRestaurantDistanceKm, BOOKING_RADIUS_KM } from "@food/utils/common"
 import { getCompanyNameAsync } from "@food/utils/businessSettings"
 import { isModuleAuthenticated } from "@food/utils/auth"
 import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
@@ -1051,6 +1052,17 @@ function RestaurantDetailsContent() {
       ? restaurant.locationObject.coordinates[0]
       : null)
 
+  const userLat = Number(userLocation?.latitude)
+  const userLng = Number(userLocation?.longitude)
+
+  const currentDistanceVal = useMemo(() => {
+    return getRestaurantDistanceKm(restaurant, userLocation);
+  }, [restaurant, userLocation]);
+
+  const isOutOfRange = useMemo(() => {
+    return currentDistanceVal !== null && currentDistanceVal > BOOKING_RADIUS_KM;
+  }, [currentDistanceVal]);
+
 
 
   // Sync quantities from cart on mount and when restaurant changes
@@ -1990,6 +2002,14 @@ function RestaurantDetailsContent() {
       className={`min-h-screen bg-surface dark:bg-[#0a0a0a] flex flex-col transition-all duration-300 ${shouldShowGrayscale ? 'grayscale opacity-75' : ''
         }`}
     >
+      {isOutOfRange && (
+        <div className="bg-red-600 dark:bg-red-950 text-white px-4 py-3 text-center text-sm font-medium shadow-sm flex items-center justify-center gap-2 relative z-50">
+          <Info className="h-5 w-5 shrink-0" />
+          <span>
+            This restaurant is currently more than 50 KM from your location. You can browse the menu, ratings, photos, and details, but booking is unavailable until you are within 50 KM.
+          </span>
+        </div>
+      )}
       {/* Header - Back, Search, Menu (like reference image) */}
       <div className="px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 pt-3 md:pt-4 lg:pt-5 pb-2 md:pb-3 bg-surface dark:bg-[#0a0a0a]">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -2124,6 +2144,12 @@ function RestaurantDetailsContent() {
           {isRestaurantOffline && (
             <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
               {restaurant?.name || "This restaurant"} is currently offline. Orders are unavailable right now.
+            </div>
+          )}
+
+          {isOutOfRange && (
+            <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/50 px-3 py-2 text-sm text-red-700 dark:text-red-400 font-medium">
+              You are currently {currentDistanceVal ? currentDistanceVal.toFixed(1) : "XX.X"} KM away from this restaurant. Booking is only available within a 50 KM radius.
             </div>
           )}
 
@@ -2489,7 +2515,7 @@ function RestaurantDetailsContent() {
                               )}
                               {quantity > 0 ? (
                                 <div
-                                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-[var(--primary)] text-[var(--primary)] font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
+                                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-[var(--primary)] text-[var(--primary)] font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale || isOutOfRange
                                     ? 'bg-gray-50 border-border text-text-secondary cursor-not-allowed opacity-50'
                                     : 'hover:bg-primary-light/15'
                                     }`}
@@ -2497,25 +2523,25 @@ function RestaurantDetailsContent() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      if (!shouldShowGrayscale) {
+                                      if (!shouldShowGrayscale && !isOutOfRange) {
                                         updateItemQuantity(item, Math.max(0, quantity - 1), e)
                                       }
                                     }}
-                                    disabled={shouldShowGrayscale}
-                                    className={shouldShowGrayscale ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
+                                    disabled={shouldShowGrayscale || isOutOfRange}
+                                    className={shouldShowGrayscale || isOutOfRange ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
                                   >
                                     <Minus size={14} />
                                   </button>
-                                  <span className={`mx-2 text-sm ${shouldShowGrayscale ? 'text-text-secondary' : 'text-[var(--primary)]'}`}>{quantity}</span>
+                                  <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfRange ? 'text-text-secondary' : 'text-[var(--primary)]'}`}>{quantity}</span>
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      if (!shouldShowGrayscale) {
+                                      if (!shouldShowGrayscale && !isOutOfRange) {
                                         updateItemQuantity(item, quantity + 1, e)
                                       }
                                     }}
-                                    disabled={shouldShowGrayscale}
-                                    className={shouldShowGrayscale ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
+                                    disabled={shouldShowGrayscale || isOutOfRange}
+                                    className={shouldShowGrayscale || isOutOfRange ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
                                   >
                                     <Plus size={14} className="stroke-[3px]" />
                                   </button>
@@ -2524,17 +2550,17 @@ function RestaurantDetailsContent() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    if (!shouldShowGrayscale) {
+                                    if (!shouldShowGrayscale && !isOutOfRange) {
                                       updateItemQuantity(item, 1, e)
                                     }
                                   }}
-                                  disabled={shouldShowGrayscale}
-                                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-[var(--primary)] text-[var(--primary)] font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-all ${shouldShowGrayscale
+                                  disabled={shouldShowGrayscale || isOutOfRange}
+                                  className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-[var(--primary)] text-[var(--primary)] font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-all ${shouldShowGrayscale || isOutOfRange
                                     ? 'bg-gray-50 border-border text-text-secondary cursor-not-allowed opacity-50'
                                     : 'hover:bg-primary-light/15 hover:scale-105 active:scale-95'
                                     }`}
                                 >
-                                  ADD <Plus size={14} className="stroke-[3px]" />
+                                  {isOutOfRange ? "Booking Unavailable" : <>ADD <Plus size={14} className="stroke-[3px]" /></>}
                                 </button>
                               )}
                             </div>
@@ -2700,7 +2726,7 @@ function RestaurantDetailsContent() {
                                           <motion.div
                                             initial={{ opacity: 0, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
-                                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale
+                                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border font-bold px-4 py-1.5 rounded-lg shadow-md flex items-center gap-1 ${shouldShowGrayscale || isOutOfRange
                                               ? 'border-border text-text-secondary cursor-not-allowed opacity-50'
                                               : 'border-[var(--primary)] text-[var(--primary)] hover:bg-[#DC262605]'
                                               }`}
@@ -2708,25 +2734,25 @@ function RestaurantDetailsContent() {
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation()
-                                                if (!shouldShowGrayscale) {
+                                                if (!shouldShowGrayscale && !isOutOfRange) {
                                                   updateItemQuantity(item, Math.max(0, quantity - 1), e)
                                                 }
                                               }}
-                                              disabled={shouldShowGrayscale}
-                                              className={shouldShowGrayscale ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
+                                              disabled={shouldShowGrayscale || isOutOfRange}
+                                              className={shouldShowGrayscale || isOutOfRange ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
                                             >
                                               <Minus size={14} />
                                             </button>
-                                            <span className={`mx-2 text-sm ${shouldShowGrayscale ? 'text-text-secondary' : ''}`}>{quantity}</span>
+                                            <span className={`mx-2 text-sm ${shouldShowGrayscale || isOutOfRange ? 'text-text-secondary' : ''}`}>{quantity}</span>
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation()
-                                                if (!shouldShowGrayscale) {
+                                                if (!shouldShowGrayscale && !isOutOfRange) {
                                                   updateItemQuantity(item, quantity + 1, e)
                                                 }
                                               }}
-                                              disabled={shouldShowGrayscale}
-                                              className={shouldShowGrayscale ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
+                                              disabled={shouldShowGrayscale || isOutOfRange}
+                                              className={shouldShowGrayscale || isOutOfRange ? 'text-text-secondary cursor-not-allowed' : 'text-[var(--primary)] hover:text-[var(--primary-dark)]'}
                                             >
                                               <Plus size={14} className="stroke-[3px]" />
                                             </button>
@@ -2739,17 +2765,17 @@ function RestaurantDetailsContent() {
                                             transition={{ duration: 0.3, type: "spring", damping: 20, stiffness: 300 }}
                                             onClick={(e) => {
                                               e.stopPropagation()
-                                              if (!shouldShowGrayscale) {
+                                              if (!shouldShowGrayscale && !isOutOfRange) {
                                                 updateItemQuantity(item, 1, e)
                                               }
                                             }}
-                                            disabled={shouldShowGrayscale}
-                                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-[var(--primary)] text-[var(--primary)] font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-all ${shouldShowGrayscale
+                                            disabled={shouldShowGrayscale || isOutOfRange}
+                                            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 bg-surface border border-[var(--primary)] text-[var(--primary)] font-bold px-6 py-1.5 rounded-lg shadow-md flex items-center gap-1 transition-all ${shouldShowGrayscale || isOutOfRange
                                               ? 'border-border text-text-secondary cursor-not-allowed opacity-50'
                                               : 'hover:bg-primary-light/15 hover:scale-105 active:scale-95'
                                               }`}
                                           >
-                                            ADD <Plus size={14} className="stroke-[3px]" />
+                                            {isOutOfRange ? "Booking Unavailable" : <>ADD <Plus size={14} className="stroke-[3px]" /></>}
                                           </motion.button>
                                         )}
                                       </div>
@@ -3599,7 +3625,7 @@ function RestaurantDetailsContent() {
                         }`}>
                         <button
                           onClick={(e) => {
-                            if (!shouldShowGrayscale) {
+                            if (!shouldShowGrayscale && !isOutOfRange) {
                               updateItemQuantity(
                                 selectedItem,
                                 Math.max(1, getDishQuantity(selectedItem, selectedVariantId)) - 1,
@@ -3608,15 +3634,15 @@ function RestaurantDetailsContent() {
                               )
                             }
                           }}
-                          disabled={getDishQuantity(selectedItem, selectedVariantId) === 0 || shouldShowGrayscale}
-                          className={`${shouldShowGrayscale
+                          disabled={getDishQuantity(selectedItem, selectedVariantId) === 0 || shouldShowGrayscale || isOutOfRange}
+                          className={`${shouldShowGrayscale || isOutOfRange
                             ? 'text-gray-300 dark:text-text-secondary cursor-not-allowed'
                             : 'text-text-secondary dark:text-text-secondary hover:text-text-primary dark:hover:text-white disabled:text-gray-300 dark:disabled:text-text-secondary disabled:cursor-not-allowed'
                             }`}
                         >
                           <Minus className="h-5 w-5" />
                         </button>
-                        <span className={`text-lg font-semibold min-w-[1.5rem] sm:min-w-[2rem] text-center ${shouldShowGrayscale
+                        <span className={`text-lg font-semibold min-w-[1.5rem] sm:min-w-[2rem] text-center ${shouldShowGrayscale || isOutOfRange
                           ? 'text-text-secondary dark:text-text-secondary'
                           : 'text-text-primary dark:text-white'
                           }`}>
@@ -3624,7 +3650,7 @@ function RestaurantDetailsContent() {
                         </span>
                         <button
                           onClick={(e) => {
-                            if (!shouldShowGrayscale) {
+                            if (!shouldShowGrayscale && !isOutOfRange) {
                               updateItemQuantity(
                                 selectedItem,
                                 Math.max(1, getDishQuantity(selectedItem, selectedVariantId)) + 1,
@@ -3633,8 +3659,8 @@ function RestaurantDetailsContent() {
                               )
                             }
                           }}
-                          disabled={shouldShowGrayscale}
-                          className={shouldShowGrayscale
+                          disabled={shouldShowGrayscale || isOutOfRange}
+                          className={shouldShowGrayscale || isOutOfRange
                             ? 'text-gray-300 dark:text-text-secondary cursor-not-allowed'
                             : 'text-text-secondary dark:text-text-secondary hover:text-text-primary dark:hover:text-white'
                           }
@@ -3645,12 +3671,12 @@ function RestaurantDetailsContent() {
 
                       {/* Add Item Button */}
                       <Button
-                        className={`flex-1 h-[44px] rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 ${shouldShowGrayscale
+                        className={`flex-1 h-[44px] rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-4 ${shouldShowGrayscale || isOutOfRange
                           ? 'bg-gray-300 dark:bg-gray-700 text-text-secondary dark:text-text-secondary cursor-not-allowed opacity-50'
                           : 'bg-red-500 hover:bg-primary text-white'
                           }`}
                         onClick={(e) => {
-                          if (!shouldShowGrayscale) {
+                          if (!shouldShowGrayscale && !isOutOfRange) {
                             updateItemQuantity(
                               selectedItem,
                               Math.max(1, getDishQuantity(selectedItem, selectedVariantId)),
@@ -3660,10 +3686,10 @@ function RestaurantDetailsContent() {
                             setShowItemDetail(false)
                           }
                         }}
-                        disabled={shouldShowGrayscale}
+                        disabled={shouldShowGrayscale || isOutOfRange}
                       >
                         <span className="truncate">
-                          {getDishQuantity(selectedItem, selectedVariantId) > 0 ? "Update cart" : "Add item"}
+                          {isOutOfRange ? "Booking Unavailable" : (getDishQuantity(selectedItem, selectedVariantId) > 0 ? "Update cart" : "Add item")}
                         </span>
                         <div className="flex flex-wrap items-center justify-center gap-1 overflow-hidden">
                           {selectedItem.originalPrice && selectedItem.originalPrice > selectedItem.price && (

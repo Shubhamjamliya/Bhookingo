@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from "react"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { restaurantAPI, diningAPI } from "@food/api"
+import { useLocation as useGeoLocation } from "@food/hooks/useLocation"
+import { calculateDistance, getRestaurantDistanceKm, BOOKING_RADIUS_KM } from "@food/utils/common"
 import { useProfile } from "@food/context/ProfileContext"
 import { getMenuFromResponse } from "@food/utils/menuItems"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
@@ -18,6 +20,7 @@ import {
   Tag,
   Ticket,
   X,
+  Info,
 } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { toast } from "sonner"
@@ -94,8 +97,30 @@ export default function DiningRestaurantDetails() {
   const navigate = useNavigate()
   const goBack = useAppBackNavigation()
   const { addFavorite, removeFavorite, isFavorite } = useProfile()
+  const { location: geoLocation } = useGeoLocation()
 
   const [restaurant, setRestaurant] = useState(location.state?.restaurant || null)
+
+  const restaurantLat = restaurant?.location?.latitude ||
+    (restaurant?.location?.coordinates && Array.isArray(restaurant.location.coordinates)
+      ? restaurant.location.coordinates[1]
+      : null)
+  const restaurantLng = restaurant?.location?.longitude ||
+    (restaurant?.location?.coordinates && Array.isArray(restaurant.location.coordinates)
+      ? restaurant.location.coordinates[0]
+      : null)
+
+  const userLat = Number(geoLocation?.latitude)
+  const userLng = Number(geoLocation?.longitude)
+
+  const currentDistanceVal = useMemo(() => {
+    return getRestaurantDistanceKm(restaurant, geoLocation);
+  }, [restaurant, geoLocation]);
+
+  const isOutOfRange = useMemo(() => {
+    return currentDistanceVal !== null && currentDistanceVal > BOOKING_RADIUS_KM;
+  }, [currentDistanceVal]);
+
   const [menuSections, setMenuSections] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -369,9 +394,12 @@ export default function DiningRestaurantDetails() {
   }
 
   const handleOpenBookingSheet = () => {
-    if (!isDiningEnabled) return
-    if (!isModuleAuthenticated('user')) {
-      window.dispatchEvent(new CustomEvent('show-login-required'))
+    if (!isModuleAuthenticated("user")) {
+      window.dispatchEvent(new CustomEvent("show-login-required"))
+      return
+    }
+    if (isOutOfRange) {
+      toast.error("This restaurant is more than 50 KM away from your current location and cannot be booked.")
       return
     }
     setIsBookingSheetOpen(true)
@@ -379,6 +407,14 @@ export default function DiningRestaurantDetails() {
 
   return (
     <div className="min-h-screen bg-[#f6f7fb] dark:bg-slate-950 pb-28 transition-colors">
+      {isOutOfRange && (
+        <div className="bg-red-600 dark:bg-red-950 text-white px-4 py-3 text-center text-sm font-medium shadow-sm flex items-center justify-center gap-2 relative z-50">
+          <Info className="h-5 w-5 shrink-0" />
+          <span>
+            This restaurant is currently more than 50 KM from your location. You can browse the menu, ratings, photos, and details, but booking is unavailable until you are within 50 KM.
+          </span>
+        </div>
+      )}
       <section className="mx-auto max-w-md bg-[#f6f7fb] dark:bg-slate-950 uppercase-fix">
         <div className="relative h-[392px] overflow-hidden">
           {heroImage ? (
@@ -437,17 +473,23 @@ export default function DiningRestaurantDetails() {
             <div className="w-full">
               <button
                 onClick={handleOpenBookingSheet}
-                disabled={!isDiningEnabled}
+                disabled={!isDiningEnabled || isOutOfRange}
                 className={`flex h-[52px] w-full items-center justify-center gap-2 rounded-full border px-3 text-[15px] font-medium shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition-all ${
-                  isDiningEnabled
+                  isDiningEnabled && !isOutOfRange
                     ? "border-[#f1ebee] dark:border-slate-800 bg-surface dark:bg-slate-900 text-[#2b2118] dark:text-slate-100"
-                    : "cursor-not-allowed border-[#f2d7da] dark:border-red-900/30 bg-[#fff5f6] dark:bg-red-950/20 text-[#c06a79] opacity-80"
+                    : "cursor-not-allowed border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 text-red-700 opacity-80"
                 }`}
               >
               <Ticket className="h-[15px] w-[15px] text-[var(--primary)]" />
-              <span>{isDiningEnabled ? "Book a table" : "Dining paused"}</span>
+              <span>{isOutOfRange ? "Booking Unavailable" : (isDiningEnabled ? "Book a table" : "Dining paused")}</span>
               </button>
             </div>
+
+            {isOutOfRange && (
+              <div className="mt-3 rounded-[18px] border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900/50 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                You are currently {currentDistanceVal ? currentDistanceVal.toFixed(1) : "XX.X"} KM away from this restaurant. Booking is only available within a 50 KM radius.
+              </div>
+            )}
 
             {!isDiningEnabled && (
               <div className="mt-3 rounded-[18px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -496,8 +538,9 @@ export default function DiningRestaurantDetails() {
               </div>
               <button 
                 onClick={handleOpenBookingSheet}
-                className="rounded-full bg-black/45 px-4 py-2 text-[13px] font-semibold text-white backdrop-blur-sm">
-                Book now
+                disabled={isOutOfRange}
+                className={`rounded-full bg-black/45 px-4 py-2 text-[13px] font-semibold text-white backdrop-blur-sm ${isOutOfRange ? "opacity-50 cursor-not-allowed" : ""}`}>
+                {isOutOfRange ? "Unavailable" : "Book now"}
               </button>
             </div>
             <div className="border-t border-white/10 px-4 py-2 text-center text-[12px] text-white/75">
@@ -618,14 +661,14 @@ export default function DiningRestaurantDetails() {
         <div className="mx-auto max-w-md">
           <Button
             onClick={handleOpenBookingSheet}
-            disabled={!isDiningEnabled}
+            disabled={!isDiningEnabled || isOutOfRange}
             className={`h-12 w-full rounded-2xl border text-[17px] font-medium transition-all ${
-              isDiningEnabled
-                ? "border-[#FEE2E2] bg-surface dark:bg-slate-900 text-[var(--primary)] dark:text-purple-400 hover:bg-[#fdfafc] dark:hover:bg-slate-800"
+              isDiningEnabled && !isOutOfRange
+                ? "border-[#FEE2E2] bg-surface dark:bg-slate-900 text-[var(--primary)] dark:text-purple-400 hover:bg-[#fdfafc] dark:hover:bg-slate-855 hover:opacity-90"
                 : "cursor-not-allowed border-border dark:border-slate-800 bg-gray-50 dark:bg-slate-900 text-text-secondary dark:text-text-secondary opacity-80"
             }`}
           >
-            {isDiningEnabled ? "Book a table" : "Dining paused"}
+            {isOutOfRange ? "Booking Unavailable" : (isDiningEnabled ? "Book a table" : "Dining paused")}
           </Button>
         </div>
       </div>

@@ -19,6 +19,7 @@ import homeBannerRed from "@food/assets/home-banner-red-clean.png"
 import AddToCartAnimation from "@food/components/user/AddToCartAnimation"
 import OptimizedImage from "@food/components/OptimizedImage"
 import api from "@food/api"
+import BookingRangeBadge, { getRestaurantDistanceKm } from "@food/components/user/BookingRangeBadge"
 import { restaurantAPI, adminAPI } from "@food/api"
 import { isModuleAuthenticated } from "@food/utils/auth"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
@@ -1058,6 +1059,7 @@ export default function Under250() {
                 >
                   {/* Left: Image with Veg Indicator */}
                   <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 rounded-2xl overflow-hidden bg-gray-50 dark:bg-neutral-800">
+                    <BookingRangeBadge restaurant={restaurant} className="top-1 left-1 text-[7px] px-1.5 py-0.5" />
                     <img 
                       src={coverImage} 
                       alt={restaurant.name}

@@ -10,6 +10,7 @@ import { getFoodDisplayPrice } from '../../admin/services/foodVariant.service.js
 import { FoodOrder } from '../../orders/models/order.model.js';
 import { assignHighwayToRestaurant, findNearestHighway } from '../../admin/services/highway.service.js';
 import { FoodRestaurantOutletTimings } from '../models/outletTimings.model.js';
+import { DISCOVERY_RADIUS_KM, UNDER250_RADIUS_KM } from '../../orders/services/order.helpers.js';
 
 const normalizeName = (value) =>
     String(value || '')
@@ -1363,7 +1364,7 @@ export const uploadRestaurantMenuImages = async (restaurantId, files = []) => {
     };
 };
 
-export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}) => {
+export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}, options = {}) => {
     const filter = {
         status: 'approved',
         ...queryFilter
@@ -1381,6 +1382,10 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}) =
 
     const pipeline = [];
 
+    const radiusKm = options.radiusKm || 100;
+    const includeHighwayRestaurants = options.includeHighwayRestaurants !== false;
+    const highwayUnlimitedDistance = options.highwayUnlimitedDistance !== false;
+
     // Use $geoNear if coordinates are provided
     if (lat !== null && lng !== null) {
         pipeline.push({
@@ -1393,11 +1398,11 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}) =
             }
         });
 
-        // Filter: Within 100 KM OR on the user's highway
+        // Filter: Within radiusKm OR on the user's highway (only if highwayUnlimitedDistance is true)
         const matchConditions = [
-            { distanceMeters: { $lte: 100000 } }
+            { distanceMeters: { $lte: radiusKm * 1000 } }
         ];
-        if (currentHighwayId) {
+        if (currentHighwayId && includeHighwayRestaurants && highwayUnlimitedDistance) {
             matchConditions.push({ highwayId: currentHighwayId });
         }
         pipeline.push({
@@ -1423,11 +1428,12 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}) =
             }
         });
 
-        // Sort Stage: Current highway restaurants first, then by nearest distance
+        // Sort Stage: Current highway restaurants first, then by nearest distance, then highest rated, then createdAt
         pipeline.push({
             $sort: {
                 isOnCurrentHighway: -1,
                 distanceMeters: 1,
+                rating: -1,
                 createdAt: -1
             }
         });
@@ -1437,6 +1443,7 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}) =
         // Sort Stage without location/distance
         pipeline.push({
             $sort: {
+                rating: -1,
                 createdAt: -1
             }
         });
@@ -1510,7 +1517,9 @@ export const listApprovedRestaurants = async (query = {}) => {
     const sortBy = parseSortBy(query.sortBy);
 
     // Call the shared helper function
-    const { pipeline } = await getNearbyRestaurantsPipeline(lat, lng, filter);
+    const { pipeline } = await getNearbyRestaurantsPipeline(lat, lng, filter, {
+        radiusKm: DISCOVERY_RADIUS_KM
+    });
 
     const projection = {
         restaurantName: 1,
@@ -1763,49 +1772,58 @@ export const getRestaurantComplaints = async (restaurantId, query = {}) => {
 export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 250) => {
     const lat = query.lat ? parseFloat(query.lat) : null;
     const lng = query.lng ? parseFloat(query.lng) : null;
-    const radiusKm = query.radiusKm ? parseFloat(query.radiusKm) : 50;
 
     const refLat = lat !== null ? lat : 22.7196;
     const refLng = lng !== null ? lng : 75.8577;
 
-    const getDistance = (lat1, lon1, lat2, lon2) => {
-        const R = 6371000; // meters
-        const phi1 = (lat1 * Math.PI) / 180;
-        const phi2 = (lat2 * Math.PI) / 180;
-        const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
-        const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 20, 1), 100);
+    const page = Math.max(parseInt(query.page, 10) || 1, 1);
+    const skip = (page - 1) * limit;
 
-        const a =
-            Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-            Math.cos(phi1) *
-                Math.cos(phi2) *
-                Math.sin(deltaLambda / 2) *
-                Math.sin(deltaLambda / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const filter = { status: 'approved' };
 
-        return R * c;
-    };
-
-    let filter = { status: 'approved' };
-
-    const restaurantsInZone = await FoodRestaurant.find({
-        ...filter,
-        location: {
-            $near: {
-                $geometry: {
-                    type: 'Point',
-                    coordinates: [refLng, refLat]
-                },
-                $maxDistance: radiusKm * 1000 // In meters
-            }
+    // Apply search and cuisine options inside the 50 KM radius
+    if (query.cuisine && String(query.cuisine).trim()) {
+        const cuisine = String(query.cuisine).trim();
+        filter.cuisines = { $in: [new RegExp(escapeRegex(cuisine), 'i')] };
+    }
+    if (query.search && String(query.search).trim()) {
+        const raw = String(query.search).trim().slice(0, 80);
+        const term = escapeRegex(raw);
+        if (term.length >= 2) {
+            filter.$or = [
+                { restaurantName: { $regex: term, $options: 'i' } },
+                { area: { $regex: term, $options: 'i' } },
+                { city: { $regex: term, $options: 'i' } },
+                { 'location.area': { $regex: term, $options: 'i' } },
+                { 'location.city': { $regex: term, $options: 'i' } },
+                { cuisines: { $in: [new RegExp(term, 'i')] } }
+            ];
         }
-    }).lean();
-
-    if (restaurantsInZone.length === 0) {
-        return { restaurants: [], total: 0 };
     }
 
-    const restaurantIds = restaurantsInZone.map(r => r._id);
+    const { pipeline } = await getNearbyRestaurantsPipeline(refLat, refLng, filter, {
+        radiusKm: UNDER250_RADIUS_KM,
+        includeHighwayRestaurants: true,
+        highwayUnlimitedDistance: false
+    });
+
+    const restaurantsInZone = await FoodRestaurant.aggregate(pipeline);
+
+    // Remove duplicates
+    const seen = new Set();
+    const uniqueRestaurantsInZone = restaurantsInZone.filter(r => {
+        const idStr = String(r._id);
+        if (seen.has(idStr)) return false;
+        seen.add(idStr);
+        return true;
+    });
+
+    if (uniqueRestaurantsInZone.length === 0) {
+        return { restaurants: [], total: 0, hasMore: false, page, limit };
+    }
+
+    const restaurantIds = uniqueRestaurantsInZone.map(r => r._id);
 
     // 2. Fetch only the eligible food items for these specific restaurants
     const eligibleItems = await FoodItem.find({
@@ -1816,7 +1834,7 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
     }).select('restaurantId name price image foodType description isVeg isRecommended').lean();
 
     if (eligibleItems.length === 0) {
-        return { restaurants: [], total: 0 };
+        return { restaurants: [], total: 0, hasMore: false, page, limit };
     }
 
     // Map items to their restaurants
@@ -1832,13 +1850,13 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
     });
 
     // 3. Filter restaurants that actually have eligible items
-    const eligibleRestaurants = restaurantsInZone.filter(r => {
+    const eligibleRestaurants = uniqueRestaurantsInZone.filter(r => {
         const rid = String(r._id);
         return restaurantItemsMap[rid] && restaurantItemsMap[rid].length > 0;
     });
 
     if (eligibleRestaurants.length === 0) {
-        return { restaurants: [], total: 0 };
+        return { restaurants: [], total: 0, hasMore: false, page, limit };
     }
 
     // 4. Fetch outlet timings only for the eligible restaurants
@@ -1857,13 +1875,6 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
         const items = restaurantItemsMap[rid] || [];
         const timings = timingsMap[rid] || [];
 
-        const restLat = r.location?.coordinates?.[1] ?? r.location?.latitude;
-        const restLng = r.location?.coordinates?.[0] ?? r.location?.longitude;
-        let distanceKm = 0;
-        if (restLat !== undefined && restLng !== undefined) {
-            distanceKm = getDistance(refLat, refLng, restLat, restLng) / 1000;
-        }
-        
         return {
             ...r,
             id: rid,
@@ -1871,13 +1882,19 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
             name: r.restaurantName,
             menuItems: items,
             outletTimings: { timings },
-            distanceKm: parseFloat(distanceKm.toFixed(2))
+            distanceInKm: r.distanceInKm || 0,
+            distanceKm: r.distanceInKm || 0
         };
     });
 
+    const paginatedRestaurants = restaurants.slice(skip, skip + limit);
+
     return {
-        restaurants,
-        total: restaurants.length
+        restaurants: paginatedRestaurants,
+        total: restaurants.length,
+        hasMore: skip + limit < restaurants.length,
+        page,
+        limit
     };
 };
 

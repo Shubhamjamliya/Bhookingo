@@ -805,10 +805,6 @@ export default function ExploreMore() {
     { id: 6, label: "Takeaway", icon: ShoppingBag },
   ]
 
-  const settingsItems = [
-    { id: 4, label: "Highway Setup", icon: MapPin, route: "/admin/food/highway-setup" },
-  ]
-
   const ordersItems = [
     { id: 1, label: "Order history", icon: FileText, route: "/food/restaurant/orders/all" },
     { id: 2, label: "Complaints", icon: Star, route: "/food/restaurant/feedback?tab=complaints" },
@@ -829,7 +825,6 @@ export default function ExploreMore() {
   // All sections with their items
   const allSections = [
     { title: "Manage outlet", items: manageOutletItems, key: "manage-outlet" },
-    { title: "Settings", items: settingsItems, key: "settings" },
     { title: "Orders", items: ordersItems, key: "orders" },
     { title: "Help", items: helpItems, key: "help" },
     { title: "Finance", items: accountingItems, key: "accounting" },

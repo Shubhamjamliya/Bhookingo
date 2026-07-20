@@ -315,6 +315,86 @@ const clearAllFilesFromDB = async () => {
   }
 }
 
+const isGoogleMapsUrl = (urlStr) => {
+  try {
+    const url = new URL(urlStr);
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname;
+    return (
+      host.includes("google.com") && (path.includes("/maps") || path.includes("/place") || path === "/") ||
+      host === "maps.google.com" ||
+      host === "maps.app.goo.gl" ||
+      host === "goo.gl" && path.startsWith("/maps")
+    );
+  } catch (e) {
+    return false;
+  }
+};
+
+const extractCoordsFromUrl = (url) => {
+  // 1. Check for @lat,lng
+  const atMatch = url.match(/@(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+  if (atMatch) {
+    return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+  }
+
+  // 2. Check for !3d lat and !4d/!2d lng
+  const match3d = url.match(/!3d(-?\d+\.\d+)/);
+  const match4d = url.match(/!4d(-?\d+\.\d+)/);
+  const match2d = url.match(/!2d(-?\d+\.\d+)/);
+  if (match3d && (match4d || match2d)) {
+    return {
+      lat: parseFloat(match3d[1]),
+      lng: parseFloat(match4d ? match4d[1] : match2d[1])
+    };
+  }
+
+  // 3. Check for ?q=lat,lng or &q=lat,lng
+  try {
+    const urlObj = new URL(url);
+    const q = urlObj.searchParams.get("q") || urlObj.searchParams.get("query");
+    if (q) {
+      const qMatch = q.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+      if (qMatch) {
+        return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
+      }
+    }
+  } catch (e) {}
+
+  // 4. Check for place/lat,lng or place/name/lat,lng
+  const placeMatch = url.match(/\/place\/.*?(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+  if (placeMatch) {
+    return { lat: parseFloat(placeMatch[1]), lng: parseFloat(placeMatch[2]) };
+  }
+
+  // 5. General search for any pair of coordinates in the format lat,lng in the string
+  const generalMatch = url.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+  if (generalMatch) {
+    const lat = parseFloat(generalMatch[1]);
+    const lng = parseFloat(generalMatch[2]);
+    if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      return { lat, lng };
+    }
+  }
+
+  return null;
+};
+
+const extractPlaceNameFromUrl = (url) => {
+  const placeNameMatch = url.match(/\/place\/([^/]+)/);
+  if (placeNameMatch && placeNameMatch[1]) {
+    const segment = placeNameMatch[1];
+    if (!segment.match(/^-?\d+\.\d+,\s*-?\d+\.\d+$/)) {
+      try {
+        return decodeURIComponent(segment.replace(/\+/g, " "));
+      } catch (e) {
+        return segment.replace(/\+/g, " ");
+      }
+    }
+  }
+  return "";
+};
+
 export default function AddRestaurant() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
@@ -323,6 +403,8 @@ export default function AddRestaurant() {
   const [formErrors, setFormErrors] = useState({})
 
   const [isHydrated, setIsHydrated] = useState(false)
+  const [mapsLinkValue, setMapsLinkValue] = useState("")
+  const [isProcessingLink, setIsProcessingLink] = useState(false)
 
   // Step 1: Basic Info
   const [step1, setStep1] = useState({
@@ -332,6 +414,7 @@ export default function AddRestaurant() {
     ownerEmail: "",
     ownerPhone: "",
     primaryContactNumber: "",
+    locationSource: "google_places",
 
     location: {
       addressLine1: "",
@@ -344,6 +427,7 @@ export default function AddRestaurant() {
       formattedAddress: "",
       latitude: "",
       longitude: "",
+      placeId: "",
     },
   })
 
@@ -472,6 +556,9 @@ export default function AddRestaurant() {
           const parsed = JSON.parse(storedRaw)
           const safeStep = Math.min(Math.max(Number(parsed?.step) || 1, 1), 3)
           if (!cancelled) setStep(safeStep)
+          if (parsed?.mapsLinkValue && !cancelled) {
+            setMapsLinkValue(parsed.mapsLinkValue)
+          }
           if (parsed?.step1 && !cancelled) {
             setStep1((prev) => ({ ...prev, ...parsed.step1, location: { ...prev.location, ...(parsed.step1.location || {}) } }))
           }
@@ -556,13 +643,14 @@ export default function AddRestaurant() {
           step1,
           step2: serializableStep2,
           step3: serializableStep3,
+          mapsLinkValue,
           timestamp: Date.now(),
         })
       )
     } catch (err) {
       debugError("Failed to persist admin add form data:", err)
     }
-  }, [isHydrated, step, step1, step2, step3])
+  }, [isHydrated, step, step1, step2, step3, mapsLinkValue])
 
   useEffect(() => {
     if (!isHydrated) return
@@ -653,6 +741,14 @@ export default function AddRestaurant() {
 
     if (!step1.location?.area?.trim()) errors.push("Area/Sector/Locality is required")
     if (!step1.location?.city?.trim()) errors.push("City is required")
+    if (!step1.location?.formattedAddress?.trim() && !step1.location?.addressLine1?.trim()) {
+      errors.push("Address is required")
+    }
+
+    const locSource = step1.locationSource || "google_places"
+    if (!["google_places", "google_maps_link"].includes(locSource)) {
+      errors.push("Invalid location source")
+    }
 
     // Highway validation
     const lat = Number(step1.location?.latitude)
@@ -811,6 +907,7 @@ export default function AddRestaurant() {
         primaryContactNumber: step1.primaryContactNumber,
 
         location: step1.location,
+        locationSource: step1.locationSource || "google_places",
         // Step 2
         menuImages: menuImagesData,
         profileImage: profileImageData,
@@ -873,6 +970,98 @@ export default function AddRestaurant() {
   const [isGoogleMapsValid, setIsGoogleMapsValid] = useState(true)
   const [locationSuggestions, setLocationSuggestions] = useState([])
   const [isSearchingLocation, setIsSearchingLocation] = useState(false)
+
+  const handleMapsLinkChange = async (e) => {
+    const value = e.target.value;
+    setMapsLinkValue(value);
+    if (!value.trim()) return;
+
+    let urlStr = value.trim();
+    if (!/^https?:\/\//i.test(urlStr)) {
+      urlStr = "https://" + urlStr;
+    }
+
+    if (!isGoogleMapsUrl(urlStr)) {
+      toast.error("Invalid Google Maps link. Please enter a valid Google Maps URL.");
+      return;
+    }
+
+    setIsProcessingLink(true);
+    try {
+      let resolvedUrl = urlStr;
+      if (urlStr.includes("maps.app.goo.gl") || urlStr.includes("goo.gl/maps")) {
+        const response = await adminAPI.resolveMapsLink({ url: urlStr });
+        if (response?.data?.success && response?.data?.url) {
+          resolvedUrl = response.data.url;
+        } else {
+          throw new Error("Unable to resolve shortened URL");
+        }
+      }
+
+      const coords = extractCoordsFromUrl(resolvedUrl);
+      if (!coords) {
+        toast.error("Unable to detect location from this link.");
+        setIsProcessingLink(false);
+        return;
+      }
+
+      // Perform Reverse Geocoding
+      if (!window.google?.maps?.Geocoder) {
+        toast.error("Google Maps SDK not loaded. Cannot reverse geocode.");
+        setIsProcessingLink(false);
+        return;
+      }
+
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat: coords.lat, lng: coords.lng } }, (results, status) => {
+        if (status === "OK" && results[0]) {
+          const place = results[0];
+          const comps = Array.isArray(place?.address_components) ? place.address_components : [];
+          const get = (types) => comps.find((c) => types.some((t) => c.types?.includes(t)))?.long_name || "";
+
+          const area = get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"]);
+          const city = get(["locality"]) || get(["administrative_area_level_2"]);
+          const state = get(["administrative_area_level_1"]) || get(["administrative_area_level_2"]);
+          const pincode = get(["postal_code"]);
+
+          const extractedPlaceName = extractPlaceNameFromUrl(resolvedUrl);
+
+          setStep1((prev) => {
+            const updated = {
+              ...prev,
+              location: {
+                ...prev.location,
+                formattedAddress: place.formatted_address || prev.location.formattedAddress,
+                addressLine1: place.formatted_address || prev.location.addressLine1 || "",
+                area: area || prev.location.area,
+                city: city || prev.location.city,
+                state: state || prev.location.state,
+                pincode: pincode || prev.location.pincode,
+                latitude: coords.lat,
+                longitude: coords.lng,
+                placeId: place.place_id || "",
+              },
+              locationSource: "google_maps_link",
+            };
+            if (extractedPlaceName) {
+              updated.restaurantName = extractedPlaceName;
+            }
+            return updated;
+          });
+
+          setLocationSearchValue(place.formatted_address || "");
+          toast.success("Location details populated from Google Maps link!");
+        } else {
+          toast.error("Unable to retrieve location details from coordinates.");
+        }
+      });
+    } catch (err) {
+      debugError("Failed to process Google Maps link:", err);
+      toast.error(err?.response?.data?.message || "Unable to detect location from this link.");
+    } finally {
+      setIsProcessingLink(false);
+    }
+  };
 
 
 
@@ -976,6 +1165,7 @@ export default function AddRestaurant() {
           pincode,
           latitude: typeof lat === 'number' ? Number(lat.toFixed(6)) : "",
           longitude: typeof lng === 'number' ? Number(lng.toFixed(6)) : "",
+          placeId: place?.place_id || "",
         }
       }
 
@@ -1018,8 +1208,11 @@ export default function AddRestaurant() {
               pincode: parsed.pincode || prev.location.pincode,
               latitude: parsed.latitude !== "" ? parsed.latitude : prev.location.latitude,
               longitude: parsed.longitude !== "" ? parsed.longitude : prev.location.longitude,
+              placeId: place.place_id || "",
             },
+            locationSource: "google_places",
           }))
+          setMapsLinkValue("")
 
           setLocationSearchValue(parsed.formattedAddress)
           
@@ -1285,8 +1478,11 @@ export default function AddRestaurant() {
                         pincode: pincode || prev.location.pincode,
                         latitude: lat,
                         longitude: lng,
+                        placeId: s.place_id || "",
                       },
+                      locationSource: "google_places",
                     }))
+                    setMapsLinkValue("")
                     setLocationSearchValue(display)
                     setLocationSuggestions([])
 
@@ -1341,6 +1537,47 @@ export default function AddRestaurant() {
             </div>
           )}
         </div>
+
+        <div className="flex items-center my-4">
+          <hr className="flex-grow border-t border-gray-200" />
+          <span className="px-3 text-xs font-semibold text-gray-400 tracking-wider uppercase">OR</span>
+          <hr className="flex-grow border-t border-gray-200" />
+        </div>
+
+        <div>
+          <Label className="text-xs text-gray-700">Google Maps Location Link (Optional)</Label>
+          <div className="relative mt-1">
+            <Input
+              value={mapsLinkValue}
+              onChange={handleMapsLinkChange}
+              className="bg-white text-sm pr-10"
+              placeholder="Paste Google Maps URL here"
+              disabled={isProcessingLink}
+            />
+            {isProcessingLink && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+              </div>
+            )}
+          </div>
+          <p className="text-[11px] text-gray-500 mt-1">
+            You can either search the restaurant above or paste a Google Maps location link.
+          </p>
+        </div>
+
+        {step1.locationSource && (
+          <div className="mt-3 text-xs flex items-center gap-1.5 font-medium text-slate-600 bg-slate-50/70 border border-slate-100 rounded px-2.5 py-1.5 w-fit">
+            <MapPin className="w-3.5 h-3.5 text-slate-500" />
+            <span>Location Source:</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              step1.locationSource === "google_maps_link"
+                ? "bg-blue-100 text-blue-700"
+                : "bg-orange-100 text-orange-700"
+            }`}>
+              {step1.locationSource === "google_maps_link" ? "Google Maps Link" : "Google Search"}
+            </span>
+          </div>
+        )}
 
         <div>
           <Label className="text-xs text-gray-700">Primary contact number*</Label>

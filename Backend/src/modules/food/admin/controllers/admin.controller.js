@@ -1327,3 +1327,100 @@ export async function confirmRecoveryVerify(req, res, next) {
         next(error);
     }
 }
+
+export async function resolveMapsLink(req, res, next) {
+    try {
+        const { url } = req.body;
+        if (!url || typeof url !== 'string') {
+            return res.status(400).json({ success: false, message: 'URL is required' });
+        }
+
+        let currentUrl = url.trim();
+        if (!/^https?:\/\//i.test(currentUrl)) {
+            currentUrl = 'https://' + currentUrl;
+        }
+
+        const allowedHosts = [
+            'google.com',
+            'www.google.com',
+            'maps.google.com',
+            'maps.app.goo.gl',
+            'goo.gl',
+            'google.co.in',
+            'www.google.co.in'
+        ];
+
+        const isAllowedHost = (urlStr) => {
+            try {
+                const u = new URL(urlStr);
+                const host = u.hostname.toLowerCase();
+                return allowedHosts.some(allowed => host === allowed || host.endsWith('.' + allowed));
+            } catch (e) {
+                return false;
+            }
+        };
+
+        if (!isAllowedHost(currentUrl)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid Google Maps link. Please enter a valid Google Maps URL.'
+            });
+        }
+
+        let redirectsCount = 0;
+        const maxRedirects = 5;
+
+        while (redirectsCount < maxRedirects) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 5000);
+
+            try {
+                const response = await fetch(currentUrl, {
+                    method: 'GET',
+                    redirect: 'manual',
+                    signal: controller.signal,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    }
+                });
+
+                clearTimeout(timeout);
+
+                if (response.status >= 300 && response.status < 400) {
+                    const location = response.headers.get('location');
+                    if (!location) {
+                        break;
+                    }
+                    currentUrl = new URL(location, currentUrl).toString();
+                    redirectsCount++;
+
+                    if (!isAllowedHost(currentUrl)) {
+                        return res.status(400).json({
+                            success: false,
+                            message: 'URL redirected to an unauthorized external domain.'
+                        });
+                    }
+                } else {
+                    break;
+                }
+            } catch (err) {
+                clearTimeout(timeout);
+                if (err.name === 'AbortError') {
+                    return res.status(408).json({
+                        success: false,
+                        message: 'Request timed out while resolving the Google Maps link.'
+                    });
+                }
+                throw err;
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            url: currentUrl
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+

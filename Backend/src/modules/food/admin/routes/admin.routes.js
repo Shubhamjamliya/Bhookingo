@@ -80,6 +80,7 @@ router.get('/restaurants/:id', adminController.getRestaurantById);
 router.get('/restaurants/:id/analytics', adminController.getRestaurantAnalytics);
 router.get('/restaurants/:id/menu', adminController.getRestaurantMenuById);
 router.post('/restaurants', adminController.createRestaurant);
+router.post('/resolve-maps-link', adminController.resolveMapsLink);
 router.patch('/restaurants/:id', adminController.updateRestaurantById);
 router.patch('/restaurants/:id/status', adminController.updateRestaurantStatus);
 router.patch('/restaurants/:id/location', adminController.updateRestaurantLocation);

@@ -541,6 +541,10 @@ export const adminAPI = {
     apiClient.post("/food/admin/restaurants", body ?? {}, {
       contextModule: "admin",
     }),
+  resolveMapsLink: (body) =>
+    apiClient.post("/food/admin/resolve-maps-link", body ?? {}, {
+      contextModule: "admin",
+    }),
 
   // ── Highway APIs (replaces Zone APIs) ────────────────────────────────────
   /** List all cached national highways. */

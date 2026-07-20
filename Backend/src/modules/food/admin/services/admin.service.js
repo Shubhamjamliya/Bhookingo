@@ -3209,6 +3209,13 @@ export async function createRestaurantByAdmin(body) {
     const loc = body.location || {};
     const toStr = (v) => (v != null && v !== undefined ? String(v).trim() : '');
     const toUrl = (v) => (v && (typeof v === 'string' ? v : v.url)) ? (typeof v === 'string' ? v : v.url) : undefined;
+
+    // Validate locationSource
+    const locationSource = toStr(body.locationSource) || 'google_places';
+    if (!['google_places', 'google_maps_link'].includes(locationSource)) {
+        throw new ValidationError('Invalid location source');
+    }
+
     const coordinates = Array.isArray(loc.coordinates) ? loc.coordinates : [];
     const lngFromCoordinates = toFiniteNumber(coordinates[0]);
     const latFromCoordinates = toFiniteNumber(coordinates[1]);
@@ -3289,7 +3296,8 @@ export async function createRestaurantByAdmin(body) {
         highwayId: proximity.highwayId,
         highwayName: proximity.highwayName,
         highwayRef: proximity.highwayRef,
-        isHighwayRestaurant: true
+        isHighwayRestaurant: true,
+        locationSource: locationSource
     };
 
     if (latitude !== null && longitude !== null) {
@@ -3307,6 +3315,7 @@ export async function createRestaurantByAdmin(body) {
             state: toStr(loc.state),
             pincode: toStr(loc.pincode || loc.zipCode || loc.postalCode),
             landmark: toStr(loc.landmark),
+            placeId: toStr(loc.placeId || loc.place_id),
         };
     }
 

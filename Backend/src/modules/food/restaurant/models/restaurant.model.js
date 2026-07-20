@@ -36,6 +36,7 @@ const geoPointSchema = new mongoose.Schema(
     state: { type: String, trim: true },
     pincode: { type: String, trim: true },
     landmark: { type: String, trim: true },
+    placeId: { type: String, trim: true },
   },
   { _id: false },
 );
@@ -194,6 +195,11 @@ const restaurantSchema = new mongoose.Schema(
     location: {
       type: geoPointSchema,
       default: undefined,
+    },
+    locationSource: {
+      type: String,
+      enum: ["google_places", "google_maps_link"],
+      default: "google_places",
     },
 
     /** National Highway classification (auto-assigned from location). */

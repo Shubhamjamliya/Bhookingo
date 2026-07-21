@@ -1,0 +1,386 @@
+[
+  {
+    "collectionName": "food_users",
+    "documentId": "6a1ff9ea7f55bdb3a3269e22",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/users/2026/07/379311bc-a6e4-4ac8-a6c5-5caef6360fda.webp"
+  },
+  {
+    "collectionName": "food_users",
+    "documentId": "6a5dbedba3b5b3fbf2b332aa",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/users/2026/07/d1d3dc8c-bd2e-47ea-9fe2-c25495e011be.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "69d74a559af1a6622ddb5e37",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/17c79265-b24c-4fd5-a945-60e3d365599a.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a4de8c0d861c97532f47766",
+    "fieldName": "menuImages.0",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/a72ce9b7-038a-4273-9851-4480ced34f57.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a4de8c0d861c97532f47766",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/d71ba918-54da-4297-8621-5ebaed02e0e5.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a4de8c0d861c97532f47766",
+    "fieldName": "panImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/4e9149f7-2636-4867-8a77-41c5f113e589.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a4de8c0d861c97532f47766",
+    "fieldName": "gstImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/b63e97cc-9536-401b-88ea-6bec22595b1e.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a4de8c0d861c97532f47766",
+    "fieldName": "fssaiImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/9f0907a5-a2d1-420c-a047-27c30f8d5550.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a51d3c735cd4234e1783495",
+    "fieldName": "menuImages.0",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/6770cc75-6e17-47f3-a302-05e1b20dd612.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a51d3c735cd4234e1783495",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/b41b16d0-d563-42c1-b1e2-637bbac89caa.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a51d3c735cd4234e1783495",
+    "fieldName": "panImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/e6d00e1c-4885-4d29-814b-9011d0fced56.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a51d3c735cd4234e1783495",
+    "fieldName": "gstImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/f563652e-2b90-42a2-b4ab-8809ac0cc2da.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a51d3c735cd4234e1783495",
+    "fieldName": "fssaiImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/1127c931-2c5d-4565-a076-ec3e9d35b0e2.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a57b3325b51975ce03ce8f9",
+    "fieldName": "menuImages.0",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/172decf6-e1d4-4c82-8a2d-ba05de1a21bd.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a57b3325b51975ce03ce8f9",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/3b685eba-3cba-4e6f-9d78-aeb689c8e1a6.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a57b3325b51975ce03ce8f9",
+    "fieldName": "panImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/8bc79e81-b392-4b76-9935-78e22befbafb.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a57b3325b51975ce03ce8f9",
+    "fieldName": "fssaiImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/17653220-6fe3-43cb-8366-66697f53c3b9.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5de2c6ebb45f7fe94da1da",
+    "fieldName": "menuImages.0",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/d98eb5a6-b35b-4031-ba61-1566a378682e.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5de2c6ebb45f7fe94da1da",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/9d94c860-89eb-4058-bce0-0855d6978283.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5de2c6ebb45f7fe94da1da",
+    "fieldName": "panImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/de991802-e841-4af7-8c39-780028f20173.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5de2c6ebb45f7fe94da1da",
+    "fieldName": "gstImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/de994515-bc5b-4627-a1b8-6a0fb5b38f18.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5de2c6ebb45f7fe94da1da",
+    "fieldName": "fssaiImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/68774f10-77c7-47c3-a146-b9b4e7a037ed.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5df02aebb45f7fe94daa8b",
+    "fieldName": "menuImages.0",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/e611db45-42f4-4f1f-a2e9-faef5ffe1c61.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5df02aebb45f7fe94daa8b",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/c68f2ffc-a41a-4267-948f-5c91d85410c4.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5df02aebb45f7fe94daa8b",
+    "fieldName": "panImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/76499288-13d6-402c-b170-7779f74db57c.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5df02aebb45f7fe94daa8b",
+    "fieldName": "gstImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/41a42dce-f8af-4db5-9567-abb916dfb1b4.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5df02aebb45f7fe94daa8b",
+    "fieldName": "fssaiImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/73833d82-506d-47de-9a7f-d2af980010cf.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f06bc09beb3892d168f58",
+    "fieldName": "menuImages.0",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/c923af58-eb4c-48dc-a107-c1171d0dc8f5.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f06bc09beb3892d168f58",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/b7ef32f3-17ef-4ebc-90a2-177ada4bfcf7.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f06bc09beb3892d168f58",
+    "fieldName": "panImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/8bb483a4-0a98-4b17-9d87-477c55894444.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f06bc09beb3892d168f58",
+    "fieldName": "gstImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/71ab1272-6bff-4352-bffc-b8f92fe04326.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f06bc09beb3892d168f58",
+    "fieldName": "fssaiImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/0656d27a-715d-4dad-8476-5449c9e92be2.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f076909beb3892d168fcf",
+    "fieldName": "menuImages.0",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/de07ed4a-0565-4d15-a951-5ec9bfd44c0d.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f076909beb3892d168fcf",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/a970d140-e15e-4713-9812-f041f603ba8b.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f076909beb3892d168fcf",
+    "fieldName": "panImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/6dcc8bf2-9228-423b-9392-3b54d377e396.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f076909beb3892d168fcf",
+    "fieldName": "gstImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/bcbe5c21-4b25-4aed-831d-44786656a1ab.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f076909beb3892d168fcf",
+    "fieldName": "fssaiImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/211e4d04-4802-48cf-a3a2-f4e2e5d03aba.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f080d09beb3892d168fff",
+    "fieldName": "menuImages.0",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/e9601b86-ece8-41c5-bb66-48725e07b21d.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f080d09beb3892d168fff",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/d0059847-f331-422b-96c4-a741a0d8d4bb.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f080d09beb3892d168fff",
+    "fieldName": "panImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/86dea6f0-e5cc-4f7c-bb9e-71ee7f59bfaf.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f080d09beb3892d168fff",
+    "fieldName": "gstImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/53365d63-c737-406e-a699-05e722293830.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f080d09beb3892d168fff",
+    "fieldName": "fssaiImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/2ff0d9ad-9f15-418e-9337-cc06458a16ac.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f08a309beb3892d169012",
+    "fieldName": "menuImages.0",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/d41eae5a-c4df-4366-8679-e1bbd8269890.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f08a309beb3892d169012",
+    "fieldName": "profileImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/d8cb3d49-d481-47b8-804d-0cae3e7a0354.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f08a309beb3892d169012",
+    "fieldName": "panImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/17de8c42-5113-4380-bbcb-30b63b93683b.webp"
+  },
+  {
+    "collectionName": "food_restaurants",
+    "documentId": "6a5f08a309beb3892d169012",
+    "fieldName": "fssaiImage",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/c330d4d9-0744-4d53-a7c3-09e69097a247.webp"
+  },
+  {
+    "collectionName": "food_categories",
+    "documentId": "6a574ab02ba9dbe90094b30a",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/5b1ed850-b26b-4a1f-b4bf-c7b162570365.webp"
+  },
+  {
+    "collectionName": "food_categories",
+    "documentId": "6a5de46cebb45f7fe94da3d5",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/0e213ca1-622d-4fba-b5f3-e7ec1b0e210b.webp"
+  },
+  {
+    "collectionName": "food_categories",
+    "documentId": "6a5df0caebb45f7fe94dabbf",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/cc125c00-44f6-4964-ad4d-bcf6357ba017.webp"
+  },
+  {
+    "collectionName": "food_categories",
+    "documentId": "6a5f165442528e635b179161",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/9f8d3c6d-85c2-47a1-aa00-fc50f1565657.webp"
+  },
+  {
+    "collectionName": "food_categories",
+    "documentId": "6a5f1a9842528e635b179449",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/3b99a9c7-bd6e-422c-af63-f8b39e2924a7.webp"
+  },
+  {
+    "collectionName": "food_categories",
+    "documentId": "6a5f1b0842528e635b179485",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/f8b07149-e4ec-448a-8c34-3b77dedcf797.webp"
+  },
+  {
+    "collectionName": "food_categories",
+    "documentId": "6a5f275be5f9cbc29089dff4",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/bb54e19e-9510-4562-8c2a-87b6b249a4f2.webp"
+  },
+  {
+    "collectionName": "food_categories",
+    "documentId": "6a5f2767e5f9cbc29089e003",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/56ff78ad-bb55-43aa-a0b2-7698b08bdff7.webp"
+  },
+  {
+    "collectionName": "food_categories",
+    "documentId": "6a5f34b8e5f9cbc29089e28b",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/e4a9a642-30c6-4cc2-8695-dfec29eee604.webp"
+  },
+  {
+    "collectionName": "food_addons",
+    "documentId": "6a5df376ebb45f7fe94daf08",
+    "fieldName": "draft.image",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/5a4d4773-805c-4c83-8977-425dd15caa1f.webp"
+  },
+  {
+    "collectionName": "food_addons",
+    "documentId": "6a5df376ebb45f7fe94daf08",
+    "fieldName": "draft.images.0",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/4ec1cec0-beb1-4f0e-8fc3-c8c8f15d205d.webp"
+  },
+  {
+    "collectionName": "food_addons",
+    "documentId": "6a5df376ebb45f7fe94daf08",
+    "fieldName": "published.image",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/8cf9d5df-d50e-40f5-88af-539cff01b674.webp"
+  },
+  {
+    "collectionName": "food_addons",
+    "documentId": "6a5df376ebb45f7fe94daf08",
+    "fieldName": "published.images.0",
+    "originalValue": "http://localhost:5000/images/restaurants/2026/07/ab784c10-c6ed-4d35-b473-1daa60d89d66.webp"
+  },
+  {
+    "collectionName": "food_items",
+    "documentId": "6a5717615b51975ce03cdc31",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/uploads/2026/07/b949a23e-da6a-429a-94f3-1bb98bc2e7ad.webp"
+  },
+  {
+    "collectionName": "food_items",
+    "documentId": "6a5de5aeebb45f7fe94da539",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/38db803e-c746-4254-b225-b75f7bffe23e.webp"
+  },
+  {
+    "collectionName": "food_items",
+    "documentId": "6a5de5aeebb45f7fe94da539",
+    "fieldName": "newData.image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/c346adea-098d-4b74-bc47-07b08931d496.webp"
+  },
+  {
+    "collectionName": "food_items",
+    "documentId": "6a5df324ebb45f7fe94dae75",
+    "fieldName": "image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/36a93122-6d00-4716-b78d-c7a38b6059fe.webp"
+  },
+  {
+    "collectionName": "food_items",
+    "documentId": "6a5df324ebb45f7fe94dae75",
+    "fieldName": "newData.image",
+    "originalValue": "http://localhost:5000/images/menu/2026/07/9caae9b8-5313-4f8c-a789-445ac30a02f9.webp"
+  }
+]

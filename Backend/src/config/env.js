@@ -1,6 +1,11 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const config = {
     // Basic server config
@@ -94,6 +99,6 @@ export const config = {
     emailPass: process.env.EMAIL_PASS ? String(process.env.EMAIL_PASS).replace(/\s/g, '') : '',
     emailFrom: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@example.com',
     bookingRadiusKm: Number(process.env.BOOKING_RADIUS_KM || 50),
-    storageDir: process.env.STORAGE_DIR || './uploads',
+    storageDir: process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_DIR) : path.resolve(__dirname, '../../uploads'),
     baseUrl: process.env.BASE_URL || 'http://localhost:5000'
 };

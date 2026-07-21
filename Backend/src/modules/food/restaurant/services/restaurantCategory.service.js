@@ -275,138 +275,157 @@ export async function listPublicCategories(query = {}) {
 }
 
 export async function createRestaurantCategory(restaurantId, body = {}) {
-    const context = await getRestaurantContext(restaurantId);
+    try {
+        const context = await getRestaurantContext(restaurantId);
 
-    const name = typeof body.name === 'string' ? body.name.trim() : '';
-    if (!name) throw new ValidationError('Category name is required.');
-    if (name.length > 200) throw new ValidationError('Category name is too long.');
-
-    // Duplicate check for this restaurant (case-insensitive)
-    const existing = await FoodCategory.findOne({
-        $or: [
-            { restaurantId: context.restaurantId },
-            { createdByRestaurantId: context.restaurantId }
-        ],
-        name: { $regex: new RegExp(`^${escapeRegex(name)}$`, 'i') }
-    }).lean();
-
-    if (existing) {
-        throw new ValidationError('Category already exists.');
-    }
-
-    const foodTypeScopeRaw = typeof body.foodTypeScope === 'string' ? body.foodTypeScope.trim() : '';
-    const defaultScope = context.pureVegRestaurant ? 'Veg' : 'Veg';
-    const foodTypeScope = foodTypeScopeRaw ? normalizeCategoryFoodTypeScope(foodTypeScopeRaw, defaultScope) : defaultScope;
-
-    if (context.pureVegRestaurant && foodTypeScope !== 'Veg') {
-        throw new ValidationError('Pure veg restaurants can only create veg categories');
-    }
-
-    const doc = new FoodCategory({
-        name,
-        image: typeof body.image === 'string' ? body.image.trim() : '',
-        type: typeof body.type === 'string' ? body.type.trim() : '',
-        foodTypeScope,
-        isActive: body.isActive !== false,
-        sortOrder: Number.isFinite(Number(body.sortOrder)) ? Number(body.sortOrder) : 0,
-        restaurantId: context.restaurantId,
-        createdByRestaurantId: context.restaurantId,
-        approvalStatus: 'pending',
-        isApproved: false,
-        rejectionReason: '',
-        requestedAt: new Date(),
-        highwayId: context.highwayId && mongoose.Types.ObjectId.isValid(context.highwayId)
-            ? new mongoose.Types.ObjectId(context.highwayId)
-            : undefined
-    });
-    await doc.save();
-    logger.info(`Category "${name}" created successfully for Restaurant ID ${context.restaurantId}`);
-    return serializeCategoryForResponse(doc.toObject(), { currentRestaurantId: context.restaurantId });
-}
-
-export async function updateRestaurantCategory(restaurantId, id, body = {}) {
-    const context = await getRestaurantContext(restaurantId);
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-        throw new ValidationError('Invalid category id');
-    }
-
-    const doc = await FoodCategory.findOne({ _id: id, restaurantId: context.restaurantId });
-    if (!doc) return null;
-
-    const nextFoodTypeScope = body.foodTypeScope !== undefined
-        ? normalizeCategoryFoodTypeScope(body.foodTypeScope, '')
-        : normalizeCategoryFoodTypeScope(doc.foodTypeScope, 'Both');
-    if (body.foodTypeScope !== undefined && !nextFoodTypeScope) {
-        throw new ValidationError('Invalid category diet type');
-    }
-    if (context.pureVegRestaurant && nextFoodTypeScope !== 'Veg') {
-        throw new ValidationError('Pure veg restaurants can only keep veg categories');
-    }
-
-    if (body.name !== undefined) {
-        const name = String(body.name || '').trim();
+        const name = typeof body.name === 'string' ? body.name.trim() : '';
         if (!name) throw new ValidationError('Category name is required.');
         if (name.length > 200) throw new ValidationError('Category name is too long.');
 
-        if (name.toLowerCase() !== doc.name.toLowerCase()) {
-            const existing = await FoodCategory.findOne({
-                _id: { $ne: doc._id },
-                $or: [
-                    { restaurantId: context.restaurantId },
-                    { createdByRestaurantId: context.restaurantId }
-                ],
-                name: { $regex: new RegExp(`^${escapeRegex(name)}$`, 'i') }
-            }).lean();
+        // Duplicate check for this restaurant (case-insensitive)
+        const existing = await FoodCategory.findOne({
+            $or: [
+                { restaurantId: context.restaurantId },
+                { createdByRestaurantId: context.restaurantId }
+            ],
+            name: { $regex: new RegExp(`^${escapeRegex(name)}$`, 'i') }
+        }).lean();
 
-            if (existing) {
-                throw new ValidationError('Category already exists.');
+        if (existing) {
+            throw new ValidationError('Category already exists.');
+        }
+
+        const foodTypeScopeRaw = typeof body.foodTypeScope === 'string' ? body.foodTypeScope.trim() : '';
+        const defaultScope = context.pureVegRestaurant ? 'Veg' : 'Veg';
+        const foodTypeScope = foodTypeScopeRaw ? normalizeCategoryFoodTypeScope(foodTypeScopeRaw, defaultScope) : defaultScope;
+
+        if (context.pureVegRestaurant && foodTypeScope !== 'Veg') {
+            throw new ValidationError('Pure veg restaurants can only create veg categories');
+        }
+
+        const doc = new FoodCategory({
+            name,
+            image: typeof body.image === 'string' ? body.image.trim() : '',
+            type: typeof body.type === 'string' ? body.type.trim() : '',
+            foodTypeScope,
+            isActive: body.isActive !== false,
+            sortOrder: Number.isFinite(Number(body.sortOrder)) ? Number(body.sortOrder) : 0,
+            restaurantId: context.restaurantId,
+            createdByRestaurantId: context.restaurantId,
+            approvalStatus: 'pending',
+            isApproved: false,
+            rejectionReason: '',
+            requestedAt: new Date(),
+            highwayId: context.highwayId && mongoose.Types.ObjectId.isValid(context.highwayId)
+                ? new mongoose.Types.ObjectId(context.highwayId)
+                : undefined
+        });
+        await doc.save();
+        logger.info(`Category added successfully: "${name}" (ID: ${doc._id}) for Restaurant: ${context.restaurantId}`);
+        return serializeCategoryForResponse(doc.toObject(), { currentRestaurantId: context.restaurantId });
+    } catch (error) {
+        logger.error(`Error in createRestaurantCategory: ${error.message}`);
+        throw error;
+    }
+}
+
+export async function updateRestaurantCategory(restaurantId, id, body = {}) {
+    try {
+        const context = await getRestaurantContext(restaurantId);
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            throw new ValidationError('Invalid category id');
+        }
+
+        const doc = await FoodCategory.findOne({ _id: id, restaurantId: context.restaurantId });
+        if (!doc) return null;
+
+        const nextFoodTypeScope = body.foodTypeScope !== undefined
+            ? normalizeCategoryFoodTypeScope(body.foodTypeScope, '')
+            : normalizeCategoryFoodTypeScope(doc.foodTypeScope, 'Both');
+        if (body.foodTypeScope !== undefined && !nextFoodTypeScope) {
+            throw new ValidationError('Invalid category diet type');
+        }
+        if (context.pureVegRestaurant && nextFoodTypeScope !== 'Veg') {
+            throw new ValidationError('Pure veg restaurants can only keep veg categories');
+        }
+
+        if (body.name !== undefined) {
+            const name = String(body.name || '').trim();
+            if (!name) throw new ValidationError('Category name is required.');
+            if (name.length > 200) throw new ValidationError('Category name is too long.');
+
+            if (name.toLowerCase() !== doc.name.toLowerCase()) {
+                const existing = await FoodCategory.findOne({
+                    _id: { $ne: doc._id },
+                    $or: [
+                        { restaurantId: context.restaurantId },
+                        { createdByRestaurantId: context.restaurantId }
+                    ],
+                    name: { $regex: new RegExp(`^${escapeRegex(name)}$`, 'i') }
+                }).lean();
+
+                if (existing) {
+                    throw new ValidationError('Category already exists.');
+                }
             }
+            doc.name = name;
         }
-        doc.name = name;
-    }
-    if (body.image !== undefined) doc.image = String(body.image || '').trim();
-    if (body.type !== undefined) doc.type = String(body.type || '').trim();
-    if (body.isActive !== undefined) doc.isActive = body.isActive !== false;
-    if (body.sortOrder !== undefined) doc.sortOrder = Number(body.sortOrder) || 0;
-    if (body.foodTypeScope !== undefined) {
-        const incompatibleFoods = nextFoodTypeScope === 'Both'
-            ? 0
-            : await FoodItem.countDocuments({
-                categoryId: doc._id,
-                foodType: nextFoodTypeScope === 'Veg' ? 'Non-Veg' : 'Veg'
-            });
-        if (incompatibleFoods > 0) {
-            throw new ValidationError(`This category already has ${incompatibleFoods} food item(s) outside the selected diet type`);
+        if (body.image !== undefined) doc.image = String(body.image || '').trim();
+        if (body.type !== undefined) doc.type = String(body.type || '').trim();
+        if (body.isActive !== undefined) doc.isActive = body.isActive !== false;
+        if (body.sortOrder !== undefined) doc.sortOrder = Number(body.sortOrder) || 0;
+        if (body.foodTypeScope !== undefined) {
+            const incompatibleFoods = nextFoodTypeScope === 'Both'
+                ? 0
+                : await FoodItem.countDocuments({
+                    categoryId: doc._id,
+                    foodType: nextFoodTypeScope === 'Veg' ? 'Non-Veg' : 'Veg'
+                });
+            if (incompatibleFoods > 0) {
+                throw new ValidationError(`This category already has ${incompatibleFoods} food item(s) outside the selected diet type`);
+            }
+            doc.foodTypeScope = nextFoodTypeScope;
         }
-        doc.foodTypeScope = nextFoodTypeScope;
+
+        doc.createdByRestaurantId = doc.createdByRestaurantId || context.restaurantId;
+        doc.approvalStatus = 'pending';
+        doc.isApproved = false;
+        doc.rejectionReason = '';
+        doc.requestedAt = new Date();
+        doc.approvedAt = undefined;
+        doc.rejectedAt = undefined;
+
+        await doc.save();
+        logger.info(`Category updated successfully: "${doc.name}" (ID: ${doc._id}) for Restaurant: ${context.restaurantId}`);
+        return doc.toObject();
+    } catch (error) {
+        logger.error(`Error in updateRestaurantCategory (ID: ${id}): ${error.message}`);
+        throw error;
     }
-
-    doc.createdByRestaurantId = doc.createdByRestaurantId || context.restaurantId;
-    doc.approvalStatus = 'pending';
-    doc.isApproved = false;
-    doc.rejectionReason = '';
-    doc.requestedAt = new Date();
-    doc.approvedAt = undefined;
-    doc.rejectedAt = undefined;
-
-    await doc.save();
-    return doc.toObject();
 }
 
 export async function deleteRestaurantCategory(restaurantId, id) {
-    const context = await getRestaurantContext(restaurantId);
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-        throw new ValidationError('Invalid category id');
+    try {
+        const context = await getRestaurantContext(restaurantId);
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            throw new ValidationError('Invalid category id');
+        }
+
+        const category = await FoodCategory.findOne({ _id: id, restaurantId: context.restaurantId }).select('_id name').lean();
+        if (!category?._id) return null;
+
+        const inUse = await FoodItem.countDocuments({ categoryId: id, restaurantId: context.restaurantId });
+        if (inUse > 0) {
+            throw new ValidationError('Cannot delete category while it has items');
+        }
+
+        const deleted = await FoodCategory.findOneAndDelete({ _id: id, restaurantId: context.restaurantId }).lean();
+        if (deleted) {
+            logger.info(`Category deleted successfully: "${category.name || id}" (ID: ${id}) for Restaurant: ${context.restaurantId}`);
+        }
+        return deleted ? { id } : null;
+    } catch (error) {
+        logger.error(`Error in deleteRestaurantCategory (ID: ${id}): ${error.message}`);
+        throw error;
     }
-
-    const category = await FoodCategory.findOne({ _id: id, restaurantId: context.restaurantId }).select('_id').lean();
-    if (!category?._id) return null;
-
-    const inUse = await FoodItem.countDocuments({ categoryId: id, restaurantId: context.restaurantId });
-    if (inUse > 0) {
-        throw new ValidationError('Cannot delete category while it has items');
-    }
-
-    const deleted = await FoodCategory.findOneAndDelete({ _id: id, restaurantId: context.restaurantId }).lean();
-    return deleted ? { id } : null;
 }

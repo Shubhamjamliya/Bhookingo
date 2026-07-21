@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -64,6 +65,9 @@ app.use((req, _res, next) => {
     next();
 });
 app.use(xssClean());
+
+// Serve processed images locally (useful for development)
+app.use('/images', express.static(path.resolve(config.storageDir)));
 
 // Global rate limiting for API routes
 app.use('/api', apiRateLimiter);

@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@food/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@food/components/ui/popover"
 import { getFoodDisplayPrice, getFoodVariants } from "@food/utils/foodVariants"
+import ImageWithFallback from "@food/components/ImageWithFallback"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -574,15 +575,12 @@ export default function FoodsList() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center">
-                        <img
-                          src={withImageVersion(food.image)}
+                        <ImageWithFallback
+                          src={food.image}
+                          fallbackSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect fill='%23e2e8f0' width='40' height='40'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='12' font-family='sans-serif'%3E?%3C/text%3E%3C/svg%3E"
                           alt={food.name}
                           className="w-full h-full object-cover"
-                          key={`${food.id}-${imageVersion}`}
                           loading="lazy"
-                          onError={(e) => {
-                            e.target.src = "https://via.placeholder.com/40"
-                          }}
                         />
                       </div>
                     </td>
@@ -698,13 +696,11 @@ export default function FoodsList() {
           {selectedFood && (
             <div className="p-6 space-y-5">
               <div className="flex items-center gap-4">
-                <img
-                          src={withImageVersion(selectedFood.image)}
-                          alt={selectedFood.name}
-                          className="w-20 h-20 rounded-xl object-cover border border-slate-200"
-                  onError={(e) => {
-                    e.target.src = "https://via.placeholder.com/64"
-                  }}
+                <ImageWithFallback
+                  src={selectedFood.image}
+                  fallbackSrc="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Crect fill='%23e2e8f0' width='128' height='128'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='32' font-family='sans-serif'%3E?%3C/text%3E%3C/svg%3E"
+                  alt={selectedFood.name}
+                  className="w-20 h-20 rounded-xl object-cover border border-slate-200"
                 />
                 <div>
                   <p className="text-lg font-semibold text-slate-900">{selectedFood.name}</p>

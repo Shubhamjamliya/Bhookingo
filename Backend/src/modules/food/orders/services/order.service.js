@@ -155,6 +155,21 @@ export async function createOrder(userId, dto) {
 
   const orderType = String(dto.orderType || (dto.address ? "DELIVERY" : "TAKEAWAY")).toUpperCase();
 
+  let distanceKm = null;
+  const restLat = restaurant.location?.coordinates?.[1] ?? restaurant.location?.latitude;
+  const restLng = restaurant.location?.coordinates?.[0] ?? restaurant.location?.longitude;
+
+  if (restLat !== undefined && restLng !== undefined) {
+    if (orderType === "DELIVERY" && dto.address?.location?.coordinates?.length === 2) {
+      const [dLng, dLat] = dto.address.location.coordinates;
+      const d = haversineKm(restLat, restLng, dLat, dLng);
+      distanceKm = Number.isFinite(d) ? d : null;
+    } else if (dto.userLocation?.latitude != null && dto.userLocation?.longitude != null) {
+      const d = haversineKm(restLat, restLng, dto.userLocation.latitude, dto.userLocation.longitude);
+      distanceKm = Number.isFinite(d) ? d : null;
+    }
+  }
+
   validateBookingDistance(
     orderType === "DELIVERY" ? { address: dto.address } : dto.userLocation,
     restaurant.location,

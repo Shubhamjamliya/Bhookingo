@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import { Upload, Trash2, Image as ImageIcon, Loader2, AlertCircle, CheckCircle2, ArrowUp, ArrowDown, Layout, Tag, UtensilsCrossed, ChefHat, Megaphone, Search } from "lucide-react"
 import api from "@food/api"
 import { adminAPI } from "@food/api"
@@ -8,10 +8,81 @@ import { Label } from "@food/components/ui/label"
 import { Button } from "@food/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@food/components/ui/dialog"
 import { Checkbox } from "@food/components/ui/checkbox"
+import ImageWithFallback from "@food/components/ImageWithFallback"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
+
+const RestaurantListItemRow = React.memo(({ restaurant, isSelected, toggleRestaurantSelection }) => {
+  const [hasError, setHasError] = useState(false);
+  const profileImageUrl = restaurant.profileImage?.url || restaurant.profileImage || null;
+
+  return (
+    <div
+      className={`px-6 py-4 transition-all cursor-pointer ${isSelected
+        ? 'bg-blue-50 border-l-4 border-l-blue-500'
+        : 'hover:bg-slate-50'
+        }`}
+      onClick={() => toggleRestaurantSelection(restaurant._id)}
+    >
+      <div className="flex items-center gap-4">
+        <div className="flex-shrink-0">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => toggleRestaurantSelection(restaurant._id)}
+            onClick={(e) => e.stopPropagation()}
+            className="w-5 h-5"
+          />
+        </div>
+
+        {/* Restaurant Image */}
+        <div className="flex-shrink-0">
+          {profileImageUrl && !hasError ? (
+            <img
+              src={profileImageUrl}
+              alt={restaurant.name}
+              className="w-16 h-16 rounded-xl object-cover border-2 border-slate-200"
+              onError={() => setHasError(true)}
+            />
+          ) : (
+            <div
+              className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg"
+            >
+              {restaurant.name?.charAt(0)?.toUpperCase() || 'R'}
+            </div>
+          )}
+        </div>
+
+        {/* Restaurant Info */}
+        <div className="flex-1 min-w-0">
+          <h3 className={`font-semibold text-base mb-1 ${isSelected ? 'text-blue-900' : 'text-slate-900'
+            }`}>
+            {restaurant.name || 'Unnamed Restaurant'}
+          </h3>
+          <p className="text-sm text-slate-500 truncate">
+            ID: {restaurant.restaurantId || restaurant._id}
+          </p>
+          {restaurant.rating && (
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-xs text-slate-400">★</span>
+              <span className="text-xs text-slate-600">{restaurant.rating}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Selected Indicator */}
+        {isSelected && (
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
 
 export default function LandingPageManagement() {
   const [activeTab, setActiveTab] = useState('banners')
@@ -2103,79 +2174,14 @@ export default function LandingPageManagement() {
                   </div>
                 ) : (
                   <div className="divide-y divide-slate-100">
-                    {filteredRestaurantsForModal.map((restaurant) => {
-                      const isSelected = selectedRestaurantIds.includes(restaurant._id)
-                      const profileImageUrl = restaurant.profileImage?.url || restaurant.profileImage || null
-
-                      return (
-                        <div
-                          key={restaurant._id}
-                          className={`px-6 py-4 transition-all cursor-pointer ${isSelected
-                            ? 'bg-blue-50 border-l-4 border-l-blue-500'
-                            : 'hover:bg-slate-50'
-                            }`}
-                          onClick={() => toggleRestaurantSelection(restaurant._id)}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="flex-shrink-0">
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={() => toggleRestaurantSelection(restaurant._id)}
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-5 h-5"
-                              />
-                            </div>
-
-                            {/* Restaurant Image */}
-                            <div className="flex-shrink-0">
-                              {profileImageUrl ? (
-                                <img
-                                  src={profileImageUrl}
-                                  alt={restaurant.name}
-                                  className="w-16 h-16 rounded-xl object-cover border-2 border-slate-200"
-                                  onError={(e) => {
-                                    e.target.style.display = 'none'
-                                    e.target.nextSibling.style.display = 'flex'
-                                  }}
-                                />
-                              ) : null}
-                              <div
-                                className={`w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg ${profileImageUrl ? 'hidden' : 'flex'
-                                  }`}
-                              >
-                                {restaurant.name?.charAt(0)?.toUpperCase() || 'R'}
-                              </div>
-                            </div>
-
-                            {/* Restaurant Info */}
-                            <div className="flex-1 min-w-0">
-                              <h3 className={`font-semibold text-base mb-1 ${isSelected ? 'text-blue-900' : 'text-slate-900'
-                                }`}>
-                                {restaurant.name || 'Unnamed Restaurant'}
-                              </h3>
-                              <p className="text-sm text-slate-500 truncate">
-                                ID: {restaurant.restaurantId || restaurant._id}
-                              </p>
-                              {restaurant.rating && (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <span className="text-xs text-slate-400">?</span>
-                                  <span className="text-xs text-slate-600">{restaurant.rating}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Selected Indicator */}
-                            {isSelected && (
-                              <div className="flex-shrink-0">
-                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                                  <CheckCircle2 className="w-5 h-5 text-white" />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
+                    {filteredRestaurantsForModal.map((restaurant) => (
+                      <RestaurantListItemRow
+                        key={restaurant._id}
+                        restaurant={restaurant}
+                        isSelected={selectedRestaurantIds.includes(restaurant._id)}
+                        toggleRestaurantSelection={toggleRestaurantSelection}
+                      />
+                    ))}
                   </div>
                 )}
               </div>

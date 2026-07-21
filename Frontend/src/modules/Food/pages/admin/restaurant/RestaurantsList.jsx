@@ -8,6 +8,7 @@ import { exportRestaurantsToPDF } from "@food/components/admin/restaurants/resta
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { getCurrentUser } from "@food/utils/auth"
 import { hasModulePermission } from "@food/utils/permissions"
+import ImageWithFallback from "@food/components/ImageWithFallback"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -1220,14 +1221,12 @@ export default function RestaurantsList() {
                               className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center shrink-0 cursor-pointer hover:opacity-80 transition-all border border-slate-100"
                               onClick={() => handleViewDetails(restaurant)}
                             >
-                              <img
-                                src={restaurant.logo}
-                                alt={restaurant.name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.src = PLACEHOLDER_40
-                                }}
-                              />
+                              <ImageWithFallback
+                                 src={restaurant.logo}
+                                 fallbackSrc={PLACEHOLDER_40}
+                                 alt={restaurant.name}
+                                 className="w-full h-full object-cover"
+                               />
                             </div>
                             <div className="flex flex-col">
                               <span 
@@ -1732,13 +1731,11 @@ export default function RestaurantsList() {
                   {/* Restaurant Basic Info */}
                   <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
                     <div className="w-32 h-32 rounded-3xl overflow-hidden bg-slate-50 shrink-0 shadow-inner group">
-                      <img
-                        src={profileImgUrl || PLACEHOLDER_128}
+                      <ImageWithFallback
+                        src={profileImgUrl}
+                        fallbackSrc={PLACEHOLDER_128}
                         alt={r?.restaurantName || r?.name || "Restaurant"}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        onError={(e) => {
-                          e.target.src = PLACEHOLDER_128
-                        }}
                       />
                     </div>
                     <div className="flex-1 text-center md:text-left pt-2">
@@ -2347,13 +2344,11 @@ export default function RestaurantsList() {
                               rel="noopener noreferrer"
                               className="inline-block"
                             >
-                              <img
+                              <ImageWithFallback
                                 src={r.onboarding.step2.profileImageUrl.url}
+                                fallbackSrc={PLACEHOLDER_128}
                                 alt="Profile"
                                 className="w-32 h-32 rounded-lg object-cover border border-slate-200 hover:border-blue-500 transition-colors"
-                                onError={(e) => {
-                                  e.target.src = PLACEHOLDER_128
-                                }}
                               />
                             </a>
                           </div>

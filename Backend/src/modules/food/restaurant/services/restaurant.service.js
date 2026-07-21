@@ -1823,15 +1823,25 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
         return { restaurants: [], total: 0, hasMore: false, page, limit };
     }
 
-    const restaurantIds = uniqueRestaurantsInZone.map(r => r._id);
-
-    // 2. Fetch only the eligible food items for these specific restaurants
-    const eligibleItems = await FoodItem.find({
+    const itemFilter = {
         restaurantId: { $in: restaurantIds },
         price: { $lte: priceLimit },
         isAvailable: true,
         approvalStatus: 'approved'
-    }).select('restaurantId name price image foodType description isVeg isRecommended').lean();
+    };
+
+    if (query.isVeg === 'true' || query.isVeg === true) {
+        itemFilter.$or = [
+            { isVeg: true },
+            { foodType: 'Veg' },
+            { foodType: { $regex: /^veg$/i } }
+        ];
+    }
+
+    // 2. Fetch only the eligible food items for these specific restaurants
+    const eligibleItems = await FoodItem.find(itemFilter)
+        .select('restaurantId name price image foodType description isVeg isRecommended')
+        .lean();
 
     if (eligibleItems.length === 0) {
         return { restaurants: [], total: 0, hasMore: false, page, limit };

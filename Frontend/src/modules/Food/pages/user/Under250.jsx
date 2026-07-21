@@ -24,6 +24,7 @@ import { restaurantAPI, adminAPI } from "@food/api"
 import { isModuleAuthenticated } from "@food/utils/auth"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
 import { calculateDistance, formatDistance, checkRestaurantBookingEligibility } from "@food/utils/common"
+import { shouldShowRestaurantInVegMode, filterVegItems, isVegItem } from "@food/utils/vegUtils"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
@@ -97,6 +98,7 @@ export default function Under250() {
 
   const navigate = useNavigate()
   const { addToCart, updateQuantity, removeFromCart, getCartItem, cart } = useCart()
+  const { vegMode, vegModeOption } = useProfile()
   const [activeCategory, setActiveCategory] = useState(initialFiltersRef.current.activeCategory)
   const [showSortPopup, setShowSortPopup] = useState(false)
   const [selectedSort, setSelectedSort] = useState(initialFiltersRef.current.selectedSort)
@@ -175,6 +177,17 @@ export default function Under250() {
   const sortedAndFilteredRestaurants = useMemo(() => {
     let filtered = under250Restaurants.map(r => ({ ...r, menuItems: [...(r.menuItems || [])] }))
 
+    // Apply Veg Mode filtering
+    if (vegMode) {
+      filtered = filtered
+        .filter(r => shouldShowRestaurantInVegMode(r, vegMode, vegModeOption))
+        .map(restaurant => {
+          const vegDishes = filterVegItems(restaurant.menuItems || [])
+          return vegDishes.length > 0 ? { ...restaurant, menuItems: vegDishes } : null
+        })
+        .filter(Boolean)
+    }
+
     // Apply category filter
     if (activeCategory) {
       const selectedCat = categories.find(cat => cat.id === activeCategory)
@@ -230,7 +243,7 @@ export default function Under250() {
     }
 
     return filtered
-  }, [under250Restaurants, selectedSort, under30MinsFilter, activeCategory, categories])
+  }, [under250Restaurants, selectedSort, under30MinsFilter, activeCategory, categories, vegMode, vegModeOption])
 
   // Fetch under-50 banner from public API
   useEffect(() => {
@@ -367,7 +380,8 @@ export default function Under250() {
         const response = await restaurantAPI.getRestaurantsUnder250({
           lat: location?.latitude || 22.7196,
           lng: location?.longitude || 75.8577,
-          radiusKm: 50
+          radiusKm: 50,
+          isVeg: vegMode ? 'true' : 'false'
         })
         
         if (cancelled) return;
@@ -442,7 +456,7 @@ export default function Under250() {
 
     fetchRestaurantsUnder250()
     return () => { cancelled = true; };
-  }, [zoneId, isOutOfService, location?.latitude, location?.longitude, under250PriceLimit])
+  }, [zoneId, isOutOfService, location?.latitude, location?.longitude, under250PriceLimit, vegMode])
 
   // Fetch categories from backend (no static fallback list)
   useEffect(() => {

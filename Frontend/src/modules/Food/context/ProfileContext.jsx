@@ -87,6 +87,18 @@ export function ProfileProvider({ children }) {
     return saved !== null ? saved === "true" : false
   })
 
+  // VegModeOption state ("all" vs "pure-veg") - stored in localStorage
+  const [vegModeOption, _setVegModeOption] = useState(() => {
+    const saved = localStorage.getItem("userVegModeOption")
+    return saved === "pure-veg" ? "pure-veg" : "all"
+  })
+
+  const setVegModeOption = (option) => {
+    const nextOption = option === "pure-veg" ? "pure-veg" : "all"
+    localStorage.setItem("userVegModeOption", nextOption)
+    _setVegModeOption(nextOption)
+  }
+
   // orderType state - stored in localStorage for persistence
   const [orderType, _setOrderType] = useState(() => {
     return "takeaway"
@@ -129,10 +141,9 @@ export function ProfileProvider({ children }) {
   }, [dishFavorites, isAuthenticated])
 
   useEffect(() => {
-    if (isAuthenticated) {
-      localStorage.setItem("userVegMode", vegMode.toString())
-    }
-  }, [vegMode, isAuthenticated])
+    localStorage.setItem("userVegMode", vegMode.toString())
+    localStorage.setItem("userVegModeOption", vegModeOption)
+  }, [vegMode, vegModeOption])
 
   // Wrap setOrderType to SYNCHRONOUSLY save to localStorage before React re-render
   const setOrderType = (newType) => {
@@ -529,6 +540,8 @@ export function ProfileProvider({ children }) {
       favorites,
       vegMode,
       setVegMode,
+      vegModeOption,
+      setVegModeOption,
       orderType,
       setOrderType,
       addAddress,
@@ -564,6 +577,8 @@ export function ProfileProvider({ children }) {
       dishFavorites,
       vegMode,
       setVegMode,
+      vegModeOption,
+      setVegModeOption,
       orderType,
       setOrderType,
       addAddress,

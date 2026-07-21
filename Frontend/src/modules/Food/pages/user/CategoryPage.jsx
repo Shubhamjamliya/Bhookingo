@@ -11,6 +11,8 @@ import {
   LoadingSkeletonRegion,
   RestaurantGridSkeleton,
 } from "@food/components/ui/loading-skeletons"
+import { useProfile } from "@food/context/ProfileContext"
+import { shouldShowRestaurantInVegMode, isVegItem } from "@food/utils/vegUtils"
 
 // Import shared food images - prevents duplication
 import { foodImages } from "@food/constants/images"
@@ -442,8 +444,21 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
 
   const matchesOfferText = (value, pattern) => pattern.test(String(value || ""))
 
+  const { vegMode, vegModeOption } = useProfile()
+
   const applyFiltersAndSorting = (rows) => {
     let nextRows = Array.isArray(rows) ? [...rows] : []
+
+    if (vegMode) {
+      nextRows = nextRows.filter((row) => {
+        const restMatch = shouldShowRestaurantInVegMode(row, vegMode, vegModeOption)
+        if (!restMatch) return false
+        if (row.categoryDish) {
+          return isVegItem(row.categoryDish)
+        }
+        return true
+      })
+    }
 
 
 

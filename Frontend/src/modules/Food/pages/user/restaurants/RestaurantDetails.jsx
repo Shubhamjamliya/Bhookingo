@@ -45,6 +45,7 @@ import { useCart } from "@food/context/CartContext"
 import { useProfile } from "@food/context/ProfileContext"
 import AddToCartAnimation from "@food/components/user/AddToCartAnimation"
 import { checkRestaurantBookingEligibility, calculateDistance, getRestaurantDistanceKm, BOOKING_RADIUS_KM } from "@food/utils/common"
+import { isVegItem, filterVegItems, filterMenuSections } from "@food/utils/vegUtils"
 import { getCompanyNameAsync } from "@food/utils/businessSettings"
 import { isModuleAuthenticated } from "@food/utils/auth"
 import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
@@ -104,7 +105,7 @@ function RestaurantDetailsContent() {
   const showOnlyUnder250 = searchParams.get('under250') === 'true'
   const targetDishId = useMemo(() => String(searchParams.get('dish') || '').trim(), [searchParams])
   const { addToCart, updateQuantity, removeFromCart, getCartItem, cart, itemCount } = useCart()
-  const { vegMode, addDishFavorite, removeDishFavorite, isDishFavorite, getDishFavorites, getFavorites, addFavorite, removeFavorite, isFavorite } = useProfile()
+  const { vegMode, vegModeOption, addDishFavorite, removeDishFavorite, isDishFavorite, getDishFavorites, getFavorites, addFavorite, removeFavorite, isFavorite } = useProfile()
   const { location: userLocation } = useLocation() // Get user's current location
   const { zoneId, zone, loading: loadingZone, isOutOfService } = useZone(userLocation) // Get user's zone for zone-based filtering
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -767,21 +768,29 @@ function RestaurantDetailsContent() {
                 const normalizeItem = (item = {}) => {
                    const isRecommended = item.isRecommended === true || item.isRecommended === 1 || String(item.isRecommended) === "true"
                    const isSpicy = item.isSpicy === true || item.isSpicy === 1 || String(item.isSpicy) === "true"
-                   let foodType = item.foodType || "Non-Veg"
-                   if (typeof foodType === 'string') {
+                   
+                   let foodType = item.foodType
+                   if (!foodType) {
+                     if (typeof item.isVeg === 'boolean') {
+                       foodType = item.isVeg ? 'Veg' : 'Non-Veg'
+                     } else if (typeof item.is_veg === 'boolean') {
+                       foodType = item.is_veg ? 'Veg' : 'Non-Veg'
+                     } else {
+                       foodType = 'Non-Veg'
+                     }
+                   } else if (typeof foodType === 'string') {
                      if (foodType.toLowerCase() === 'veg') foodType = 'Veg'
                      else if (foodType.toLowerCase() === 'non-veg' || foodType.toLowerCase() === 'nonveg') foodType = 'Non-Veg'
                    }
                    
-                   // Derive isVeg strictly from foodType
-                   const isVeg = foodType === 'Veg'
+                   const isVeg = isVegItem({ ...item, foodType })
 
                    return {
                      ...item,
                       id: String(item.id || item._id || `${Date.now()}-${Math.random()}`),
                       name: item.name || "Unnamed Item",
                       foodType,
-                      isVeg, // Explicitly set isVeg
+                      isVeg,
                       price: getFoodDisplayPrice(item),
                       variants: getFoodVariants(item),
                       variations: getFoodVariants(item),
@@ -1309,6 +1318,202 @@ function RestaurantDetailsContent() {
     return firstSubsectionImage || ""
   }
 
+  // Helper function to calculate final price after discount
+  const getFinalPrice = (item) => {
+    // If discount exists, calculate from originalPrice, otherwise use price directly
+    if (item.originalPrice && item.discountAmount && item.discountAmount > 0) {
+      // Calculate discounted price from originalPrice
+      let discountedPrice = item.originalPrice;
+      if (item.discountType === 'Percent') {
+        discountedPrice = item.originalPrice - (item.originalPrice * item.discountAmount / 100);
+      } else if (item.discountType === 'Fixed') {
+        discountedPrice = item.originalPrice - item.discountAmount;
+      }
+      return Math.max(0, discountedPrice);
+    }
+    // Otherwise, use price as the final price
+    return Math.max(0, item.price || 0);
+  };
+
+  // Filter menu items based on active filters
+  const filterMenuItems = (items) => {
+    if (!items) return items
+
+    return items.filter((item) => {
+      // Under 250 filter (when coming from Under 250 page)
+      if (showOnlyUnder250) {
+        const finalPrice = getFinalPrice(item);
+        if (finalPrice > 250) return false;
+      }
+
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim()
+        const itemName = item.name?.toLowerCase() || ""
+        if (!itemName.includes(query)) return false
+      }
+
+      // VegMode filter - when vegMode is ON, show only Veg items
+      // When vegMode is false/null/undefined, show all items (Veg and Non-Veg)
+      if (vegMode === true) {
+        if (vegModeOption === "pure-veg" && restaurant?.pureVegRestaurant !== true) {
+          return false
+        }
+        if (!isVegItem(item)) return false
+      }
+
+      // Veg/Non-veg filter (local filter override)
+      if (filters.vegNonVeg === "veg") {
+        // Show only veg items
+        if (!isVegItem(item)) return false
+      }
+      if (filters.vegNonVeg === "non-veg") {
+        // Show only non-veg items
+        if (isVegItem(item)) return false
+      }
+
+      if (filters.highlyReordered && !isRecommendedItem(item)) return false
+      if (filters.spicy && item.isSpicy !== true) return false
+
+      return true
+    })
+  }
+
+  // Sort items based on sortBy filter
+  const sortMenuItems = (items) => {
+    if (!items) return items
+    if (!filters.sortBy) return items
+
+    const sorted = [...items]
+    if (filters.sortBy === "low-to-high") {
+      return sorted.sort((a, b) => getFinalPrice(a) - getFinalPrice(b))
+    } else if (filters.sortBy === "high-to-low") {
+      return sorted.sort((a, b) => getFinalPrice(b) - getFinalPrice(a))
+    }
+    return sorted
+  }
+
+  const getSectionSortValue = (section) => {
+    const allItems = [
+      ...toRenderableArray(section?.items),
+      ...toRenderableArray(section?.subsections).flatMap((subsection) => toRenderableArray(subsection?.items)),
+    ]
+
+    if (allItems.length === 0) return null
+
+    const prices = allItems
+      .map((item) => getFinalPrice(item))
+      .filter((price) => Number.isFinite(price))
+
+    if (prices.length === 0) return null
+
+    if (filters.sortBy === "low-to-high") {
+      return Math.min(...prices)
+    }
+
+    if (filters.sortBy === "high-to-low") {
+      return Math.max(...prices)
+    }
+
+    return null
+  }
+
+  // Helper function to check if a section has any items under Rs 250
+  const sectionHasItemsUnder250 = (section) => {
+    if (!showOnlyUnder250) return true; // If not filtering, show all sections
+
+    // Check direct items
+    if (section.items && section.items.length > 0) {
+      const hasUnder250Items = section.items.some(item => {
+        if (item.isAvailable === false) return false;
+        const finalPrice = getFinalPrice(item);
+        return finalPrice <= 250;
+      });
+      if (hasUnder250Items) return true;
+    }
+
+    // Check subsection items
+    if (section.subsections && section.subsections.length > 0) {
+      for (const subsection of section.subsections) {
+        if (subsection.items && subsection.items.length > 0) {
+          const hasUnder250Items = subsection.items.some(item => {
+            if (item.isAvailable === false) return false;
+            const finalPrice = getFinalPrice(item);
+            return finalPrice <= 250;
+          });
+          if (hasUnder250Items) return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // Build renderable sections from the current filter state so section/subsection visibility
+  // stays in sync with the actual filtered items shown on screen.
+  const getFilteredSections = () => {
+    if (!restaurant?.menuSections) return []
+
+    const visibleSections = restaurant.menuSections
+      .map((section, index) => {
+        const filteredItems = sortMenuItems(
+          filterMenuItems(
+            toRenderableArray(section?.items).filter((item) => item?.isAvailable !== false)
+          )
+        )
+
+        const filteredSubsections = toRenderableArray(section?.subsections)
+          .map((subsection) => ({
+            ...subsection,
+            items: sortMenuItems(
+              filterMenuItems(
+                toRenderableArray(subsection?.items).filter((item) => item?.isAvailable !== false)
+              )
+            ),
+          }))
+          .filter((subsection) => subsection.items.length > 0)
+
+        return {
+          section: {
+            ...section,
+            items: filteredItems,
+            subsections: filteredSubsections,
+          },
+          originalIndex: index,
+        }
+      })
+      .filter(({ section }) => {
+        if (selectedMenuCategory !== "all") {
+          if (isRecommendedSection(section)) return false
+          const sectionCategoryId = normalizeMenuCategoryId(section?.categoryId || getSectionDisplayName(section))
+          if (sectionCategoryId !== selectedMenuCategory) {
+            return false
+          }
+        }
+
+        const hasVisibleItems = toRenderableArray(section?.items).length > 0
+        const hasVisibleSubsections = toRenderableArray(section?.subsections).length > 0
+        return hasVisibleItems || hasVisibleSubsections
+      })
+
+    if (!filters.sortBy) {
+      return visibleSections
+    }
+
+    return [...visibleSections].sort((left, right) => {
+      const leftValue = getSectionSortValue(left.section)
+      const rightValue = getSectionSortValue(right.section)
+
+      if (leftValue == null && rightValue == null) return 0
+      if (leftValue == null) return 1
+      if (rightValue == null) return -1
+
+      return filters.sortBy === "low-to-high"
+        ? leftValue - rightValue
+        : rightValue - leftValue
+    })
+  }
+
   // Menu categories - dynamically generated from restaurant menu sections
   const menuCategories = useMemo(() => {
     if (!restaurant?.menuSections || !Array.isArray(restaurant.menuSections)) return []
@@ -1318,11 +1523,13 @@ function RestaurantDetailsContent() {
         if (isRecommendedSection(section)) return null
 
         const sectionTitle = getSectionDisplayName(section)
-        const itemCount = Array.isArray(section?.items) ? section.items.length : 0
-        const subsectionCount = Array.isArray(section?.subsections)
-          ? section.subsections.reduce((sum, sub) => sum + (Array.isArray(sub?.items) ? sub.items.length : 0), 0)
-          : 0
-        const totalCount = itemCount + subsectionCount
+        const validSectionItems = filterMenuItems(toRenderableArray(section?.items).filter((item) => item?.isAvailable !== false))
+        const validSubsectionsCount = toRenderableArray(section?.subsections).reduce((sum, sub) => {
+          const validSubItems = filterMenuItems(toRenderableArray(sub?.items).filter((item) => item?.isAvailable !== false))
+          return sum + validSubItems.length
+        }, 0)
+
+        const totalCount = validSectionItems.length + validSubsectionsCount
 
         if (totalCount <= 0) return null
 
@@ -1335,7 +1542,7 @@ function RestaurantDetailsContent() {
         }
       })
       .filter(Boolean)
-  }, [restaurant?.menuSections])
+  }, [restaurant?.menuSections, vegMode, vegModeOption, filters, searchQuery, showOnlyUnder250])
 
   // Count active filters
   const getActiveFilterCount = () => {
@@ -1604,198 +1811,7 @@ function RestaurantDetailsContent() {
     setShowItemDetail(true)
   }
 
-  // Helper function to calculate final price after discount
-  const getFinalPrice = (item) => {
-    // If discount exists, calculate from originalPrice, otherwise use price directly
-    if (item.originalPrice && item.discountAmount && item.discountAmount > 0) {
-      // Calculate discounted price from originalPrice
-      let discountedPrice = item.originalPrice;
-      if (item.discountType === 'Percent') {
-        discountedPrice = item.originalPrice - (item.originalPrice * item.discountAmount / 100);
-      } else if (item.discountType === 'Fixed') {
-        discountedPrice = item.originalPrice - item.discountAmount;
-      }
-      return Math.max(0, discountedPrice);
-    }
-    // Otherwise, use price as the final price
-    return Math.max(0, item.price || 0);
-  };
 
-  // Filter menu items based on active filters
-  const filterMenuItems = (items) => {
-    if (!items) return items
-
-    return items.filter((item) => {
-      // Under 250 filter (when coming from Under 250 page)
-      if (showOnlyUnder250) {
-        const finalPrice = getFinalPrice(item);
-        if (finalPrice > 250) return false;
-      }
-
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim()
-        const itemName = item.name?.toLowerCase() || ""
-        if (!itemName.includes(query)) return false
-      }
-
-      // VegMode filter - when vegMode is ON, show only Veg items
-      // When vegMode is false/null/undefined, show all items (Veg and Non-Veg)
-      if (vegMode === true) {
-        if (item.foodType !== "Veg") return false
-      }
-
-      // Veg/Non-veg filter (local filter override)
-      if (filters.vegNonVeg === "veg") {
-        // Show only veg items
-        if (item.foodType !== "Veg") return false
-      }
-      if (filters.vegNonVeg === "non-veg") {
-        // Show only non-veg items
-        if (item.foodType !== "Non-Veg") return false
-      }
-
-      if (filters.highlyReordered && !isRecommendedItem(item)) return false
-      if (filters.spicy && item.isSpicy !== true) return false
-
-      return true
-    })
-  }
-
-  // Sort items based on sortBy filter
-  const sortMenuItems = (items) => {
-    if (!items) return items
-    if (!filters.sortBy) return items
-
-    const sorted = [...items]
-    if (filters.sortBy === "low-to-high") {
-      return sorted.sort((a, b) => getFinalPrice(a) - getFinalPrice(b))
-    } else if (filters.sortBy === "high-to-low") {
-      return sorted.sort((a, b) => getFinalPrice(b) - getFinalPrice(a))
-    }
-    return sorted
-  }
-
-  const getSectionSortValue = (section) => {
-    const allItems = [
-      ...toRenderableArray(section?.items),
-      ...toRenderableArray(section?.subsections).flatMap((subsection) => toRenderableArray(subsection?.items)),
-    ]
-
-    if (allItems.length === 0) return null
-
-    const prices = allItems
-      .map((item) => getFinalPrice(item))
-      .filter((price) => Number.isFinite(price))
-
-    if (prices.length === 0) return null
-
-    if (filters.sortBy === "low-to-high") {
-      return Math.min(...prices)
-    }
-
-    if (filters.sortBy === "high-to-low") {
-      return Math.max(...prices)
-    }
-
-    return null
-  }
-
-  // Helper function to check if a section has any items under Rs 250
-  const sectionHasItemsUnder250 = (section) => {
-    if (!showOnlyUnder250) return true; // If not filtering, show all sections
-
-    // Check direct items
-    if (section.items && section.items.length > 0) {
-      const hasUnder250Items = section.items.some(item => {
-        if (item.isAvailable === false) return false;
-        const finalPrice = getFinalPrice(item);
-        return finalPrice <= 250;
-      });
-      if (hasUnder250Items) return true;
-    }
-
-    // Check subsection items
-    if (section.subsections && section.subsections.length > 0) {
-      for (const subsection of section.subsections) {
-        if (subsection.items && subsection.items.length > 0) {
-          const hasUnder250Items = subsection.items.some(item => {
-            if (item.isAvailable === false) return false;
-            const finalPrice = getFinalPrice(item);
-            return finalPrice <= 250;
-          });
-          if (hasUnder250Items) return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  // Build renderable sections from the current filter state so section/subsection visibility
-  // stays in sync with the actual filtered items shown on screen.
-  const getFilteredSections = () => {
-    if (!restaurant?.menuSections) return []
-
-    const visibleSections = restaurant.menuSections
-      .map((section, index) => {
-        const filteredItems = sortMenuItems(
-          filterMenuItems(
-            toRenderableArray(section?.items).filter((item) => item?.isAvailable !== false)
-          )
-        )
-
-        const filteredSubsections = toRenderableArray(section?.subsections)
-          .map((subsection) => ({
-            ...subsection,
-            items: sortMenuItems(
-              filterMenuItems(
-                toRenderableArray(subsection?.items).filter((item) => item?.isAvailable !== false)
-              )
-            ),
-          }))
-          .filter((subsection) => subsection.items.length > 0)
-
-        return {
-          section: {
-            ...section,
-            items: filteredItems,
-            subsections: filteredSubsections,
-          },
-          originalIndex: index,
-        }
-      })
-      .filter(({ section }) => {
-        if (selectedMenuCategory !== "all") {
-          if (isRecommendedSection(section)) return false
-          const sectionCategoryId = normalizeMenuCategoryId(section?.categoryId || getSectionDisplayName(section))
-          if (sectionCategoryId !== selectedMenuCategory) {
-            return false
-          }
-        }
-
-        const hasVisibleItems = toRenderableArray(section?.items).length > 0
-        const hasVisibleSubsections = toRenderableArray(section?.subsections).length > 0
-        return hasVisibleItems || hasVisibleSubsections
-      })
-
-    if (!filters.sortBy) {
-      return visibleSections
-    }
-
-    return [...visibleSections].sort((left, right) => {
-      const leftValue = getSectionSortValue(left.section)
-      const rightValue = getSectionSortValue(right.section)
-
-      if (leftValue == null && rightValue == null) return 0
-      if (leftValue == null) return 1
-      if (rightValue == null) return -1
-
-      return filters.sortBy === "low-to-high"
-        ? leftValue - rightValue
-        : rightValue - leftValue
-    })
-  }
 
   const hasActiveMenuFilters = Boolean(
     showOnlyUnder250 ||
@@ -1809,7 +1825,7 @@ function RestaurantDetailsContent() {
 
   const filteredSections = useMemo(
     () => getFilteredSections(),
-    [restaurant?.menuSections, showOnlyUnder250, searchQuery, vegMode, filters, selectedMenuCategory]
+    [restaurant?.menuSections, restaurant?.pureVegRestaurant, showOnlyUnder250, searchQuery, vegMode, vegModeOption, filters, selectedMenuCategory]
   )
 
   useEffect(() => {

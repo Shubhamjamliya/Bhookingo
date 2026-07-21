@@ -74,6 +74,8 @@ import {
 } from "@food/components/user/UserLayout";
 import PageNavbar from "@food/components/user/PageNavbar";
 
+import { shouldShowRestaurantInVegMode, filterVegItems } from "@food/utils/vegUtils";
+
 const debugLog = (...args) => { };
 const debugWarn = (...args) => { };
 const debugError = (...args) => { };
@@ -449,7 +451,7 @@ export default function Home() {
   const { openSearch, closeSearch, searchValue, setSearchValue } =
     useSearchOverlay();
   const { openLocationSelector } = useLocationSelector();
-  const { userProfile, vegMode, setVegMode: setVegModeContext, orderType, setOrderType } = useProfile();
+  const { userProfile, vegMode, setVegMode: setVegModeContext, vegModeOption, setVegModeOption, orderType, setOrderType } = useProfile();
   const routerLocation = useRouterLocation();
   const isTakeawayPage = routerLocation.pathname === "/food/takeaway" ||
     routerLocation.pathname.startsWith("/food/takeaway/") ||
@@ -477,7 +479,6 @@ export default function Home() {
   const [prevVegMode, setPrevVegMode] = useState(vegMode);
   const [showVegModePopup, setShowVegModePopup] = useState(false);
   const [showSwitchOffPopup, setShowSwitchOffPopup] = useState(false);
-  const [vegModeOption, setVegModeOption] = useState("all"); // "all" or "pure-veg"
   const [isApplyingVegMode, setIsApplyingVegMode] = useState(false);
   const [isSwitchingOffVegMode, setIsSwitchingOffVegMode] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0, triangleLeft: 0 });
@@ -1903,10 +1904,9 @@ export default function Home() {
 
   const matchesVegMode = useCallback(
     (restaurant) => {
-      if (!vegMode) return true;
-      return restaurant?.pureVegRestaurant === true;
+      return shouldShowRestaurantInVegMode(restaurant, vegMode, vegModeOption);
     },
-    [vegMode],
+    [vegMode, vegModeOption],
   );
 
   // Filter restaurants and foods based on active filters

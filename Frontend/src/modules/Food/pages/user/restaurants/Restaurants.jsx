@@ -15,6 +15,7 @@ import { restaurantAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
 import BookingRangeBadge, { getRestaurantDistanceKm } from "@food/components/user/BookingRangeBadge"
+import { shouldShowRestaurantInVegMode } from "@food/utils/vegUtils"
 
 const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "")
 
@@ -154,7 +155,13 @@ export default function Restaurants() {
     }
   }, [hasMore, loading, initialLoading])
 
-  const hasRestaurants = useMemo(() => restaurants.length > 0, [restaurants.length])
+  const { vegMode, vegModeOption } = useProfile()
+
+  const filteredRestaurants = useMemo(() => {
+    return restaurants.filter((r) => shouldShowRestaurantInVegMode(r, vegMode, vegModeOption))
+  }, [restaurants, vegMode, vegModeOption])
+
+  const hasRestaurants = useMemo(() => filteredRestaurants.length > 0, [filteredRestaurants.length])
 
   return (
     <AnimatedPage className="min-h-screen bg-gradient-to-b from-yellow-50/30 dark:from-[#0a0a0a] via-white dark:via-[#0a0a0a] to-orange-50/20 dark:to-[#0a0a0a]">
@@ -181,7 +188,7 @@ export default function Restaurants() {
                 ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 xl:gap-6 pt-2 sm:pt-3 lg:pt-4">
-              {restaurants.map((restaurant, index) => {
+              {filteredRestaurants.map((restaurant, index) => {
                 const favorite = isFavorite(restaurant.slug)
 
                 const handleToggleFavorite = (e) => {

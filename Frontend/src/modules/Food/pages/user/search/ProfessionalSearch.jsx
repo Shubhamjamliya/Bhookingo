@@ -17,6 +17,8 @@ import { useVoiceSearch } from "@food/hooks/useVoiceSearch"
 // Force HMR reload
 import { RestaurantGridSkeleton } from "@food/components/ui/loading-skeletons"
 import { Suspense, lazy } from "react"
+import { useProfile } from "@food/context/ProfileContext"
+import { shouldShowRestaurantInVegMode, isVegItem, filterVegItems } from "@food/utils/vegUtils"
 const CategoryPage = lazy(() => import("../CategoryPage"))
 
 // Helper to resolve media URLs consistently
@@ -194,6 +196,22 @@ export default function ProfessionalSearch() {
   const selectedCategoryObj = categories.find(c => c._id === selectedCategoryId)
   const selectedCategorySlug = selectedCategoryObj?.slug || selectedCategoryObj?._id || selectedCategoryObj?.name?.toLowerCase().replace(/\s+/g, '-')
 
+  const { vegMode, vegModeOption } = useProfile()
+
+  const filteredResults = useMemo(() => {
+    const rawRest = results.restaurants || []
+    const rawDishes = results.dishes || []
+
+    const restaurants = rawRest.filter((r) => shouldShowRestaurantInVegMode(r, vegMode, vegModeOption))
+
+    const dishes = rawDishes.filter((d) => {
+      if (vegMode && !isVegItem(d)) return false
+      return true
+    })
+
+    return { restaurants, dishes }
+  }, [results, vegMode, vegModeOption])
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950">
       {/* Header */}
@@ -337,14 +355,14 @@ export default function ProfessionalSearch() {
           <div ref={resultsRef} className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
             
             {/* Dish Results Section */}
-            {results.dishes.length > 0 && (
+            {filteredResults.dishes.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-5 px-1">
                    <h2 className="text-sm font-black text-text-secondary uppercase tracking-widest">Matched Dishes</h2>
-                   <span className="text-[10px] font-bold text-text-secondary bg-gray-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full">{results.dishes.length} results</span>
+                   <span className="text-[10px] font-bold text-text-secondary bg-gray-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full">{filteredResults.dishes.length} results</span>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                  {results.dishes.map((r) => (
+                  {filteredResults.dishes.map((r) => (
                     <Link to={`/user/restaurants/${r.slug || r._id}${r.matchedDishId ? `?dish=${r.matchedDishId}` : ''}`} key={r._id} className="flex gap-4 p-3 bg-surface dark:bg-zinc-900 rounded-[24px] shadow-sm border border-border dark:border-zinc-800 hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-none transition-all group overflow-hidden active:scale-[0.98]">
                        <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-50 dark:bg-zinc-800 flex-shrink-0 relative">
                            <OptimizedImage 
@@ -383,14 +401,14 @@ export default function ProfessionalSearch() {
             )}
 
             {/* Restaurant Results Section */}
-            {results.restaurants.length > 0 && (
+            {filteredResults.restaurants.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-5 px-1">
                    <h2 className="text-sm font-black text-text-secondary uppercase tracking-widest">Restaurants</h2>
-                   <span className="text-[10px] font-bold text-text-secondary bg-gray-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full">{results.restaurants.length} stores</span>
+                   <span className="text-[10px] font-bold text-text-secondary bg-gray-100 dark:bg-zinc-900 px-2 py-0.5 rounded-full">{filteredResults.restaurants.length} stores</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-                  {results.restaurants.map((r) => (
+                  {filteredResults.restaurants.map((r) => (
                     <Link to={`/user/restaurants/${r._id}`} key={r._id} className="block group active:scale-[0.98] transition-all">
                       <div className="relative rounded-[32px] overflow-hidden aspect-[16/10] sm:aspect-[16/9] mb-4 bg-gray-100 dark:bg-zinc-800 shadow-xl shadow-gray-200/20">
                          <OptimizedImage 

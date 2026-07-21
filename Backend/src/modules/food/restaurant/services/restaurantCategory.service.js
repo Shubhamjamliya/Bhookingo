@@ -3,6 +3,7 @@ import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodCategory } from '../../admin/models/category.model.js';
 import { FoodItem } from '../../admin/models/food.model.js';
 import { FoodRestaurant } from '../models/restaurant.model.js';
+import { logger } from '../../../../utils/logger.js';
 import {
     backfillLegacyCategoryWorkflow,
     GLOBAL_CATEGORY_FILTER,
@@ -319,6 +320,7 @@ export async function createRestaurantCategory(restaurantId, body = {}) {
             : undefined
     });
     await doc.save();
+    logger.info(`Category "${name}" created successfully for Restaurant ID ${context.restaurantId}`);
     return serializeCategoryForResponse(doc.toObject(), { currentRestaurantId: context.restaurantId });
 }
 

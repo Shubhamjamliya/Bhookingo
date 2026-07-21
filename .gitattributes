@@ -1,0 +1,15 @@
+# Treat all binary files explicitly as binary to prevent line ending corruption
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.mp3 binary
+*.wav binary
+*.ogg binary
+*.mp4 binary
+*.webm binary
+*.zip binary
+*.tar binary
+*.gz binary

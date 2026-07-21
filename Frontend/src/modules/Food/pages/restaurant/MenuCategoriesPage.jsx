@@ -129,38 +129,230 @@ export default function MenuCategoriesPage() {
     setShowModal(true)
   }
 
-  const handleImageFileChange = (file) => {
-    if (!file) return
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size exceeds 5MB limit.")
-      return
+  const processCategoryImage = async (file) => {
+    const startTime = performance.now();
+    const originalSize = file.size;
+    const originalFormat = file.type || '';
+
+    // Validate format
+    const isJpg = originalFormat === 'image/jpeg' || originalFormat === 'image/jpg' || file.name.toLowerCase().endsWith('.jpg') || file.name.toLowerCase().endsWith('.jpeg');
+    const isPng = originalFormat === 'image/png' || file.name.toLowerCase().endsWith('.png');
+    const isWebp = originalFormat === 'image/webp' || file.name.toLowerCase().endsWith('.webp');
+
+    if (!isJpg && !isPng && !isWebp) {
+      throw new Error('Unsupported image format.');
     }
-    setSelectedImageFile(file)
+
+    // Enforce 15 MB size limit
+    const maxBytes = 15 * 1024 * 1024;
+    if (originalSize > maxBytes) {
+      throw new Error('The selected image exceeds the maximum allowed size of 15 MB.');
+    }
+
+    // If already WebP and within 1.5MB, skip conversion and compression
+    if (isWebp && originalSize <= 1.5 * 1024 * 1024) {
+      return {
+        file,
+        diagnostics: {
+          originalSize,
+          compressedSize: originalSize,
+          compressionRatio: 1,
+          originalFormat,
+          convertedFormat: 'image/webp',
+          compressionDuration: 0,
+          conversionDuration: 0,
+        }
+      };
+    }
+
+    // Load image into an HTMLImageElement
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    
     try {
-      setImagePreview(URL.createObjectURL(file))
-    } catch {
-      setImagePreview(null)
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('Image conversion failed.'));
+        img.src = objectUrl;
+      });
+    } catch (err) {
+      URL.revokeObjectURL(objectUrl);
+      throw new Error('Image conversion failed.');
     }
-  }
+    
+    URL.revokeObjectURL(objectUrl);
+
+    const conversionStart = performance.now();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Unable to compress the selected image.');
+    }
+
+    // Limit maximum dimensions for web footprint
+    let width = img.naturalWidth || img.width;
+    let height = img.naturalHeight || img.height;
+    const maxDimension = 1920;
+
+    if (width > maxDimension || height > maxDimension) {
+      if (width > height) {
+        height = Math.round((height * maxDimension) / width);
+        width = maxDimension;
+      } else {
+        width = Math.round((width * maxDimension) / height);
+        height = maxDimension;
+      }
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(img, 0, 0, width, height);
+
+    // Determine quality (higher compression for larger files)
+    let quality = 0.85;
+    if (originalSize > 5 * 1024 * 1024) {
+      quality = 0.75;
+    } else if (originalSize > 2 * 1024 * 1024) {
+      quality = 0.80;
+    }
+
+    let webpBlob;
+    try {
+      webpBlob = await new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Unable to compress the selected image.'));
+        }, 'image/webp', quality);
+      });
+    } catch (err) {
+      throw new Error('Unable to compress the selected image.');
+    }
+
+    const endTime = performance.now();
+    const compressedSize = webpBlob.size;
+    const compressionRatio = Number((originalSize / compressedSize).toFixed(2));
+    const totalDuration = endTime - startTime;
+    const conversionDuration = endTime - conversionStart;
+    const compressionDuration = totalDuration - conversionDuration;
+
+    const originalNameBase = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+    const convertedFile = new File([webpBlob], `${originalNameBase}.webp`, {
+      type: 'image/webp',
+      lastModified: Date.now()
+    });
+
+    return {
+      file: convertedFile,
+      diagnostics: {
+        originalSize,
+        compressedSize,
+        compressionRatio,
+        originalFormat,
+        convertedFormat: 'image/webp',
+        compressionDuration: Number(compressionDuration.toFixed(2)),
+        conversionDuration: Number(conversionDuration.toFixed(2)),
+      }
+    };
+  };
+
+  const handleImageFileChange = (file) => {
+    if (!file) return;
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("The selected image exceeds the maximum allowed size of 15 MB.");
+      return;
+    }
+    setSelectedImageFile(file);
+    try {
+      setImagePreview(URL.createObjectURL(file));
+    } catch {
+      setImagePreview(null);
+    }
+  };
 
   const handleImageClick = () => {
-    setIsPhotoPickerOpen(true)
-  }
+    setIsPhotoPickerOpen(true);
+  };
 
   const handleSaveCategory = async () => {
     if (!String(formData.name || "").trim()) {
-      toast.error("Category name is required")
-      return
+      toast.error("Category name is required");
+      return;
     }
 
     try {
-      setUploadingImage(true)
-      let imageUrl = String(formData.image || "").trim()
+      setUploadingImage(true);
+      let imageUrl = String(formData.image || "").trim();
 
       if (selectedImageFile) {
-        const res = await uploadAPI.uploadMedia(selectedImageFile, { folder: "food/categories" })
-        const url = res?.data?.data?.url || res?.data?.url
-        if (url) imageUrl = String(url)
+        let processedFile = selectedImageFile;
+        let diagnostics = null;
+
+        try {
+          const result = await processCategoryImage(selectedImageFile);
+          processedFile = result.file;
+          diagnostics = result.diagnostics;
+          console.log("Menu category image processed successfully:", diagnostics);
+        } catch (procErr) {
+          console.error("Developer Log - Image processing failed:", procErr);
+          
+          let userMsg = "Unable to process the selected image. Please try another image.";
+          if (procErr.message.includes("maximum allowed size of 15 MB")) {
+            userMsg = "The selected image exceeds the maximum allowed size of 15 MB.";
+          } else if (procErr.message.includes("Unsupported image format")) {
+            userMsg = "Unsupported image format.";
+          } else if (procErr.message.includes("Image conversion failed")) {
+            userMsg = "Image conversion failed.";
+          } else if (procErr.message.includes("Unable to compress")) {
+            userMsg = "Unable to compress the selected image.";
+          }
+          
+          toast.error(userMsg);
+          return;
+        }
+
+        const uploadStartTime = performance.now();
+        let res;
+        try {
+          res = await uploadAPI.uploadMedia(processedFile, { folder: "food/categories" });
+        } catch (uploadErr) {
+          const uploadDuration = Number((performance.now() - uploadStartTime).toFixed(2));
+          console.error("Developer Log - Image upload API request failed. Duration:", uploadDuration, "ms. Error:", uploadErr);
+          
+          let userMsg = "Upload failed due to a network issue.";
+          const status = uploadErr?.response?.status;
+          if (status === 413) {
+            userMsg = "The selected file is too large.";
+          } else if (status === 415) {
+            userMsg = "This file type is not supported.";
+          } else if (status === 400 && uploadErr?.response?.data?.message) {
+            userMsg = uploadErr.response.data.message;
+          } else if (status === 500) {
+            userMsg = "Server could not process the image.";
+          } else if (uploadErr?.message?.toLowerCase().includes("timeout")) {
+            userMsg = "Image upload timed out.";
+          } else if (uploadErr?.message?.toLowerCase().includes("network error") || uploadErr?.code === "ERR_NETWORK") {
+            userMsg = "Unable to upload the image. Please check your internet connection and try again.";
+          }
+          
+          toast.error(userMsg);
+          return;
+        }
+
+        const uploadDuration = Number((performance.now() - uploadStartTime).toFixed(2));
+        const url = res?.data?.data?.url || res?.data?.url;
+        if (url) imageUrl = String(url);
+
+        if (diagnostics) {
+          console.log(`Developer Upload Diagnostics:
+- Original Format: ${diagnostics.originalFormat}
+- Converted Format: ${diagnostics.convertedFormat}
+- Original Size: ${diagnostics.originalSize} bytes
+- Compressed Size: ${diagnostics.compressedSize} bytes
+- Compression Ratio: ${diagnostics.compressionRatio}
+- Compression Duration: ${diagnostics.compressionDuration} ms
+- Conversion Duration: ${diagnostics.conversionDuration} ms
+- Upload Duration: ${uploadDuration} ms`);
+        }
       }
 
       const payload = {
@@ -170,7 +362,7 @@ export default function MenuCategoriesPage() {
         isActive: formData.isActive !== false,
         sortOrder: Number.isFinite(Number(formData.sortOrder)) ? Number(formData.sortOrder) : 0,
         foodTypeScope: formData.foodTypeScope,
-      }
+      };
 
       if (editingCategory) {
         await restaurantAPI.updateCategory(editingCategory._id || editingCategory.id, payload)

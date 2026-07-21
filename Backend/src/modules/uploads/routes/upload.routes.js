@@ -14,11 +14,42 @@ router.post('/image', upload.single('file'), async (req, res, next) => {
             });
         }
 
+        // Limit size to 15 MB
+        const MAX_SIZE = 15 * 1024 * 1024;
+        if (req.file.size > MAX_SIZE) {
+            return res.status(400).json({
+                success: false,
+                message: 'The uploaded image exceeds the maximum size of 15 MB.'
+            });
+        }
+
+        // Validate allowed file types
+        const mimeType = String(req.file.mimetype || '').toLowerCase();
+        const originalName = String(req.file.originalname || '').toLowerCase();
+        const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        const isAllowedExtension = originalName.endsWith('.jpg') || originalName.endsWith('.jpeg') || originalName.endsWith('.png') || originalName.endsWith('.webp');
+
+        if (!allowedMimeTypes.includes(mimeType) && !isAllowedExtension) {
+            return res.status(400).json({
+                success: false,
+                message: 'Only JPG, JPEG, PNG and WebP images are supported.'
+            });
+        }
+
         const folder = typeof req.body?.folder === 'string' && req.body.folder.trim()
             ? req.body.folder.trim()
             : 'uploads';
 
-        const url = await uploadImageBuffer(req.file.buffer, folder);
+        let url;
+        try {
+            url = await uploadImageBuffer(req.file.buffer, folder);
+        } catch (uploadError) {
+            console.error('Image upload buffer error:', uploadError);
+            return res.status(400).json({
+                success: false,
+                message: 'Image processing failed.'
+            });
+        }
 
         return res.status(200).json({
             success: true,

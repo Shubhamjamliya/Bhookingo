@@ -12,8 +12,8 @@ import {
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Mail, ArrowLeft, Shield, Phone } from "lucide-react"
-import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png"
 import { adminAPI } from "@food/api"
+import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { loadBusinessSettings } from "@food/utils/businessSettings"
 import { toast } from "sonner"
@@ -290,16 +290,15 @@ export default function AdminForgotPassword() {
           <div className="px-6 mb-6">
             <div className="flex items-center justify-between relative">
               <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-200 dark:bg-gray-800 -z-10" />
-              <div 
+              <div
                 className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-rose-600 transition-all duration-500 -z-10"
                 style={{ width: step === 1 ? "0%" : step === 2 ? "50%" : "100%" }}
               />
 
               {/* Step 1 indicator */}
               <div className="flex flex-col items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                  step >= 1 ? "bg-rose-600 border-rose-600 text-white" : "bg-white border-gray-300 text-gray-500"
-                }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${step >= 1 ? "bg-rose-600 border-rose-600 text-white" : "bg-white border-gray-300 text-gray-500"
+                  }`}>
                   1
                 </div>
                 <span className="text-[9px] font-bold text-gray-500 mt-1 uppercase tracking-wider">Recovery</span>
@@ -307,9 +306,8 @@ export default function AdminForgotPassword() {
 
               {/* Step 2 indicator */}
               <div className="flex flex-col items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                  step >= 2 ? "bg-rose-600 border-rose-600 text-white" : "bg-white border-gray-300 text-gray-500"
-                }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${step >= 2 ? "bg-rose-600 border-rose-600 text-white" : "bg-white border-gray-300 text-gray-500"
+                  }`}>
                   2
                 </div>
                 <span className="text-[9px] font-bold text-gray-500 mt-1 uppercase tracking-wider">Verify</span>
@@ -317,9 +315,8 @@ export default function AdminForgotPassword() {
 
               {/* Step 3 indicator */}
               <div className="flex flex-col items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                  step >= 3 ? "bg-rose-600 border-rose-600 text-white" : "bg-white border-gray-300 text-gray-500"
-                }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${step >= 3 ? "bg-rose-600 border-rose-600 text-white" : "bg-white border-gray-300 text-gray-500"
+                  }`}>
                   3
                 </div>
                 <span className="text-[9px] font-bold text-gray-500 mt-1 uppercase tracking-wider">Reset</span>

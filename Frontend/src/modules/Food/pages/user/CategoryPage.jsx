@@ -19,7 +19,6 @@ import { foodImages } from "@food/constants/images"
 import api from "@food/api"
 import { restaurantAPI, adminAPI, searchAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
-import { useProfile } from "@food/context/ProfileContext"
 import { useLocation } from "@food/hooks/useLocation"
 import { useHighway as useZone } from "@food/hooks/useHighway"
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading"
@@ -49,7 +48,7 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
   const params = useParams()
   const category = embeddedCategorySlug || params.category
   const navigate = useNavigate()
-  const { vegMode } = useProfile()
+  const { vegMode, vegModeOption } = useProfile()
   const { location } = useLocation()
   const { zoneId, isOutOfService, loading: loadingZone } = useZone(location)
   const navType = useNavigationType()
@@ -443,8 +442,6 @@ export default function CategoryPage({ embeddedCategorySlug = null, hideHeader =
   }
 
   const matchesOfferText = (value, pattern) => pattern.test(String(value || ""))
-
-  const { vegMode, vegModeOption } = useProfile()
 
   const applyFiltersAndSorting = (rows) => {
     let nextRows = Array.isArray(rows) ? [...rows] : []

@@ -277,17 +277,26 @@ export async function createRestaurantCategory(restaurantId, body = {}) {
     const context = await getRestaurantContext(restaurantId);
 
     const name = typeof body.name === 'string' ? body.name.trim() : '';
-    if (!name) throw new ValidationError('Category name is required');
-    if (name.length > 200) throw new ValidationError('Category name is too long');
+    if (!name) throw new ValidationError('Category name is required.');
+    if (name.length > 200) throw new ValidationError('Category name is too long.');
+
+    // Duplicate check for this restaurant (case-insensitive)
+    const existing = await FoodCategory.findOne({
+        $or: [
+            { restaurantId: context.restaurantId },
+            { createdByRestaurantId: context.restaurantId }
+        ],
+        name: { $regex: new RegExp(`^${escapeRegex(name)}$`, 'i') }
+    }).lean();
+
+    if (existing) {
+        throw new ValidationError('Category already exists.');
+    }
 
     const foodTypeScopeRaw = typeof body.foodTypeScope === 'string' ? body.foodTypeScope.trim() : '';
-    if (!foodTypeScopeRaw) {
-        throw new ValidationError('Category diet type is required');
-    }
-    const foodTypeScope = normalizeCategoryFoodTypeScope(foodTypeScopeRaw, '');
-    if (!foodTypeScope) {
-        throw new ValidationError('Invalid category diet type');
-    }
+    const defaultScope = context.pureVegRestaurant ? 'Veg' : 'Veg';
+    const foodTypeScope = foodTypeScopeRaw ? normalizeCategoryFoodTypeScope(foodTypeScopeRaw, defaultScope) : defaultScope;
+
     if (context.pureVegRestaurant && foodTypeScope !== 'Veg') {
         throw new ValidationError('Pure veg restaurants can only create veg categories');
     }
@@ -310,7 +319,7 @@ export async function createRestaurantCategory(restaurantId, body = {}) {
             : undefined
     });
     await doc.save();
-    return doc.toObject();
+    return serializeCategoryForResponse(doc.toObject(), { currentRestaurantId: context.restaurantId });
 }
 
 export async function updateRestaurantCategory(restaurantId, id, body = {}) {
@@ -334,8 +343,23 @@ export async function updateRestaurantCategory(restaurantId, id, body = {}) {
 
     if (body.name !== undefined) {
         const name = String(body.name || '').trim();
-        if (!name) throw new ValidationError('Category name is required');
-        if (name.length > 200) throw new ValidationError('Category name is too long');
+        if (!name) throw new ValidationError('Category name is required.');
+        if (name.length > 200) throw new ValidationError('Category name is too long.');
+
+        if (name.toLowerCase() !== doc.name.toLowerCase()) {
+            const existing = await FoodCategory.findOne({
+                _id: { $ne: doc._id },
+                $or: [
+                    { restaurantId: context.restaurantId },
+                    { createdByRestaurantId: context.restaurantId }
+                ],
+                name: { $regex: new RegExp(`^${escapeRegex(name)}$`, 'i') }
+            }).lean();
+
+            if (existing) {
+                throw new ValidationError('Category already exists.');
+            }
+        }
         doc.name = name;
     }
     if (body.image !== undefined) doc.image = String(body.image || '').trim();

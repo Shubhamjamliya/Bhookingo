@@ -183,7 +183,7 @@ export default function MenuCategoriesPage() {
       resetModal()
       fetchCategories()
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to save category")
+      toast.error(error?.response?.data?.message || error?.response?.data?.error || "Failed to save category")
     } finally {
       setUploadingImage(false)
     }

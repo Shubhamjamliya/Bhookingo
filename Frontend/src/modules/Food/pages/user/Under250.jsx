@@ -381,7 +381,9 @@ export default function Under250() {
           lat: location?.latitude || 22.7196,
           lng: location?.longitude || 75.8577,
           radiusKm: 50,
-          isVeg: vegMode ? 'true' : 'false'
+          isVeg: vegMode ? 'true' : 'false',
+          vegModeOption: vegModeOption || 'all',
+          pureVeg: vegModeOption === 'pure-veg' ? 'true' : 'false'
         })
         
         if (cancelled) return;
@@ -456,7 +458,7 @@ export default function Under250() {
 
     fetchRestaurantsUnder250()
     return () => { cancelled = true; };
-  }, [zoneId, isOutOfService, location?.latitude, location?.longitude, under250PriceLimit, vegMode])
+  }, [zoneId, isOutOfService, location?.latitude, location?.longitude, under250PriceLimit, vegMode, vegModeOption])
 
   // Fetch categories from backend (no static fallback list)
   useEffect(() => {

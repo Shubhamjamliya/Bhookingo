@@ -99,23 +99,34 @@ export const filterMenuSections = (sections) => {
 };
 
 /**
- * Checks if a restaurant has at least one Veg dish or is marked pureVegRestaurant.
+ * Checks if a restaurant has vegetarian food items.
  */
 export const hasVegItems = (restaurant) => {
   if (!restaurant) return false;
-  if (restaurant.pureVegRestaurant === true) return true;
 
-  // Check embedded menu items or menuSections
-  if (Array.isArray(restaurant.menuItems) && restaurant.menuItems.some(isVegItem)) {
+  // 1. Explicit backend flag
+  if (typeof restaurant.hasVegItems === "boolean") {
+    return restaurant.hasVegItems;
+  }
+
+  // 2. Pure Veg Restaurant
+  if (restaurant.pureVegRestaurant === true) {
     return true;
   }
 
-  if (Array.isArray(restaurant.menuSections)) {
-    const vegSections = filterMenuSections(restaurant.menuSections);
-    if (vegSections.length > 0) return true;
+  // 3. Embedded menu items check (if loaded)
+  if (Array.isArray(restaurant.menuItems) && restaurant.menuItems.length > 0) {
+    return restaurant.menuItems.some(isVegItem);
   }
 
-  return false;
+  // 4. Embedded menuSections check (if loaded)
+  if (Array.isArray(restaurant.menuSections) && restaurant.menuSections.length > 0) {
+    const vegSections = filterMenuSections(restaurant.menuSections);
+    return vegSections.length > 0;
+  }
+
+  // Fallback
+  return restaurant.hasVegItems !== false;
 };
 
 /**
@@ -124,15 +135,14 @@ export const hasVegItems = (restaurant) => {
 export const shouldShowRestaurantInVegMode = (restaurant, vegMode, vegModeOption = "all") => {
   if (!restaurant) return false;
 
-  // If Veg Mode is OFF, all restaurants are visible
+  // 1. Veg Mode OFF: show all restaurants
   if (!vegMode) return true;
 
-  // If "Pure Veg Restaurants Only" option is selected
+  // 2. Veg Mode ON - Pure Veg Restaurants Only
   if (vegModeOption === "pure-veg") {
     return restaurant.pureVegRestaurant === true;
   }
 
-  // If "All Restaurants" option is selected:
-  // Show pure veg restaurants AND mixed restaurants that have at least 1 veg dish
-  return restaurant.pureVegRestaurant === true || hasVegItems(restaurant);
+  // 3. Veg Mode ON - All Restaurants: show restaurant if hasVegItems == true
+  return hasVegItems(restaurant);
 };

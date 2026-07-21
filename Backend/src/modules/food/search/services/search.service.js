@@ -15,13 +15,13 @@ const toFiniteNumber = (value) => {
  * returning matched restaurants with potential dish highlights.
  */
 export const searchUnified = async (query = {}, options = {}) => {
-    const { 
-        q, 
-        lat, 
-        lng, 
-        radiusKm = 20, 
-        categoryId, 
-        minRating, 
+    const {
+        q,
+        lat,
+        lng,
+        radiusKm = 20,
+        categoryId,
+        minRating,
         isVeg,
         page = 1,
         limit = 20
@@ -51,7 +51,7 @@ export const searchUnified = async (query = {}, options = {}) => {
     if (eligibleIds !== null) {
         restaurantFilter._id = { $in: eligibleIds };
     }
-    
+
     console.log(`[Search-Service] Querying with term: "${term}", categoryId: "${categoryId}", coordinates: [${latNum}, ${lngNum}]`);
 
     if (isVeg === 'true') {
@@ -80,16 +80,16 @@ export const searchUnified = async (query = {}, options = {}) => {
             }
         }
 
-        const foodItemQuery = { 
+        const foodItemQuery = {
             categoryId: { $in: categoryIdsToMatch },
-            approvalStatus: 'approved' 
+            approvalStatus: 'approved'
         };
         if (eligibleIds !== null) {
             foodItemQuery.restaurantId = { $in: eligibleIds };
         }
 
         const catFoodItems = await FoodItem.find(foodItemQuery).select('restaurantId').lean();
-        
+
         const catRestaurantIds = [...new Set(catFoodItems.map(f => f.restaurantId.toString()))];
         if (catRestaurantIds.length > 0) {
             restaurantFilter._id = { $in: catRestaurantIds.map(id => new mongoose.Types.ObjectId(id)) };
@@ -124,14 +124,14 @@ export const searchUnified = async (query = {}, options = {}) => {
         if (eligibleIds !== null) {
             foodFilters.restaurantId = { $in: eligibleIds };
         }
-        
+
         const matchedFoods = await FoodItem.find({
             ...foodFilters,
             name: { $regex: regex }
         }).limit(limit * 2).lean();
 
         const foodRestaurantIds = matchedFoods.map(f => f.restaurantId.toString());
-        
+
         if (foodRestaurantIds.length > 0) {
             const unmatchedIds = foodRestaurantIds.filter(id => !restaurantIds.has(id));
             if (unmatchedIds.length > 0) {
@@ -142,8 +142,8 @@ export const searchUnified = async (query = {}, options = {}) => {
 
                 rsForFoods.forEach(r => {
                     restaurantIds.add(r._id.toString());
-                    restaurantDetailsMap.set(r._id.toString(), { 
-                        ...r, 
+                    restaurantDetailsMap.set(r._id.toString(), {
+                        ...r,
                         matchType: 'food',
                         matchedDish: matchedFoods.find(f => f.restaurantId.toString() === r._id.toString())?.name,
                         matchedDishImage: matchedFoods.find(f => f.restaurantId.toString() === r._id.toString())?.image,
@@ -158,7 +158,7 @@ export const searchUnified = async (query = {}, options = {}) => {
             .sort({ rating: -1, createdAt: -1 })
             .limit(limit * 2)
             .lean();
-            
+
         allMatching.forEach(r => {
             restaurantIds.add(r._id.toString());
             restaurantDetailsMap.set(r._id.toString(), r);
@@ -168,14 +168,32 @@ export const searchUnified = async (query = {}, options = {}) => {
     // 4. Final Result Formatting and Sorting
     let results = Array.from(restaurantDetailsMap.values());
 
+    if (results.length > 0) {
+        const resIds = results.map(r => r._id || r.restaurantId);
+        const vegRestaurantIds = await FoodItem.distinct('restaurantId', {
+            restaurantId: { $in: resIds },
+            approvalStatus: 'approved',
+            isAvailable: { $ne: false },
+            $or: [
+                { isVeg: true },
+                { foodType: 'Veg' },
+                { foodType: { $regex: /^veg$/i } }
+            ]
+        });
+        const vegSet = new Set(vegRestaurantIds.map(id => String(id)));
+        results.forEach(res => {
+            res.hasVegItems = res.pureVegRestaurant === true || vegSet.has(String(res._id || res.restaurantId));
+        });
+    }
+
     // Sort: Highway priority first, then by nearest distance
     if (latNum !== null && lngNum !== null && results.length > 0) {
         results.forEach(res => {
             const distMeters = distanceMap.get(String(res._id || res.restaurantId)) ?? null;
             if (distMeters !== null) {
                 res.distanceInKm = Number((distMeters / 1000).toFixed(2));
-                res.distance = distMeters >= 1000 
-                    ? `${(distMeters / 1000).toFixed(1)} km` 
+                res.distance = distMeters >= 1000
+                    ? `${(distMeters / 1000).toFixed(1)} km`
                     : `${Math.round(distMeters)} m`;
             } else {
                 res.distanceInKm = null;
@@ -221,7 +239,7 @@ export const getAdminCategories = async (query = {}) => {
             status: 'approved'
         }).select('_id').lean();
         const zoneRestaurantIds = zoneRestaurants.map(r => r._id);
-        
+
         approvedCategoryIds = await FoodItem.distinct('categoryId', {
             approvalStatus: 'approved',
             restaurantId: { $in: zoneRestaurantIds },
@@ -238,9 +256,9 @@ export const getAdminCategories = async (query = {}) => {
         return [];
     }
 
-    const filter = { 
+    const filter = {
         _id: { $in: approvedCategoryIds },
-        isActive: true, 
+        isActive: true,
         isApproved: true,
         $and: [
             {

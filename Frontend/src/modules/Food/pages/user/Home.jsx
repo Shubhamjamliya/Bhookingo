@@ -1652,6 +1652,7 @@ export default function Home() {
                 slug: restaurant.slug,
                 restaurantId: restaurant.restaurantId,
                 pureVegRestaurant: restaurant.pureVegRestaurant === true,
+                hasVegItems: typeof restaurant.hasVegItems === "boolean" ? restaurant.hasVegItems : (restaurant.pureVegRestaurant === true),
                 location: restaurant.location, // Store location for distance recalculation
                 isActive: restaurant.isActive !== false, // Default to true if not specified
                 isAcceptingOrders: restaurant.isAcceptingOrders !== false, // Default to true if not specified

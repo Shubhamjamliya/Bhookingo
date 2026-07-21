@@ -1587,14 +1587,28 @@ export const listApprovedRestaurants = async (query = {}) => {
     const pageDocs = aggregationResult[0]?.data || [];
     const total = aggregationResult[0]?.metadata[0]?.total || 0;
 
-    // Attach recommended dishes
+    // Attach recommended dishes and compute hasVegItems
     const restaurantIds = pageDocs.map(r => r._id);
-    const allRecommended = await FoodItem.find({
-        restaurantId: { $in: restaurantIds },
-        isRecommended: true,
-        isAvailable: true,
-        approvalStatus: 'approved'
-    }).select('restaurantId name price image foodType variants variations').lean();
+    const [allRecommended, vegRestaurantIds] = await Promise.all([
+        FoodItem.find({
+            restaurantId: { $in: restaurantIds },
+            isRecommended: true,
+            isAvailable: true,
+            approvalStatus: 'approved'
+        }).select('restaurantId name price image foodType variants variations').lean(),
+        FoodItem.distinct('restaurantId', {
+            restaurantId: { $in: restaurantIds },
+            approvalStatus: 'approved',
+            isAvailable: { $ne: false },
+            $or: [
+                { isVeg: true },
+                { foodType: 'Veg' },
+                { foodType: { $regex: /^veg$/i } }
+            ]
+        })
+    ]);
+
+    const vegSet = new Set(vegRestaurantIds.map(id => String(id)));
 
     const recommendedMap = allRecommended.reduce((acc, item) => {
         const rid = String(item.restaurantId);
@@ -1622,7 +1636,8 @@ export const listApprovedRestaurants = async (query = {}) => {
         closingTime: r.closingTime || null,
         openDays: Array.isArray(r.openDays) ? r.openDays : [],
         menuImages: Array.isArray(r.menuImages) ? r.menuImages : [],
-        recommendedDishes: recommendedMap[String(r._id)] || []
+        recommendedDishes: recommendedMap[String(r._id)] || [],
+        hasVegItems: r.pureVegRestaurant === true || vegSet.has(String(r._id))
     }));
 
     return {
@@ -1696,12 +1711,24 @@ export const getApprovedRestaurantByIdOrSlug = async (idOrSlug, userId = null) =
         console.error('Error fetching restaurant reviews in getApprovedRestaurantByIdOrSlug:', err);
     }
 
+    const hasVegDishes = doc.pureVegRestaurant === true || !!(await FoodItem.exists({
+        restaurantId: doc._id,
+        approvalStatus: 'approved',
+        isAvailable: { $ne: false },
+        $or: [
+            { isVeg: true },
+            { foodType: 'Veg' },
+            { foodType: { $regex: /^veg$/i } }
+        ]
+    }));
+
     return {
         ...doc,
         rating: normalizeRatingValue(doc.rating),
         totalRatings: normalizeTotalRatingsValue(doc.totalRatings),
         hasOrderedBefore,
-        reviewsList
+        reviewsList,
+        hasVegItems: hasVegDishes
     };
 };
 
@@ -1782,6 +1809,10 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
 
     const filter = { status: 'approved' };
 
+    if (query.pureVeg === 'true' || query.vegModeOption === 'pure-veg') {
+        filter.pureVegRestaurant = true;
+    }
+
     // Apply search and cuisine options inside the 50 KM radius
     if (query.cuisine && String(query.cuisine).trim()) {
         const cuisine = String(query.cuisine).trim();
@@ -1822,6 +1853,8 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
     if (uniqueRestaurantsInZone.length === 0) {
         return { restaurants: [], total: 0, hasMore: false, page, limit };
     }
+
+    const restaurantIds = uniqueRestaurantsInZone.map(r => r._id);
 
     const itemFilter = {
         restaurantId: { $in: restaurantIds },
@@ -1893,7 +1926,8 @@ export const listRestaurantsUnderPriceLimit = async (query = {}, priceLimit = 25
             menuItems: items,
             outletTimings: { timings },
             distanceInKm: r.distanceInKm || 0,
-            distanceKm: r.distanceInKm || 0
+            distanceKm: r.distanceInKm || 0,
+            hasVegItems: r.pureVegRestaurant === true || items.some(item => item.isVeg)
         };
     });
 

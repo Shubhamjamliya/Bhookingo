@@ -1,9 +1,30 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { Toaster } from 'sonner'
+import { Toaster, toast } from 'sonner'
 import App from './app/App.jsx'
 import { isModuleAuthenticated } from './modules/Food/utils/auth.js'
+import { getUserFriendlyErrorMessage, getFriendlyMessageFromString, ENABLE_USER_FRIENDLY_ERRORS } from './modules/Food/utils/userErrorMessages.js'
 import './shared/styles/global.css'
+
+if (ENABLE_USER_FRIENDLY_ERRORS) {
+  try {
+    const originalError = toast.error;
+    toast.error = function (message, options) {
+      let mappedMessage = message;
+      if (message && typeof message === 'object') {
+        mappedMessage = getUserFriendlyErrorMessage(message) || message.userMessage || message.message || String(message);
+      } else if (typeof message === 'string') {
+        const friendly = getFriendlyMessageFromString(message);
+        if (friendly) {
+          mappedMessage = friendly;
+        }
+      }
+      return originalError.call(toast, mappedMessage, options);
+    };
+  } catch (e) {
+    console.error("Failed to patch toast.error:", e);
+  }
+}
 
 const NATIVE_LAST_ROUTE_KEY = 'native_last_route'
 

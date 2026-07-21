@@ -7,6 +7,21 @@
  */
 
 import axios from "axios";
+import { getUserFriendlyErrorMessage, ENABLE_USER_FRIENDLY_ERRORS } from "../../modules/Food/utils/userErrorMessages.js";
+
+function normalizeError(err) {
+  if (err && ENABLE_USER_FRIENDLY_ERRORS) {
+    try {
+      const userMsg = getUserFriendlyErrorMessage(err);
+      if (userMsg) {
+        err.userMessage = userMsg;
+      }
+    } catch (e) {
+      console.error("Error in user error messages mapping:", e);
+    }
+  }
+  return err;
+}
 
 // Prefer explicit env. If not set, default to /api/v1 so the Vite proxy can forward to backend.
 // This avoids hardcoding ports like 5000 that may conflict with local setups.
@@ -152,16 +167,16 @@ apiClient.interceptors.response.use(
   async (err) => {
     const original = err?.config;
     if (err?.response?.status === 429) {
-      return Promise.reject(err);
+      return Promise.reject(normalizeError(err));
     }
     if (err?.response?.status !== 401 || !original || original._retry) {
-      return Promise.reject(err);
+      return Promise.reject(normalizeError(err));
     }
     const module = original.contextModule || getModuleFromUrl(original.url);
     const refreshToken = getRefreshToken(module);
     if (!refreshToken) {
       clearModuleAuth(module);
-      return Promise.reject(err);
+      return Promise.reject(normalizeError(err));
     }
 
     if (isRefreshing) {
@@ -171,7 +186,7 @@ apiClient.interceptors.response.use(
             original.headers.Authorization = `Bearer ${newToken}`;
             resolve(apiClient(original));
           } else {
-            reject(err);
+            reject(normalizeError(err));
           }
         });
       });
@@ -200,13 +215,13 @@ apiClient.interceptors.response.use(
       }
     } catch (_) {
       onRefreshFailed(module);
-      return Promise.reject(err);
+      return Promise.reject(normalizeError(err));
     } finally {
       isRefreshing = false;
     }
 
     onRefreshFailed(module);
-    return Promise.reject(err);
+    return Promise.reject(normalizeError(err));
   }
 );
 

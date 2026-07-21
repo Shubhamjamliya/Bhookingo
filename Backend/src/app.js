@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -75,6 +76,59 @@ app.use('/api', apiRateLimiter);
 
 // Optional: log API response time (method, path, status, duration) - no sensitive data
 // app.use('/api', responseTimeLogger);
+
+// Middleware to dynamically transform relative image paths in API responses to absolute URLs
+app.use((req, res, next) => {
+    const originalJson = res.json;
+    res.json = function (body) {
+        const baseUrl = config.baseUrl;
+        
+        const transformImageUrls = (obj) => {
+            if (!obj) return obj;
+
+            if (typeof obj === 'string') {
+                if (obj.startsWith('/images/')) {
+                    return `${baseUrl}${obj}`;
+                }
+                // Also clean up any lingering localhost:5000 references if base URL is different
+                if (obj.includes('localhost:5000/images/') && baseUrl !== 'http://localhost:5000') {
+                    return obj.replace(/https?:\/\/localhost:5000\/images\//g, `${baseUrl}/images/`);
+                }
+                return obj;
+            }
+
+            if (Array.isArray(obj)) {
+                return obj.map(transformImageUrls);
+            }
+
+            if (typeof obj === 'object') {
+                if (obj instanceof Date) return obj;
+                if (obj instanceof RegExp) return obj;
+                if (mongoose.Types.ObjectId.isValid(obj)) return obj;
+                if (Buffer.isBuffer(obj)) return obj;
+
+                let doc = obj;
+                if (obj.toObject && typeof obj.toObject === 'function') {
+                    doc = obj.toObject();
+                } else if (obj.toJSON && typeof obj.toJSON === 'function') {
+                    doc = obj.toJSON();
+                }
+                
+                const newObj = {};
+                for (const key of Object.keys(doc)) {
+                    newObj[key] = transformImageUrls(doc[key]);
+                }
+                return newObj;
+            }
+
+            return obj;
+        };
+
+        const transformedBody = transformImageUrls(body);
+        return originalJson.call(this, transformedBody);
+    };
+    next();
+});
 
 // API Routes
 app.use('/api', routes);

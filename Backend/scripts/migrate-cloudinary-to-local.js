@@ -112,9 +112,8 @@ async function migrateValue(val) {
         fs.writeFileSync(absoluteDestPath, webpBuffer);
 
         const newUrlPath = `/images/${category}/${year}/${month}/${newFilename}`;
-        const newUrl = `${BASE_URL}${newUrlPath}`;
         
-        return newUrl;
+        return newUrlPath;
     } catch (err) {
         console.error(`❌ Sharp processing failed for ${publicId}.${format}:`, err.message);
         return val;
@@ -136,16 +135,13 @@ async function migrateDocument(doc) {
                 
                 // If there's an associated publicId field in the schema, update it too
                 if (key === 'imageUrl' && updatedDoc.publicId) {
-                    const parsedUrl = new URL(newVal);
-                    updatedDoc.publicId = parsedUrl.pathname;
+                    updatedDoc.publicId = newVal;
                 }
                 if (key === 'iconUrl' && updatedDoc.publicId) {
-                    const parsedUrl = new URL(newVal);
-                    updatedDoc.publicId = parsedUrl.pathname;
+                    updatedDoc.publicId = newVal;
                 }
                 if (key === 'profileImage' && updatedDoc.publicId) {
-                    const parsedUrl = new URL(newVal);
-                    updatedDoc.publicId = parsedUrl.pathname;
+                    updatedDoc.publicId = newVal;
                 }
             }
         } else if (Array.isArray(val)) {

@@ -63,14 +63,13 @@ export const uploadImageBufferDetailed = async (buffer, folder = 'uploads') => {
     // Write file
     await fs.promises.writeFile(absoluteFilePath, webpBuffer);
 
-    // Generate URL (e.g., http://localhost:5000/images/menu/2026/07/uuid.webp)
+    // Generate relative path (e.g., /images/menu/2026/07/uuid.webp)
     const publicUrlPath = `/images/${category}/${year}/${month}/${filename}`;
-    const secureUrl = `${config.baseUrl}${publicUrlPath}`;
 
     return {
-        secure_url: secureUrl,
+        secure_url: publicUrlPath,
         public_id: publicUrlPath, // Maintain public_id property for deleting / references
-        url: secureUrl,
+        url: publicUrlPath,
         bytes: webpBuffer.length,
         format: 'webp'
     };
@@ -78,7 +77,7 @@ export const uploadImageBufferDetailed = async (buffer, folder = 'uploads') => {
 
 export const uploadImageBuffer = async (buffer, folder = 'uploads') => {
     const result = await uploadImageBufferDetailed(buffer, folder);
-    return result.secure_url;
+    return result.public_id;
 };
 
 /**
@@ -108,7 +107,7 @@ export const uploadVideoBuffer = async (buffer, folder = 'uploads') => {
     await fs.promises.writeFile(absoluteFilePath, buffer);
 
     const publicUrlPath = `/images/${category}/${year}/${month}/${filename}`;
-    return `${config.baseUrl}${publicUrlPath}`;
+    return publicUrlPath;
 };
 
 /**

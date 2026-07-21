@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { config } from '../config/env.js';
 import { resizeAndConvertToWebp } from '../utils/sharp.utils.js';
 
-// Resolve storage root dir (e.g., /var/storage or local ./storage)
+// Resolve storage root dir (e.g., /var/storage or local ./uploads)
 const STORAGE_ROOT = path.resolve(config.storageDir);
 
 /**

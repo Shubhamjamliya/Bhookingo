@@ -12,8 +12,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Constants
-const DOWNLOADED_ASSETS_DIR = path.resolve(__dirname, '../../Frontend/src/assets/cloudinary');
-const STORAGE_ROOT = path.resolve(process.env.STORAGE_DIR || './storage');
+const DOWNLOADED_ASSETS_DIR = path.resolve(__dirname, '../cloudinary_assets');
+const STORAGE_ROOT = path.resolve(process.env.STORAGE_DIR || './uploads');
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
 
 // Ensure Target Root Storage Directory exists

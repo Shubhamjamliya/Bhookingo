@@ -14,7 +14,7 @@ cloudinary.config({
     api_secret: 'XDZNzO03zdrKiXWRnNqXPLpygzo'
 });
 
-const TARGET_DIR = path.resolve(__dirname, '../../Frontend/src/assets/cloudinary');
+const TARGET_DIR = path.resolve(__dirname, '../cloudinary_assets');
 const METADATA_FILE = path.join(TARGET_DIR, 'metadata.json');
 
 async function ensureDirectoryExists(dirPath) {

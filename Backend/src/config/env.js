@@ -94,6 +94,6 @@ export const config = {
     emailPass: process.env.EMAIL_PASS ? String(process.env.EMAIL_PASS).replace(/\s/g, '') : '',
     emailFrom: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@example.com',
     bookingRadiusKm: Number(process.env.BOOKING_RADIUS_KM || 50),
-    storageDir: process.env.STORAGE_DIR || './storage',
+    storageDir: process.env.STORAGE_DIR || './uploads',
     baseUrl: process.env.BASE_URL || 'http://localhost:5000'
 };

@@ -6,6 +6,9 @@ node_modules/
 .env.*
 !.env.example
 
+# uploads
+uploads/
+
 # logs
 npm-debug.log*
 yarn-debug.log*
@@ -33,4 +36,3 @@ pids
 # Large highway GeoJSON datasets (download separately — see data/highways/README.md)
 data/highways/*.geojson
 data/highways/*.json
-

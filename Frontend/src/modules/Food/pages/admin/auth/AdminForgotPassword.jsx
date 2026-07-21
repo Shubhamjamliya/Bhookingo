@@ -13,7 +13,7 @@ import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Mail, ArrowLeft, Shield, Phone } from "lucide-react"
 import { adminAPI } from "@food/api"
-import quickSpicyLogo from "../../../../../../../Backend/uploads/logos/2026/07/c0798113-798d-44d0-bb14-1f1521c0efae.webp"
+import bhookingoLogo from "@backend-uploads/logos/2026/07/c0798113-798d-44d0-bb14-1f1521c0efae.webp"
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { loadBusinessSettings } from "@food/utils/businessSettings"
 import { toast } from "sonner"
@@ -33,7 +33,7 @@ export default function AdminForgotPassword() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [resendTimer, setResendTimer] = useState(0)
-  const [logoUrl, setLogoUrl] = useState(quickSpicyLogo)
+  const [logoUrl, setLogoUrl] = useState(bhookingoLogo)
   const inputRefs = useRef(Array(6).fill(null).map(() => null))
 
   // Fetch business settings logo on mount
@@ -260,13 +260,13 @@ export default function AdminForgotPassword() {
             <div className="flex w-full items-center gap-4 sm:gap-5">
               <div className="flex h-14 w-28 shrink-0 items-center justify-center rounded-xl bg-gray-900/5 ring-1 ring-neutral-200">
                 <img
-                  src={logoUrl || quickSpicyLogo}
+                  src={logoUrl || bhookingoLogo}
                   alt={companyName}
                   className="h-10 w-24 object-contain"
                   loading="lazy"
                   onError={(e) => {
-                    if (e.target.src !== quickSpicyLogo) {
-                      e.target.src = quickSpicyLogo
+                    if (e.target.src !== bhookingoLogo) {
+                      e.target.src = bhookingoLogo
                     }
                   }}
                 />

@@ -40,7 +40,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@food/components/ui/popover";
-import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png";
+import bhookingoLogo from "@backend-uploads/logos/2026/07/c0798113-798d-44d0-bb14-1f1521c0efae.webp";
 import { adminAPI } from "@food/api";
 import { clearModuleAuth } from "@food/utils/auth";
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings";
@@ -289,7 +289,7 @@ export default function AdminNavbar({ onMenuClick }) {
                     loading="lazy"
                     onError={(e) => {
                       // Fallback to default logo if company logo fails to load
-                      e.target.src = quickSpicyLogo;
+                      e.target.src = bhookingoLogo;
                     }}
                   />
                 ) : (
@@ -298,7 +298,7 @@ export default function AdminNavbar({ onMenuClick }) {
                       {businessSettings.companyName}
                     </span>
                   ) : (
-                    <img src={quickSpicyLogo} alt={businessSettings?.companyName || "Company"} className="w-40 h-14 object-contain" loading="lazy" />
+                    <img src={bhookingoLogo} alt={businessSettings?.companyName || "Company"} className="w-40 h-14 object-contain" loading="lazy" />
                   )
                 )}
               </div>

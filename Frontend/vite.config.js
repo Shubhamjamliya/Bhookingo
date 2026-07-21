@@ -23,6 +23,9 @@ export default defineConfig({
       '@food/api': servicesApi,
       '@food': foodSrc,
 
+      // Backend uploads alias
+      '@backend-uploads': path.resolve(__dirname, '../Backend/uploads'),
+
       // Main source alias
       '@': path.resolve(__dirname, './src'),
     },

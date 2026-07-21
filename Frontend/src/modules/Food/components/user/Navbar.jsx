@@ -20,6 +20,8 @@ const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 
+import bhookingoLogo from "@backend-uploads/logos/2026/07/c0798113-798d-44d0-bb14-1f1521c0efae.webp"
+
 export default function Navbar() {
   const routerLocation = useRouterLocation()
   const { location, loading } = useLocation()
@@ -138,7 +140,7 @@ export default function Navbar() {
                 {companyName}
               </span>
             ) : (
-              <img src={quickSpicyLogo} alt="Logo" className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain" />
+              <img src={bhookingoLogo} alt="Logo" className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain" />
             )}
           </Link>
 

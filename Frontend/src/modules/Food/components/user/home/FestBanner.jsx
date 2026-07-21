@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Utensils, Soup, Leaf, Sparkles } from 'lucide-react';
-import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png";
+import bhookingoLogo from "@backend-uploads/logos/2026/07/c0798113-798d-44d0-bb14-1f1521c0efae.webp";
 
 // Images for different modes - Extended pool for rotation
 const images = {

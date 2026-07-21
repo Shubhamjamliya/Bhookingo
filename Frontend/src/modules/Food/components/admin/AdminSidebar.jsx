@@ -55,7 +55,7 @@ import { adminSidebarMenu } from "@food/utils/adminSidebarMenu"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import { getCurrentUser } from "@food/utils/auth"
 import { hasPathPermission } from "@food/utils/permissions"
-import quickSpicyLogo from "@food/assets/quicky-spicy-logo.png"
+import bhookingoLogo from "@backend-uploads/logos/2026/07/c0798113-798d-44d0-bb14-1f1521c0efae.webp"
 const debugLog = (...args) => { }
 const debugWarn = (...args) => { }
 const debugError = (...args) => { }
@@ -745,13 +745,13 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                 <div className="w-44 h-16 rounded-xl flex items-center justify-center -ml-1.5 shadow-md shadow-black/10 bg-white/95 p-1 border border-white/20">
                   {logoUrl ? (
                     <img
-                      src={logoUrl || quickSpicyLogo}
+                      src={logoUrl || bhookingoLogo}
                       alt={companyName || "Company"}
                       className="w-44 h-14 object-contain"
                       loading="lazy"
                       onError={(e) => {
-                        if (e.target.src !== quickSpicyLogo) {
-                          e.target.src = quickSpicyLogo
+                        if (e.target.src !== bhookingoLogo) {
+                          e.target.src = bhookingoLogo
                         }
                       }}
                     />
@@ -760,7 +760,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                       {companyName}
                     </span>
                   ) : (
-                    <img src={quickSpicyLogo} alt="Company" className="w-44 h-14 object-contain" loading="lazy" />
+                    <img src={bhookingoLogo} alt="Company" className="w-44 h-14 object-contain" loading="lazy" />
                   )}
                 </div>
               </div>
@@ -770,18 +770,18 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
                 <div className="w-10 h-10 rounded-lg bg-white/95 flex items-center justify-center shadow-md shadow-black/10 ring-1 ring-white/20 p-0.5">
                   {logoUrl || companyName ? (
                     <img
-                      src={logoUrl || quickSpicyLogo}
+                      src={logoUrl || bhookingoLogo}
                       alt={companyName || "Company"}
                       className="w-8 h-8 object-contain"
                       loading="lazy"
                       onError={(e) => {
-                        if (e.target.src !== quickSpicyLogo) {
-                          e.target.src = quickSpicyLogo
+                        if (e.target.src !== bhookingoLogo) {
+                          e.target.src = bhookingoLogo
                         }
                       }}
                     />
                   ) : (
-                    <img src={quickSpicyLogo} alt="Company" className="w-8 h-8 object-contain" loading="lazy" />
+                    <img src={bhookingoLogo} alt="Company" className="w-8 h-8 object-contain" loading="lazy" />
                   )}
                 </div>
               </div>

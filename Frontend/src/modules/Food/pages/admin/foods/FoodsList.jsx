@@ -49,6 +49,10 @@ export default function FoodsList() {
   const [categoryOptions, setCategoryOptions] = useState([])
   const [categorySearch, setCategorySearch] = useState("")
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false)
+  const [restaurantFilterSearch, setRestaurantFilterSearch] = useState("")
+  const [restaurantFilterPopoverOpen, setRestaurantFilterPopoverOpen] = useState(false)
+  const [restaurantFormSearch, setRestaurantFormSearch] = useState("")
+  const [restaurantFormPopoverOpen, setRestaurantFormPopoverOpen] = useState(false)
   const [selectedImageFile, setSelectedImageFile] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
@@ -261,6 +265,8 @@ export default function FoodsList() {
     setImagePreviewUrl("")
     setCategorySearch("")
     setCategoryPopoverOpen(false)
+    setRestaurantFormSearch("")
+    setRestaurantFormPopoverOpen(false)
     setShowFoodFormModal(true)
   }
 
@@ -284,6 +290,8 @@ export default function FoodsList() {
     setImagePreviewUrl(String(food.image || ""))
     setCategorySearch("")
     setCategoryPopoverOpen(false)
+    setRestaurantFormSearch("")
+    setRestaurantFormPopoverOpen(false)
     setShowFoodFormModal(true)
   }
 
@@ -503,18 +511,77 @@ export default function FoodsList() {
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             </div>
-            <select
-              value={selectedRestaurant}
-              onChange={(e) => setSelectedRestaurant(e.target.value)}
-              className="px-4 py-2.5 min-w-[220px] text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400"
-            >
-              <option value="all">All Restaurants</option>
-              {restaurantOptions.map((restaurant) => (
-                <option key={restaurant.id} value={restaurant.id}>
-                  {restaurant.name}
-                </option>
-              ))}
-            </select>
+            <Popover open={restaurantFilterPopoverOpen} onOpenChange={setRestaurantFilterPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="px-4 py-2.5 min-w-[220px] max-w-[280px] text-sm rounded-lg border border-slate-300 bg-white text-left flex items-center justify-between"
+                >
+                  <span className="truncate mr-2">
+                    {selectedRestaurant === "all" 
+                      ? "All Restaurants" 
+                      : restaurantOptions.find(r => r.id === selectedRestaurant)?.name || "All Restaurants"}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2" align="start">
+                <input
+                  type="text"
+                  value={restaurantFilterSearch}
+                  onChange={(e) => setRestaurantFilterSearch(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm bg-white mb-2 focus:outline-none focus:ring-1 focus:ring-slate-300"
+                  placeholder="Search restaurant..."
+                  autoFocus
+                />
+                <div 
+                  className="max-h-56 overflow-y-auto"
+                  onWheel={(e) => e.stopPropagation()}
+                  onTouchMove={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRestaurant("all")
+                      setRestaurantFilterPopoverOpen(false)
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-slate-100 ${
+                      selectedRestaurant === "all" ? "bg-slate-100 font-medium" : ""
+                    }`}
+                  >
+                    All Restaurants
+                  </button>
+                  {restaurantOptions
+                    .filter((r) => {
+                      const q = restaurantFilterSearch.toLowerCase().trim()
+                      if (!q) return true
+                      return String(r.name).toLowerCase().includes(q) || String(r.id).toLowerCase().includes(q)
+                    })
+                    .map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedRestaurant(r.id)
+                          setRestaurantFilterPopoverOpen(false)
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-slate-100 ${
+                          selectedRestaurant === r.id ? "bg-slate-100 font-medium" : ""
+                        }`}
+                      >
+                        {r.name}
+                      </button>
+                    ))}
+                  {restaurantOptions.filter((r) => {
+                      const q = restaurantFilterSearch.toLowerCase().trim()
+                      if (!q) return true
+                      return String(r.name).toLowerCase().includes(q) || String(r.id).toLowerCase().includes(q)
+                    }).length === 0 && (
+                    <div className="px-3 py-2 text-sm text-slate-500">No restaurants found</div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>
@@ -747,6 +814,8 @@ export default function FoodsList() {
             setCategoryOptions([])
             setCategorySearch("")
             setCategoryPopoverOpen(false)
+            setRestaurantFormSearch("")
+            setRestaurantFormPopoverOpen(false)
             setSelectedImageFile(null)
             setImagePreviewUrl("")
           }
@@ -762,19 +831,78 @@ export default function FoodsList() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Restaurant</label>
-                <select
-                  value={foodForm.restaurantId}
-                  onChange={(e) => setFoodForm((prev) => ({ ...prev, restaurantId: e.target.value, categoryId: "", categoryName: "" }))}
-                  disabled={foodFormMode === "edit"}
-                  className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white disabled:bg-slate-100"
-                >
-                  <option value="">Select restaurant</option>
-                  {restaurantOptions.map((restaurant) => (
-                    <option key={restaurant.id} value={restaurant.id}>
-                      {restaurant.name}
-                    </option>
-                  ))}
-                </select>
+                <Popover open={restaurantFormPopoverOpen} onOpenChange={setRestaurantFormPopoverOpen} modal={true}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={foodFormMode === "edit"}
+                      className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white text-left flex items-center justify-between disabled:bg-slate-100 disabled:cursor-not-allowed"
+                    >
+                      <span className={`truncate mr-2 ${foodForm.restaurantId ? "text-slate-900" : "text-slate-400"}`}>
+                        {foodForm.restaurantId 
+                          ? restaurantOptions.find(r => r.id === foodForm.restaurantId)?.name || "Select restaurant" 
+                          : "Select restaurant"}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2" align="start">
+                    <input
+                      type="text"
+                      value={restaurantFormSearch}
+                      onChange={(e) => setRestaurantFormSearch(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm bg-white mb-2 focus:outline-none focus:ring-1 focus:ring-slate-300"
+                      placeholder="Search restaurant..."
+                      autoFocus
+                    />
+                    <div 
+                      className="max-h-56 overflow-y-auto"
+                      onWheel={(e) => e.stopPropagation()}
+                      onTouchMove={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFoodForm((prev) => ({ ...prev, restaurantId: "", categoryId: "", categoryName: "" }))
+                          setRestaurantFormPopoverOpen(false)
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-slate-100 ${
+                          !foodForm.restaurantId ? "bg-slate-100 font-medium" : ""
+                        }`}
+                      >
+                        Select restaurant
+                      </button>
+                      {restaurantOptions
+                        .filter((r) => {
+                          const q = restaurantFormSearch.toLowerCase().trim()
+                          if (!q) return true
+                          return String(r.name).toLowerCase().includes(q) || String(r.id).toLowerCase().includes(q)
+                        })
+                        .map((r) => (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => {
+                              setFoodForm((prev) => ({ ...prev, restaurantId: r.id, categoryId: "", categoryName: "" }))
+                              setRestaurantFormPopoverOpen(false)
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-md text-sm hover:bg-slate-100 ${
+                              foodForm.restaurantId === r.id ? "bg-slate-100 font-medium" : ""
+                            }`}
+                          >
+                            {r.name}
+                          </button>
+                        ))}
+                      {restaurantOptions.filter((r) => {
+                          const q = restaurantFormSearch.toLowerCase().trim()
+                          if (!q) return true
+                          return String(r.name).toLowerCase().includes(q) || String(r.id).toLowerCase().includes(q)
+                        }).length === 0 && (
+                        <div className="px-3 py-2 text-sm text-slate-500">No restaurants found</div>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>

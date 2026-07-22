@@ -113,6 +113,9 @@ export default function RestaurantsList() {
   const [selectedRestaurant, setSelectedRestaurant] = useState(null)
   const [restaurantDetails, setRestaurantDetails] = useState(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
+  const [restaurantMenu, setRestaurantMenu] = useState([])
+  const [loadingMenu, setLoadingMenu] = useState(false)
+  const [menuError, setMenuError] = useState(null)
   const [banConfirmDialog, setBanConfirmDialog] = useState(null) // { restaurant, action: 'ban' | 'unban' }
   const [banning, setBanning] = useState(false)
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(null) // { restaurant }
@@ -571,6 +574,30 @@ export default function RestaurantsList() {
     setSelectedRestaurant(restaurant)
     setLoadingDetails(true)
     setRestaurantDetails(null)
+
+    const restaurantId = restaurant._id || restaurant.id || restaurant.restaurantId
+    setLoadingMenu(true)
+    setMenuError(null)
+    setRestaurantMenu([])
+    
+    if (adminAPI.getFoods && restaurantId) {
+      adminAPI.getFoods({ restaurantId, limit: 1000 })
+        .then(res => {
+          let list = res?.data?.data?.foods || res?.data?.foods || res?.data?.data || []
+          if (!Array.isArray(list)) list = []
+          const filtered = list.filter(f => String(f.restaurantId) === String(restaurantId))
+          setRestaurantMenu(filtered)
+        })
+        .catch(err => {
+          debugError("Error fetching menu:", err)
+          setMenuError("Failed to load menu items")
+        })
+        .finally(() => {
+          setLoadingMenu(false)
+        })
+    } else {
+      setLoadingMenu(false)
+    }
 
     try {
       // Always fetch full details from Admin API so the modal matches the
@@ -2528,6 +2555,69 @@ export default function RestaurantsList() {
                       </div>
                     </div>
                   )}
+
+                  {/* Menu Section */}
+                  <div className="pt-6 border-t border-slate-200">
+                    <h4 className="text-lg font-semibold text-slate-900 mb-4 flex items-center justify-between">
+                      <span>Menu Items</span>
+                      {restaurantMenu.length > 0 && (
+                        <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">
+                          {restaurantMenu.length} {restaurantMenu.length === 1 ? 'Item' : 'Items'}
+                        </span>
+                      )}
+                    </h4>
+                    
+                    {loadingMenu ? (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-3" />
+                        <span className="text-sm text-slate-500 font-medium">Loading menu...</span>
+                      </div>
+                    ) : menuError ? (
+                      <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium text-center border border-red-100">
+                        {menuError}
+                      </div>
+                    ) : restaurantMenu.length === 0 ? (
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center flex flex-col items-center">
+                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+                          <CircleX className="w-8 h-8 text-slate-300" />
+                        </div>
+                        <p className="text-slate-700 font-medium">No menu items available</p>
+                        <p className="text-slate-500 text-xs mt-1">This restaurant hasn't added any food items yet.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {restaurantMenu.map((item) => (
+                          <div key={item._id || item.id} className="flex gap-4 p-4 border border-slate-200 rounded-xl bg-white hover:border-slate-300 transition-colors">
+                            <div className="w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-slate-100 border border-slate-100">
+                              <ImageWithFallback 
+                                src={item.image} 
+                                fallbackSrc={PLACEHOLDER_128} 
+                                alt={item.name} 
+                                className="w-full h-full object-cover" 
+                              />
+                            </div>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <h5 className="font-semibold text-slate-900 truncate text-sm" title={item.name}>{item.name}</h5>
+                                {item.foodType && (
+                                  <span className={`w-3 h-3 border shrink-0 flex items-center justify-center ${String(item.foodType).toLowerCase() === 'veg' ? 'border-green-600' : 'border-red-600'}`} title={item.foodType}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${String(item.foodType).toLowerCase() === 'veg' ? 'bg-green-600' : 'bg-red-600'}`}></span>
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500 mb-2 truncate" title={item.categoryName}>{item.categoryName || 'Uncategorized'}</p>
+                              <div className="flex items-center justify-between mt-auto">
+                                <span className="font-bold text-slate-900 text-sm">₹{item.price || 0}</span>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase ${item.isAvailable !== false ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700'}`}>
+                                  {item.isAvailable !== false ? 'Available' : 'Unavailable'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 )
               })()}

@@ -100,5 +100,5 @@ export const config = {
     emailFrom: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@example.com',
     bookingRadiusKm: Number(process.env.BOOKING_RADIUS_KM || 50),
     storageDir: process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_DIR) : path.resolve(__dirname, '../../uploads'),
-    baseUrl: process.env.BASE_URL || 'http://localhost:5000'
+    baseUrl: (process.env.BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
 };

@@ -38,8 +38,13 @@ export const validateConfig = () => {
             fs.mkdirSync(storageDir, { recursive: true });
         }
 
+        // Output resolved Base URL and Storage Directory
+        console.log('\nResolved Base URL:');
+        console.log(config.baseUrl);
+        console.log('');
+
         // Output resolved Storage Directory in exact layout requested
-        console.log('\nStorage Directory:');
+        console.log('Storage Directory:');
         console.log(storageDir.replace(/\\/g, '/')); // Normalize slashes for console/log readability
         console.log('');
 

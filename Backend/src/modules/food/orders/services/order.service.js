@@ -28,6 +28,7 @@ import { getIO, rooms } from '../../../../config/socket.js';
 import { addOrderJob } from '../../../../queues/producers/order.producer.js';
 import { fetchPolyline } from '../utils/googleMaps.js';
 import { getFirebaseDB } from '../../../../config/firebase.js';
+import { FACILITIES_CONFIG } from '../utils/facilitiesConfig.js';
 import * as foodTransactionService from './foodTransaction.service.js';
 import * as userWalletService from '../../user/services/userWallet.service.js';
 import { calculateOrderPricing } from './order-pricing.service.js';
@@ -889,13 +890,6 @@ export async function submitOrderRatings(orderId, userId, dto) {
     throw new ValidationError("You can rate only completed or delivered orders");
   }
 
-  const restaurantAlreadyRated = Number.isFinite(
-    Number(order?.ratings?.restaurant?.rating),
-  );
-  if (restaurantAlreadyRated) {
-    throw new ValidationError("Ratings already submitted for this order");
-  }
-
   const now = new Date();
   order.ratings.restaurant = {
     rating: dto.restaurantRating,
@@ -904,16 +898,16 @@ export async function submitOrderRatings(orderId, userId, dto) {
   };
 
   const restaurantFacilities = order.restaurantId?.facilities || {};
-  const facilities = ['parking', 'wifi', 'familyFriendly', 'evCharging', 'washroom'];
-  facilities.forEach(fac => {
-    const isSupported = restaurantFacilities[fac] === true;
-    if (isSupported && dto[fac]) {
-      order.ratings[fac] = {
-        rating: typeof dto[fac].rating === 'number' ? dto[fac].rating : null,
-        availability: dto[fac].availability !== false
+  FACILITIES_CONFIG.forEach(fac => {
+    const facKey = fac.key;
+    const isSupported = restaurantFacilities[facKey] === true;
+    if (isSupported && dto[facKey]) {
+      order.ratings[facKey] = {
+        rating: typeof dto[facKey].rating === 'number' ? dto[facKey].rating : null,
+        availability: dto[facKey].availability !== false
       };
     } else {
-      order.ratings[fac] = undefined;
+      order.ratings[facKey] = undefined;
     }
   });
 
@@ -945,11 +939,15 @@ export async function calculateAndSaveRestaurantRatingStats(restaurantId) {
   if (orders.length === 0) return;
 
   let overallSum = 0, overallCount = 0;
-  let parkingSum = 0, parkingCount = 0;
-  let wifiSum = 0, wifiCount = 0;
-  let familySum = 0, familyCount = 0;
-  let evSum = 0, evCount = 0;
-  let washroomSum = 0, washroomCount = 0;
+  
+  // Initialize dynamic facility stats
+  const facilityStats = {};
+  FACILITIES_CONFIG.forEach(fac => {
+    facilityStats[fac.key] = { sum: 0, count: 0 };
+  });
+
+  let overallFacilitySum = 0;
+  let overallFacilityCount = 0;
 
   orders.forEach(o => {
     const ratings = o.ratings || {};
@@ -958,36 +956,49 @@ export async function calculateAndSaveRestaurantRatingStats(restaurantId) {
       overallSum += ratings.restaurant.rating;
       overallCount++;
     }
-    if (ratings.parking && ratings.parking.availability !== false && typeof ratings.parking.rating === 'number') {
-      parkingSum += ratings.parking.rating;
-      parkingCount++;
-    }
-    if (ratings.wifi && ratings.wifi.availability !== false && typeof ratings.wifi.rating === 'number') {
-      wifiSum += ratings.wifi.rating;
-      wifiCount++;
-    }
-    if (ratings.familyFriendly && ratings.familyFriendly.availability !== false && typeof ratings.familyFriendly.rating === 'number') {
-      familySum += ratings.familyFriendly.rating;
-      familyCount++;
-    }
-    if (ratings.evCharging && ratings.evCharging.availability !== false && typeof ratings.evCharging.rating === 'number') {
-      evSum += ratings.evCharging.rating;
-      evCount++;
-    }
-    if (ratings.washroom && ratings.washroom.availability !== false && typeof ratings.washroom.rating === 'number') {
-      washroomSum += ratings.washroom.rating;
-      washroomCount++;
-    }
+
+    FACILITIES_CONFIG.forEach(fac => {
+      const facKey = fac.key;
+      if (ratings[facKey] && ratings[facKey].availability !== false && typeof ratings[facKey].rating === 'number') {
+        const rVal = ratings[facKey].rating;
+        facilityStats[facKey].sum += rVal;
+        facilityStats[facKey].count++;
+        
+        overallFacilitySum += rVal;
+        overallFacilityCount++;
+      }
+    });
   });
+
+  // Calculate dynamic nested facilityRatings structure
+  const facilityRatings = {};
+  FACILITIES_CONFIG.forEach(fac => {
+    const { sum, count } = facilityStats[fac.key];
+    facilityRatings[fac.key] = {
+      average: count > 0 ? Number((sum / count).toFixed(1)) : 0,
+      count
+    };
+  });
+
+  // Overall facilities summary
+  facilityRatings.overall = {
+    average: overallFacilityCount > 0 ? Number((overallFacilitySum / overallFacilityCount).toFixed(1)) : 0,
+    count: overallFacilityCount
+  };
 
   const updateData = {
     rating: overallCount > 0 ? Number((overallSum / overallCount).toFixed(1)) : 0,
     totalRatings: overallCount,
-    parkingRating: parkingCount > 0 ? Number((parkingSum / parkingCount).toFixed(1)) : 0,
-    wifiRating: wifiCount > 0 ? Number((wifiSum / wifiCount).toFixed(1)) : 0,
-    familyFriendlyRating: familyCount > 0 ? Number((familySum / familyCount).toFixed(1)) : 0,
-    evChargingRating: evCount > 0 ? Number((evSum / evCount).toFixed(1)) : 0,
-    washroomRating: washroomCount > 0 ? Number((washroomSum / washroomCount).toFixed(1)) : 0
+    
+    // Backward compatibility (old top-level fields)
+    parkingRating: facilityRatings.parking?.average || 0,
+    wifiRating: facilityRatings.wifi?.average || 0,
+    familyFriendlyRating: facilityRatings.familyFriendly?.average || 0,
+    evChargingRating: facilityRatings.evCharging?.average || 0,
+    washroomRating: facilityRatings.washroom?.average || 0,
+
+    // Nested ratings configuration
+    facilityRatings
   };
 
   await FoodRestaurant.findByIdAndUpdate(restaurantId, { $set: updateData });

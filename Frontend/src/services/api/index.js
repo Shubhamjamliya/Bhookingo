@@ -1524,6 +1524,8 @@ export const userAPI = {
     apiClient.get("/food/driving-mode/settings", { contextModule: "user" }),
   getRestaurantsAhead: (params, config = {}) =>
     apiClient.get("/food/driving-mode/restaurants", { params, contextModule: "user", ...config }),
+  getConnectingHighways: (params) =>
+    apiClient.get("/food/driving-mode/connecting-highways", { params, contextModule: "user" }),
   /** Get current user profile (Bearer USER). */
   getProfile: () =>
     getUserMeOnce().then((res) => {

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ValidationError } from '../../../../core/auth/errors.js';
+import { FACILITIES_CONFIG } from '../utils/facilitiesConfig.js';
 
 const orderItemSchema = z.object({
     itemId: z.string().min(1, 'Item id required'),
@@ -172,15 +173,15 @@ export function validateOrderRatingsDto(body) {
         availability: z.boolean().optional()
     }).optional();
 
-    const schema = z.object({
+    const shape = {
         restaurantRating: z.number().min(1).max(5),
-        restaurantComment: z.string().max(500).optional().nullable(),
-        parking: facilitySchema,
-        wifi: facilitySchema,
-        familyFriendly: facilitySchema,
-        evCharging: facilitySchema,
-        washroom: facilitySchema
+        restaurantComment: z.string().max(500).optional().nullable()
+    };
+    FACILITIES_CONFIG.forEach(fac => {
+        shape[fac.key] = facilitySchema;
     });
+
+    const schema = z.object(shape);
     const result = schema.safeParse(body || {});
     if (!result.success) {
         const formattedErrors = result.error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');

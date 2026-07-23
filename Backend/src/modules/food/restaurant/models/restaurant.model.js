@@ -255,6 +255,14 @@ const restaurantSchema = new mongoose.Schema(
     familyFriendlyRating: { type: Number, default: 0 },
     evChargingRating: { type: Number, default: 0 },
     washroomRating: { type: Number, default: 0 },
+    facilityRatings: {
+      parking: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
+      wifi: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
+      familyFriendly: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
+      evCharging: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
+      washroom: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
+      overall: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
+    },
     diningSettings: {
       isEnabled: { type: Boolean, default: false },
       maxGuests: { type: Number, default: 6 },

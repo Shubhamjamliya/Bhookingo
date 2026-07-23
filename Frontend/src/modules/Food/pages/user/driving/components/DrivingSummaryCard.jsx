@@ -1,23 +1,23 @@
 import React from "react";
-import { Navigation, Clock, UtensilsCrossed, Flag, Compass } from "lucide-react";
+import { Compass, Flag } from "lucide-react";
 
 export default function DrivingSummaryCard({ highwayRef, distanceAhead, nextStopEta, restaurantCount }) {
   return (
     <div className="w-full bg-white dark:bg-[#1a1a1a] shadow-[0_4px_20px_rgba(0,0,0,0.08)] rounded-2xl overflow-hidden border border-gray-100 dark:border-neutral-800 p-4 animate-fade-in relative z-10">
       
       {/* Top Section */}
-      <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-neutral-800 mb-4">
+      <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-neutral-800 mb-3.5">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
             <Compass className="w-4 h-4 text-orange-600" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-gray-900 dark:text-white leading-none">Restaurants Ahead</h3>
-            <span className="text-xs text-gray-500 dark:text-neutral-400">Delicious stops on your highway</span>
+            <h3 className="text-sm font-black text-gray-950 dark:text-white leading-none">Restaurants Ahead</h3>
+            <span className="text-[10px] font-bold text-gray-400 dark:text-neutral-500 mt-1 block">Food stops along your journey</span>
           </div>
         </div>
         {highwayRef && (
-          <span className="px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase text-orange-700 bg-orange-50 dark:bg-orange-950/40 dark:text-orange-400 border border-orange-200/40">
+          <span className="px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase text-orange-700 bg-orange-50 dark:bg-orange-950/40 dark:text-orange-400 border border-orange-200/40">
             On {highwayRef}
           </span>
         )}
@@ -25,23 +25,43 @@ export default function DrivingSummaryCard({ highwayRef, distanceAhead, nextStop
 
       {/* Grid Stats */}
       <div className="grid grid-cols-3 gap-2 text-center mb-4">
+        {/* Next Restaurant Column */}
         <div className="space-y-1">
-          <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Distance Ahead</span>
-          <p className="text-lg font-black text-gray-900 dark:text-white leading-none">
+          <span className="text-[9px] uppercase font-bold text-gray-400 dark:text-neutral-500 tracking-wider block">
+            Next Restaurant
+          </span>
+          <p className="text-base font-black text-gray-900 dark:text-white leading-none">
             {distanceAhead !== null ? `${distanceAhead} km` : "—"}
           </p>
+          <span className="text-[8px] font-bold text-gray-400 dark:text-neutral-600 block mt-0.5">
+            distance ahead
+          </span>
         </div>
+
+        {/* Reach In Column */}
         <div className="space-y-1 border-x border-gray-100 dark:border-neutral-800">
-          <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Next Stop ETA</span>
-          <p className="text-lg font-black text-gray-900 dark:text-white leading-none">
+          <span className="text-[9px] uppercase font-bold text-gray-400 dark:text-neutral-500 tracking-wider block">
+            Reach In
+          </span>
+          <p className="text-base font-black text-gray-900 dark:text-white leading-none">
             {nextStopEta !== null ? `${nextStopEta} min` : "—"}
           </p>
+          <span className="text-[8px] font-bold text-gray-400 dark:text-neutral-600 block mt-0.5">
+            drive time
+          </span>
         </div>
+
+        {/* Restaurants Ahead Column */}
         <div className="space-y-1">
-          <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Restaurants</span>
-          <p className="text-lg font-black text-gray-900 dark:text-white leading-none">
+          <span className="text-[9px] uppercase font-bold text-gray-400 dark:text-neutral-500 tracking-wider block">
+            Restaurants Ahead
+          </span>
+          <p className="text-base font-black text-gray-900 dark:text-white leading-none">
             {restaurantCount ?? 0}
           </p>
+          <span className="text-[8px] font-bold text-gray-400 dark:text-neutral-600 block mt-0.5">
+            matching filters
+          </span>
         </div>
       </div>
 

@@ -17,13 +17,33 @@ import { Card, CardContent } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { Textarea } from "@food/components/ui/textarea"
 import { orderAPI } from "@food/api"
+import { FACILITIES_CONFIG } from "../../../utils/facilitiesConfig"
 
 // Restroom SVG Icon matching Restroom Sign
 const RestroomIcon = (props) => (
   <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <path d="M9 22V12h6v10M12 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM8 8h8a2 2 0 0 1 2 2v6h-3v4H9v-4H6v-6a2 2 0 0 1 2-2Z" />
+    <path d="M9 22V12h6v10M12 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM8 8h8a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM8 8h8a2 2 0 0 1 2 2v6h-3v4H9v-4H6v-6a2 2 0 0 1 2-2Z" />
   </svg>
 )
+
+const ICON_MAP = {
+  Car,
+  Wifi,
+  Users,
+  Zap,
+  Restroom: RestroomIcon
+}
+
+const getRatingLabel = (rating) => {
+  switch (rating) {
+    case 1: return "Terrible";
+    case 2: return "Bad";
+    case 3: return "Good";
+    case 4: return "Very Good";
+    case 5: return "Excellent";
+    default: return "";
+  }
+}
 
 export default function OrderReview() {
   const { orderId } = useParams()
@@ -38,16 +58,15 @@ export default function OrderReview() {
   // Review states
   const [overallRating, setOverallRating] = useState(null)
   const [feedbackText, setFeedbackText] = useState("")
-
-  const [parkingRating, setParkingRating] = useState(null)
-  const [wifiRating, setWifiRating] = useState(null)
-  const [familyFriendlyRating, setFamilyFriendlyRating] = useState(null)
-  const [evChargingRating, setEvChargingRating] = useState(null)
-  const [washroomRating, setWashroomRating] = useState(null)
+  const [facilityRatings, setFacilityRatings] = useState({})
 
   const hasSubmittedReview = useMemo(() => {
     return typeof (order?.ratings?.restaurant?.rating || order?.restaurantRating) === 'number' && (order?.ratings?.restaurant?.rating || order?.restaurantRating) > 0
   }, [order])
+
+  const setFacilityRating = (key, rating) => {
+    setFacilityRatings(prev => ({ ...prev, [key]: rating }))
+  }
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -63,11 +82,11 @@ export default function OrderReview() {
           setOverallRating(currentRating)
           setFeedbackText(fetchedOrder.ratings?.restaurant?.comment || "")
 
-          setParkingRating(fetchedOrder.ratings?.parking?.rating || null)
-          setWifiRating(fetchedOrder.ratings?.wifi?.rating || null)
-          setFamilyFriendlyRating(fetchedOrder.ratings?.familyFriendly?.rating || null)
-          setEvChargingRating(fetchedOrder.ratings?.evCharging?.rating || null)
-          setWashroomRating(fetchedOrder.ratings?.washroom?.rating || null)
+          const initialRatings = {}
+          FACILITIES_CONFIG.forEach(fac => {
+            initialRatings[fac.key] = fetchedOrder.ratings?.[fac.key]?.rating || null
+          })
+          setFacilityRatings(initialRatings)
 
           // If review exists, default to read-only view mode
           if (typeof currentRating === 'number' && currentRating > 0) {
@@ -101,21 +120,13 @@ export default function OrderReview() {
         restaurantComment: feedbackText || undefined,
       }
 
-      const facilitiesList = [
-        { key: 'parking', rating: parkingRating },
-        { key: 'wifi', rating: wifiRating },
-        { key: 'familyFriendly', rating: familyFriendlyRating },
-        { key: 'evCharging', rating: evChargingRating },
-        { key: 'washroom', rating: washroomRating },
-      ]
-
       const restaurantFacilities = order?.restaurantId?.facilities || order?.restaurant?.facilities || {}
 
-      facilitiesList.forEach(fac => {
+      FACILITIES_CONFIG.forEach(fac => {
         const isSupported = restaurantFacilities[fac.key] === true
         if (isSupported) {
           payload[fac.key] = {
-            rating: fac.rating,
+            rating: facilityRatings[fac.key] || null,
             availability: true
           }
         }
@@ -171,13 +182,7 @@ export default function OrderReview() {
   const orderDateStr = order?.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'
   
   const restaurantFacilities = order?.restaurantId?.facilities || order?.restaurant?.facilities || {}
-  const activeFacilities = [
-    { key: 'parking', label: 'Parking', icon: Car, rating: parkingRating, setRating: setParkingRating, bgClass: 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400' },
-    { key: 'wifi', label: 'WiFi', icon: Wifi, rating: wifiRating, setRating: setWifiRating, bgClass: 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400' },
-    { key: 'familyFriendly', label: 'Family Friendly', icon: Users, rating: familyFriendlyRating, setRating: setFamilyFriendlyRating, bgClass: 'bg-green-50 text-green-600 dark:bg-green-950/20 dark:text-green-400' },
-    { key: 'evCharging', label: 'EV Charging', icon: Zap, rating: evChargingRating, setRating: setEvChargingRating, bgClass: 'bg-amber-50 text-amber-500 dark:bg-amber-950/20 dark:text-amber-400' },
-    { key: 'washroom', label: 'Restroom', icon: RestroomIcon, rating: washroomRating, setRating: setWashroomRating, bgClass: 'bg-purple-50 text-purple-600 dark:bg-purple-950/20 dark:text-purple-400' },
-  ].filter(f => restaurantFacilities[f.key] === true)
+  const activeFacilities = FACILITIES_CONFIG.filter(f => restaurantFacilities[f.key] === true)
 
   return (
     <AnimatedPage>
@@ -259,6 +264,12 @@ export default function OrderReview() {
                     </button>
                   ))}
                 </div>
+
+                {overallRating !== null && (
+                  <p className="text-orange-600 dark:text-orange-400 text-sm font-black mt-1">
+                    {getRatingLabel(overallRating)}
+                  </p>
+                )}
               </div>
 
               {/* Individual Feature Ratings Section */}
@@ -266,13 +277,19 @@ export default function OrderReview() {
                 <>
                   <hr className="border-slate-100 dark:border-gray-850" />
                   <div className="space-y-4">
-                    <p className="text-[11px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest text-left">
-                      RATE INDIVIDUAL FEATURES
-                    </p>
+                    <div className="text-left">
+                      <p className="text-[14px] font-black text-slate-800 dark:text-white">
+                        Rate the facilities <span className="text-slate-400 dark:text-gray-500 font-bold">(Optional)</span>
+                      </p>
+                      <p className="text-[12px] font-medium text-slate-400 dark:text-gray-500 mt-1">
+                        Help others by rating the facilities available at this restaurant.
+                      </p>
+                    </div>
 
                     <div className="space-y-4">
                       {activeFacilities.map((fac) => {
-                        const Icon = fac.icon
+                        const Icon = ICON_MAP[fac.iconName] || Star
+                        const currentRating = facilityRatings[fac.key] || null
                         return (
                           <div key={fac.key} className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -287,13 +304,13 @@ export default function OrderReview() {
                                 <button
                                   key={`fac-${fac.key}-${star}`}
                                   disabled={!isEditing}
-                                  onClick={() => fac.setRating(star)}
+                                  onClick={() => setFacilityRating(fac.key, star)}
                                   type="button"
                                   className="p-1"
                                 >
                                   <Star
                                     className={`w-7 h-7 transition-colors duration-200 ${
-                                      star <= (fac.rating || 0)
+                                      star <= (currentRating || 0)
                                         ? "text-yellow-400 fill-yellow-400"
                                         : "text-slate-200 dark:text-gray-800 fill-none stroke-[1.5]"
                                     }`}
@@ -315,15 +332,21 @@ export default function OrderReview() {
           <Card className="rounded-3xl border border-slate-100 dark:border-gray-850 bg-white dark:bg-[#121212] shadow-sm">
             <CardContent className="p-6 space-y-4">
               <p className="text-[11px] font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest text-left">
-                REVIEW COMMENT
+                REVIEW COMMENT (Optional)
               </p>
               {isEditing ? (
-                <Textarea
-                  placeholder="Tell us about your experience..."
-                  value={feedbackText}
-                  onChange={(e) => setFeedbackText(e.target.value)}
-                  className="min-h-[100px] text-sm bg-slate-50/50 dark:bg-gray-900 border-slate-100 dark:border-gray-850 resize-none rounded-2xl focus:ring-[var(--primary)] p-4"
-                />
+                <div className="relative">
+                  <Textarea
+                    placeholder="Tell us about your experience..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    className="min-h-[100px] text-sm bg-slate-50/50 dark:bg-gray-900 border-slate-100 dark:border-gray-850 resize-none rounded-2xl focus:ring-[var(--primary)] p-4 pb-8"
+                    maxLength={500}
+                  />
+                  <div className="absolute bottom-2.5 right-3 text-[10px] text-slate-400 dark:text-gray-500 font-bold">
+                    {feedbackText.length}/500
+                  </div>
+                </div>
               ) : (
                 <div className="bg-slate-50/50 dark:bg-gray-900 p-4 rounded-2xl border border-slate-100 dark:border-gray-850">
                   <p className="text-sm text-gray-700 dark:text-gray-300 italic">

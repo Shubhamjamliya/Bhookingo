@@ -35,10 +35,10 @@ export default function DrivingRestaurantCard({ restaurant, onClick }) {
   return (
     <div 
       onClick={onClick}
-      className="flex gap-4 p-3 bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-neutral-800 rounded-2xl shadow-sm hover:shadow-md cursor-pointer transition-all duration-300 transform hover:-translate-y-0.5"
+      className="flex gap-3.5 p-3.5 bg-white dark:bg-[#161616] border border-gray-100 dark:border-neutral-900/60 rounded-2xl shadow-sm hover:shadow transition-all duration-200 active:scale-[0.98]"
     >
       {/* Left: Image with Veg Indicator */}
-      <div className="relative w-28 h-28 shrink-0 rounded-xl overflow-hidden bg-gray-50 dark:bg-neutral-800">
+      <div className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-gray-50 dark:bg-neutral-800">
         <img 
           src={imageSrc} 
           alt={restaurantName}
@@ -46,7 +46,7 @@ export default function DrivingRestaurantCard({ restaurant, onClick }) {
           onError={(e) => { e.target.src = FOOD_IMAGE_FALLBACK; }}
         />
         {pureVegRestaurant && (
-          <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-green-600 text-white text-[8px] font-black uppercase tracking-wider">
+          <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-green-600 text-white text-[8px] font-black uppercase tracking-wider">
             Veg
           </div>
         )}
@@ -55,56 +55,73 @@ export default function DrivingRestaurantCard({ restaurant, onClick }) {
       {/* Right: Info */}
       <div className="flex-1 min-w-0 flex flex-col justify-between">
         
-        {/* Name and Rating */}
-        <div>
-          <div className="flex items-start justify-between gap-1">
+        {/* Name, Verified checkmark, Distance & ETA */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
             <h4 className="font-extrabold text-sm text-gray-900 dark:text-white truncate flex items-center gap-1">
               {restaurantName}
-              <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0 fill-current" />
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-500 shrink-0 fill-current" />
             </h4>
-            <div className="flex items-center gap-0.5 text-xs text-orange-600 font-bold shrink-0">
-              <Star className="w-3.5 h-3.5 fill-current" />
-              <span>{rating ? rating.toFixed(1) : "0.0"}</span>
-            </div>
+            <p className="text-[10px] text-gray-400 dark:text-neutral-500 font-semibold mt-0.5">
+              {highwayRef}, {distanceKm} km Ahead
+            </p>
           </div>
-          
-          {/* Cuisines */}
-          <p className="text-[10px] text-gray-400 dark:text-neutral-500 truncate mt-0.5 font-semibold">
-            {cuisines?.length ? cuisines.join(", ") : "North Indian, Fast Food"}
-          </p>
-        </div>
-
-        {/* Highway ref & Distance */}
-        <div className="flex items-center justify-between text-xs font-bold text-gray-700 dark:text-neutral-300 mt-1">
-          <span className="text-gray-500 dark:text-neutral-400 font-medium truncate max-w-[70%]">
-            {highwayRef}, {distanceKm} km Ahead
-          </span>
-          <span className="text-[var(--primary)] shrink-0 flex items-center gap-0.5 font-black">
-            <Clock className="w-3.5 h-3.5" />
-            {etaMinutes} min
-          </span>
-        </div>
-
-        {/* Facilities list */}
-        <div className="flex flex-wrap gap-1.5 mt-2">
-          {facilities?.washroom && (
-            <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-md">
-              Washroom
+          <div className="text-right shrink-0">
+            <span className="text-xs font-black text-orange-500 block">
+              {distanceKm} km
             </span>
+            <span className="text-[9px] font-bold text-gray-400 dark:text-neutral-500 block">
+              {etaMinutes} min
+            </span>
+          </div>
+        </div>
+
+        {/* Rating and Cuisines */}
+        <div className="flex items-center gap-1.5 text-[10px] mt-1 font-bold">
+          <div className="flex items-center gap-0.5 text-orange-500">
+            <Star className="w-3 h-3 fill-current" />
+            <span>{rating ? rating.toFixed(1) : "4.0"}</span>
+          </div>
+          <span className="text-gray-300 dark:text-neutral-800">•</span>
+          <span className="text-gray-400 dark:text-neutral-500">({totalRatings || "1.2K"})</span>
+          <span className="text-gray-300 dark:text-neutral-800">•</span>
+          <span className="text-gray-500 dark:text-neutral-400 truncate max-w-[120px]">
+            {cuisines?.length ? cuisines.join(", ") : "North Indian, Punjabi"}
+          </span>
+        </div>
+
+        {/* Facilities Box Grid (Washroom & EV Charging) */}
+        <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+          {facilities?.washroom && (
+            <div className="flex items-center justify-between px-2 py-1 rounded bg-blue-50/40 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30 text-[9px] font-bold text-blue-700 dark:text-blue-400">
+              <span className="flex items-center gap-1">
+                <span>🚻</span>
+                <span>Washroom</span>
+              </span>
+              <span className="text-blue-500/80 font-black">Clean</span>
+            </div>
           )}
           {facilities?.evCharging && (
-            <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400 rounded-md">
-              EV Charging
-            </span>
+            <div className="flex items-center justify-between px-2 py-1 rounded bg-green-50/40 dark:bg-green-950/20 border border-green-100/50 dark:border-green-900/30 text-[9px] font-bold text-green-700 dark:text-green-400">
+              <span className="flex items-center gap-1">
+                <span>⚡</span>
+                <span>EV Charging</span>
+              </span>
+              <span className="text-green-500/80 font-black">Available</span>
+            </div>
           )}
+        </div>
+
+        {/* Smaller badges (Parking, Family) */}
+        <div className="flex flex-wrap gap-1 mt-1.5">
           {facilities?.parking && (
-            <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 rounded-md">
-              Parking
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[8px] font-black uppercase bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 rounded">
+              <span>🅿️</span> Parking
             </span>
           )}
           {facilities?.familyFriendly && (
-            <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-md">
-              Family
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[8px] font-black uppercase bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 text-gray-500 dark:text-neutral-400 rounded">
+              <span>👥</span> Family
             </span>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { getDrivingSettings, updateDrivingSettings, getRestaurantsAhead } from '../services/driving.service.js';
+import { getDrivingSettings, updateDrivingSettings, getRestaurantsAhead, getConnectingHighways } from '../services/driving.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 
 const toFinite = (v) => {
@@ -89,6 +89,42 @@ export const updateDrivingModeSettingsController = async (req, res, next) => {
             success: true,
             message: 'Driving mode settings updated successfully',
             data: updated
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * GET /food/driving-mode/connecting-highways
+ */
+export const getConnectingHighwaysController = async (req, res, next) => {
+    try {
+        const startLat = toFinite(req.query.startLat);
+        const startLng = toFinite(req.query.startLng);
+        const endLat = toFinite(req.query.endLat);
+        const endLng = toFinite(req.query.endLng);
+
+        if (startLat === null || startLng === null || endLat === null || endLng === null) {
+            return res.status(400).json({
+                success: false,
+                message: 'startLat, startLng, endLat, and endLng are required'
+            });
+        }
+
+        const searchRadiusKm = toFinite(req.query.searchRadiusKm);
+
+        const highways = await getConnectingHighways({
+            startLat,
+            startLng,
+            endLat,
+            endLng,
+            searchRadiusKm: searchRadiusKm !== null ? searchRadiusKm : undefined
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: highways
         });
     } catch (error) {
         next(error);

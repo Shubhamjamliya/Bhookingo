@@ -8,6 +8,7 @@ import { ValidationError } from '../../../../core/auth/errors.js';
 
 // Constants
 const DRIVING_SETTINGS_KEY = 'driving_mode_settings';
+export const HIGHWAY_CONNECTIVITY_SEARCH_RADIUS_KM = 50;
 
 const DEFAULT_SETTINGS = {
     enabled: true,
@@ -263,5 +264,120 @@ export async function validateOrderDrivingRange(restaurant, userLocation) {
     if (distanceKm > settings.restaurantSearchRadiusKm) {
         throw new ValidationError(`Restaurant is outside your driving range. Allowed: ${settings.restaurantSearchRadiusKm} KM, Actual: ${distanceKm.toFixed(1)} KM.`);
     }
+}
+
+export async function getConnectingHighways({ startLat, startLng, endLat, endLng, searchRadiusKm }) {
+    const radiusKm = Number(searchRadiusKm) || HIGHWAY_CONNECTIVITY_SEARCH_RADIUS_KM;
+    const thresholdMeters = radiusKm * 1000;
+    const paddingDeg = thresholdMeters / 111000;
+
+    console.log(`[ConnectingHighways] Origin: [${startLat}, ${startLng}], Destination: [${endLat}, ${endLng}], Search Radius: ${radiusKm} km`);
+
+    // 1. Find candidate highways near start location
+    const startQuery = {
+        isActive: true,
+        'boundingBox.minLat': { $lte: startLat + paddingDeg },
+        'boundingBox.maxLat': { $gte: startLat - paddingDeg },
+        'boundingBox.minLng': { $lte: startLng + paddingDeg },
+        'boundingBox.maxLng': { $gte: startLng - paddingDeg }
+    };
+    const startHighways = await FoodHighway.find(startQuery).lean();
+
+    // 2. Find candidate highways near end location
+    const endQuery = {
+        isActive: true,
+        'boundingBox.minLat': { $lte: endLat + paddingDeg },
+        'boundingBox.maxLat': { $gte: endLat - paddingDeg },
+        'boundingBox.minLng': { $lte: endLng + paddingDeg },
+        'boundingBox.maxLng': { $gte: endLng - paddingDeg }
+    };
+    const endHighways = await FoodHighway.find(endQuery).lean();
+
+    // 3. Find common highways (intersection)
+    const endHwRefs = new Set(endHighways.map(h => h.ref).filter(Boolean));
+    const endHwIds = new Set(endHighways.map(h => h._id.toString()));
+    
+    const dbHighways = startHighways.filter(h => {
+        if (h.ref && endHwRefs.has(h.ref)) return true;
+        return endHwIds.has(h._id.toString());
+    });
+
+    console.log(`[ConnectingHighways] Candidates surviving DB intersection query: ${dbHighways.length}`);
+
+    const startPt = turf.point([startLng, startLat]);
+    const endPt = turf.point([endLng, endLat]);
+    const matching = [];
+
+    // 4. Proximity validation using Turf + details calculation
+    for (const hw of dbHighways) {
+        let line;
+        if (Array.isArray(hw.segments) && hw.segments.length > 0) {
+            const lines = hw.segments.map(seg => seg.map(c => [c.lng, c.lat]));
+            line = turf.multiLineString(lines);
+        } else if (Array.isArray(hw.coordinates) && hw.coordinates.length >= 2) {
+            const lineCoords = hw.coordinates.map(c => [c.lng, c.lat]);
+            line = turf.lineString(lineCoords);
+        } else {
+            console.log(`[ConnectingHighways] Highway ${hw.ref || hw.name} rejected: No valid coordinates or segments`);
+            continue;
+        }
+
+        let startProj, endProj;
+        try {
+            startProj = turf.nearestPointOnLine(line, startPt, { units: 'kilometers' });
+            endProj = turf.nearestPointOnLine(line, endPt, { units: 'kilometers' });
+        } catch (e) {
+            console.log(`[ConnectingHighways] Highway ${hw.ref || hw.name} rejected: Turf projection error: ${e.message}`);
+            continue;
+        }
+
+        const startDist = startProj.properties.dist * 1000; // convert km to meters
+        const endDist = endProj.properties.dist * 1000;     // convert km to meters
+
+        console.log(`[ConnectingHighways] Candidate ${hw.ref || hw.name} - Dist to start: ${startDist.toFixed(1)}m, Dist to end: ${endDist.toFixed(1)}m`);
+
+        if (startDist <= thresholdMeters && endDist <= thresholdMeters) {
+            // Projected distances along the line in km (since units is kilometers)
+            const startLocKm = startProj.properties.location;
+            const endLocKm = endProj.properties.location;
+            const approxDistanceKm = Number(Math.abs(endLocKm - startLocKm).toFixed(1));
+            // Average highway speed = 80 km/h
+            const approxTravelTimeMinutes = Math.max(1, Math.round((approxDistanceKm / 80) * 60));
+
+            // Count approved active restaurants on this highway
+            const restaurantCount = await FoodRestaurant.countDocuments({
+                highwayId: hw._id,
+                status: 'approved',
+                isAcceptingOrders: true
+            });
+
+            matching.push({
+                _id: hw._id,
+                name: hw.name,
+                ref: hw.ref,
+                restaurantCount,
+                approxDistanceKm,
+                approxTravelTimeMinutes
+            });
+        } else {
+            const reasons = [];
+            if (startDist > thresholdMeters) reasons.push(`start too far (${startDist.toFixed(1)}m > ${thresholdMeters}m)`);
+            if (endDist > thresholdMeters) reasons.push(`end too far (${endDist.toFixed(1)}m > ${thresholdMeters}m)`);
+            console.log(`[ConnectingHighways] Highway ${hw.ref || hw.name} rejected: ${reasons.join(' AND ')}`);
+        }
+    }
+
+    // Sort by:
+    // 1. Recommended (high restaurant count first)
+    // 2. Shortest distance
+    matching.sort((a, b) => {
+        if (b.restaurantCount !== a.restaurantCount) {
+            return b.restaurantCount - a.restaurantCount;
+        }
+        return a.approxDistanceKm - b.approxDistanceKm;
+    });
+
+    console.log(`[ConnectingHighways] Final returned matching highways:`, matching.map(h => h.ref || h.name));
+    return matching;
 }
 

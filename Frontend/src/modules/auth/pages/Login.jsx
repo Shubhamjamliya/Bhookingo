@@ -788,22 +788,20 @@ export default function UnifiedOTPFastLogin() {
                   {/* Google & Apple Stack */}
                   <div className="space-y-1.5">
                     {/* Google Sign In */}
-                    <div className="w-full flex justify-center">
+                    <div className="w-full">
                       <GoogleLoginButton />
                     </div>
 
                     {/* Apple Sign In */}
-                    <div className="w-full flex justify-center">
-                      <button
-                        type="button"
-                        className="w-full max-w-[320px] py-2.5 bg-surface border border-border hover:bg-gray-50 rounded-full flex items-center justify-center gap-2.5 font-bold text-gray-700 text-xs shadow-sm cursor-pointer transition-colors mobile-button-padding"
-                      >
-                        <svg className="w-5 h-5 text-text-primary" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C3.8 16.32 3.98 9.58 8.1 9.28c1.37.1 2.2.78 3.03.8.84-.02 1.86-.8 3.42-.65 1.64.16 2.82.88 3.5 1.95-3.22 1.88-2.69 6.08.28 7.3-.7 1.76-1.52 3.48-3.28 3.6zM12.03 9.25c-.15-2.23 1.66-4.14 3.75-4.25.2 2.52-2.1 4.54-3.75 4.25z" />
-                        </svg>
-                        <span>Continue with Apple</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="w-full py-2.5 bg-surface border border-border hover:bg-gray-50 rounded-full flex items-center justify-center gap-2.5 font-bold text-gray-700 text-xs shadow-sm cursor-pointer transition-colors mobile-button-padding"
+                    >
+                      <svg className="w-5 h-5 text-text-primary" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C3.8 16.32 3.98 9.58 8.1 9.28c1.37.1 2.2.78 3.03.8.84-.02 1.86-.8 3.42-.65 1.64.16 2.82.88 3.5 1.95-3.22 1.88-2.69 6.08.28 7.3-.7 1.76-1.52 3.48-3.28 3.6zM12.03 9.25c-.15-2.23 1.66-4.14 3.75-4.25.2 2.52-2.1 4.54-3.75 4.25z" />
+                      </svg>
+                      <span>Continue with Apple</span>
+                    </button>
                   </div>
 
                   {/* Skip For Now Button */}

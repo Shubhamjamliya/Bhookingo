@@ -7,9 +7,9 @@ import { Input } from "@food/components/ui/input"
 import { authAPI } from "@food/api"
 import loginBanner from "@food/assets/loginbanner.png"
 import GoogleLoginButton from "@food/components/user/GoogleLoginButton"
-const debugLog = (...args) => {}
-const debugWarn = (...args) => {}
-const debugError = (...args) => {}
+const debugLog = (...args) => { }
+const debugWarn = (...args) => { }
+const debugError = (...args) => { }
 
 
 export default function SignIn() {
@@ -194,7 +194,7 @@ export default function SignIn() {
           </div>
 
           {/* Social login buttons */}
-          <div className="flex justify-center w-full">
+          <div className="grid grid-cols-1 gap-3">
             <GoogleLoginButton />
           </div>
 

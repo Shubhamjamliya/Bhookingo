@@ -366,6 +366,7 @@ export default function DrivingMode() {
     abortControllerRef.current = controller;
 
     if (isInitial) {
+      hasFetchedInitial.current = true;
       if (currentJourney) {
         setStatus("AVAILABLE"); // Progressive loading: keep page interactive
       } else {
@@ -430,8 +431,14 @@ export default function DrivingMode() {
       }
     } catch (err) {
       clearTimeout(timeoutIdRef.current);
-      if (err.name === "AbortError") {
-        return; // aborted, ignore state transition
+      const isCanceled = 
+        err?.name === "AbortError" || 
+        err?.name === "CanceledError" || 
+        err?.code === "ERR_CANCELED" || 
+        (err?.message && String(err.message).toLowerCase().includes("canceled"));
+
+      if (isCanceled) {
+        return; // aborted or superseded request, ignore state transition
       }
 
       console.error("[DrivingMode] query request failure:", err);

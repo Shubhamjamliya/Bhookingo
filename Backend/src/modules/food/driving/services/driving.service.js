@@ -170,15 +170,16 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
             const dist_R = R_proj.properties.location;
             const dist_to_route_km = R_proj.properties.dist; // distance from restaurant to route in km
 
-            // Proximity threshold: is the restaurant within 5 km of the Google route?
-            if (dist_to_route_km > 5) continue;
+            // Proximity threshold: is the restaurant within 15 km of the Google route corridor?
+            if (dist_to_route_km > 15) continue;
 
             const distanceKm = dist_R - dist_U; // distance ahead along the route
 
-            // Direction check: must be ahead of user (distanceKm >= 0) and within 100 km discovery radius
-            const isRestaurantAhead = distanceKm >= 0;
+            // Direction check: must be ahead of user (distanceKm >= -1) and within planned discovery radius (500 km)
+            const isRestaurantAhead = distanceKm >= -1;
 
-            if (isRestaurantAhead && distanceKm <= 100) {
+            const maxDiscoveryDistance = rangeKm ? Number(rangeKm) : 500;
+            if (isRestaurantAhead && distanceKm <= maxDiscoveryDistance) {
                 const etaHours = distanceKm / userSpeed;
                 const etaMinutes = Math.max(1, Math.round(etaHours * 60));
 

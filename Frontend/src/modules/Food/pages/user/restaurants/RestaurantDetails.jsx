@@ -3529,7 +3529,7 @@ function RestaurantDetailsContent() {
                 >
                   {/* Item Detail Modal */}
                   <motion.div
-                    className="relative bg-surface dark:bg-[#1a1a1a] rounded-3xl shadow-2xl max-h-[90vh] w-full max-w-[450px] md:max-w-2xl flex flex-col overflow-hidden"
+                    className="relative bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl max-h-[90vh] w-full max-w-[450px] md:max-w-2xl flex flex-col overflow-hidden"
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -3632,10 +3632,10 @@ function RestaurantDetailsContent() {
                   </div>
 
                   {/* Bottom Action Bar */}
-                  <div className="border-t border-border dark:border-gray-800 px-3 sm:px-4 py-4 bg-surface dark:bg-[#1a1a1a]">
+                  <div className="border-t border-border dark:border-gray-800 px-3 sm:px-4 py-4 bg-white dark:bg-[#1a1a1a]">
                     <div className="flex items-center gap-2 sm:gap-4">
                       {/* Quantity Selector */}
-                      <div className={`flex items-center gap-1 sm:gap-3 border-2 rounded-lg px-2 sm:px-3 h-[44px] bg-surface dark:bg-[#2a2a2a] ${shouldShowGrayscale
+                      <div className={`flex items-center gap-1 sm:gap-3 border-2 rounded-lg px-2 sm:px-3 h-[44px] bg-gray-50 dark:bg-[#2a2a2a] ${shouldShowGrayscale
                         ? 'border-border dark:border-gray-700 opacity-50'
                         : 'border-border dark:border-gray-700'
                         }`}>

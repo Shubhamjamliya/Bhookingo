@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { normalizeImageUrl } from '@food/utils/common';
 
 /**
  * Stateful Image component that safely handles load errors.
  * Instead of mutating the DOM directly (which gets reset on parent re-renders),
  * it stores the error state in React state and persists the fallback render.
  */
-export const ImageWithFallback = React.memo(({ src, alt, fallbackSrc, className, style, ...props }) => {
+export const ImageWithFallback = React.memo(({ src: rawSrc, alt, fallbackSrc, className, style, ...props }) => {
   const [hasError, setHasError] = useState(false);
+  const src = normalizeImageUrl(rawSrc);
 
   // Reset error state if the src prop changes
   useEffect(() => {

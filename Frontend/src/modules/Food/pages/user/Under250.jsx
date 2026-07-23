@@ -23,7 +23,7 @@ import BookingRangeBadge, { getRestaurantDistanceKm } from "@food/components/use
 import { restaurantAPI, adminAPI } from "@food/api"
 import { isModuleAuthenticated } from "@food/utils/auth"
 import { flattenMenuItems, getMenuFromResponse } from "@food/utils/menuItems"
-import { calculateDistance, formatDistance, checkRestaurantBookingEligibility } from "@food/utils/common"
+import { calculateDistance, formatDistance, checkRestaurantBookingEligibility, normalizeImageUrl } from "@food/utils/common"
 import { shouldShowRestaurantInVegMode, filterVegItems, isVegItem } from "@food/utils/vegUtils"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -431,16 +431,16 @@ export default function Under250() {
             totalRatings: Number(restaurant?.totalRatings || restaurant?.ratingCount || 0),
             distance: distanceInKm !== null ? formatDistance(distanceInKm) : fallbackDistance,
             distanceInKm,
-            // Backend already filtered and attached menuItems
             menuItems: (restaurant.menuItems || []).map(item => ({
               ...item,
               id: String(item.id || item._id),
               price: Number(item.price || 0),
-              image:
+              image: normalizeImageUrl(
                 item?.image ||
                 restaurant?.profileImage?.url ||
                 restaurant?.profileImage ||
                 ""
+              )
             }))
           };
         });
@@ -1059,7 +1059,8 @@ export default function Under250() {
             const availabilityStatus = getRestaurantAvailabilityStatus(restaurant)
             const isRestaurantOffline = !availabilityStatus.isOpen
             
-            const coverImage = restaurant.coverImages?.[0] || restaurant.profileImage?.url || restaurant.profileImage || "https://picsum.photos/seed/dhaba/300/200";
+            const rawCover = restaurant.coverImages?.[0] || restaurant.profileImage?.url || restaurant.profileImage || "";
+            const coverImage = normalizeImageUrl(rawCover) || "https://picsum.photos/seed/dhaba/300/200";
 
             return (
               <div 
@@ -1173,7 +1174,7 @@ export default function Under250() {
                           {/* Dish Image */}
                           <div className="relative w-full h-24 bg-gray-100 dark:bg-neutral-800">
                             <img 
-                              src={item.image || "https://picsum.photos/seed/dhaba/300/200"} 
+                              src={normalizeImageUrl(item.image) || "https://picsum.photos/seed/dhaba/300/200"} 
                               alt={item.name}
                               className="w-full h-full object-cover"
                               onError={(e) => { e.target.src = "https://picsum.photos/seed/dhaba/300/200"; }}
@@ -1302,7 +1303,7 @@ export default function Under250() {
 
             {/* Item Detail Bottom Sheet */}
             <motion.div
-              className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-2xl lg:max-w-4xl xl:max-w-5xl z-[10000] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl shadow-2xl max-h-[90vh] md:max-h-[85vh] flex flex-col"
+              className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:max-w-2xl lg:max-w-4xl xl:max-w-5xl z-[10000] bg-white dark:bg-[#1a1a1a] rounded-t-3xl shadow-2xl max-h-[90vh] md:max-h-[85vh] flex flex-col"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
@@ -1440,7 +1441,7 @@ export default function Under250() {
               </div>
 
               {/* Bottom Action Bar */}
-              <div className="border-t dark:border-gray-800 border-border px-4 md:px-6 lg:px-8 xl:px-10 py-4 md:py-5 lg:py-6 bg-surface dark:bg-[#1a1a1a]">
+              <div className="border-t dark:border-gray-800 border-border px-4 md:px-6 lg:px-8 xl:px-10 py-4 md:py-5 lg:py-6 bg-white dark:bg-[#1a1a1a]">
                 {selectedItem.isRestaurantOffline && (
                   <p className="text-sm font-semibold text-red-500 mb-3 text-center">
                     Restaurant is currently closed and not accepting orders.

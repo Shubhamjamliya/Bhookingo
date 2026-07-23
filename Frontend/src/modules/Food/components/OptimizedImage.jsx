@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { normalizeImageUrl } from '@food/utils/common'
 
 /**
  * OptimizedImage Component
@@ -15,7 +16,7 @@ import { motion } from 'framer-motion'
  * - Error handling with fallback
  */
 const OptimizedImage = React.memo(({
-  src,
+  src: rawSrc,
   alt,
   className = '',
   priority = false, // For above-the-fold images
@@ -27,6 +28,7 @@ const OptimizedImage = React.memo(({
   onError,
   ...props
 }) => {
+  const src = useMemo(() => normalizeImageUrl(rawSrc), [rawSrc])
   const [isLoaded, setIsLoaded] = useState(priority)
   const [hasError, setHasError] = useState(false)
   const imgRef = useRef(null)

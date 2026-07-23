@@ -13,7 +13,14 @@ const defaultBackendOrigin = (API_BASE_URL || "").replace(/\/api\/v1\/?$/i, "").
 export const normalizeImageUrl = (imageUrl, backendOrigin = "") => {
   if (typeof imageUrl !== "string") return "";
   const trimmed = imageUrl.trim();
-  if (!trimmed || /^data:/i.test(trimmed) || /^blob:/i.test(trimmed)) return trimmed;
+  if (
+    !trimmed ||
+    /^data:/i.test(trimmed) ||
+    /^blob:/i.test(trimmed) ||
+    /^\/(src|assets|@fs|@id|node_modules)\//i.test(trimmed)
+  ) {
+    return trimmed;
+  }
 
   const appProtocol = typeof window !== "undefined" ? window.location?.protocol : "";
   const appHost = typeof window !== "undefined" ? window.location?.hostname : "";

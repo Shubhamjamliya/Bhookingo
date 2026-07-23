@@ -39,7 +39,6 @@ const FoodAppWrapper = () => {
     location.pathname.startsWith('/food/admin');
 
   const isUserPath = !isNonUserModulePath && (
-                     location.pathname === '/' || 
                      location.pathname === '/food' || 
                      location.pathname === '/food/' ||
                      location.pathname.startsWith('/food/user'));
@@ -73,6 +72,11 @@ const RedirectToFood = () => {
 };
 
 const MasterLandingPage = lazy(() => import('./MasterLandingPage'))
+const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'))
+const FeaturesPage = lazy(() => import('./pages/FeaturesPage'))
+const ForRestaurantsPage = lazy(() => import('./pages/ForRestaurantsPage'))
+const BlogPage = lazy(() => import('./pages/BlogPage'))
+const ContactPage = lazy(() => import('./pages/ContactPage'))
 const AdminRouter = lazy(() => import('../modules/Food/components/admin/AdminRouter'))
 
 const AppRoutes = () => {
@@ -107,6 +111,11 @@ const AppRoutes = () => {
             <MasterLandingPage />
           </Suspense>
         } />
+        <Route path="/how-it-works" element={<Suspense fallback={<PageLoader />}><HowItWorksPage /></Suspense>} />
+        <Route path="/features" element={<Suspense fallback={<PageLoader />}><FeaturesPage /></Suspense>} />
+        <Route path="/for-restaurants" element={<Suspense fallback={<PageLoader />}><ForRestaurantsPage /></Suspense>} />
+        <Route path="/blog" element={<Suspense fallback={<PageLoader />}><BlogPage /></Suspense>} />
+        <Route path="/contact" element={<Suspense fallback={<PageLoader />}><ContactPage /></Suspense>} />
 
         {/* Auth Module */}
         <Route path="/user/auth/*" element={

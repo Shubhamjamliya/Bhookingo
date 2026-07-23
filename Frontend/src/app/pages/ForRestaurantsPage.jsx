@@ -26,7 +26,7 @@ export default function ForRestaurantsPage() {
             </p>
             <div className="pt-4 flex justify-center gap-4">
               <button
-                onClick={() => navigate('/food/restaurant/onboarding')}
+                onClick={() => window.open('https://play.google.com/store/apps/details?id=com.bhookingo.restaurant&hl=en', '_blank')}
                 className="bg-[#E0332F] hover:bg-[#c92824] text-white text-xs font-black uppercase tracking-wider px-8 py-3.5 rounded-full shadow-lg transition-all"
               >
                 Register Your Restaurant
@@ -78,7 +78,7 @@ export default function ForRestaurantsPage() {
                 <p className="text-xs sm:text-sm text-gray-600">Onboarding takes less than 10 minutes. Get started today.</p>
               </div>
               <button
-                onClick={() => navigate('/food/restaurant/onboarding')}
+                onClick={() => window.open('https://play.google.com/store/apps/details?id=com.bhookingo.restaurant&hl=en', '_blank')}
                 className="bg-[#E0332F] hover:bg-[#c92824] text-white text-xs font-black uppercase tracking-wider px-8 py-4 rounded-2xl shadow-md transition-all shrink-0 flex items-center gap-2"
               >
                 <span>Partner With Us</span>

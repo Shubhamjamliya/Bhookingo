@@ -133,10 +133,10 @@ export default function CMSPage({
                   Email Us
                 </h3>
                 <p className="text-text-secondary dark:text-text-secondary text-sm font-medium">
-                  {pageData.email || "support@bhookingo.com"}
+                  {pageData.email || "bhookingo@gmail.com"}
                 </p>
                 <a
-                  href={`mailto:${pageData.email || "support@bhookingo.com"}`}
+                  href={`mailto:${pageData.email || "bhookingo@gmail.com"}`}
                   className="mt-4 text-xs font-black text-[var(--primary)] uppercase tracking-widest hover:underline"
                 >
                   Send Message

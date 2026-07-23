@@ -6,7 +6,7 @@ import api from "@food/api";
 
 export default function ContactPage() {
   const [contactInfo, setContactInfo] = useState({
-    email: "support@bhookingo.com",
+    email: "bhookingo@gmail.com",
     mobile: "9999999999"
   });
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -17,7 +17,7 @@ export default function ContactPage() {
         const response = await api.get(`/food/admin/pages-social-media/contact`);
         if (response.data?.success && response.data?.data) {
           setContactInfo({
-            email: response.data.data.email || "support@bhookingo.com",
+            email: response.data.data.email || "bhookingo@gmail.com",
             mobile: response.data.data.mobile || "9999999999"
           });
         }

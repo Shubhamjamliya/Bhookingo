@@ -3302,6 +3302,7 @@ export default function Cart() {
                         },
                         {
                           id: 'cash',
+                          name: 'Cash on Delivery',
                           description: 'Pay when order arrives',
                           icon: <Banknote className="w-5 h-5" />,
                           color: 'bg-orange-50 text-var(--primary-dark) dark:bg-orange-900/40 dark:text-orange-400',
@@ -3309,7 +3310,7 @@ export default function Cart() {
                           disabled: !isPaymentMethodEnabled("cash"),
                           disabledText: 'COD Disabled'
                         }
-                      ].map((option) => (
+                      ].filter(opt => opt.id !== 'cash' || isPaymentMethodEnabled("cash")).map((option) => (
                         <button
                           key={option.id}
                           onClick={() => {

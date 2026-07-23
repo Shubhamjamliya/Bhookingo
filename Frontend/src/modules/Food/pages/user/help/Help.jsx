@@ -391,10 +391,10 @@ export default function Help() {
                       We'll respond within 24 hours
                     </p>
                     <a
-                      href="mailto:support@bhookingo.com"
+                      href="mailto:bhookingo@gmail.com"
                       className="text-sm text-primary hover:underline font-medium"
                     >
-                      support@bhookingo.com
+                      bhookingo@gmail.com
                     </a>
                   </div>
                 </div>

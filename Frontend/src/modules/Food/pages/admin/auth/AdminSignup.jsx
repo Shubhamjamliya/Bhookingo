@@ -12,7 +12,7 @@ import {
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Mail, User, Lock, Eye, EyeOff, ArrowLeft, Shield } from "lucide-react"
-import bhookingoLogo from "@backend-uploads/logos/2026/07/c0798113-798d-44d0-bb14-1f1521c0efae.webp"
+import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp"
 import { authAPI, adminAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
 import { loadBusinessSettings } from "@food/utils/businessSettings"

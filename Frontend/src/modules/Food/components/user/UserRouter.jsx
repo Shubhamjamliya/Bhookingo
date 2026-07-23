@@ -189,7 +189,7 @@ export default function UserRouter() {
           {/* PUBLIC DISCOVERY ROUTES (Guest mode allowed) */}
           {/* ========================================== */}
           {/* Home & Discovery */}
-          <Route path="" element={<Home />} />
+          <Route path="" element={<Navigate to="/food/user/driving" replace />} />
           <Route path="takeaway" element={<Home />} />
           <Route path="dining" element={<Dining />} />
           <Route path="dining/:category" element={<DiningCategory />} />

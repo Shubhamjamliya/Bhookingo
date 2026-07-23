@@ -37,6 +37,8 @@ export const getRestaurantsAheadController = async (req, res, next) => {
         const speed = req.query.speed !== undefined ? toFinite(req.query.speed) : null;
         const highwayId = req.query.highwayId || null;
         const rangeKm = req.query.rangeKm !== undefined ? toFinite(req.query.rangeKm) : null;
+        const destLat = req.query.destLat !== undefined ? toFinite(req.query.destLat) : null;
+        const destLng = req.query.destLng !== undefined ? toFinite(req.query.destLng) : null;
 
         if (lat === null || lng === null) {
             return res.status(400).json({
@@ -51,7 +53,9 @@ export const getRestaurantsAheadController = async (req, res, next) => {
             heading,
             highwayId,
             rangeKm,
-            speed
+            speed,
+            destLat,
+            destLng
         });
 
         return res.status(200).json({

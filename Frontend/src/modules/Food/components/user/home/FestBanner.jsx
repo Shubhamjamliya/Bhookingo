@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Utensils, Soup, Leaf, Sparkles } from 'lucide-react';
-import bhookingoLogo from "@backend-uploads/logos/2026/07/c0798113-798d-44d0-bb14-1f1521c0efae.webp";
+import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp";
 
 // Images for different modes - Extended pool for rotation
 const images = {

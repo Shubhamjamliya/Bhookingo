@@ -14,7 +14,7 @@ import { Textarea } from "@food/components/ui/textarea"
 import { useCart } from "@food/context/CartContext"
 import { useProfile } from "@food/context/ProfileContext"
 import { useOrders } from "@food/context/OrdersContext"
-import { api, restaurantAPI, adminAPI } from "@food/api"
+import { api, restaurantAPI, adminAPI, userAPI } from "@food/api"
 
 export default function Checkout() {
   const navigate = useNavigate()
@@ -25,27 +25,42 @@ export default function Checkout() {
   const [selectedAddressId, setSelectedAddressId] = useState(getAddressId(getDefaultAddress()))
   const [selectedPayment, setSelectedPayment] = useState(getDefaultPaymentMethod()?.id || "")
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
-  const [isTakeawayCodEnabled, setIsTakeawayCodEnabled] = useState(true)
-
-  const restaurantId = cart[0]?.restaurantId
+  const [customizationSettings, setCustomizationSettings] = useState({
+    cod_enabled: true,
+    takeaway_cod_enabled: true,
+    dining_cod_enabled: true,
+  })
 
   useEffect(() => {
-    if (orderType === "takeaway") {
-      // Fetch global takeaway COD status
-      adminAPI.getTakeawayCodStatus()
-        .then(res => {
-          setIsTakeawayCodEnabled(res?.data?.enabled !== false)
-        })
-        .catch(() => setIsTakeawayCodEnabled(true))
+    userAPI.getCustomizationSettings()
+      .then(res => {
+        if (res?.data?.data) {
+          setCustomizationSettings(prev => ({
+            ...prev,
+            ...res.data.data
+          }))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const isPaymentMethodEnabled = (methodId) => {
+    if (methodId === "cod" || methodId === "cash") {
+      if (orderType !== "takeaway" && orderType !== "dining") {
+        if (customizationSettings.cod_enabled === false) return false
+      }
+      if (orderType === "takeaway") return customizationSettings.takeaway_cod_enabled !== false
+      if (orderType === "dining") return customizationSettings.dining_cod_enabled !== false
     }
-  }, [orderType])
+    return true
+  }
 
-  // If takeaway and COD is not enabled, and current selection is COD, switch to razorpay
+  // If COD is not enabled, and current selection is COD, switch to razorpay
   useEffect(() => {
-    if (orderType === "takeaway" && !isTakeawayCodEnabled && selectedPayment === "cod") {
+    if (!isPaymentMethodEnabled("cod") && selectedPayment === "cod") {
       setSelectedPayment("razorpay")
     }
-  }, [orderType, isTakeawayCodEnabled, selectedPayment])
+  }, [orderType, customizationSettings, selectedPayment])
 
   const selectedAddress = addresses.find(addr => getAddressId(addr) === selectedAddressId) || getDefaultAddress()
   const defaultPayment = paymentMethods.find(pm => pm.id === selectedPayment) || getDefaultPaymentMethod()
@@ -250,7 +265,7 @@ export default function Checkout() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
-                    {(orderType !== "takeaway" || isTakeawayCodEnabled) && (
+                    {isPaymentMethodEnabled("cod") && (
                       <div
                         className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${selectedPayment === "cod"
                             ? "border-[var(--primary)] bg-orange-50"

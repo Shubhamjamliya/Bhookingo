@@ -59,6 +59,9 @@ export default function JourneyPlanner({
   const [originSuggestions, setOriginSuggestions] = useState([]);
   const [searchingOrigin, setSearchingOrigin] = useState(false);
   const [activeInput, setActiveInput] = useState(null); // "origin" | "destination"
+  const [preventAutoDetect, setPreventAutoDetect] = useState(() => {
+    return !!sessionStorage.getItem("bh_origin_coords") || !!sessionStorage.getItem("bh_origin_input");
+  });
 
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
   const [searchingDestination, setSearchingDestination] = useState(false);
@@ -102,7 +105,7 @@ export default function JourneyPlanner({
 
   // Pre-fill current location if GPS coordinates exist and no inputs are present
   useEffect(() => {
-    if (currentLocation && !originCoords && !sessionStorage.getItem("bh_origin_coords")) {
+    if (currentLocation && !originCoords && !sessionStorage.getItem("bh_origin_coords") && !preventAutoDetect) {
       const lat = currentLocation.latitude;
       const lng = currentLocation.longitude;
       setOriginCoords({ lat, lng });
@@ -119,7 +122,7 @@ export default function JourneyPlanner({
           setOriginInput("Detected City");
         });
     }
-  }, [currentLocation]);
+  }, [currentLocation, preventAutoDetect]);
 
   // Origin suggestion search
   useEffect(() => {
@@ -186,6 +189,7 @@ export default function JourneyPlanner({
   }, [destinationInput, activeInput]);
 
   const handleUseCurrentGPS = () => {
+    setPreventAutoDetect(false);
     if (currentLocation) {
       const lat = currentLocation.latitude;
       const lng = currentLocation.longitude;
@@ -213,6 +217,7 @@ export default function JourneyPlanner({
     setOriginInput(s.display.split(",")[0]);
     setOriginSuggestions([]);
     setActiveInput(null);
+    setPreventAutoDetect(true);
   };
 
   const handleSelectDestination = (s) => {
@@ -231,7 +236,7 @@ export default function JourneyPlanner({
     setDestinationCoords(tempCoords);
   };
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (!originCoords) {
       toast.error("Please enter a valid starting location.");
       return;
@@ -241,33 +246,15 @@ export default function JourneyPlanner({
       return;
     }
 
-    try {
-      setLoadingHighways(true);
-      const res = await userAPI.getConnectingHighways({
-        startLat: originCoords.lat,
-        startLng: originCoords.lng,
-        endLat: destinationCoords.lat,
-        endLng: destinationCoords.lng
-      });
-
-      if (res?.data?.success) {
-        const highways = res.data.data || [];
-        if (highways.length === 0) {
-          toast.error("No National Highways found connecting these locations. Try different cities.");
-        } else if (highways.length === 1) {
-          setSelectedHighway(highways[0]);
-        } else {
-          setAvailableHighways(highways);
-          setShowHighwaySelection(true);
-        }
-      } else {
-        toast.error("Failed to query highway routes.");
+    onJourneyPlanSelected({
+      origin: originCoords,
+      destination: destinationCoords,
+      highway: {
+        _id: "custom_google_route",
+        name: `${originInput.split(',')[0]} to ${destinationInput.split(',')[0]}`,
+        ref: `${originInput.split(',')[0]} to ${destinationInput.split(',')[0]}`
       }
-    } catch (e) {
-      toast.error("An error occurred while finding routes.");
-    } finally {
-      setLoadingHighways(false);
-    }
+    });
   };
 
   const handleSelectHighwayFromOverlay = (hw) => {
@@ -623,10 +610,19 @@ export default function JourneyPlanner({
                     type="text"
                     value={originInput}
                     onChange={(e) => {
-                      setOriginInput(e.target.value);
+                      const val = e.target.value;
+                      setOriginInput(val);
                       setOriginCoords(null);
+                      if (val === "") {
+                        setPreventAutoDetect(false);
+                      } else {
+                        setPreventAutoDetect(true);
+                      }
                     }}
-                    onFocus={() => setActiveInput("origin")}
+                    onFocus={() => {
+                      setActiveInput("origin");
+                      setPreventAutoDetect(true);
+                    }}
                     placeholder="Current Location"
                     className="w-full bg-transparent border-none p-0 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none placeholder:text-gray-400 placeholder:font-normal"
                   />

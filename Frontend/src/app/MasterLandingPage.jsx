@@ -34,26 +34,42 @@ import {
 } from 'lucide-react';
 import LandingHeader from './components/LandingHeader';
 import LandingFooter from './components/LandingFooter';
+import bhookingoLogo from '@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp';
 
 export default function MasterLandingPage() {
   const navigate = useNavigate();
 
   const handleAuthClick = () => {
-    const authStatus = localStorage.getItem("user_authenticated");
-    const token = localStorage.getItem("user_accessToken");
-    if (authStatus === "true" || token) {
-      navigate("/food/user");
+    window.open("https://play.google.com/store/apps/details?id=com.bhookingo.user", "_blank");
+  };
+
+  const handleAppRedirect = (path) => {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isAndroid = /android/i.test(userAgent);
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+
+    const playStoreUrl = "https://play.google.com/store/apps/details?id=com.bhookingo.user";
+
+    if (isAndroid) {
+      const intentUrl = `intent://${path}#Intent;scheme=bhookingo;package=com.bhookingo.user;S.browser_fallback_url=${encodeURIComponent(playStoreUrl)};end`;
+      window.location.href = intentUrl;
+    } else if (isIOS) {
+      const appSchemeUrl = `bhookingo://${path}`;
+      window.location.href = appSchemeUrl;
+      setTimeout(() => {
+        window.location.href = playStoreUrl;
+      }, 2000);
     } else {
-      navigate("/user/auth/login");
+      window.open(playStoreUrl, "_blank");
     }
   };
 
   const handleDriveModeClick = () => {
-    navigate("/food/user/driving");
+    handleAppRedirect("food/user/driving");
   };
 
   const handleExploreWebClick = () => {
-    navigate("/food/user");
+    handleAppRedirect("food/user/takeaway");
   };
 
   return (
@@ -106,7 +122,7 @@ export default function MasterLandingPage() {
               </p>
 
               {/* CTA Row */}
-              <div className="flex flex-wrap items-center gap-4 pt-2">
+              <div className="pt-2 flex flex-wrap gap-4 justify-start">
                 <button
                   onClick={handleAuthClick}
                   className="bg-gradient-to-r from-[#E0332F] to-[#C92824] hover:from-[#c92824] hover:to-[#a81f1c] text-white text-sm font-black px-8 py-4 rounded-full shadow-xl shadow-red-500/30 transition-all active:scale-95 flex items-center gap-2.5"
@@ -114,19 +130,12 @@ export default function MasterLandingPage() {
                   <Smartphone className="w-4 h-4" />
                   <span>Download App</span>
                 </button>
-                <button
-                  onClick={handleExploreWebClick}
-                  className="bg-white/10 hover:bg-white/20 text-white border border-white/30 text-sm font-bold px-8 py-4 rounded-full shadow-lg transition-all active:scale-95 flex items-center gap-2.5 backdrop-blur-sm"
-                >
-                  <Globe className="w-4 h-4" />
-                  <span>Explore on Web</span>
-                </button>
               </div>
 
               {/* Horizontal Feature Chips Row (Hero Bottom) */}
               <div className="pt-6 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
                 {[
-                  { icon: MapPin, text: "Only Forward Restaurants" },
+                  { icon: MapPin, text: "Forward Restaurants" },
                   { icon: Clock, text: "Save Time & Money" },
                   { icon: Star, text: "Quality Food Every Time" },
                   { icon: RestroomIcon, text: "Clean Washrooms Info" },
@@ -134,9 +143,9 @@ export default function MasterLandingPage() {
                   { icon: Zap, text: "EV Charging On Route" },
                   { icon: ParkingIcon, text: "Parking Info Easy & Safe" }
                 ].map((item, idx) => (
-                  <div key={idx} className="bg-black/40 border border-white/10 rounded-xl p-2.5 flex flex-col items-start gap-1.5 backdrop-blur-sm hover:border-red-500/50 transition-colors">
-                    <item.icon className="w-4 h-4 text-[#E0332F]" />
-                    <span className="text-[10px] font-semibold text-gray-200 leading-tight">
+                  <div key={idx} className="bg-black/40 border border-white/10 rounded-xl p-2 sm:p-2.5 flex flex-col items-start gap-1.5 backdrop-blur-sm hover:border-red-500/50 transition-colors w-full min-h-[76px] justify-between">
+                    <item.icon className="w-4 h-4 text-[#E0332F] shrink-0" />
+                    <span className="text-[9px] sm:text-[10px] font-semibold text-gray-200 leading-tight break-words w-full">
                       {item.text}
                     </span>
                   </div>
@@ -147,124 +156,18 @@ export default function MasterLandingPage() {
             {/* Right Column: Phone Mockup & Floating Feature Cards (7 Cols, Shifted Right) */}
             <div className="lg:col-span-7 flex flex-col sm:flex-row items-center justify-end gap-6 lg:gap-10 lg:pl-10">
               {/* Phone Mockup */}
-              <div className="shrink-0 py-4">
-                <div className="relative w-[270px] sm:w-[290px] h-[570px] bg-black rounded-[44px] p-3 shadow-[0_25px_60px_rgba(0,0,0,0.8)] border-4 border-gray-800">
-                  {/* Notch */}
-                  <div className="absolute top-0 inset-x-0 h-5 bg-black rounded-b-xl w-32 mx-auto z-30 flex items-center justify-center">
-                    <div className="w-12 h-1 bg-gray-800 rounded-full" />
-                  </div>
-
-                  {/* Screen Content */}
-                  <div className="w-full h-full bg-white rounded-[34px] overflow-hidden flex flex-col pt-4 text-gray-900">
-                    {/* Top Bar */}
-                    <div className="px-3.5 pt-2 pb-1.5 flex items-center justify-between border-b border-gray-100">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-6 h-6 rounded-md bg-[#E0332F] flex items-center justify-center">
-                          <MapPin className="w-3.5 h-3.5 text-white" />
-                        </div>
-                        <span className="text-xs font-black tracking-tight text-gray-900">bhookingo</span>
-                      </div>
-                      <Bell className="w-4 h-4 text-gray-600" />
-                    </div>
-
-                    {/* Search Bar */}
-                    <div className="p-3">
-                      <div className="bg-gray-100 rounded-xl px-3 py-2 flex items-center gap-2 text-gray-400 text-[11px]">
-                        <Search className="w-3.5 h-3.5 text-gray-500" />
-                        <span>Search your route or restaurant</span>
-                      </div>
-                    </div>
-
-                    {/* Filter Badges */}
-                    <div className="px-3 pb-2 flex gap-1.5 overflow-x-auto scrollbar-hide text-[10px] font-bold">
-                      <span className="bg-[#E0332F] text-white px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0 shadow-sm">
-                        <ShoppingBag className="w-3 h-3" /> Takeaway
-                      </span>
-                      <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
-                        <Utensils className="w-3 h-3" /> Dine-in
-                      </span>
-                      <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full shrink-0">Washrooms</span>
-                      <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full shrink-0">EV Charging</span>
-                      <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full shrink-0">Parking</span>
-                    </div>
-
-                    {/* Section Label */}
-                    <div className="px-3 pt-1 pb-1.5 flex items-center justify-between text-[11px]">
-                      <span className="font-bold text-gray-900">Forward Restaurants on NH 48</span>
-                      <span className="text-[#E0332F] font-bold text-[10px] cursor-pointer">Change Route</span>
-                    </div>
-
-                    {/* Restaurant List Cards */}
-                    <div className="px-3 flex-1 overflow-y-auto space-y-2 pb-2">
-                      {[
-                        {
-                          name: "Haldiram's",
-                          dist: "2.4 km ahead",
-                          rating: "4.6 ★ · 20–30 mins",
-                          tag: "Takeaway",
-                          tagRed: true,
-                          img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=120&q=80"
-                        },
-                        {
-                          name: "Amrik Sukhdev",
-                          dist: "4.8 km ahead",
-                          rating: "4.6 ★ · 20–40 mins",
-                          tag: "Dine-in",
-                          tagRed: false,
-                          img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=120&q=80"
-                        },
-                        {
-                          name: "Pind Balluchi",
-                          dist: "12.3 km ahead",
-                          rating: "4.3 ★ · 20–30 mins",
-                          tag: "Takeaway",
-                          tagRed: true,
-                          img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=120&q=80"
-                        }
-                      ].map((item, idx) => (
-                        <div key={idx} className="bg-white border border-gray-150 rounded-xl p-2 flex items-center gap-2.5 shadow-sm">
-                          <img src={item.img} alt={item.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-[11px] text-gray-900 truncate">{item.name}</span>
-                              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${item.tagRed ? 'bg-[#E0332F] text-white' : 'border border-amber-500 text-amber-600'}`}>
-                                {item.tag}
-                              </span>
-                            </div>
-                            <span className="text-[9px] text-gray-500 block">{item.dist}</span>
-                            <span className="text-[9px] font-semibold text-gray-700">{item.rating}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Bottom Navigation Bar */}
-                    <div className="border-t border-gray-150 px-4 py-2 flex items-center justify-between text-gray-400">
-                      <div className="flex flex-col items-center text-[#E0332F]">
-                        <HomeIcon className="w-4 h-4" />
-                        <span className="text-[8px] font-bold mt-0.5">Home</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <Search className="w-4 h-4" />
-                        <span className="text-[8px] font-medium mt-0.5">Search</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <OrdersIcon className="w-4 h-4" />
-                        <span className="text-[8px] font-medium mt-0.5">Orders</span>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <User className="w-4 h-4" />
-                        <span className="text-[8px] font-medium mt-0.5">Profile</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="shrink-0 py-4 flex items-center justify-center">
+                <img 
+                  src="/Landing page phone.png" 
+                  alt="Bhookingo Phone Mockup" 
+                  className="w-[270px] sm:w-[290px] h-auto object-contain drop-shadow-[0_25px_60px_rgba(0,0,0,0.4)]"
+                />
               </div>
 
               {/* Desktop Floating Feature Cards Vertical Stack */}
               <div className="hidden lg:flex flex-col gap-2.5 w-full max-w-[260px] shrink-0">
                 {[
-                  { icon: MapPin, label: "Only Forward Restaurants" },
+                  { icon: MapPin, label: "Forward Restaurants" },
                   { icon: Clock, label: "Save Time & Money" },
                   { icon: Star, label: "Quality Food Every Time" },
                   { icon: RestroomIcon, label: "Clean Washrooms Info" },
@@ -274,12 +177,12 @@ export default function MasterLandingPage() {
                 ].map((item, idx) => (
                   <div
                     key={idx}
-                    className="bg-white text-gray-900 rounded-full px-4 py-2.5 flex items-center gap-3 shadow-md hover:shadow-lg transition-all border border-gray-100 cursor-pointer hover:translate-x-1"
+                    className="bg-white text-gray-900 rounded-2xl p-2.5 flex items-center gap-3 shadow-md hover:shadow-lg transition-all border border-gray-100 cursor-pointer hover:translate-x-1 w-full"
                   >
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#E0332F] to-[#B91C1C] flex items-center justify-center shrink-0 shadow-sm">
                       <item.icon className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <span className="text-xs font-bold text-gray-800 truncate">
+                    <span className="text-xs font-bold text-gray-800 break-words leading-tight flex-1">
                       {item.label}
                     </span>
                   </div>
@@ -405,8 +308,8 @@ export default function MasterLandingPage() {
 
             {/* Left Column: Why Bhookingo Comparison (5 Cols) */}
             <div className="lg:col-span-5 space-y-4">
-              <span className="text-xs font-black text-[#E0332F] uppercase tracking-widest block">
-                WHY BHOOKINGO?
+              <span className="text-xs font-black text-[#E0332F] tracking-widest block">
+                WHY Bhookingo?
               </span>
 
               <div className="relative grid grid-cols-2 gap-3 pt-2">
@@ -563,7 +466,7 @@ export default function MasterLandingPage() {
             </div>
             <div className="py-2 md:py-0 px-2 flex flex-col items-center col-span-2 md:col-span-1">
               <span className="text-lg sm:text-xl font-extrabold flex items-center gap-1.5">
-                <span>🇮🇳</span> Made in India
+                Made in India
               </span>
               <span className="text-xs font-medium text-white/90">For Indian Travelers</span>
             </div>
@@ -737,11 +640,40 @@ export default function MasterLandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
+             <button
               onClick={handleAuthClick}
               className="bg-black text-white px-5 py-2.5 rounded-xl text-left flex items-center gap-3 shadow-md hover:bg-gray-900 transition-colors"
             >
-              <Smartphone className="w-6 h-6" />
+              <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="none">
+                <path d="M3.25 2.3c-.15.15-.25.38-.25.68v18.04c0 .3.1.53.25.68l.08.08L13.5 12.18v-.18L3.33 2.22l-.08.08z" fill="url(#play1)"/>
+                <path d="M16.89 15.63l-3.39-3.39v-.18l3.39-3.39.08.05 4.01 2.28c1.15.65 1.15 1.73 0 2.38l-4.01 2.28-.08-.03z" fill="url(#play2)"/>
+                <path d="M13.59 12.09L3.33 22.25c.38.4 1 .33 1.55.02l12.01-6.84-3.3-3.34z" fill="url(#play3)"/>
+                <path d="M13.59 12.09l3.3-3.34-12.01-6.84c-.55-.31-1.17-.38-1.55.02l10.26 10.16z" fill="url(#play4)"/>
+                <defs>
+                  <linearGradient id="play1" x1="10.23" y1="2.46" x2="-2.04" y2="14.73" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stopColor="#00a0ff"/>
+                    <stop offset="0.01" stopColor="#00a1ff"/>
+                    <stop offset="0.26" stopColor="#00beff"/>
+                    <stop offset="0.57" stopColor="#00d7ff"/>
+                    <stop offset="0.86" stopColor="#00e6ff"/>
+                    <stop offset="1" stopColor="#00ebff"/>
+                  </linearGradient>
+                  <linearGradient id="play2" x1="22.27" y1="12" x2="3.19" y2="12" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stopColor="#ff3a44"/>
+                    <stop offset="1" stopColor="#c31162"/>
+                  </linearGradient>
+                  <linearGradient id="play3" x1="16.5" y1="15.89" x2="-2.26" y2="34.65" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stopColor="#00e676"/>
+                    <stop offset="1" stopColor="#12c37d"/>
+                  </linearGradient>
+                  <linearGradient id="play4" x1="10.45" y1="10.15" x2="-2.25" y2="-2.55" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stopColor="#ffe000"/>
+                    <stop offset="0.4" stopColor="#ffca00"/>
+                    <stop offset="0.77" stopColor="#ff9f00"/>
+                    <stop offset="1" stopColor="#ff7a00"/>
+                  </linearGradient>
+                </defs>
+              </svg>
               <div>
                 <span className="text-[9px] uppercase tracking-wider block text-gray-400">GET IT ON</span>
                 <span className="text-sm font-bold leading-none">Google Play</span>
@@ -751,7 +683,9 @@ export default function MasterLandingPage() {
               onClick={handleAuthClick}
               className="bg-black text-white px-5 py-2.5 rounded-xl text-left flex items-center gap-3 shadow-md hover:bg-gray-900 transition-colors"
             >
-              <Globe className="w-6 h-6" />
+              <svg className="w-6 h-6 fill-current text-white" viewBox="0 0 24 24">
+                <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C3.8 16.32 3.98 9.58 8.1 9.28c1.37.1 2.2.78 3.03.8.84-.02 1.86-.8 3.42-.65 1.64.16 2.82.88 3.5 1.95-3.22 1.88-2.69 6.08.28 7.3-.7 1.76-1.52 3.48-3.28 3.6zM12.03 9.25c-.15-2.23 1.66-4.14 3.75-4.25.2 2.52-2.1 4.54-3.75 4.25z" />
+              </svg>
               <div>
                 <span className="text-[9px] uppercase tracking-wider block text-gray-400">Download on the</span>
                 <span className="text-sm font-bold leading-none">App Store</span>

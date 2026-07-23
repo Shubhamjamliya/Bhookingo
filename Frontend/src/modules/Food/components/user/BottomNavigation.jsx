@@ -112,6 +112,13 @@ export default function BottomNavigation() {
 
   const navItems = [
     {
+      id: 'driving',
+      label: 'Driving',
+      icon: Compass,
+      to: '/food/user/driving',
+      active: isDriving
+    },
+    {
       id: 'takeaway',
       label: 'Takeaway',
       icon: Truck,
@@ -127,13 +134,6 @@ export default function BottomNavigation() {
       icon: Tag,
       to: '/food/user/under-250',
       active: isUnder250
-    },
-    {
-      id: 'driving',
-      label: 'Driving',
-      icon: Compass,
-      to: '/food/user/driving',
-      active: isDriving
     },
     {
       id: 'profile',

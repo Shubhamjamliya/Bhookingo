@@ -5,6 +5,7 @@ import { FoodHighway } from '../../admin/models/highway.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { findNearestHighwayUnchecked } from '../../admin/services/highway.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
+import { fetchDirections } from '../../orders/utils/googleMaps.js';
 
 // Constants
 const DRIVING_SETTINGS_KEY = 'driving_mode_settings';
@@ -86,13 +87,139 @@ export async function updateDrivingSettings(settings, adminId = null) {
 /**
  * Find restaurants ahead of user on their current highway route.
  */
-export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeKm, speed }) {
+export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeKm, speed, destLat, destLng }) {
     const settings = await getDrivingSettings();
 
     if (!settings.enabled) {
         throw new ValidationError('Driving Mode is temporarily unavailable.');
     }
 
+    const userSpeed = speed && Number(speed) > 10 ? Number(speed) : 80; // default 80 km/h
+
+    // 1. New Google Maps Directions-based logic when start and destination are provided
+    if (destLat !== null && destLat !== undefined && destLng !== null && destLng !== undefined) {
+        const directions = await fetchDirections({ lat, lng }, { lat: destLat, lng: destLng });
+        if (!directions) {
+            return {
+                status: 'IN_SERVICE',
+                highway: {
+                    id: 'custom_google_route',
+                    name: 'Google Maps Route',
+                    ref: 'Google Maps Route',
+                    coordinates: [],
+                    boundingBox: null
+                },
+                userTravel: {
+                    distanceToHighway: 0,
+                    isForward: true,
+                    estimatedSpeed: userSpeed
+                },
+                settings,
+                restaurants: []
+            };
+        }
+
+        const { polyline, decodedCoordinates, distanceText, durationText, bounds } = directions;
+        if (decodedCoordinates.length < 2) {
+            return {
+                status: 'IN_SERVICE',
+                highway: {
+                    id: 'custom_google_route',
+                    name: 'Google Maps Route',
+                    ref: 'Google Maps Route',
+                    coordinates: [],
+                    boundingBox: null
+                },
+                userTravel: {
+                    distanceToHighway: 0,
+                    isForward: true,
+                    estimatedSpeed: userSpeed
+                },
+                settings,
+                restaurants: []
+            };
+        }
+
+        const lineCoords = decodedCoordinates.map(c => [c.lng, c.lat]);
+        const line = turf.lineString(lineCoords);
+
+        // Project user onto the Google route
+        const userPoint = turf.point([lng, lat]);
+        const U_proj = turf.nearestPointOnLine(line, userPoint, { units: 'kilometers' });
+        const dist_U = U_proj.properties.location; // distance from start of route in km
+
+        // Fetch all candidate restaurants (approved and accepting orders)
+        const candidates = await FoodRestaurant.find({
+            status: 'approved',
+            isAcceptingOrders: true
+        }).lean();
+
+        const aheadRestaurants = [];
+
+        for (const restaurant of candidates) {
+            const loc = restaurant.location;
+            const rlat = typeof loc?.latitude === 'number' ? loc.latitude
+                : (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null);
+            const rlng = typeof loc?.longitude === 'number' ? loc.longitude
+                : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
+
+            if (!Number.isFinite(rlat) || !Number.isFinite(rlng)) continue;
+
+            const rPoint = turf.point([rlng, rlat]);
+            const R_proj = turf.nearestPointOnLine(line, rPoint, { units: 'kilometers' });
+            const dist_R = R_proj.properties.location;
+            const dist_to_route_km = R_proj.properties.dist; // distance from restaurant to route in km
+
+            // Proximity threshold: is the restaurant within 5 km of the Google route?
+            if (dist_to_route_km > 5) continue;
+
+            const distanceKm = dist_R - dist_U; // distance ahead along the route
+
+            // Direction check: must be ahead of user (distanceKm >= 0) and within 100 km discovery radius
+            const isRestaurantAhead = distanceKm >= 0;
+
+            if (isRestaurantAhead && distanceKm <= 100) {
+                const etaHours = distanceKm / userSpeed;
+                const etaMinutes = Math.max(1, Math.round(etaHours * 60));
+
+                let highwayRef = 'NH';
+                if (restaurant.highwayId) {
+                    const hw = await FoodHighway.findById(restaurant.highwayId).select("ref").lean();
+                    if (hw?.ref) highwayRef = hw.ref;
+                }
+
+                aheadRestaurants.push({
+                    ...restaurant,
+                    distanceKm: Number(distanceKm.toFixed(1)),
+                    etaMinutes,
+                    highwayRef
+                });
+            }
+        }
+
+        // Sort by distance ahead (closest first)
+        aheadRestaurants.sort((a, b) => a.distanceKm - b.distanceKm);
+
+        return {
+            status: 'IN_SERVICE',
+            highway: {
+                id: 'custom_google_route',
+                name: 'Google Maps Route',
+                ref: 'Google Maps Route',
+                coordinates: decodedCoordinates,
+                boundingBox: bounds
+            },
+            userTravel: {
+                distanceToHighway: 0,
+                isForward: true,
+                estimatedSpeed: userSpeed
+            },
+            settings,
+            restaurants: aheadRestaurants
+        };
+    }
+
+    // 2. Fallback to old database highway-based logic
     let highway = null;
     let distanceToHighway = null;
 
@@ -171,8 +298,6 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
 
     const maxRange = rangeKm ? Number(rangeKm) : settings.restaurantSearchRadiusKm;
     const aheadRestaurants = [];
-
-    const userSpeed = speed && Number(speed) > 10 ? Number(speed) : 80; // default 80 km/h on highways
 
     for (const restaurant of candidates) {
         const loc = restaurant.location;

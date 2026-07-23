@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react"
 import { exportToCSV, exportToExcel, exportToPDF, exportToJSON } from "./ordersExportUtils"
-import bhookingoLogo from "@backend-uploads/logos/2026/07/c0798113-798d-44d0-bb14-1f1521c0efae.webp"
+import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 const debugError = () => {}
 

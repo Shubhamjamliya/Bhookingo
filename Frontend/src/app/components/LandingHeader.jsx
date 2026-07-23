@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { MapPin, Smartphone, Menu, X } from 'lucide-react';
+import { Smartphone, Menu, X } from 'lucide-react';
+import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp";
 
 export default function LandingHeader() {
   const navigate = useNavigate();
@@ -8,13 +9,7 @@ export default function LandingHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleAuthClick = () => {
-    const authStatus = localStorage.getItem("user_authenticated");
-    const token = localStorage.getItem("user_accessToken");
-    if (authStatus === "true" || token) {
-      navigate("/food/user");
-    } else {
-      navigate("/user/auth/login");
-    }
+    window.open("https://play.google.com/store/apps/details?id=com.bhookingo.user", "_blank");
   };
 
   const navLinks = [
@@ -31,18 +26,10 @@ export default function LandingHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E0332F] to-[#B91C1C] flex items-center justify-center shadow-md shadow-red-500/20">
-            <div className="relative flex items-center justify-center">
-              <MapPin className="w-6 h-6 text-white fill-white/20" />
-              <span className="absolute text-xs font-black text-[#E0332F] translate-y-[-1px]">b</span>
-            </div>
-          </div>
+          <img src={bhookingoLogo} className="w-10 h-10 object-contain rounded-xl" alt="Bhookingo Logo" />
           <div className="flex flex-col">
             <span className="text-2xl font-black tracking-tight text-gray-900 leading-none">
-              bhookingo
-            </span>
-            <span className="text-[10px] font-bold text-gray-500 tracking-wider mt-0.5">
-              Bhookh + In + Go
+              <span className="text-[#E0332F]">B</span>hookingo
             </span>
           </div>
         </Link>

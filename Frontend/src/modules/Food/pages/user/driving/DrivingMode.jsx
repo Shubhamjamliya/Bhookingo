@@ -103,8 +103,24 @@ export default function DrivingMode() {
   const [speed, setSpeed] = useState(null);
   const [locationError, setLocationError] = useState(null);
 
-  // Unified Journey State
-  const [journey, setJourney] = useState(null);
+  // Unified Journey State (Restored from sessionStorage)
+  const [journey, setJourney] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem("bh_active_journey");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Sync active journey to sessionStorage
+  useEffect(() => {
+    if (journey) {
+      sessionStorage.setItem("bh_active_journey", JSON.stringify(journey));
+    } else {
+      sessionStorage.removeItem("bh_active_journey");
+    }
+  }, [journey]);
 
   const [isDrawerExpanded, setIsDrawerExpanded] = useState(false);
   const touchStartY = useRef(0);
@@ -127,7 +143,7 @@ export default function DrivingMode() {
     setIsDrawerExpanded(!isDrawerExpanded);
   };
 
-  // Cleanup journey planner cache when exiting Driving Mode
+  // Cleanup journey planner cache when exiting Driving Mode (only if no active trip exists)
   useEffect(() => {
     return () => {
       const newPath = window.location.pathname;
@@ -136,7 +152,7 @@ export default function DrivingMode() {
         newPath.includes("/restaurants") ||
         newPath.includes("/checkout");
 
-      if (!isStillInDrivingOrRestaurant) {
+      if (!isStillInDrivingOrRestaurant && !sessionStorage.getItem("bh_active_journey")) {
         sessionStorage.removeItem("bh_origin_input");
         sessionStorage.removeItem("bh_origin_coords");
         sessionStorage.removeItem("bh_destination_input");
@@ -374,6 +390,11 @@ export default function DrivingMode() {
         speed: currentJourney ? null : speedRef.current
       };
 
+      if (currentJourney?.destination) {
+        queryParams.destLat = currentJourney.destination.lat;
+        queryParams.destLng = currentJourney.destination.lng;
+      }
+
       if (currentJourney?.selectedHighway?._id) {
         queryParams.highwayId = currentJourney.selectedHighway._id;
       }
@@ -421,9 +442,9 @@ export default function DrivingMode() {
   useEffect(() => {
     if (currentLocation && !hasFetchedInitial.current && settings?.enabled) {
       hasFetchedInitial.current = true;
-      fetchRestaurantsAhead(true);
+      fetchRestaurantsAhead(true, journey);
     }
-  }, [currentLocation, settings, fetchRestaurantsAhead]);
+  }, [currentLocation, settings, fetchRestaurantsAhead, journey]);
 
   // Periodic polling interval
   useEffect(() => {
@@ -523,7 +544,7 @@ export default function DrivingMode() {
 
 
   // Render Loader UI for intermediate loading states, wrapped with BottomNavigation
-  if (status === "CHECKING_LOCATION" || status === "CHECKING_HIGHWAY" || status === "LOADING_RESTAURANTS") {
+  if ((status === "CHECKING_LOCATION" || status === "CHECKING_HIGHWAY" || status === "LOADING_RESTAURANTS") && journey) {
     let loadingLabel = "Finding your location...";
     if (status === "CHECKING_HIGHWAY") loadingLabel = "Pinpointing highway route...";
     if (status === "LOADING_RESTAURANTS") loadingLabel = "Searching restaurants ahead...";
@@ -542,56 +563,61 @@ export default function DrivingMode() {
   }
 
   // Render Fallbacks for non-available states, wrapped with BottomNavigation
+  if (status === "PERMISSION_REQUIRED" || status === "location_denied") {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex flex-col justify-between relative">
+        <div className="flex-1 overflow-y-auto pb-4">
+          <DrivingLocationPermission
+            denied={status === "location_denied"}
+            onEnableLocation={handleEnableLocation}
+            onRetry={handleEnableLocation}
+          />
+        </div>
+        <div className="pb-[env(safe-area-inset-bottom)] bg-white dark:bg-[#1a1a1a]">
+          <BottomNavigation />
+        </div>
+      </div>
+    );
+  }
+
+  // If no active trip exists, show the Journey Planner immediately.
+  if (!journey) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex flex-col justify-between relative">
+        <div className="flex-1 overflow-y-auto pb-4 animate-fade-in">
+          <JourneyPlanner
+            currentLocation={currentLocation}
+            onJourneyPlanSelected={(plan) => {
+              const initialJourney = {
+                origin: plan.origin,
+                destination: plan.destination,
+                selectedHighway: plan.highway,
+                routePolyline: [],
+                estimatedDistance: "",
+                estimatedDuration: "",
+                routeBounds: null,
+                createdAt: new Date().toISOString(),
+                mode: "PLANNED"
+              };
+              setJourney(initialJourney);
+              // Trigger reload of restaurants for this plan immediately
+              fetchRestaurantsAhead(true, initialJourney);
+            }}
+            onGoHome={() => {
+              setJourney(null);
+              sessionStorage.removeItem("bh_active_journey");
+              navigate("/food/user/takeaway");
+            }}
+          />
+        </div>
+        <div className="pb-[env(safe-area-inset-bottom)] bg-white dark:bg-[#1a1a1a]">
+          <BottomNavigation />
+        </div>
+      </div>
+    );
+  }
+
   if (status !== "AVAILABLE") {
-    if (status === "PERMISSION_REQUIRED" || status === "location_denied") {
-      return (
-        <div className="min-h-screen bg-white dark:bg-[#121212] flex flex-col justify-between relative">
-          <div className="flex-1 overflow-y-auto pb-4">
-            <DrivingLocationPermission
-              denied={status === "location_denied"}
-              onEnableLocation={handleEnableLocation}
-              onRetry={handleEnableLocation}
-            />
-          </div>
-          <div className="pb-[env(safe-area-inset-bottom)] bg-white dark:bg-[#1a1a1a]">
-            <BottomNavigation />
-          </div>
-        </div>
-      );
-    }
-
-    if (status === "OUTSIDE_HIGHWAY") {
-      return (
-        <div className="min-h-screen bg-white dark:bg-[#121212] flex flex-col justify-between relative">
-          <div className="flex-1 overflow-y-auto pb-4">
-            <JourneyPlanner
-              currentLocation={currentLocation}
-              onJourneyPlanSelected={(plan) => {
-                const initialJourney = {
-                  origin: plan.origin,
-                  destination: plan.destination,
-                  selectedHighway: plan.highway,
-                  routePolyline: [],
-                  estimatedDistance: "",
-                  estimatedDuration: "",
-                  routeBounds: null,
-                  createdAt: new Date().toISOString(),
-                  mode: "PLANNED"
-                };
-                setJourney(initialJourney);
-                // Trigger reload of restaurants for this plan immediately
-                fetchRestaurantsAhead(true, initialJourney);
-              }}
-              onGoHome={() => navigate("/food/user")}
-            />
-          </div>
-          <div className="pb-[env(safe-area-inset-bottom)] bg-white dark:bg-[#1a1a1a]">
-            <BottomNavigation />
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="min-h-screen bg-white dark:bg-[#121212] flex flex-col justify-between relative">
         <div className="flex-1 overflow-y-auto pb-4">

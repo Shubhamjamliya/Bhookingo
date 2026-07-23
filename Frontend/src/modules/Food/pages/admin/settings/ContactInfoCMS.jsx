@@ -135,7 +135,7 @@ export default function ContactInfoCMS() {
                 Public Support Email
               </label>
               <Input
-                placeholder="e.g. support@bhookingo.com"
+                placeholder="e.g. bhookingo@gmail.com"
                 value={contactData.email}
                 onChange={(e) => setContactData({ ...contactData, email: e.target.value })}
                 className="max-w-md placeholder:text-slate-400 text-slate-800"

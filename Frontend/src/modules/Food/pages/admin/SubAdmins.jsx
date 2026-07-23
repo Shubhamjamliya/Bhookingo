@@ -786,7 +786,7 @@ export default function SubAdmins() {
                       disabled={formMode !== "create"}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. support@bhookingo.com"
+                      placeholder="e.g. bhookingo@gmail.com"
                     />
                   </div>
                   <div className="space-y-1">

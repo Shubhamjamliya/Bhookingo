@@ -67,7 +67,7 @@ export default function MasterLandingPage() {
           <img
             src="/assets/images/landingbg.png"
             alt="Expressway Highway Sunset"
-            className="w-full h-full object-cover opacity-50"
+            className="w-full h-full object-cover opacity-80"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-black/65" />
         </div>
@@ -583,7 +583,7 @@ export default function MasterLandingPage() {
 
             {/* DRIVE MODE CARD (Vertical Image on Left) */}
             <div className="bg-[#FFF5F5] rounded-3xl border border-red-150 shadow-md relative overflow-hidden flex flex-col md:flex-row items-stretch">
-              
+
               {/* Left Vertical Image / Banner */}
               <div className="w-full md:w-48 lg:w-52 relative bg-gray-900 shrink-0 min-h-[220px] md:min-h-full overflow-hidden">
                 <img
@@ -592,7 +592,7 @@ export default function MasterLandingPage() {
                   className="w-full h-full object-cover opacity-80"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                
+
                 {/* 3D Location Marker Overlay */}
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 flex flex-col items-center">
                   <div className="w-10 h-10 rounded-full bg-[#E0332F] text-white flex items-center justify-center shadow-lg border-2 border-white animate-bounce">
@@ -654,7 +654,7 @@ export default function MasterLandingPage() {
 
             {/* SEARCH MODE CARD (Vertical Restaurant Illustration on Right) */}
             <div className="bg-[#F4FBF7] rounded-3xl border border-emerald-150 shadow-md relative overflow-hidden flex flex-col md:flex-row items-stretch">
-              
+
               {/* Left Content Column */}
               <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between">
                 <div className="space-y-4">
@@ -703,7 +703,7 @@ export default function MasterLandingPage() {
                   className="w-full h-full object-cover opacity-85"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-transparent to-transparent" />
-                
+
                 {/* 3D Magnifying Glass Icon Overlay */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-2xl bg-white/90 backdrop-blur-sm text-emerald-700 flex items-center justify-center shadow-xl border border-white">
                   <Search className="w-8 h-8 stroke-[2.5]" />

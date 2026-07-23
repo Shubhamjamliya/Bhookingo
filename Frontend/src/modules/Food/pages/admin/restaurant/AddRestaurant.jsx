@@ -359,7 +359,7 @@ const extractCoordsFromUrl = (url) => {
         return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // 4. Check for place/lat,lng or place/name/lat,lng
   const placeMatch = url.match(/\/place\/.*?(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
@@ -1192,9 +1192,9 @@ export default function AddRestaurant() {
           if (cancelled) return
           const place = autocomplete.getPlace()
           if (!place?.geometry) return
-          
+
           isPlaceSelectedRef.current = true
-          
+
           const parsed = parsePlace(place)
           setStep1((prev) => ({
             ...prev,
@@ -1215,7 +1215,7 @@ export default function AddRestaurant() {
           setMapsLinkValue("")
 
           setLocationSearchValue(parsed.formattedAddress)
-          
+
           if (inputElement) {
             inputElement.blur()
           }
@@ -1569,11 +1569,10 @@ export default function AddRestaurant() {
           <div className="mt-3 text-xs flex items-center gap-1.5 font-medium text-slate-600 bg-slate-50/70 border border-slate-100 rounded px-2.5 py-1.5 w-fit">
             <MapPin className="w-3.5 h-3.5 text-slate-500" />
             <span>Location Source:</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-              step1.locationSource === "google_maps_link"
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${step1.locationSource === "google_maps_link"
                 ? "bg-blue-100 text-blue-700"
                 : "bg-orange-100 text-orange-700"
-            }`}>
+              }`}>
               {step1.locationSource === "google_maps_link" ? "Google Maps Link" : "Google Search"}
             </span>
           </div>

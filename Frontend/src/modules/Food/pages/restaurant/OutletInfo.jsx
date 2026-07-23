@@ -34,16 +34,16 @@ import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable, convertBase64ToFile } from "@food/utils/imageUploadUtils"
 import BottomNavOrders from "@food/components/restaurant/BottomNavOrders"
 
-const debugLog = (...args) => {}
-const debugWarn = (...args) => {}
-const debugError = (...args) => {}
+const debugLog = (...args) => { }
+const debugWarn = (...args) => { }
+const debugError = (...args) => { }
 
 
 const CUISINES_STORAGE_KEY = "restaurant_cuisines"
 
 // Helper component for reusable action buttons
 const ActionButton = ({ icon: Icon, label, onClick }) => (
-  <button 
+  <button
     onClick={onClick}
     className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 hover:border-[#B80B3D]/30 hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D]/5 transition-all active:scale-[0.98] shadow-sm"
   >
@@ -61,7 +61,7 @@ export default function OutletInfo() {
   const navigate = useNavigate()
   const location = useLocation()
   const goBack = useRestaurantBackNavigation()
-  
+
   // State management
   const [restaurantData, setRestaurantData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -78,7 +78,7 @@ export default function OutletInfo() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imageType, setImageType] = useState(null) // 'profile' or 'menu'
   const [uploadingCount, setUploadingCount] = useState(0) // Track how many images are being uploaded
-  
+
   const profileImageInputRef = useRef(null)
   const menuImageInputRef = useRef(null)
   const [activePicker, setActivePicker] = useState(null) // { type: 'profile' | 'cover', ref: any, title: string, multiple: boolean }
@@ -86,7 +86,7 @@ export default function OutletInfo() {
   // Format address from location object
   const formatAddress = (location) => {
     if (!location) return ""
-    
+
     const parts = []
     if (location.addressLine1) parts.push(location.addressLine1.trim())
     if (location.addressLine2) parts.push(location.addressLine2.trim())
@@ -99,7 +99,7 @@ export default function OutletInfo() {
       }
     }
     if (location.landmark) parts.push(location.landmark.trim())
-    
+
     return parts.join(", ") || ""
   }
 
@@ -112,25 +112,25 @@ export default function OutletInfo() {
         const data = response?.data?.data?.restaurant || response?.data?.restaurant
         if (data) {
           setRestaurantData(data)
-          
+
           // Set restaurant name
           setRestaurantName(data.name || "")
-          
+
           // Set restaurant ID
           setRestaurantId(data.restaurantId || data.id || "")
           // Set MongoDB _id for last 5 digits display
           const mongoId = String(data.id || data._id || "")
           setRestaurantMongoId(mongoId)
-          
+
           // Format and set address
           const formattedAddress = formatAddress(data.location)
           setAddress(formattedAddress)
-          
+
           // Format cuisines
           if (data.cuisines && Array.isArray(data.cuisines) && data.cuisines.length > 0) {
             setCuisineTags(data.cuisines.join(", "))
           }
-          
+
           // Set images
           if (data.profileImage?.url) {
             setThumbnailImage(data.profileImage.url)
@@ -173,7 +173,7 @@ export default function OutletInfo() {
 
     window.addEventListener("cuisinesUpdated", handleCuisinesUpdate)
     window.addEventListener("addressUpdated", handleAddressUpdate)
-    
+
     return () => {
       window.removeEventListener("cuisinesUpdated", handleCuisinesUpdate)
       window.removeEventListener("addressUpdated", handleAddressUpdate)
@@ -216,7 +216,7 @@ export default function OutletInfo() {
         if (uploadedImage.url) {
           setThumbnailImage(uploadedImage.url)
         }
-        
+
         // Refresh restaurant data
         const response = await restaurantAPI.getCurrentRestaurant()
         const data = response?.data?.data?.restaurant || response?.data?.restaurant
@@ -251,14 +251,14 @@ export default function OutletInfo() {
       const currentData = currentResponse?.data?.data?.restaurant || currentResponse?.data?.restaurant
       const existingImages = currentData?.menuImages && Array.isArray(currentData.menuImages)
         ? currentData.menuImages.map(img => ({
-            url: img.url,
-            publicId: img.publicId
-          }))
+          url: img.url,
+          publicId: img.publicId
+        }))
         : []
 
       const uploadedImageData = []
       const failedUploads = []
-      
+
       for (let i = 0; i < fileArray.length; i++) {
         try {
           const uploadResponse = await restaurantAPI.uploadMenuImage(fileArray[i])
@@ -365,8 +365,8 @@ export default function OutletInfo() {
         <div className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 sticky top-0 z-50 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 flex-1">
-              <button 
-                onClick={goBack} 
+              <button
+                onClick={goBack}
                 className="p-2 hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D]/5 rounded-xl transition-all active:scale-95"
               >
                 <ArrowLeft className="w-5 h-5 text-[#B80B3D]" />
@@ -386,7 +386,7 @@ export default function OutletInfo() {
           <div className="relative w-full h-[180px] rounded-[2rem] overflow-hidden shadow-xl ring-1 ring-black/5">
             <img src={mainImage} alt="Restaurant banner" className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                        <input
+            <input
               ref={menuImageInputRef}
               type="file"
               accept="image/*"
@@ -418,7 +418,7 @@ export default function OutletInfo() {
                   </div>
                   <span className="text-gray-400 text-xs font-bold uppercase tracking-widest">{restaurantData?.totalRatings || 0} Reviews</span>
                 </div>
-                
+
                 <button
                   onClick={() => navigate("/food/restaurant/edit-owner", { state: { from: location.pathname } })}
                   className="mt-4 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-[#B80B3D]/20 active:scale-95 transition-all w-fit"
@@ -437,7 +437,7 @@ export default function OutletInfo() {
 
 
             {/* Restaurant Name Card */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-gradient-to-br from-blue-50/40 to-blue-50/80 rounded-[1.5rem] p-5 border border-blue-100/50 shadow-sm relative"
@@ -454,7 +454,7 @@ export default function OutletInfo() {
 
 
             {/* Address Card */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -488,11 +488,11 @@ export default function OutletInfo() {
           </DialogHeader>
           <div className="p-6 space-y-4">
             <div className="relative group">
-              <Input 
-                value={editNameValue} 
-                onChange={(e) => setEditNameValue(e.target.value)} 
-                placeholder="Ex: Bhookingo Express" 
-                className="w-full h-14 px-5 rounded-2xl border-2 border-gray-100 focus:border-[#B80B3D] focus:ring-0 transition-all font-bold text-lg bg-gray-50 group-hover:bg-white" 
+              <Input
+                value={editNameValue}
+                onChange={(e) => setEditNameValue(e.target.value)}
+                placeholder="Ex: Bhookingo Express"
+                className="w-full h-14 px-5 rounded-2xl border-2 border-gray-100 focus:border-[#B80B3D] focus:ring-0 transition-all font-bold text-lg bg-gray-50 group-hover:bg-white"
               />
               <Pencil className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-hover:text-[#B80B3D] transition-colors" />
             </div>
@@ -520,7 +520,7 @@ export default function OutletInfo() {
         fileNamePrefix={`outlet-${activePicker?.type}`}
         galleryInputRef={activePicker?.ref}
       />
-      
+
       <BottomNavOrders activeTabOverride="explore" />
     </>
   )

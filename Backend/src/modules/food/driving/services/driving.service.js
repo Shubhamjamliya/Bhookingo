@@ -175,13 +175,14 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
 
             const distanceKm = dist_R - dist_U; // distance ahead along the route
 
-            // Direction check: must be ahead of user (distanceKm >= -1) and within planned discovery radius (500 km)
-            const isRestaurantAhead = distanceKm >= -1;
+            // Direction check: must be ahead of user (distanceKm >= -0.5) and within 100 km visibility radius
+            const isRestaurantAhead = distanceKm >= -0.5;
 
-            const maxDiscoveryDistance = rangeKm ? Number(rangeKm) : 500;
+            const maxDiscoveryDistance = rangeKm ? Number(rangeKm) : 100;
             if (isRestaurantAhead && distanceKm <= maxDiscoveryDistance) {
                 const etaHours = distanceKm / userSpeed;
                 const etaMinutes = Math.max(1, Math.round(etaHours * 60));
+                const isBookable = distanceKm <= 50;
 
                 let highwayRef = 'NH';
                 if (restaurant.highwayId) {
@@ -191,8 +192,9 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
 
                 aheadRestaurants.push({
                     ...restaurant,
-                    distanceKm: Number(distanceKm.toFixed(1)),
+                    distanceKm: Number(Math.max(0, distanceKm).toFixed(1)),
                     etaMinutes,
+                    isBookable,
                     highwayRef
                 });
             }

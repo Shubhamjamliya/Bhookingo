@@ -528,10 +528,7 @@ export default function DrivingMode() {
 
     let list = [...resultData.restaurants];
 
-    // 1. Distance filter (List view only)
-    if (viewMode === "list") {
-      list = list.filter((r) => r.distanceKm <= activeDistanceLimit);
-    }
+    // Render all visible restaurants returned by backend (up to 100 km)
 
     // 2. Facilities tags filter
     if (activeFacilityFilter !== "all") {

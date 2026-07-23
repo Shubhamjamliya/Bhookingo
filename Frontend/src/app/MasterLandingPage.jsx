@@ -67,16 +67,16 @@ export default function MasterLandingPage() {
           <img
             src="/assets/images/landingbg.png"
             alt="Expressway Highway Sunset"
-            className="w-full h-full object-cover opacity-80"
+            className="w-full h-full object-cover opacity-100"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-black/65" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-black/25 to-black/25" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
+        <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
 
             {/* Left Column: Hero Text Content */}
-            <div className="lg:col-span-6 space-y-6">
+            <div className="lg:col-span-5 space-y-6">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 bg-[#E0332F] text-white text-[11px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg shadow-red-500/30">
                 <Flame className="w-3.5 h-3.5 fill-current" />
@@ -144,144 +144,147 @@ export default function MasterLandingPage() {
               </div>
             </div>
 
-            {/* Center-Right Column: Mobile Device Mockup */}
-            <div className="lg:col-span-3 flex justify-center py-4">
-              <div className="relative w-[270px] sm:w-[290px] h-[570px] bg-black rounded-[44px] p-3 shadow-[0_25px_60px_rgba(0,0,0,0.8)] border-4 border-gray-800">
-                {/* Notch */}
-                <div className="absolute top-0 inset-x-0 h-5 bg-black rounded-b-xl w-32 mx-auto z-30 flex items-center justify-center">
-                  <div className="w-12 h-1 bg-gray-800 rounded-full" />
-                </div>
-
-                {/* Screen Content */}
-                <div className="w-full h-full bg-white rounded-[34px] overflow-hidden flex flex-col pt-4 text-gray-900">
-                  {/* Top Bar */}
-                  <div className="px-3.5 pt-2 pb-1.5 flex items-center justify-between border-b border-gray-100">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-6 rounded-md bg-[#E0332F] flex items-center justify-center">
-                        <MapPin className="w-3.5 h-3.5 text-white" />
-                      </div>
-                      <span className="text-xs font-black tracking-tight text-gray-900">bhookingo</span>
-                    </div>
-                    <Bell className="w-4 h-4 text-gray-600" />
+            {/* Right Column: Phone Mockup & Floating Feature Cards (7 Cols, Shifted Right) */}
+            <div className="lg:col-span-7 flex flex-col sm:flex-row items-center justify-end gap-6 lg:gap-10 lg:pl-10">
+              {/* Phone Mockup */}
+              <div className="shrink-0 py-4">
+                <div className="relative w-[270px] sm:w-[290px] h-[570px] bg-black rounded-[44px] p-3 shadow-[0_25px_60px_rgba(0,0,0,0.8)] border-4 border-gray-800">
+                  {/* Notch */}
+                  <div className="absolute top-0 inset-x-0 h-5 bg-black rounded-b-xl w-32 mx-auto z-30 flex items-center justify-center">
+                    <div className="w-12 h-1 bg-gray-800 rounded-full" />
                   </div>
 
-                  {/* Search Bar */}
-                  <div className="p-3">
-                    <div className="bg-gray-100 rounded-xl px-3 py-2 flex items-center gap-2 text-gray-400 text-[11px]">
-                      <Search className="w-3.5 h-3.5 text-gray-500" />
-                      <span>Search your route or restaurant</span>
-                    </div>
-                  </div>
-
-                  {/* Filter Badges */}
-                  <div className="px-3 pb-2 flex gap-1.5 overflow-x-auto scrollbar-hide text-[10px] font-bold">
-                    <span className="bg-[#E0332F] text-white px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0 shadow-sm">
-                      <ShoppingBag className="w-3 h-3" /> Takeaway
-                    </span>
-                    <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
-                      <Utensils className="w-3 h-3" /> Dine-in
-                    </span>
-                    <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full shrink-0">Washrooms</span>
-                    <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full shrink-0">EV Charging</span>
-                    <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full shrink-0">Parking</span>
-                  </div>
-
-                  {/* Section Label */}
-                  <div className="px-3 pt-1 pb-1.5 flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-gray-900">Forward Restaurants on NH 48</span>
-                    <span className="text-[#E0332F] font-bold text-[10px] cursor-pointer">Change Route</span>
-                  </div>
-
-                  {/* Restaurant List Cards */}
-                  <div className="px-3 flex-1 overflow-y-auto space-y-2 pb-2">
-                    {[
-                      {
-                        name: "Haldiram's",
-                        dist: "2.4 km ahead",
-                        rating: "4.6 ★ · 20–30 mins",
-                        tag: "Takeaway",
-                        tagRed: true,
-                        img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=120&q=80"
-                      },
-                      {
-                        name: "Amrik Sukhdev",
-                        dist: "4.8 km ahead",
-                        rating: "4.6 ★ · 20–40 mins",
-                        tag: "Dine-in",
-                        tagRed: false,
-                        img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=120&q=80"
-                      },
-                      {
-                        name: "Pind Balluchi",
-                        dist: "12.3 km ahead",
-                        rating: "4.3 ★ · 20–30 mins",
-                        tag: "Takeaway",
-                        tagRed: true,
-                        img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=120&q=80"
-                      }
-                    ].map((item, idx) => (
-                      <div key={idx} className="bg-white border border-gray-150 rounded-xl p-2 flex items-center gap-2.5 shadow-sm">
-                        <img src={item.img} alt={item.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-[11px] text-gray-900 truncate">{item.name}</span>
-                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${item.tagRed ? 'bg-[#E0332F] text-white' : 'border border-amber-500 text-amber-600'}`}>
-                              {item.tag}
-                            </span>
-                          </div>
-                          <span className="text-[9px] text-gray-500 block">{item.dist}</span>
-                          <span className="text-[9px] font-semibold text-gray-700">{item.rating}</span>
+                  {/* Screen Content */}
+                  <div className="w-full h-full bg-white rounded-[34px] overflow-hidden flex flex-col pt-4 text-gray-900">
+                    {/* Top Bar */}
+                    <div className="px-3.5 pt-2 pb-1.5 flex items-center justify-between border-b border-gray-100">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-6 rounded-md bg-[#E0332F] flex items-center justify-center">
+                          <MapPin className="w-3.5 h-3.5 text-white" />
                         </div>
+                        <span className="text-xs font-black tracking-tight text-gray-900">bhookingo</span>
                       </div>
-                    ))}
-                  </div>
+                      <Bell className="w-4 h-4 text-gray-600" />
+                    </div>
 
-                  {/* Bottom Navigation Bar */}
-                  <div className="border-t border-gray-150 px-4 py-2 flex items-center justify-between text-gray-400">
-                    <div className="flex flex-col items-center text-[#E0332F]">
-                      <HomeIcon className="w-4 h-4" />
-                      <span className="text-[8px] font-bold mt-0.5">Home</span>
+                    {/* Search Bar */}
+                    <div className="p-3">
+                      <div className="bg-gray-100 rounded-xl px-3 py-2 flex items-center gap-2 text-gray-400 text-[11px]">
+                        <Search className="w-3.5 h-3.5 text-gray-500" />
+                        <span>Search your route or restaurant</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col items-center">
-                      <Search className="w-4 h-4" />
-                      <span className="text-[8px] font-medium mt-0.5">Search</span>
+
+                    {/* Filter Badges */}
+                    <div className="px-3 pb-2 flex gap-1.5 overflow-x-auto scrollbar-hide text-[10px] font-bold">
+                      <span className="bg-[#E0332F] text-white px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0 shadow-sm">
+                        <ShoppingBag className="w-3 h-3" /> Takeaway
+                      </span>
+                      <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                        <Utensils className="w-3 h-3" /> Dine-in
+                      </span>
+                      <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full shrink-0">Washrooms</span>
+                      <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full shrink-0">EV Charging</span>
+                      <span className="bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full shrink-0">Parking</span>
                     </div>
-                    <div className="flex flex-col items-center">
-                      <OrdersIcon className="w-4 h-4" />
-                      <span className="text-[8px] font-medium mt-0.5">Orders</span>
+
+                    {/* Section Label */}
+                    <div className="px-3 pt-1 pb-1.5 flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-gray-900">Forward Restaurants on NH 48</span>
+                      <span className="text-[#E0332F] font-bold text-[10px] cursor-pointer">Change Route</span>
                     </div>
-                    <div className="flex flex-col items-center">
-                      <User className="w-4 h-4" />
-                      <span className="text-[8px] font-medium mt-0.5">Profile</span>
+
+                    {/* Restaurant List Cards */}
+                    <div className="px-3 flex-1 overflow-y-auto space-y-2 pb-2">
+                      {[
+                        {
+                          name: "Haldiram's",
+                          dist: "2.4 km ahead",
+                          rating: "4.6 ★ · 20–30 mins",
+                          tag: "Takeaway",
+                          tagRed: true,
+                          img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=120&q=80"
+                        },
+                        {
+                          name: "Amrik Sukhdev",
+                          dist: "4.8 km ahead",
+                          rating: "4.6 ★ · 20–40 mins",
+                          tag: "Dine-in",
+                          tagRed: false,
+                          img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=120&q=80"
+                        },
+                        {
+                          name: "Pind Balluchi",
+                          dist: "12.3 km ahead",
+                          rating: "4.3 ★ · 20–30 mins",
+                          tag: "Takeaway",
+                          tagRed: true,
+                          img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=120&q=80"
+                        }
+                      ].map((item, idx) => (
+                        <div key={idx} className="bg-white border border-gray-150 rounded-xl p-2 flex items-center gap-2.5 shadow-sm">
+                          <img src={item.img} alt={item.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-[11px] text-gray-900 truncate">{item.name}</span>
+                              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${item.tagRed ? 'bg-[#E0332F] text-white' : 'border border-amber-500 text-amber-600'}`}>
+                                {item.tag}
+                              </span>
+                            </div>
+                            <span className="text-[9px] text-gray-500 block">{item.dist}</span>
+                            <span className="text-[9px] font-semibold text-gray-700">{item.rating}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Bottom Navigation Bar */}
+                    <div className="border-t border-gray-150 px-4 py-2 flex items-center justify-between text-gray-400">
+                      <div className="flex flex-col items-center text-[#E0332F]">
+                        <HomeIcon className="w-4 h-4" />
+                        <span className="text-[8px] font-bold mt-0.5">Home</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <Search className="w-4 h-4" />
+                        <span className="text-[8px] font-medium mt-0.5">Search</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <OrdersIcon className="w-4 h-4" />
+                        <span className="text-[8px] font-medium mt-0.5">Orders</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <User className="w-4 h-4" />
+                        <span className="text-[8px] font-medium mt-0.5">Profile</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Right Column: Desktop Floating Feature Cards Vertical Stack */}
-            <div className="lg:col-span-3 hidden lg:flex flex-col gap-2.5 pl-4">
-              {[
-                { icon: MapPin, label: "Only Forward Restaurants" },
-                { icon: Clock, label: "Save Time & Money" },
-                { icon: Star, label: "Quality Food Every Time" },
-                { icon: RestroomIcon, label: "Clean Washrooms Info" },
-                { icon: Utensils, label: "Dine-in & Takeaway" },
-                { icon: Zap, label: "EV Charging On Route" },
-                { icon: ParkingIcon, label: "Parking Info Easy & Safe" }
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white text-gray-900 rounded-full px-4 py-2.5 flex items-center gap-3 shadow-md hover:shadow-lg transition-all border border-gray-100 cursor-pointer hover:translate-x-1"
-                >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#E0332F] to-[#B91C1C] flex items-center justify-center shrink-0 shadow-sm">
-                    <item.icon className="w-3.5 h-3.5 text-white" />
+              {/* Desktop Floating Feature Cards Vertical Stack */}
+              <div className="hidden lg:flex flex-col gap-2.5 w-full max-w-[260px] shrink-0">
+                {[
+                  { icon: MapPin, label: "Only Forward Restaurants" },
+                  { icon: Clock, label: "Save Time & Money" },
+                  { icon: Star, label: "Quality Food Every Time" },
+                  { icon: RestroomIcon, label: "Clean Washrooms Info" },
+                  { icon: Utensils, label: "Dine-in & Takeaway" },
+                  { icon: Zap, label: "EV Charging On Route" },
+                  { icon: ParkingIcon, label: "Parking Info Easy & Safe" }
+                ].map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-white text-gray-900 rounded-full px-4 py-2.5 flex items-center gap-3 shadow-md hover:shadow-lg transition-all border border-gray-100 cursor-pointer hover:translate-x-1"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#E0332F] to-[#B91C1C] flex items-center justify-center shrink-0 shadow-sm">
+                      <item.icon className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    <span className="text-xs font-bold text-gray-800 truncate">
+                      {item.label}
+                    </span>
                   </div>
-                  <span className="text-xs font-bold text-gray-800 truncate">
-                    {item.label}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
           </div>

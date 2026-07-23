@@ -5,7 +5,7 @@ import { Phone, ArrowRight, ShieldCheck, Loader2, Utensils, Star, Heart, X, User
 import { toast } from "sonner"
 import { authAPI, userAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
-import logoNew from "@/assets/logo.png"
+import logoNew from "@/assets/logo.webp"
 import GoogleLoginButton from "@food/components/user/GoogleLoginButton"
 import {
   Dialog,

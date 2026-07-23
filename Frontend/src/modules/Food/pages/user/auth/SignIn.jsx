@@ -194,7 +194,7 @@ export default function SignIn() {
           </div>
 
           {/* Social login buttons */}
-          <div className="grid grid-cols-1 gap-3">
+          <div className="flex justify-center w-full">
             <GoogleLoginButton />
           </div>
 

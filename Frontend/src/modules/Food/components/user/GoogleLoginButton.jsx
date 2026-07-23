@@ -58,11 +58,11 @@ export default function GoogleLoginButton() {
         </div>
       )}
       
-      <div className={`w-full ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className={`w-full flex justify-center ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
         {isLoading ? (
-          <div className="flex items-center justify-center gap-3 w-full h-12 md:h-14 bg-surface dark:bg-[#2a2a2a] border border-border dark:border-gray-700 rounded-lg text-text-secondary">
-             <Loader2 className="h-5 w-5 animate-spin" />
-             <span className="font-medium">Authenticating...</span>
+          <div className="flex items-center justify-center gap-2.5 w-full max-w-[320px] h-10 bg-surface dark:bg-[#2a2a2a] border border-border dark:border-gray-700 rounded-full text-text-secondary text-xs shadow-sm">
+             <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+             <span className="font-bold">Authenticating...</span>
           </div>
         ) : (
           <GoogleLogin
@@ -71,7 +71,7 @@ export default function GoogleLoginButton() {
             useOneTap
             theme="outline"
             size="large"
-            width="100%"
+            width="320"
             shape="pill"
             text="continue_with"
           />

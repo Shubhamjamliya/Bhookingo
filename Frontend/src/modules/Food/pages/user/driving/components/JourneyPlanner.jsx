@@ -63,6 +63,32 @@ export default function JourneyPlanner({
     return !!sessionStorage.getItem("bh_origin_coords") || !!sessionStorage.getItem("bh_origin_input");
   });
 
+  const isDevModeAvailable = import.meta.env.DEV || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+  const [isDevMockEnabled, setIsDevMockEnabled] = useState(false);
+
+  const handleDevShortcut = (key) => {
+    setPreventAutoDetect(true);
+    if (key === 'IND_AMD') {
+      setOriginInput('Indore, Madhya Pradesh');
+      setOriginCoords({ lat: 22.7196, lng: 75.8577 });
+      setDestinationInput('Ahmedabad, Gujarat');
+      setDestinationCoords({ lat: 23.0225, lng: 72.5714 });
+      toast.success('Loaded Mock Corridor: Indore ➔ Ahmedabad');
+    } else if (key === 'IND_DEL') {
+      setOriginInput('Indore, Madhya Pradesh');
+      setOriginCoords({ lat: 22.7196, lng: 75.8577 });
+      setDestinationInput('Delhi, India');
+      setDestinationCoords({ lat: 28.6139, lng: 77.2090 });
+      toast.success('Loaded Mock Corridor: Indore ➔ Delhi');
+    } else if (key === 'DEL_DDN') {
+      setOriginInput('Delhi, India');
+      setOriginCoords({ lat: 28.6139, lng: 77.2090 });
+      setDestinationInput('Dehradun, Uttarakhand');
+      setDestinationCoords({ lat: 30.3165, lng: 78.0322 });
+      toast.success('Loaded Mock Corridor: Delhi ➔ Dehradun');
+    }
+  };
+
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
   const [searchingDestination, setSearchingDestination] = useState(false);
 
@@ -481,6 +507,57 @@ export default function JourneyPlanner({
           </div>
 
         </div>
+
+        {/* Developer Mode Testing Panel (Dev builds only) */}
+        {isDevModeAvailable && (
+          <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl animate-fade-in">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                🛠️ Dev Mode: Mock Route Simulator
+              </span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isDevMockEnabled}
+                  onChange={(e) => setIsDevMockEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-8 h-4.5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+
+            {isDevMockEnabled && (
+              <div className="mt-2.5 pt-2 border-t border-amber-500/20 space-y-2">
+                <p className="text-[10px] font-bold text-amber-800 dark:text-amber-300">
+                  Select a test highway corridor to pre-fill route:
+                </p>
+                <div className="grid grid-cols-3 gap-1.5 text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => handleDevShortcut('IND_AMD')}
+                    className="px-2 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs transition-all text-center truncate"
+                  >
+                    Indore ➔ Ahmedabad
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDevShortcut('IND_DEL')}
+                    className="px-2 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs transition-all text-center truncate"
+                  >
+                    Indore ➔ Delhi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDevShortcut('DEL_DDN')}
+                    className="px-2 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs transition-all text-center truncate"
+                  >
+                    Delhi ➔ Dehradun
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Route Card Component (Matching Reference Card Exactly) */}
         {selectedHighway ? (

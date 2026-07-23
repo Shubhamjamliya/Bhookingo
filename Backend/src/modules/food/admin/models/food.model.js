@@ -31,7 +31,9 @@ const foodSchema = new mongoose.Schema(
         rejectedAt: { type: Date },
         actionType: { type: String, enum: ['NEW', 'UPDATED'], default: 'NEW' },
         oldData: { type: mongoose.Schema.Types.Mixed, default: null },
-        newData: { type: mongoose.Schema.Types.Mixed, default: null }
+        newData: { type: mongoose.Schema.Types.Mixed, default: null },
+        isSeededDemo: { type: Boolean, default: false, index: true },
+        seedBatch: { type: String, default: null, index: true }
     },
     {
         collection: 'food_items',

@@ -327,6 +327,16 @@ const restaurantSchema = new mongoose.Schema(
     deletedAt: {
       type: Date,
     },
+    isSeededDemo: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    seedBatch: {
+      type: String,
+      default: null,
+      index: true,
+    },
   },
   {
     collection: "food_restaurants",

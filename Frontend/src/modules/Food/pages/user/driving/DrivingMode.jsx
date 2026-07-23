@@ -342,13 +342,17 @@ export default function DrivingMode() {
 
   // Restaurants Query Logic with AbortController and 20s loading timeout
   const fetchRestaurantsAhead = useCallback(async (isInitial = false, activeJourney = null) => {
+    const currentJourney = activeJourney || journey;
     const loc = locationRef.current;
-    if (!loc) {
+
+    // Use journey origin if specified (e.g. planned route / Dev Mode mock origin), else use live GPS location
+    const startLat = currentJourney?.origin?.lat ?? loc?.latitude;
+    const startLng = currentJourney?.origin?.lng ?? loc?.longitude;
+
+    if (startLat === undefined || startLng === undefined || startLat === null || startLng === null) {
       setStatus("CHECKING_LOCATION");
       return;
     }
-
-    const currentJourney = activeJourney || journey;
 
     // Cancel any in-flight requests
     if (abortControllerRef.current) {
@@ -384,8 +388,8 @@ export default function DrivingMode() {
 
     try {
       const queryParams = {
-        lat: loc.latitude,
-        lng: loc.longitude,
+        lat: startLat,
+        lng: startLng,
         heading: currentJourney ? null : headingRef.current,
         speed: currentJourney ? null : speedRef.current
       };
@@ -438,9 +442,9 @@ export default function DrivingMode() {
     }
   }, [journey]);
 
-  // Trigger initial query when location is first detected
+  // Trigger initial query when location or planned journey is first detected
   useEffect(() => {
-    if (currentLocation && !hasFetchedInitial.current && settings?.enabled) {
+    if ((currentLocation || journey?.origin) && !hasFetchedInitial.current && settings?.enabled) {
       hasFetchedInitial.current = true;
       fetchRestaurantsAhead(true, journey);
     }

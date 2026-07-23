@@ -15,6 +15,8 @@
     "migrate:fcm-tokens": "node scripts/migrate-fcm-tokens-to-profile-models.js",
     "migrate:order-payments": "node scripts/migrate-orders-to-transactions.js",
     "import:highways": "node scripts/import-highways-from-geojson.js",
+    "seed:highway-restaurants": "node scripts/seedHighwayRestaurants.js",
+    "unseed:highway-restaurants": "node scripts/unseedHighwayRestaurants.js",
     "cleanup:legacy-collections": "node scripts/cleanup-legacy-collections.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

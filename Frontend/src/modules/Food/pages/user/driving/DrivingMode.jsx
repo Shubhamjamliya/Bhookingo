@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Compass, Loader2, Navigation, AlertTriangle, List, Map, ShieldAlert, CheckCircle, Clock, ChevronRight, ArrowLeft, Share2, Heart, Wifi, Star, Car, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { userAPI } from "@food/api";
+import { userAPI, restaurantAPI } from "@food/api";
 import { useProfile } from "@food/context/ProfileContext";
 import { Button } from "@food/components/ui/button";
 import { Dialog, DialogContent } from "@food/components/ui/dialog";
@@ -16,6 +16,7 @@ import BottomNavigation from "@food/components/user/BottomNavigation";
 import { extractImages } from "@food/utils/common";
 import JourneyPlanner from "./components/JourneyPlanner";
 import { FACILITIES_CONFIG } from "../../../utils/facilitiesConfig";
+import { DrivingModeSkeleton } from "@food/components/ui/loading-skeletons";
 
 // Food/menu images carousel component for the details card
 function RestaurantImageCarousel({ restaurant }) {
@@ -122,26 +123,7 @@ export default function DrivingMode() {
     }
   }, [journey]);
 
-  const [isDrawerExpanded, setIsDrawerExpanded] = useState(false);
-  const touchStartY = useRef(0);
 
-  const handleTouchStart = (e) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e) => {
-    const touchEndY = e.changedTouches[0].clientY;
-    const diff = touchStartY.current - touchEndY;
-    if (diff > 50) {
-      setIsDrawerExpanded(true);
-    } else if (diff < -50) {
-      setIsDrawerExpanded(false);
-    }
-  };
-
-  const toggleDrawer = () => {
-    setIsDrawerExpanded(!isDrawerExpanded);
-  };
 
   // Cleanup journey planner cache when exiting Driving Mode (only if no active trip exists)
   useEffect(() => {
@@ -204,6 +186,30 @@ export default function DrivingMode() {
     return () => window.removeEventListener("popstate", onPopState);
   }, [handleExitDriving]);
 
+  const [isDrawerExpanded, setIsDrawerExpanded] = useState(false);
+  const toggleDrawer = () => setIsDrawerExpanded((prev) => !prev);
+
+  const touchStartYRef = useRef(0);
+  const touchMoveYRef = useRef(0);
+
+  const handleTouchStart = (e) => {
+    touchStartYRef.current = e.touches ? e.touches[0].clientY : e.clientY;
+    touchMoveYRef.current = touchStartYRef.current;
+  };
+
+  const handleTouchMove = (e) => {
+    touchMoveYRef.current = e.touches ? e.touches[0].clientY : e.clientY;
+  };
+
+  const handleTouchEnd = () => {
+    const deltaY = touchMoveYRef.current - touchStartYRef.current;
+    if (deltaY < -30) {
+      setIsDrawerExpanded(true);
+    } else if (deltaY > 30) {
+      setIsDrawerExpanded(false);
+    }
+  };
+
   // View States
   const [viewMode, setViewMode] = useState("map"); // "map" | "list"
   const [activeFacilityFilter, setActiveFacilityFilter] = useState("all");
@@ -212,6 +218,95 @@ export default function DrivingMode() {
 
   // Details Modal State
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [restaurantOffers, setRestaurantOffers] = useState([]);
+
+  const profileContext = useProfile?.() || {};
+  const { isFavorite, addFavorite, removeFavorite } = profileContext;
+
+  useEffect(() => {
+    if (!selectedRestaurant) {
+      setRestaurantOffers([]);
+      return;
+    }
+    let isMounted = true;
+    const fetchOffers = async () => {
+      try {
+        const getOffersFn = restaurantAPI?.getPublicOffers || userAPI?.getPublicOffers;
+        if (!getOffersFn) {
+          if (isMounted) setRestaurantOffers([]);
+          return;
+        }
+        const response = await getOffersFn();
+        const data = response?.data?.data;
+        const allOffers = data?.allOffers || (Array.isArray(data) ? data : []);
+        const resId = String(selectedRestaurant._id || selectedRestaurant.id || '');
+
+        const validOffers = allOffers.filter(offer => {
+          if (offer.status && offer.status !== 'active') return false;
+          if (offer.endDate && new Date(offer.endDate) < new Date()) return false;
+          if (offer.restaurantScope === 'selected') {
+            const offerResId = String(offer.restaurantId?._id || offer.restaurantId || '');
+            if (offerResId !== resId) return false;
+          }
+          return true;
+        });
+
+        if (isMounted) setRestaurantOffers(validOffers);
+      } catch (e) {
+        if (isMounted) setRestaurantOffers([]);
+      }
+    };
+    fetchOffers();
+    return () => { isMounted = false; };
+  }, [selectedRestaurant]);
+
+  const handleShare = async () => {
+    if (!selectedRestaurant) return;
+    const shareData = {
+      title: selectedRestaurant.restaurantName || "Bhookingo",
+      text: `Check out ${selectedRestaurant.restaurantName} on Bhookingo!`,
+      url: window.location.href,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // User cancelled or share failed
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Restaurant link copied to clipboard");
+      } catch (err) {
+        toast.error("Failed to copy link");
+      }
+    }
+  };
+
+  const restaurantFavoriteSlug = selectedRestaurant?.restaurantSlug || selectedRestaurant?._id || selectedRestaurant?.id;
+  const isFavourited = isFavorite && restaurantFavoriteSlug ? isFavorite(restaurantFavoriteSlug) : false;
+
+  const handleToggleFavorite = () => {
+    if (!selectedRestaurant || !restaurantFavoriteSlug) return;
+    if (isFavourited) {
+      if (removeFavorite) removeFavorite(restaurantFavoriteSlug);
+      toast.success("Removed from favorites");
+    } else {
+      if (addFavorite) {
+        addFavorite({
+          id: selectedRestaurant._id || selectedRestaurant.id,
+          slug: restaurantFavoriteSlug,
+          restaurantName: selectedRestaurant.restaurantName,
+          name: selectedRestaurant.restaurantName,
+          profileImage: selectedRestaurant.profileImage || selectedRestaurant.image,
+          image: selectedRestaurant.profileImage || selectedRestaurant.image,
+          rating: selectedRestaurant.rating,
+          cuisines: selectedRestaurant.cuisines
+        });
+      }
+      toast.success("Added to favorites");
+    }
+  };
 
   // Geolocation refs to avoid interval closures
   const locationRef = useRef(null);
@@ -572,16 +667,9 @@ export default function DrivingMode() {
 
   // Render Loader UI for intermediate loading states, wrapped with BottomNavigation
   if ((status === "CHECKING_LOCATION" || status === "CHECKING_HIGHWAY" || status === "LOADING_RESTAURANTS") && journey) {
-    let loadingLabel = "Finding your location...";
-    if (status === "CHECKING_HIGHWAY") loadingLabel = "Pinpointing highway route...";
-    if (status === "LOADING_RESTAURANTS") loadingLabel = "Searching restaurants ahead...";
-
     return (
       <div className="flex flex-col h-screen justify-between bg-gray-50 dark:bg-[#0a0a0a] relative">
-        <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-          <Loader2 className="w-10 h-10 animate-spin text-[var(--primary)]" />
-          <p className="text-sm font-bold uppercase tracking-wider text-gray-500">{loadingLabel}</p>
-        </div>
+        <DrivingModeSkeleton className="flex-1" />
         <div className="pb-[env(safe-area-inset-bottom)] bg-white dark:bg-[#1a1a1a]">
           <BottomNavigation />
         </div>
@@ -687,7 +775,7 @@ export default function DrivingMode() {
       <div className="flex-1 w-full relative">
         {viewMode === "map" ? (
           <DrivingMap
-            userLocation={currentLocation || (journey ? { latitude: journey.origin.lat, longitude: journey.origin.lng } : null)}
+            userLocation={journey?.origin ? { latitude: journey.origin.lat, longitude: journey.origin.lng } : currentLocation}
             destinationLocation={journey?.destination}
             journey={journey}
             onRouteCalculated={handleRouteCalculated}
@@ -776,8 +864,12 @@ export default function DrivingMode() {
           <div
             onClick={toggleDrawer}
             onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className="w-full cursor-pointer bg-white dark:bg-[#111111] py-1 shrink-0 flex flex-col items-center select-none"
+            onMouseDown={handleTouchStart}
+            onMouseMove={handleTouchMove}
+            onMouseUp={handleTouchEnd}
+            className="w-full cursor-pointer bg-white dark:bg-[#111111] py-1 shrink-0 flex flex-col items-center select-none touch-none"
           >
             <div className="w-12 h-1.5 bg-gray-200 dark:bg-neutral-800 rounded-full my-1" />
           </div>
@@ -854,11 +946,19 @@ export default function DrivingMode() {
 
               {/* Share & Favorite buttons */}
               <div className="absolute top-4 right-4 z-20 flex gap-2">
-                <button className="w-9 h-9 bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-gray-800 dark:text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all border-none focus:outline-none cursor-pointer">
-                  <Share2 className="w-4.5 h-4.5" />
+                <button
+                  onClick={handleShare}
+                  title="Share restaurant"
+                  className="w-9 h-9 bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-gray-800 dark:text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all border-none focus:outline-none cursor-pointer"
+                >
+                  <Share2 className="w-4.5 h-4.5 text-gray-700 dark:text-gray-200" />
                 </button>
-                <button className="w-9 h-9 bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-gray-800 dark:text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all border-none focus:outline-none cursor-pointer">
-                  <Heart className="w-4.5 h-4.5 text-red-500 fill-current" />
+                <button
+                  onClick={handleToggleFavorite}
+                  title={isFavourited ? "Remove from favorites" : "Add to favorites"}
+                  className="w-9 h-9 bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-gray-800 dark:text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all border-none focus:outline-none cursor-pointer"
+                >
+                  <Heart className={`w-4.5 h-4.5 ${isFavourited ? "text-red-500 fill-current" : "text-gray-600 dark:text-gray-300"}`} />
                 </button>
               </div>
             </div>
@@ -908,7 +1008,10 @@ export default function DrivingMode() {
                 {selectedRestaurant.facilities?.familyFriendly && (
                   <>
                     <span className="text-gray-300 dark:text-neutral-800">•</span>
-                    <span className="text-orange-600 dark:text-orange-400 font-extrabold">Family Friendly</span>
+                    <span className="text-orange-600 dark:text-orange-400 font-extrabold flex items-center gap-1">
+                      <img src="/icons/familyfriendly.png" alt="Family Friendly" className="w-3.5 h-3.5 object-contain inline-block rounded-full" />
+                      Family Friendly
+                    </span>
                   </>
                 )}
               </div>
@@ -922,7 +1025,7 @@ export default function DrivingMode() {
                     {/* Parking Card */}
                     {selectedRestaurant.facilities?.parking && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
-                        <span className="text-base">🅿️</span>
+                        <img src="/icons/carparking.png" alt="Parking" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Parking</span>
                       </div>
                     )}
@@ -930,7 +1033,7 @@ export default function DrivingMode() {
                     {/* Washroom Card */}
                     {selectedRestaurant.facilities?.washroom && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
-                        <span className="text-base">🚻</span>
+                        <img src="/icons/washroom.png" alt="Washroom" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Washroom</span>
                       </div>
                     )}
@@ -938,7 +1041,7 @@ export default function DrivingMode() {
                     {/* EV Charging Card */}
                     {selectedRestaurant.facilities?.evCharging && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
-                        <span className="text-base">⚡</span>
+                        <img src="/icons/evcharging.png" alt="EV Charging" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">EV Charging</span>
                       </div>
                     )}
@@ -946,7 +1049,7 @@ export default function DrivingMode() {
                     {/* Wi-Fi Card */}
                     {selectedRestaurant.facilities?.wifi && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
-                        <span className="text-base">📶</span>
+                        <img src="/icons/wifi.png" alt="Wi-Fi" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Wi-Fi</span>
                       </div>
                     )}
@@ -1006,7 +1109,14 @@ export default function DrivingMode() {
 
                         return (
                           <div key={fac.key} className="flex items-center justify-between text-[11px] font-bold">
-                            <span className="text-gray-700 dark:text-neutral-300">{fac.emoji} {fac.label}</span>
+                            <span className="text-gray-700 dark:text-neutral-300 flex items-center gap-1.5">
+                              {fac.icon ? (
+                                <img src={fac.icon} alt={fac.label} className="w-4 h-4 object-contain rounded-full" />
+                              ) : (
+                                <span>{fac.emoji}</span>
+                              )}
+                              {fac.label}
+                            </span>
                             <div className="flex items-center gap-2">
                               {renderStars(avg)}
                               {count > 0 ? (
@@ -1026,70 +1136,44 @@ export default function DrivingMode() {
                 );
               })()}
 
-              {/* Offers Section */}
-              <div className="space-y-2.5">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-black text-gray-900 dark:text-white">Offers for You</span>
-                  <button className="text-xs font-black text-orange-600 bg-transparent border-none p-0 focus:outline-none">View All</button>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Offer 1 */}
-                  <div className="p-3 rounded-xl border border-orange-100 dark:border-neutral-900 bg-orange-50/20 dark:bg-neutral-950/20 flex flex-col justify-between min-h-[96px]">
-                    <div>
-                      <h5 className="text-xs font-black text-orange-600">10% OFF</h5>
-                      <p className="text-[10px] font-extrabold text-gray-800 dark:text-neutral-300 mt-0.5">Up to ₹100</p>
-                      <p className="text-[8px] font-bold text-gray-400 mt-1">On Pre-order • Valid today</p>
-                    </div>
-                    <button className="w-full mt-2 py-1 text-[9px] font-extrabold text-orange-600 hover:text-white hover:bg-orange-500 border border-orange-500 rounded bg-white dark:bg-neutral-900 transition-all cursor-pointer">
-                      Apply
-                    </button>
+              {/* Dynamic Offers Section - Completely hidden if no active coupons match */}
+              {restaurantOffers && restaurantOffers.length > 0 && (
+                <div className="space-y-2.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-black text-gray-900 dark:text-white">Offers for You</span>
                   </div>
-                  {/* Offer 2 */}
-                  <div className="p-3 rounded-xl border border-orange-100 dark:border-neutral-900 bg-orange-50/20 dark:bg-neutral-950/20 flex flex-col justify-between min-h-[96px]">
-                    <div>
-                      <h5 className="text-xs font-black text-orange-600">20% OFF</h5>
-                      <p className="text-[10px] font-extrabold text-gray-800 dark:text-neutral-300 mt-0.5">Up to ₹200</p>
-                      <p className="text-[8px] font-bold text-gray-400 mt-1">On Table Booking • Valid today</p>
-                    </div>
-                    <button className="w-full mt-2 py-1 text-[9px] font-extrabold text-orange-600 hover:text-white hover:bg-orange-500 border border-orange-500 rounded bg-white dark:bg-neutral-900 transition-all cursor-pointer">
-                      Apply
-                    </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    {restaurantOffers.map((offer, idx) => (
+                      <div key={offer._id || offer.id || idx} className="p-3 rounded-xl border border-orange-100 dark:border-neutral-900 bg-orange-50/20 dark:bg-neutral-950/20 flex flex-col justify-between min-h-[88px]">
+                        <div>
+                          <h5 className="text-xs font-black text-orange-600">
+                            {offer.discountType === 'percentage' ? `${offer.discountValue}% OFF` : `₹${offer.discountValue} OFF`}
+                          </h5>
+                          <p className="text-[10px] font-extrabold text-gray-800 dark:text-neutral-300 mt-0.5">
+                            {offer.maxDiscount ? `Up to ₹${offer.maxDiscount}` : (offer.title || offer.couponCode)}
+                          </p>
+                          {offer.minOrderValue ? (
+                            <p className="text-[8px] font-bold text-gray-400 mt-1">Min order ₹{offer.minOrderValue}</p>
+                          ) : null}
+                        </div>
+                        <div className="mt-2 text-[9px] font-extrabold text-orange-600 bg-orange-100/50 dark:bg-orange-950/40 px-2 py-0.5 rounded text-center tracking-wider uppercase">
+                          {offer.couponCode}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Action Buttons (View Menu & Book Table split) */}
-              <div className="flex gap-3 pt-3 border-t border-gray-100 dark:border-neutral-900/60">
-                <Button
-                  variant="outline"
-                  onClick={() => handlePreorder(selectedRestaurant)}
-                  className="w-1/2 h-11 border-orange-500 hover:bg-orange-50 text-orange-600 dark:text-orange-400 font-extrabold text-sm rounded-xl transition-all"
-                >
-                  View Menu
-                </Button>
+              {/* Single Primary Action Button */}
+              <div className="pt-3 border-t border-gray-100 dark:border-neutral-900/60">
                 <Button
                   onClick={() => handlePreorder(selectedRestaurant)}
-                  className="w-1/2 h-11 bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-sm shadow-md rounded-xl transition-all"
+                  className="w-full h-12 bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-sm shadow-lg shadow-orange-600/20 rounded-xl transition-all flex items-center justify-center gap-2"
                 >
-                  Book a Table
+                  <span>Order Now</span>
+                  <ChevronRight className="w-4 h-4" />
                 </Button>
-              </div>
-
-              {/* Primary Pre-order Food bar button */}
-              <div
-                onClick={() => handlePreorder(selectedRestaurant)}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white p-3.5 rounded-2xl flex items-center justify-between shadow-lg shadow-orange-600/15 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                    <Compass className="w-4.5 h-4.5 text-white" />
-                  </div>
-                  <div className="text-left leading-none">
-                    <span className="text-xs font-black text-white block">Pre-order Food</span>
-                    <span className="text-[8px] text-white/80 block mt-1">Order now & pick up/serve on arrival</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-white" />
               </div>
 
             </div>

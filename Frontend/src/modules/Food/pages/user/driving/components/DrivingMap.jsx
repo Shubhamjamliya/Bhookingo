@@ -122,13 +122,32 @@ export default function DrivingMap({
     mapRef.current = null;
   }, []);
 
-  const handleRecenter = useCallback(() => {
-    if (!mapRef.current || !window.google?.maps || !userLocation) return;
-    mapRef.current.panTo({
-      lat: userLocation.latitude,
-      lng: userLocation.longitude
-    });
-    mapRef.current.setZoom(14);
+  const handleRecenter = useCallback((e) => {
+    if (e) {
+      if (e.stopPropagation) e.stopPropagation();
+    }
+
+    if (mapRef.current) {
+      const uLat = userLocation?.latitude ?? userLocation?.lat;
+      const uLng = userLocation?.longitude ?? userLocation?.lng;
+      if (uLat != null && uLng != null) {
+        mapRef.current.panTo({ lat: Number(uLat), lng: Number(uLng) });
+        mapRef.current.setZoom(16);
+      }
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (pos?.coords && mapRef.current) {
+            mapRef.current.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            mapRef.current.setZoom(16);
+          }
+        },
+        (err) => console.warn("GPS locate error:", err),
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    }
   }, [userLocation]);
 
   // Fetch navigation path via Google Directions Service (cached & high precision)
@@ -241,6 +260,7 @@ export default function DrivingMap({
       fitMapBounds();
     }
   }, [isLoaded, destinationLocation?.lat, destinationLocation?.lng, restaurants?.length, fitMapBounds]);
+
 
   if (!isLoaded) {
     return (
@@ -393,15 +413,25 @@ export default function DrivingMap({
       </GoogleMap>
 
       {/* Floating Recenter GPS Button */}
-      {userLocation && (
-        <button
-          onClick={handleRecenter}
-          className={`absolute right-4 z-10 w-11 h-11 bg-white dark:bg-neutral-900 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl active:scale-95 border border-gray-200/60 dark:border-neutral-800 transition-all duration-300 focus:outline-none pointer-events-auto ${recenterBottomOffset || "bottom-[302px]"}`}
-          title="Locate Me"
-        >
-          <Locate className="w-5.5 h-5.5 text-gray-700 dark:text-neutral-300" />
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={handleRecenter}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          handleRecenter(e);
+        }}
+        className={`absolute right-4 z-30 w-12 h-12 bg-white hover:bg-gray-50 text-gray-900 dark:bg-neutral-900 dark:hover:bg-neutral-800 rounded-full flex items-center justify-center shadow-2xl border border-gray-200/80 dark:border-neutral-800 active:scale-90 transition-all duration-200 focus:outline-none pointer-events-auto cursor-pointer ${recenterBottomOffset || "bottom-[302px]"}`}
+        title="Locate Me"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600 dark:text-orange-400">
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+          <line x1="12" y1="2" x2="12" y2="5" />
+          <line x1="12" y1="19" x2="12" y2="22" />
+          <line x1="2" y1="12" x2="5" y2="12" />
+          <line x1="19" y1="12" x2="22" y2="12" />
+        </svg>
+      </button>
     </div>
   );
 }

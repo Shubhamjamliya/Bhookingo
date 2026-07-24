@@ -434,19 +434,137 @@ function OnboardingSkeleton({ className }) {
   )
 }
 
+function DrivingModeSkeleton({ className }) {
+  return (
+    <LoadingSkeletonRegion label="Loading Driving Mode" className={cn("relative w-full h-screen bg-gray-50 dark:bg-[#0a0a0a] overflow-hidden flex flex-col justify-between", className)}>
+      {/* Top Floating Summary Card Skeleton */}
+      <div className="absolute top-4 left-4 right-4 z-20 pointer-events-none">
+        <div className="bg-white/95 dark:bg-[#1a1a1a] rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-neutral-800 space-y-3">
+          <div className="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-neutral-800">
+            <div className="flex items-center gap-2">
+              <Skeleton className="w-8 h-8 rounded-full" />
+              <div className="space-y-1">
+                <Skeleton className="h-4 w-32 rounded-full" />
+                <Skeleton className="h-2.5 w-40 rounded-full" />
+              </div>
+            </div>
+            <Skeleton className="h-7 w-16 rounded-full" />
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center pt-1">
+            <div className="space-y-1.5 flex flex-col items-center">
+              <Skeleton className="h-2.5 w-16 rounded-full" />
+              <Skeleton className="h-5 w-12 rounded-md" />
+            </div>
+            <div className="space-y-1.5 flex flex-col items-center border-x border-gray-100 dark:border-neutral-800">
+              <Skeleton className="h-2.5 w-14 rounded-full" />
+              <Skeleton className="h-5 w-10 rounded-md" />
+            </div>
+            <div className="space-y-1.5 flex flex-col items-center">
+              <Skeleton className="h-2.5 w-16 rounded-full" />
+              <Skeleton className="h-5 w-8 rounded-md" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Map Background Placeholder */}
+      <div className="flex-1 w-full bg-gray-100 dark:bg-neutral-900 relative">
+        <div className="absolute right-4 bottom-[230px] z-10 space-y-2">
+          <Skeleton className="w-11 h-11 rounded-full shadow-lg" />
+        </div>
+      </div>
+
+      {/* Edge-to-Edge Bottom Drawer Panel Skeleton */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 w-full max-w-md mx-auto bg-white dark:bg-[#111111] border-t dark:border-neutral-800 rounded-t-[24px] shadow-xl p-4 h-[220px] flex flex-col space-y-3">
+        <div className="flex justify-center py-1">
+          <Skeleton className="w-12 h-1.5 rounded-full" />
+        </div>
+        <div className="flex gap-2 overflow-hidden py-1">
+          <Skeleton className="h-8 w-16 rounded-full shrink-0" />
+          <Skeleton className="h-8 w-24 rounded-full shrink-0" />
+          <Skeleton className="h-8 w-20 rounded-full shrink-0" />
+          <Skeleton className="h-8 w-22 rounded-full shrink-0" />
+        </div>
+        <div className="bg-gray-50/80 dark:bg-neutral-900/40 rounded-2xl p-3 border border-gray-100 dark:border-neutral-800 flex gap-3 items-center">
+          <Skeleton className="w-16 h-16 rounded-2xl shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-3/4 rounded-full" />
+            <Skeleton className="h-3 w-1/2 rounded-full" />
+            <div className="flex gap-2 pt-1">
+              <Skeleton className="h-5 w-12 rounded-full" />
+              <Skeleton className="h-5 w-14 rounded-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </LoadingSkeletonRegion>
+  )
+}
+
+function ProfileSkeleton({ className }) {
+  return (
+    <LoadingSkeletonRegion label="Loading profile" className={cn("min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-24", className)}>
+      <div className="relative bg-gradient-to-r from-orange-500 to-amber-500 h-44 sm:h-52 rounded-b-[36px] p-6 text-white flex flex-col justify-between">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-6 w-24 rounded-full bg-white/30" />
+          <Skeleton className="h-9 w-9 rounded-full bg-white/30" />
+        </div>
+      </div>
+
+      <div className="-mt-14 px-4 sm:px-6 max-w-lg mx-auto relative z-10">
+        <div className="bg-white dark:bg-[#121212] rounded-3xl p-5 shadow-xl border border-gray-100 dark:border-neutral-800 flex items-center gap-4">
+          <Skeleton className="w-16 h-16 rounded-full shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-5 w-36 rounded-full" />
+            <Skeleton className="h-3.5 w-48 rounded-full" />
+            <Skeleton className="h-3.5 w-28 rounded-full" />
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 sm:px-6 max-w-lg mx-auto mt-6 space-y-4">
+        <div className="bg-white dark:bg-[#121212] rounded-2xl p-4 border border-gray-100 dark:border-neutral-800 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-10 h-10 rounded-2xl shrink-0" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-20 rounded-full" />
+              <Skeleton className="h-5 w-28 rounded-md" />
+            </div>
+          </div>
+          <Skeleton className="h-8 w-20 rounded-full" />
+        </div>
+
+        <div className="bg-white dark:bg-[#121212] rounded-3xl p-3 border border-gray-100 dark:border-neutral-800 space-y-3 shadow-sm">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={`profile-menu-${i}`} className="flex items-center justify-between p-3 rounded-2xl hover:bg-gray-50 dark:hover:bg-neutral-900">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-9 h-9 rounded-xl shrink-0" />
+                <Skeleton className="h-4 w-32 rounded-full" />
+              </div>
+              <Skeleton className="w-5 h-5 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </LoadingSkeletonRegion>
+  )
+}
+
 export {
   AppShellSkeleton,
   CategoryChipRowSkeleton,
   ContentPageSkeleton,
+  DrivingModeSkeleton,
   ExploreGridSkeleton,
   HeroBannerSkeleton,
   LoadingSkeletonRegion,
   OnboardingSkeleton,
   OrdersDashboardSkeleton,
+  ProfileSkeleton,
   RestaurantCardSkeleton,
   RestaurantDetailSkeleton,
   RestaurantGridSkeleton,
   SkeletonLines,
   TableSkeleton,
   WalletSkeleton,
-  }
+}

@@ -167,14 +167,6 @@ import { useLocation } from "@food/hooks/useLocation";
 import { useHighway as useZone } from "@food/hooks/useHighway";
 import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp";
 import homeBannerRed from "@food/assets/home-banner-orange-clean.png";
-if (typeof window !== 'undefined') {
-  const link = document.createElement('link');
-  link.rel = 'preload';
-  link.as = 'image';
-  link.href = homeBannerRed;
-  link.fetchPriority = 'high';
-  document.head.appendChild(link);
-}
 import offerImage from "@food/assets/offerimage.png";
 import api, { publicGetOnce, restaurantAPI, adminAPI } from "@food/api";
 import { API_BASE_URL } from "@food/api/config";

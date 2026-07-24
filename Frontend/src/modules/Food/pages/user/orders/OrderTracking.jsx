@@ -361,11 +361,18 @@ export default function OrderTracking() {
   const [isBottomSheetExpanded, setIsBottomSheetExpanded] = useState(false)
   const [liveSpeed, setLiveSpeed] = useState(null)
   const [liveHeading, setLiveHeading] = useState(null)
+  const [liveGpsCoords, setLiveGpsCoords] = useState(null)
 
   useEffect(() => {
     if (!navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
+        if (pos.coords && pos.coords.latitude && pos.coords.longitude) {
+          setLiveGpsCoords({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          });
+        }
         if (pos.coords.speed != null) {
           setLiveSpeed(Math.round(pos.coords.speed * 3.6));
         } else {
@@ -377,11 +384,32 @@ export default function OrderTracking() {
           setLiveHeading(null);
         }
       },
-      () => {},
-      { enableHighAccuracy: true }
+      (err) => console.warn("GPS tracking error:", err),
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
+
+  const touchStartYRef = useRef(0);
+  const touchMoveYRef = useRef(0);
+
+  const handleTouchStart = (e) => {
+    touchStartYRef.current = e.touches ? e.touches[0].clientY : e.clientY;
+    touchMoveYRef.current = touchStartYRef.current;
+  };
+
+  const handleTouchMove = (e) => {
+    touchMoveYRef.current = e.touches ? e.touches[0].clientY : e.clientY;
+  };
+
+  const handleTouchEnd = () => {
+    const deltaY = touchMoveYRef.current - touchStartYRef.current;
+    if (deltaY < -30) {
+      setIsBottomSheetExpanded(true);
+    } else if (deltaY > 30) {
+      setIsBottomSheetExpanded(false);
+    }
+  };
 
   const isTakeawayOrDining = order && ["takeaway", "dining"].includes(String(order.orderType || "").toLowerCase());
   const isSharingEnabled = Boolean(
@@ -536,45 +564,15 @@ export default function OrderTracking() {
 
   }, [orderId, order])
 
-  // --- Start: Sync arrival time with Home Page logic ---
-  const getTimeRemaining = useCallback((orderData) => {
-    if (!orderData) return null;
 
-    // Use scheduled time if available, fallback to creation time
-    const orderTime = new Date(
-      orderData.scheduledAt || orderData.createdAt || orderData.orderDate || orderData.created_at || orderData.date || Date.now(),
-    );
 
-    // For non-scheduled orders, we add the estimated time to the creation time.
-    // For scheduled orders, scheduledAt is already the target time.
-    const isScheduled = !!orderData.scheduledAt;
-    const estimatedMinutes = isScheduled 
-      ? 0 
-      : (orderData.estimatedTime || 35);
-
-    const pickupTime = new Date(orderTime.getTime() + estimatedMinutes * 60000);
-    return Math.max(0, Math.floor((pickupTime - new Date()) / 60000));
-  }, []);
-
-  // Sync estimatedTime state with order data and periodic updates
+  // Initial fallback estimatedTime from order data (never decremented by clock timer)
   useEffect(() => {
     if (!order) return;
-
-    const tick = () => {
-      const remaining = getTimeRemaining(order);
-      // Only prefer static calculation if no realtime ETA is provided by the map/driver
-      // But user said "should be same" as Home page, which uses static calculation.
-      // So we use static calculation as the base/sync source.
-      if (remaining !== null) {
-        setEstimatedTime(remaining);
-      }
-    };
-
-    tick();
-    const interval = setInterval(tick, 30000); // 30s sync matches home page logic
-    return () => clearInterval(interval);
-  }, [order, getTimeRemaining]);
-  // --- End: Sync arrival time ---
+    if (typeof order.estimatedTime === 'number' && order.estimatedTime > 0) {
+      setEstimatedTime((prev) => (typeof prev === 'number' && prev > 0 ? prev : order.estimatedTime));
+    }
+  }, [order?.estimatedTime]);
 
   // --------------------------------------------------------------------------
   // DATA FETCHING & POLLING STABILITY (FIXED FOR HAMMERING)
@@ -973,13 +971,22 @@ export default function OrderTracking() {
   }, [userLiveCoords, fallbackCustomerCoords]);
 
   const handleDirectionsCalculated = useCallback(({ distanceText, durationText, durationValue }) => {
-    setRemainingDistance(distanceText);
-    if (durationValue) {
-      const etaVal = Math.ceil(durationValue / 60);
+    if (distanceText) {
+      setRemainingDistance(distanceText);
+    }
+    let etaVal = 0;
+    if (typeof durationValue === "number" && durationValue > 0) {
+      etaVal = Math.max(1, Math.round(durationValue / 60));
       setEstimatedTime(etaVal);
-      if (typeof updateDirections === 'function') {
-        updateDirections(distanceText, durationText, etaVal);
+    } else if (durationText) {
+      const parsedMin = parseInt(durationText, 10);
+      if (!isNaN(parsedMin) && parsedMin > 0) {
+        etaVal = parsedMin;
+        setEstimatedTime(parsedMin);
       }
+    }
+    if (typeof updateDirections === 'function' && etaVal > 0) {
+      updateDirections(distanceText, durationText, etaVal);
     }
   }, [updateDirections]);
 
@@ -1368,29 +1375,29 @@ export default function OrderTracking() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] relative overflow-hidden flex flex-col h-screen w-screen">
       {/* 1. Header (Floating glassmorphic card over the map) */}
-      <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between p-3 bg-white/80 dark:bg-[#121212]/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/20 dark:border-neutral-800/30">
+      <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between p-3 bg-white/90 dark:bg-[#121212]/90 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100/60 dark:border-neutral-800/50">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/food')}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 text-gray-800 dark:text-gray-200 hover:bg-gray-100 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-orange-50 dark:bg-neutral-900 border border-orange-100 dark:border-neutral-800 text-orange-600 dark:text-orange-400 hover:bg-orange-100 active:scale-95 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="text-left">
             <h2 className="font-extrabold text-sm text-gray-900 dark:text-white leading-tight">Order Tracking</h2>
-            <p className="text-[10px] text-text-secondary mt-0.5 uppercase tracking-wider font-bold">#{order.orderId || order._id}</p>
+            <p className="text-[10px] text-orange-600 dark:text-orange-400 mt-0.5 uppercase tracking-wider font-extrabold">#{order.orderId || order._id}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleShare}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 text-gray-800 dark:text-gray-200 hover:bg-gray-100 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 text-gray-800 dark:text-gray-200 hover:bg-gray-100 active:scale-95 transition-all"
           >
-            <Share2 className="w-5 h-5" />
+            <Share2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => navigate('/user/profile/report-safety-emergency', { state: { returnTo: location.pathname } })}
-            className="px-3.5 h-10 flex items-center justify-center rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-black uppercase tracking-wider shadow-md hover:from-red-600 hover:to-orange-600 transition-all"
+            className="px-4 h-10 flex items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-black uppercase tracking-wider shadow-md shadow-orange-500/20 hover:from-orange-600 hover:to-amber-600 active:scale-95 transition-all"
           >
             Help
           </button>
@@ -1398,28 +1405,28 @@ export default function OrderTracking() {
       </div>
 
       {/* 2. Floating Status Card */}
-      <div className="absolute top-20 left-4 right-4 z-30 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-white/20 dark:border-neutral-800/30 space-y-2">
+      <div className="absolute top-20 left-4 right-4 z-30 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-gray-100/60 dark:border-neutral-800/50 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping" />
+            <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-ping" />
             <h3 className="font-black text-sm text-gray-900 dark:text-white uppercase tracking-wider">
               {currentStatus.title}
             </h3>
           </div>
-          <span className="px-2 py-0.5 rounded-md bg-green-55 bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-wider border border-green-500/20">
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-200/50">
             On Time
           </span>
         </div>
         <div className="flex justify-between items-end">
           <div className="text-left">
-            <p className="text-[9px] text-text-secondary uppercase tracking-widest font-bold">Estimated Arrival</p>
-            <p className="text-xl font-black text-gray-800 dark:text-gray-100 mt-0.5 leading-none">
-              {estimatedTime} mins
+            <p className="text-[9px] text-gray-400 dark:text-neutral-500 uppercase tracking-widest font-extrabold">Estimated Arrival</p>
+            <p className="text-2xl font-black text-orange-600 dark:text-orange-400 mt-0.5 leading-none">
+              {estimatedTime} <span className="text-xs font-bold text-gray-500">mins</span>
             </p>
           </div>
           <button 
             onClick={handleRefresh}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-neutral-900 text-xs font-black text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-neutral-800 hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 dark:bg-neutral-900 text-xs font-black text-orange-600 dark:text-orange-400 border border-orange-100 dark:border-neutral-800 hover:bg-orange-100 active:scale-95 transition-all"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
@@ -1441,8 +1448,8 @@ export default function OrderTracking() {
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-neutral-900 p-4">
-              <Loader2 className="w-8 h-8 animate-spin text-text-secondary mb-2" />
-              <p className="text-sm text-text-secondary">Locating coordinates...</p>
+              <Loader2 className="w-8 h-8 animate-spin text-orange-600 mb-2" />
+              <p className="text-sm font-extrabold text-gray-500 uppercase tracking-wider">Locating coordinates...</p>
             </div>
           )}
         </MapErrorBoundary>
@@ -1451,14 +1458,14 @@ export default function OrderTracking() {
         {activeUserCoords && restaurantCoordsResolved && (
           <div className="absolute bottom-32 left-4 right-4 z-20 flex flex-col gap-3">
             {/* Real-time Dashboard metrics floating on the map */}
-            <div className="bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-3 border border-white/20 dark:border-neutral-800/30 shadow-md flex items-center justify-between text-left">
+            <div className="bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-3 border border-gray-100/60 dark:border-neutral-800/50 shadow-xl flex items-center justify-between text-left">
               <div className="flex-1 border-r border-gray-100 dark:border-neutral-800 pr-2">
-                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Distance</span>
-                <span className="text-sm font-black text-gray-800 dark:text-gray-200">{remainingDistance || "Calculating..."}</span>
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Distance</span>
+                <span className="text-sm font-black text-gray-900 dark:text-gray-100">{remainingDistance || "Calculating..."}</span>
               </div>
               <div className="flex-1 border-r border-gray-100 dark:border-neutral-800 px-3">
-                <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Highway</span>
-                <span className="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate block">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Highway</span>
+                <span className="text-sm font-black text-orange-600 dark:text-orange-400 truncate block">
                   {order.restaurantId?.highwayName || order.restaurant?.highwayName || order.highwayName || "On Highway"}
                 </span>
               </div>
@@ -1466,14 +1473,14 @@ export default function OrderTracking() {
                 <div className="pl-3 flex gap-4">
                   {liveSpeed !== null && (
                     <div>
-                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Speed</span>
-                      <span className="text-sm font-black text-gray-800 dark:text-gray-200">{liveSpeed} km/h</span>
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Speed</span>
+                      <span className="text-sm font-black text-gray-900 dark:text-gray-100">{liveSpeed} km/h</span>
                     </div>
                   )}
                   {liveHeading !== null && (
                     <div>
-                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">Heading</span>
-                      <span className="text-sm font-black text-gray-800 dark:text-gray-200">{liveHeading}°</span>
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Heading</span>
+                      <span className="text-sm font-black text-gray-900 dark:text-gray-100">{liveHeading}°</span>
                     </div>
                   )}
                 </div>
@@ -1488,23 +1495,30 @@ export default function OrderTracking() {
                     window.dispatchEvent(new CustomEvent("recenter-map", { detail: activeUserCoords }));
                   }
                 }}
-                className="w-12 h-12 rounded-full bg-white dark:bg-[#121212] shadow-lg flex items-center justify-center text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-neutral-800 hover:scale-105 transition-transform"
+                className="w-12 h-12 rounded-full bg-white dark:bg-[#121212] shadow-xl flex items-center justify-center text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-neutral-800 hover:scale-105 active:scale-95 transition-all"
                 title="My Location"
               >
-                <Compass className="w-5 h-5 text-indigo-600" />
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600 dark:text-orange-400">
+                  <circle cx="12" cy="12" r="6" />
+                  <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+                  <line x1="12" y1="2" x2="12" y2="5" />
+                  <line x1="12" y1="19" x2="12" y2="22" />
+                  <line x1="2" y1="12" x2="5" y2="12" />
+                  <line x1="19" y1="12" x2="22" y2="12" />
+                </svg>
               </button>
 
               <div className="flex gap-2">
                 <button
                   onClick={handleNavigate}
-                  className="flex items-center gap-1.5 h-12 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-extrabold text-xs uppercase tracking-wider shadow-lg hover:from-blue-600 hover:to-indigo-700 transition-all hover:scale-[1.02]"
+                  className="flex items-center gap-2 h-12 px-5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-orange-500/25 hover:from-orange-600 hover:to-amber-600 active:scale-95 transition-all"
                 >
                   <Compass className="w-4 h-4 text-white" />
                   Navigate
                 </button>
                 <button
                   onClick={handleCallRestaurant}
-                  className="w-12 h-12 rounded-xl bg-white dark:bg-[#121212] border border-gray-100 dark:border-neutral-800 shadow-lg flex items-center justify-center text-[var(--primary)] hover:scale-105 transition-transform"
+                  className="w-12 h-12 rounded-full bg-white dark:bg-[#121212] border border-gray-100 dark:border-neutral-800 shadow-xl flex items-center justify-center text-orange-600 dark:text-orange-400 hover:scale-105 active:scale-95 transition-all"
                 >
                   <Phone className="w-5 h-5" />
                 </button>
@@ -1516,39 +1530,51 @@ export default function OrderTracking() {
 
       {/* 4. Bottom Sliding Order Details Panel */}
       <div 
-        className={`fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-[#121212] rounded-t-3xl shadow-[0_-8px_30px_rgb(0,0,0,0.12)] border-t border-gray-100 dark:border-neutral-850 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col overflow-hidden ${
+        className={`fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-[#121212] rounded-t-[32px] shadow-[0_-12px_40px_rgba(0,0,0,0.15)] border-t border-gray-100 dark:border-neutral-800 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col overflow-hidden ${
           isBottomSheetExpanded ? 'translate-y-0 h-[85vh]' : 'translate-y-[calc(100%-110px)] h-[600px]'
         }`}
       >
         {/* Sliding Header/Handle */}
         <div 
-          className="h-10 w-full flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50/50 dark:hover:bg-neutral-900/30 border-b border-gray-50 dark:border-neutral-900/50"
+          className="h-10 w-full flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50/50 dark:hover:bg-neutral-900/30 border-b border-gray-50 dark:border-neutral-900/50 select-none touch-none"
           onClick={() => setIsBottomSheetExpanded(prev => !prev)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleTouchStart}
+          onMouseMove={handleTouchMove}
+          onMouseUp={handleTouchEnd}
         >
-          <div className="w-12 h-1.5 bg-gray-200 dark:bg-neutral-800 rounded-full mb-1" />
+          <div className="w-12 h-1.5 bg-gray-300 dark:bg-neutral-700 rounded-full mb-1" />
         </div>
 
         {/* Collapsed Header Details (always visible at top of sliding panel) */}
         <div 
-          className="flex items-center justify-between px-6 pb-4 cursor-pointer"
+          className="flex items-center justify-between px-6 pb-4 cursor-pointer select-none touch-none"
           onClick={() => setIsBottomSheetExpanded(prev => !prev)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleTouchStart}
+          onMouseMove={handleTouchMove}
+          onMouseUp={handleTouchEnd}
         >
           <div className="flex items-center gap-3">
             <img 
               src={order.restaurantImage || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&q=80"} 
               alt={order.restaurant}
-              className="w-12 h-12 rounded-xl object-cover border border-gray-100 dark:border-neutral-800" 
+              className="w-12 h-12 rounded-2xl object-cover border border-gray-100 dark:border-neutral-800 shadow-sm" 
             />
             <div className="text-left">
-              <h4 className="font-extrabold text-sm text-gray-800 dark:text-gray-200 leading-tight">
+              <h4 className="font-extrabold text-sm text-gray-900 dark:text-white leading-tight">
                 {order.restaurant}
               </h4>
-              <p className="text-[10px] text-text-secondary mt-0.5 font-bold uppercase tracking-wider">ID: #{order.orderId}</p>
+              <p className="text-[10px] text-orange-600 dark:text-orange-400 mt-0.5 font-extrabold uppercase tracking-wider">ID: #{order.orderId}</p>
             </div>
           </div>
           <div className="text-right">
-            <span className="text-[9px] text-[var(--primary)] font-black uppercase tracking-wider block">ETA</span>
-            <span className="text-sm font-black text-gray-800 dark:text-gray-100">
+            <span className="text-[9px] text-orange-600 dark:text-orange-400 font-black uppercase tracking-wider block">ETA</span>
+            <span className="text-sm font-black text-gray-900 dark:text-gray-100">
               {estimatedTime} mins
             </span>
           </div>
@@ -1558,20 +1584,20 @@ export default function OrderTracking() {
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6 pb-12">
           {/* OTP Section (only if status is ready/ready_for_pickup) */}
           {showPickupOtp && orderStatus !== 'delivered' && orderStatus !== 'cancelled' && (
-            <div className="bg-[#f5f6ff] dark:bg-indigo-950/20 border border-[#e1e4ff] dark:border-indigo-900/30 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border border-orange-200/80 dark:border-orange-900/40 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#e8eaff] dark:bg-indigo-950/50 flex items-center justify-center text-[#4f46e5] flex-shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 dark:bg-orange-950/50 flex items-center justify-center text-orange-600 dark:text-orange-400 flex-shrink-0">
                   <Shield className="w-6 h-6 stroke-[2]" />
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-gray-900 dark:text-gray-100 text-left">Pickup Verification OTP</h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 text-left mt-0.5 leading-relaxed">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 text-left mt-0.5 leading-relaxed">
                     Show this OTP to the restaurant to collect your order.
                   </p>
                 </div>
               </div>
               <div className="flex items-center flex-shrink-0">
-                <div className="border border-[#e1e4ff] dark:border-indigo-900/40 bg-white dark:bg-neutral-900 font-mono font-black text-xl text-[#4f46e5] px-4 py-2.5 rounded-l-xl select-all leading-none h-11 flex items-center">
+                <div className="border border-orange-200 dark:border-orange-900/40 bg-white dark:bg-neutral-900 font-mono font-black text-xl text-orange-600 dark:text-orange-400 px-4 py-2.5 rounded-l-2xl select-all leading-none h-11 flex items-center shadow-sm">
                   {showPickupOtp}
                 </div>
                 <button
@@ -1579,7 +1605,7 @@ export default function OrderTracking() {
                     navigator.clipboard.writeText(String(showPickupOtp));
                     toast.success("OTP copied to clipboard!");
                   }}
-                  className="border-y border-r border-[#e1e4ff] dark:border-indigo-900/40 bg-[#f5f6ff] dark:bg-indigo-950/40 hover:bg-[#e8eaff] dark:hover:bg-indigo-900/50 text-[#4f46e5] p-3 rounded-r-xl transition-colors cursor-pointer flex items-center justify-center h-11"
+                  className="border-y border-r border-orange-200 dark:border-orange-900/40 bg-orange-100/70 dark:bg-orange-950/40 hover:bg-orange-200/80 dark:hover:bg-orange-900/50 text-orange-600 dark:text-orange-400 p-3 rounded-r-2xl transition-colors cursor-pointer flex items-center justify-center h-11"
                   title="Copy OTP"
                 >
                   <Copy className="w-4 h-4" />
@@ -1589,8 +1615,8 @@ export default function OrderTracking() {
           )}
 
           {/* Horizontal Timeline progress */}
-          <div className="bg-gray-50 dark:bg-neutral-900/30 rounded-2xl p-4 border border-gray-100 dark:border-neutral-850">
-            <h5 className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-4 text-left">Timeline</h5>
+          <div className="bg-gray-50/80 dark:bg-neutral-900/40 rounded-2xl p-4 border border-gray-100 dark:border-neutral-800 shadow-sm">
+            <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 text-left">Timeline</h5>
             {(() => {
               const stages = [
                 { label: "Confirmed", key: "confirmed" },
@@ -1616,7 +1642,7 @@ export default function OrderTracking() {
                 <div className="relative w-full py-2">
                   <div className="absolute top-[20px] left-[8%] right-[8%] h-[3px] bg-gray-200 dark:bg-neutral-800 z-0">
                     <div 
-                      className="h-full bg-green-500 transition-all duration-500" 
+                      className="h-full bg-emerald-500 transition-all duration-500" 
                       style={{ width: `${(Math.max(0, activeIdx) / (stages.length - 1)) * 100}%` }}
                     />
                   </div>
@@ -1625,20 +1651,20 @@ export default function OrderTracking() {
                       const status = getStageStatus(idx);
                       return (
                         <div key={idx} className="flex flex-col items-center w-[16%]">
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${
-                            status === "completed" ? "bg-green-500 text-white shadow-sm" :
-                            status === "active" ? "bg-green-55 bg-green-500/10 border-2 border-green-500 text-green-600 animate-pulse" :
-                            "bg-gray-105 bg-gray-100 border border-gray-200 dark:bg-neutral-900 dark:border-neutral-800 text-gray-400"
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                            status === "completed" ? "bg-emerald-500 text-white shadow-sm" :
+                            status === "active" ? "bg-orange-50 dark:bg-orange-950/40 border-2 border-orange-500 text-orange-600 animate-pulse" :
+                            "bg-gray-100 border border-gray-200 dark:bg-neutral-900 dark:border-neutral-800 text-gray-400"
                           }`}>
                             {status === "completed" ? (
-                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              <Check className="w-4 h-4 stroke-[3]" />
                             ) : (
-                              <div className={`w-1.5 h-1.5 rounded-full ${status === "active" ? "bg-green-600" : "bg-gray-300 dark:bg-neutral-705 bg-gray-400"}`} />
+                              <div className={`w-2 h-2 rounded-full ${status === "active" ? "bg-orange-600" : "bg-gray-300 dark:bg-neutral-700"}`} />
                             )}
                           </div>
                           <span className={`text-[8px] font-black mt-2 text-center leading-tight uppercase tracking-wider ${
-                            status === "completed" ? "text-green-600 dark:text-green-400" :
-                            status === "active" ? "text-green-55 font-extrabold text-green-600" :
+                            status === "completed" ? "text-emerald-600 dark:text-emerald-400" :
+                            status === "active" ? "text-orange-600 font-black text-orange-600" :
                             "text-gray-400 dark:text-neutral-600"
                           }`}>
                             {stage.label}
@@ -1654,36 +1680,36 @@ export default function OrderTracking() {
 
           {/* Restaurant Information section */}
           <div className="space-y-3 text-left">
-            <h5 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Restaurant Details</h5>
-            <div className="flex items-start gap-3">
+            <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Restaurant Details</h5>
+            <div className="flex items-start gap-3 bg-gray-50/80 dark:bg-neutral-900/40 rounded-2xl p-3 border border-gray-100 dark:border-neutral-800 shadow-sm">
               <img 
                 src={order.restaurantImage || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&q=80"} 
                 alt={order.restaurant}
-                className="w-16 h-16 rounded-2xl object-cover border border-gray-100 dark:border-neutral-800" 
+                className="w-16 h-16 rounded-2xl object-cover border border-gray-100 dark:border-neutral-800 shadow-sm" 
               />
               <div className="flex-1">
-                <h6 className="font-extrabold text-sm text-gray-800 dark:text-gray-200">{order.restaurant}</h6>
-                <p className="text-xs text-text-secondary mt-0.5 leading-snug">{order.restaurantAddress || "Restaurant location details"}</p>
+                <h6 className="font-extrabold text-sm text-gray-900 dark:text-gray-100">{order.restaurant}</h6>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{order.restaurantAddress || "Restaurant location details"}</p>
                 {order.restaurantId?.highwayName && (
-                  <span className="inline-block mt-2 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-wider rounded-md border border-indigo-100/30">
+                  <span className="inline-block mt-2 px-2.5 py-0.5 bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-wider rounded-full border border-orange-200/50">
                     Highway: {order.restaurantId.highwayName}
                   </span>
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 pt-2">
+            <div className="grid grid-cols-2 gap-3 pt-1">
               <button
                 onClick={handleCallRestaurant}
-                className="flex items-center justify-center gap-2 h-11 rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-100 dark:border-neutral-800 text-gray-700 dark:text-gray-200 text-xs font-black uppercase tracking-wider hover:bg-gray-100 transition-all"
+                className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-gray-50 dark:bg-neutral-900 border border-gray-200/80 dark:border-neutral-800 text-gray-800 dark:text-gray-200 text-xs font-black uppercase tracking-wider hover:bg-gray-100 active:scale-95 transition-all shadow-sm"
               >
-                <Phone className="w-4 h-4" />
+                <Phone className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                 Call Restaurant
               </button>
               <button
                 onClick={handleNavigate}
-                className="flex items-center justify-center gap-2 h-11 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-wider transition-all"
+                className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-black uppercase tracking-wider hover:from-orange-600 hover:to-amber-600 active:scale-95 transition-all shadow-md shadow-orange-500/20"
               >
-                <Compass className="w-4 h-4" />
+                <Compass className="w-4 h-4 text-white" />
                 Navigate
               </button>
             </div>
@@ -1897,7 +1923,7 @@ export default function OrderTracking() {
 
       {/* Order Details Dialog */}
       <Dialog open={showOrderDetails} onOpenChange={setShowOrderDetails}>
-        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md bg-surface dark:bg-[#1a1a1a] rounded-2xl p-0 overflow-hidden border-none outline-none">
+        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md bg-white dark:bg-[#121212] rounded-2xl p-0 overflow-hidden border-none outline-none shadow-2xl">
           <DialogHeader className="p-6 pb-4 border-b border-border dark:border-gray-800 pr-12">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-bold text-text-primary">Order Details</DialogTitle>

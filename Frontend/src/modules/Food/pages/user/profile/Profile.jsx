@@ -47,6 +47,7 @@ import { Card, CardContent } from "@food/components/ui/card";
 import { Button } from "@food/components/ui/button";
 import { useProfile } from "@food/context/ProfileContext";
 import { useLocationSelector } from "@food/components/user/UserLayout";
+import { ProfileSkeleton } from "@food/components/ui/loading-skeletons";
 import {
   Avatar,
   AvatarFallback,
@@ -471,6 +472,10 @@ export default function Profile() {
       setDeleteAccountOpen(false);
     }
   };
+
+  if (!userProfile) {
+    return <ProfileSkeleton />;
+  }
 
   return (
     <AnimatedPage className="min-h-screen bg-background dark:bg-[#0a0a0a]">

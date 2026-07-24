@@ -131,7 +131,7 @@ export default function JourneyPlanner({
 
   // Pre-fill current location if GPS coordinates exist and no inputs are present
   useEffect(() => {
-    if (currentLocation && !originCoords && !sessionStorage.getItem("bh_origin_coords") && !preventAutoDetect) {
+    if (currentLocation && !originCoords && !originInput && !sessionStorage.getItem("bh_origin_coords") && !sessionStorage.getItem("bh_origin_input") && !preventAutoDetect) {
       const lat = currentLocation.latitude;
       const lng = currentLocation.longitude;
       setOriginCoords({ lat, lng });
@@ -690,11 +690,7 @@ export default function JourneyPlanner({
                       const val = e.target.value;
                       setOriginInput(val);
                       setOriginCoords(null);
-                      if (val === "") {
-                        setPreventAutoDetect(false);
-                      } else {
-                        setPreventAutoDetect(true);
-                      }
+                      setPreventAutoDetect(true);
                     }}
                     onFocus={() => {
                       setActiveInput("origin");

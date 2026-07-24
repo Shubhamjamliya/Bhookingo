@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from "@react-google-maps/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, Compass } from "lucide-react";
 
 const MAP_CONTAINER_STYLE = {
   width: "100%",
@@ -187,6 +187,42 @@ function OrderTrackingMap({
     };
   }, [isLoaded, restaurantName]);
 
+  const handleRecenterToUser = useCallback((e) => {
+    if (e) {
+      if (e.stopPropagation) e.stopPropagation();
+    }
+
+    if (mapRef.current) {
+      const uLat = userLocation?.lat ?? userLocation?.latitude;
+      const uLng = userLocation?.lng ?? userLocation?.longitude;
+      if (uLat != null && uLng != null) {
+        mapRef.current.panTo({ lat: Number(uLat), lng: Number(uLng) });
+        mapRef.current.setZoom(16);
+      }
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (pos?.coords && mapRef.current) {
+            mapRef.current.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            mapRef.current.setZoom(16);
+          }
+        },
+        (err) => console.warn("GPS locate error:", err),
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    }
+  }, [userLocation]);
+
+  useEffect(() => {
+    const handleCustomRecenter = () => {
+      handleRecenterToUser();
+    };
+    window.addEventListener("recenter-map", handleCustomRecenter);
+    return () => window.removeEventListener("recenter-map", handleCustomRecenter);
+  }, [handleRecenterToUser]);
+
   if (!isLoaded) {
     return (
       <div className="w-full h-full bg-gray-50 flex items-center justify-center min-h-[300px]">
@@ -199,69 +235,92 @@ function OrderTrackingMap({
   }
 
   return (
-    <GoogleMap
-      mapContainerStyle={MAP_CONTAINER_STYLE}
-      center={center}
-      zoom={14}
-      onLoad={onLoad}
-      onUnmount={onUnmount}
-      options={mapOptions}
-    >
-      {/* Route directions line */}
-      {directions && (
-        <DirectionsRenderer
-          directions={directions}
-          options={directionsOptions}
-        />
-      )}
-
-      {/* User Location Marker */}
-      {userLocation && (
-        <Marker
-          position={userLocation}
-          options={userMarkerOptions}
-        />
-      )}
-
-      {/* Restaurant Marker */}
-      {restaurantLocation && (
-        <Marker
-          position={restaurantLocation}
-          options={restaurantMarkerOptions}
-        />
-      )}
-
-      {/* Restaurants Ahead Markers */}
-      {restaurantsAhead.map((r, idx) => {
-        const loc = r.location;
-        const rlat = typeof loc?.latitude === "number" ? loc.latitude
-          : (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null);
-        const rlng = typeof loc?.longitude === "number" ? loc.longitude
-          : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
-
-        if (!rlat || !rlng) return null;
-
-        return (
-          <Marker
-            key={r._id || idx}
-            position={{ lat: rlat, lng: rlng }}
-            options={{
-              icon: {
-                path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
-                fillColor: "#84cc16",
-                fillOpacity: 0.9,
-                strokeColor: "#ffffff",
-                strokeWeight: 1,
-                scale: 1.2,
-                anchor: new window.google.maps.Point(12, 24),
-              },
-              title: r.restaurantName,
-              zIndex: 80,
-            }}
+    <div className="relative w-full h-full">
+      <GoogleMap
+        mapContainerStyle={MAP_CONTAINER_STYLE}
+        center={center}
+        zoom={14}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+        options={mapOptions}
+      >
+        {/* Route directions line */}
+        {directions && (
+          <DirectionsRenderer
+            directions={directions}
+            options={directionsOptions}
           />
-        );
-      })}
-    </GoogleMap>
+        )}
+
+        {/* User Location Marker */}
+        {userLocation && (
+          <Marker
+            position={userLocation}
+            options={userMarkerOptions}
+          />
+        )}
+
+        {/* Restaurant Marker */}
+        {restaurantLocation && (
+          <Marker
+            position={restaurantLocation}
+            options={restaurantMarkerOptions}
+          />
+        )}
+
+        {/* Restaurants Ahead Markers */}
+        {restaurantsAhead.map((r, idx) => {
+          const loc = r.location;
+          const rlat = typeof loc?.latitude === "number" ? loc.latitude
+            : (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null);
+          const rlng = typeof loc?.longitude === "number" ? loc.longitude
+            : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
+
+          if (!rlat || !rlng) return null;
+
+          return (
+            <Marker
+              key={r._id || idx}
+              position={{ lat: rlat, lng: rlng }}
+              options={{
+                icon: {
+                  path: "M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z",
+                  fillColor: "#84cc16",
+                  fillOpacity: 0.9,
+                  strokeColor: "#ffffff",
+                  strokeWeight: 1,
+                  scale: 1.2,
+                  anchor: new window.google.maps.Point(12, 24),
+                },
+                title: r.restaurantName,
+                zIndex: 80,
+              }}
+            />
+          );
+        })}
+      </GoogleMap>
+
+      {/* Floating My Location Button */}
+      <button
+        type="button"
+        onClick={handleRecenterToUser}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          handleRecenterToUser(e);
+        }}
+        title="My Location"
+        className="absolute bottom-6 right-4 z-30 w-12 h-12 bg-white hover:bg-gray-50 text-gray-900 dark:bg-neutral-900 dark:hover:bg-neutral-800 dark:text-white rounded-full flex items-center justify-center shadow-2xl border border-gray-100 dark:border-neutral-800 active:scale-90 transition-all duration-200 focus:outline-none cursor-pointer pointer-events-auto"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600 dark:text-orange-400">
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+          <line x1="12" y1="2" x2="12" y2="5" />
+          <line x1="12" y1="19" x2="12" y2="22" />
+          <line x1="2" y1="12" x2="5" y2="12" />
+          <line x1="19" y1="12" x2="22" y2="12" />
+        </svg>
+      </button>
+    </div>
   );
 }
 

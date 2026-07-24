@@ -520,7 +520,8 @@ export default function Home() {
   const routerLocation = useRouterLocation();
   const isTakeawayPage = routerLocation.pathname === "/food/takeaway" ||
     routerLocation.pathname.startsWith("/food/takeaway/") ||
-    routerLocation.pathname.startsWith("/food/user/takeaway");
+    routerLocation.pathname.startsWith("/food/user/takeaway") ||
+    routerLocation.pathname.startsWith("/food/user/restaurants");
 
   useEffect(() => {
     if (isTakeawayPage) {

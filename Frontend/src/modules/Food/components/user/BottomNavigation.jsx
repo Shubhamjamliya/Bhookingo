@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom"
-import { ShoppingBag, Tag, Truck, CircleUser, Compass } from "lucide-react"
+import { ShoppingBag, Tag, UtensilsCrossed, CircleUser, Compass } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import api from "@food/api"
@@ -119,15 +119,16 @@ export default function BottomNavigation() {
       active: isDriving
     },
     {
-      id: 'takeaway',
-      label: 'Takeaway',
-      icon: Truck,
-      to: '/food/user/takeaway',
+      id: 'restaurants',
+      label: 'Restaurants',
+      icon: UtensilsCrossed,
+      to: '/food/user/restaurants',
       active: isTakeaway,
       onClick: () => {
         if (setOrderType) setOrderType('takeaway');
       }
     },
+    /*
     {
       id: 'under250',
       label: `Under ₹${under250PriceLimit}`,
@@ -135,6 +136,7 @@ export default function BottomNavigation() {
       to: '/food/user/under-250',
       active: isUnder250
     },
+    */
     {
       id: 'profile',
       label: 'Profile',

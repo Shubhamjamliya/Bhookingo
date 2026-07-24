@@ -721,7 +721,7 @@ export default function DrivingMode() {
             onGoHome={() => {
               setJourney(null);
               sessionStorage.removeItem("bh_active_journey");
-              navigate("/food/user/takeaway");
+              navigate("/food/user/restaurants");
             }}
           />
         </div>

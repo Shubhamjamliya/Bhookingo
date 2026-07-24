@@ -190,7 +190,7 @@ export default function UserRouter() {
           {/* ========================================== */}
           {/* Home & Discovery */}
           <Route path="" element={<Navigate to="/food/user/driving" replace />} />
-          <Route path="takeaway" element={<Home />} />
+          <Route path="takeaway" element={<Navigate to="/food/user/restaurants" replace />} />
           <Route path="dining" element={<Dining />} />
           <Route path="dining/:category" element={<DiningCategory />} />
           <Route path="dining/explore/upto50" element={<DiningExplore50 />} />
@@ -201,7 +201,7 @@ export default function UserRouter() {
           <Route path="driving" element={<DrivingMode />} />
           <Route path="categories" element={<Categories />} />
           <Route path="category/:category" element={<CategoryPage />} />
-          <Route path="restaurants" element={<Restaurants />} />
+          <Route path="restaurants" element={<Home />} />
           <Route path="restaurants/:slug" element={<RestaurantDetails />} />
           <Route path="search" element={<SearchResults />} />
           <Route path="product/:id" element={<ProductDetail />} />
@@ -266,7 +266,7 @@ export default function UserRouter() {
 
             {/* Complaints */}
             <Route path="complaints/submit/:orderId" element={<SubmitComplaint />} />
-            <Route path="*" element={<Navigate to="/food/user/takeaway" replace />} />
+            <Route path="*" element={<Navigate to="/food/user/restaurants" replace />} />
           </Route>
         </Route>
       </Routes>

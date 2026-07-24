@@ -13,7 +13,7 @@ export default function DrivingModeUnavailable({
   const navigate = useNavigate();
 
   const handleBackToHome = () => {
-    navigate("/food/user/takeaway");
+    navigate("/food/user/restaurants");
   };
 
   // 1. Driving Mode Disabled State

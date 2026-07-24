@@ -37,6 +37,7 @@ import {
   Check,
   Share2,
   Zap,
+  Users,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Footer from "@food/components/user/Footer";
@@ -82,6 +83,78 @@ const debugError = (...args) => { };
 
 // Import shared food images - prevents duplication
 import { foodImages } from "@food/constants/images";
+
+const TAKEAWAY_FACILITY_ICONS = {
+  parking: { key: "parking", label: "Parking", icon: "/icons/carparking.png", bgClass: "bg-amber-500/15 dark:bg-amber-500/25" },
+  wifi: { key: "wifi", label: "WiFi", icon: "/icons/wifi.png", bgClass: "bg-blue-500/15 dark:bg-blue-500/25" },
+  familyFriendly: { key: "familyFriendly", label: "Family Friendly", icon: "/icons/familyfriendly.png", bgClass: "bg-purple-500/15 dark:bg-purple-500/25" },
+  evCharging: { key: "evCharging", label: "EV Charging", icon: "/icons/evcharging.png", bgClass: "bg-emerald-500/15 dark:bg-emerald-500/25" },
+  washroom: { key: "washroom", label: "Washroom", icon: "/icons/washroom.png", bgClass: "bg-cyan-500/15 dark:bg-cyan-500/25" },
+};
+
+const getTakeawayActiveAmenities = (facilities) => {
+  if (!facilities || typeof facilities !== "object") return [];
+  const items = [];
+  const isTrue = (val) => val === true || val === "true" || val === 1 || val === "1";
+
+  if (isTrue(facilities.parking || facilities.carparking)) items.push(TAKEAWAY_FACILITY_ICONS.parking);
+  if (isTrue(facilities.wifi)) items.push(TAKEAWAY_FACILITY_ICONS.wifi);
+  if (isTrue(facilities.familyFriendly || facilities.family_friendly || facilities.family)) items.push(TAKEAWAY_FACILITY_ICONS.familyFriendly);
+  if (isTrue(facilities.evCharging || facilities.ev_charging)) items.push(TAKEAWAY_FACILITY_ICONS.evCharging);
+  if (isTrue(facilities.washroom)) items.push(TAKEAWAY_FACILITY_ICONS.washroom);
+  return items;
+};
+
+const getFacilityRatingInfo = (restaurant, facKey) => {
+  if (!restaurant) return { ratingText: "5+", countText: null, hasRating: false };
+  const ratings = restaurant.facilityRatings || restaurant.originalData?.facilityRatings || {};
+  const facRating = ratings[facKey] || {};
+  const avg = Number(facRating.average || restaurant[`${facKey}Rating`]) || 0;
+  const cnt = Number(facRating.count) || 0;
+
+  if (avg > 0) {
+    return {
+      ratingText: avg.toFixed(1),
+      countText: cnt > 0 ? `${cnt}+` : null,
+      hasRating: true,
+    };
+  }
+
+  return {
+    ratingText: "5+",
+    countText: null,
+    hasRating: false,
+  };
+};
+
+const formatRatingsDisplay = (ratingNum, totalRatingsNum) => {
+  const rating = Number(ratingNum) || 0;
+  const count = Number(totalRatingsNum) || 0;
+
+  if (rating <= 0) {
+    return {
+      badgeText: "NEW",
+      countText: "No ratings yet",
+      hasRating: false,
+    };
+  }
+
+  let formattedCount = "";
+  if (count >= 1000) {
+    formattedCount = `${(count / 1000).toFixed(1).replace(/\.0$/, "")}K+ Ratings`;
+  } else if (count > 0) {
+    formattedCount = `${count} Ratings`;
+  } else {
+    formattedCount = "No ratings yet";
+  }
+
+  return {
+    badgeText: rating.toFixed(1),
+    countText: formattedCount,
+    hasRating: true,
+  };
+};
+
 
 import { Avatar, AvatarFallback, AvatarImage } from "@food/components/ui/avatar";
 import {
@@ -1630,6 +1703,7 @@ export default function Home() {
                   ? restaurant.cuisines
                   : [],
                 rating: Number(restaurant.rating) || 0,
+                totalRatings: Number(restaurant.totalRatings || restaurant.reviews || restaurant.reviewsCount || 0),
                 time: restaurant.preparationTime || "20-25 mins",
                 takeawaySettings: restaurant.takeawaySettings || null,
                 distance: distance,
@@ -1653,6 +1727,8 @@ export default function Home() {
                 restaurantId: restaurant.restaurantId,
                 pureVegRestaurant: restaurant.pureVegRestaurant === true,
                 hasVegItems: typeof restaurant.hasVegItems === "boolean" ? restaurant.hasVegItems : (restaurant.pureVegRestaurant === true),
+                facilities: restaurant.facilities || restaurant.originalData?.facilities || null,
+                facilityRatings: restaurant.facilityRatings || restaurant.originalData?.facilityRatings || null,
                 location: restaurant.location, // Store location for distance recalculation
                 isActive: restaurant.isActive !== false, // Default to true if not specified
                 isAcceptingOrders: restaurant.isAcceptingOrders !== false, // Default to true if not specified
@@ -2887,6 +2963,14 @@ export default function Home() {
                   }
                 };
 
+                const activeAmenities = getTakeawayActiveAmenities(restaurant.facilities);
+                const cuisineStr = Array.isArray(restaurant.cuisines) && restaurant.cuisines.length > 0
+                  ? restaurant.cuisines.join(", ")
+                  : (restaurant.cuisine || "Multi-cuisine");
+                const featuredDishText = restaurant.featuredDish
+                  ? `${restaurant.featuredDish}${restaurant.featuredPrice ? ` • ₹${restaurant.featuredPrice}` : ""}`
+                  : null;
+
                 return (
                   <div
                     key={
@@ -2895,7 +2979,7 @@ export default function Home() {
                       restaurantSlug ||
                       index
                     }
-                    className="h-full transform transition-all duration-300 hover:-translate-y-3 hover:scale-[1.02]"
+                    className="h-full transform transition-all duration-300 hover:-translate-y-2"
                     style={{
                       perspective: 1000,
                       animation:
@@ -2908,23 +2992,32 @@ export default function Home() {
                         to={`/user/restaurants/${restaurantSlug}`}
                         className="h-full flex">
                         <Card
-                          className={`overflow-hidden gap-0 cursor-pointer border border-border/70 dark:border-gray-800/80 group bg-surface dark:bg-[#1a1a1a] transition-all duration-500 py-0 rounded-[28px] flex flex-col h-full w-full relative shadow-md hover:shadow-2xl ${!availability.isOpen
+                          className={`overflow-hidden gap-0 cursor-pointer border border-border/70 dark:border-gray-800/80 group bg-surface dark:bg-[#1a1a1a] transition-all duration-500 py-0 rounded-[24px] sm:rounded-[28px] flex flex-col h-full w-full relative shadow-md hover:shadow-xl ${!availability.isOpen
                             ? "grayscale opacity-75"
                             : ""
                             }`}>
-                          {/* Image Section with Carousel */}
-                          <div className="relative">
-                            <BookingRangeBadge restaurant={restaurant} className="top-4 left-4" />
+                          {/* Image Section with Overlay elements */}
+                          <div className="relative overflow-hidden rounded-t-[24px] sm:rounded-t-[28px]">
+                            <BookingRangeBadge restaurant={restaurant} className="top-3 left-3 z-10" />
+                            
+                            {/* Featured Dish Pill over Image (Top Left) */}
+                            {featuredDishText && (
+                              <div className="absolute top-3 left-3 z-10 bg-black/75 backdrop-blur-md text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-semibold shadow-md max-w-[70%]">
+                                <div className="w-4 h-4 rounded bg-[#ff8100] flex items-center justify-center text-[9px] font-bold shrink-0">
+                                  🍱
+                                </div>
+                                <span className="truncate">{featuredDishText}</span>
+                              </div>
+                            )}
+
                             <RestaurantImageCarousel
                               restaurant={restaurant}
                               priority={index < 2}
                               backendOrigin={BACKEND_ORIGIN}
                             />
 
-
-
-                            {/* Bookmark Icon - Top Right */}
-                            <div className="absolute top-4 right-4 z-10 transform transition-transform duration-300 group-hover:scale-110">
+                            {/* Bookmark Button Top Right */}
+                            <div className="absolute top-3 right-3 z-10 transform transition-transform duration-300 group-hover:scale-105">
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -2934,91 +3027,145 @@ export default function Home() {
                                     ? "Remove from favorites"
                                     : "Add to favorites"
                                 }
-                                className={`h-11 w-11 rounded-[20px] shadow-xl flex items-center justify-center transition-all duration-300 ${favorite
+                                className={`h-10 w-10 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${favorite
                                   ? "bg-red-500 text-white"
-                                  : "bg-white/90 backdrop-blur-sm text-gray-800 hover:bg-white"
+                                  : "bg-white/90 backdrop-blur-md text-gray-800 hover:bg-white"
                                   }`}>
                                 <Bookmark
-                                  className={`h-5 w-5 transition-all duration-300 ${favorite ? "fill-white" : ""
+                                  className={`h-4.5 w-4.5 transition-all duration-300 ${favorite ? "fill-white" : ""
                                     }`}
                                 />
                               </Button>
                             </div>
+
+                            {/* Rating Badge Bottom Right over Image */}
+                            {(() => {
+                              const ratingInfo = formatRatingsDisplay(restaurant.rating, restaurant.totalRatings);
+                              return (
+                                <div className="absolute bottom-3 right-3 z-10 bg-black/80 backdrop-blur-md text-white px-3 py-1.5 rounded-xl border border-white/10 flex flex-col items-end shadow-lg">
+                                  <div className="flex items-center gap-1">
+                                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" strokeWidth={0} />
+                                    <span className="text-sm font-bold tracking-tight">
+                                      {ratingInfo.badgeText}
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] font-medium text-gray-300 tracking-tight">
+                                    {ratingInfo.countText}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {/* Content Section */}
-                          <div className="transform transition-transform duration-300 group-hover:-translate-y-1">
-                            <CardContent className="p-3 sm:p-4 lg:p-5 pt-3 sm:pt-4 lg:pt-5 flex flex-col flex-grow">
-                              {/* Restaurant Name & Rating */}
-                              <div className="flex items-start justify-between gap-2 mb-2 lg:mb-3">
-                                <div className="flex-1 min-w-0">
-                                  <h3 className="text-2xl lg:text-3xl font-bold text-[#1c1c1c] dark:text-white line-clamp-1 leading-tight tracking-tight transition-colors duration-300 group-hover:text-[#257d3c]">
-                                    {restaurant.name}
-                                  </h3>
-                                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                                    <div className="flex items-center gap-1.5 text-sm font-semibold text-[#257d3c] transition-all duration-300">
-                                      <Zap
-                                        className="h-4 w-4 fill-[#257d3c]"
-                                        strokeWidth={2.5}
-                                      />
-                                      <span>
-                                      </span>
-                                      <span className="text-[#257d3c] mx-1 font-bold">|</span>
-                                      <span>
-                                        {restaurant.distance}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-0.5">
-                                  <div className="flex-shrink-0 bg-[#257d3c] text-white px-2 py-1 rounded-lg flex items-center gap-1">
-                                    <Star className="h-3.5 w-3.5 fill-white text-white" strokeWidth={0} />
-                                    <span className="text-sm font-bold tracking-tight">
-                                      {Number(restaurant.rating) > 0 ? Number(restaurant.rating).toFixed(1) : "NEW"}
-                                    </span>
-                                  </div>
-                                  {Number(restaurant.rating) > 0 && (
-                                    <span className="text-[9px] font-bold text-text-secondary tracking-tight">
-                                      By {Math.floor(Math.random() * 5 + 1)}K+
-                                    </span>
-                                  )}
-                                </div>
+                          <CardContent className="p-4 sm:p-5 flex flex-col flex-grow justify-between gap-3 bg-surface dark:bg-[#1a1a1a]">
+                            {/* Restaurant Information */}
+                            <div className="space-y-1.5">
+                              <h3 className="text-xl sm:text-2xl font-bold text-[#1c1c1c] dark:text-white line-clamp-1 leading-tight tracking-tight transition-colors duration-300 group-hover:text-[#ff8100]">
+                                {restaurant.name}
+                              </h3>
+
+                              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium line-clamp-1">
+                                {cuisineStr}
+                              </p>
+
+                              <div className="flex items-center gap-2 pt-1 text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                <Zap className="h-4 w-4 fill-emerald-600 text-emerald-600 shrink-0" strokeWidth={2.5} />
+                                <span>{restaurant.distance}</span>
+                                <span className="text-gray-300 dark:text-gray-600">•</span>
+                                <span>{restaurant.time}</span>
                               </div>
 
-                              {/* Closes in / Opening time badge moved here */}
-                              <div className="flex items-center gap-1 text-sm lg:text-base text-text-secondary mb-2 lg:mb-3">
-                                {availability.isOpen &&
-                                  availability.closingCountdownLabel && (
-                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 text-[10px] font-black uppercase tracking-widest transition-all duration-300 hover:bg-indigo-50 hover:border-indigo-200">
+                              {/* Availability Status */}
+                              {(!availability.isOpen || availability.closingCountdownLabel) && (
+                                <div className="pt-1">
+                                  {availability.isOpen && availability.closingCountdownLabel && (
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 text-[10px] font-black uppercase tracking-widest">
                                       <Timer className="h-3.5 w-3.5 flex-shrink-0 text-indigo-500 dark:text-indigo-400" strokeWidth={3} />
                                       <span>{availability.closingCountdownLabel}</span>
                                     </div>
                                   )}
-                                {!availability.isOpen && availability.openingTime && (
-                                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-text-secondary border border-border dark:border-gray-700 text-[10px] font-black uppercase tracking-widest">
-                                    <Clock className="h-3 w-3 flex-shrink-0" />
-                                    <span>Opens at {availability.openingTime}</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Offer Badge */}
-                              {restaurant.offer && (
-                                <div className="flex items-center gap-2 text-sm lg:text-base mt-auto transform transition-transform duration-300 group-hover:translate-x-1">
-                                  <BadgePercent
-                                    className="h-4 w-4 lg:h-5 lg:w-5 text-[var(--primary)]"
-                                    strokeWidth={3}
-                                  />
-                                  <span className="text-[var(--primary)] dark:text-[var(--primary-light)] font-black uppercase text-[10px] tracking-wider">
-                                    {restaurant.offer}
-                                  </span>
+                                  {!availability.isOpen && availability.openingTime && (
+                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-text-secondary border border-border dark:border-gray-700 text-[10px] font-black uppercase tracking-widest">
+                                      <Clock className="h-3 w-3 flex-shrink-0" />
+                                      <span>Opens at {availability.openingTime}</span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
-                            </CardContent>
-                          </div>
+                            </div>
+
+                            {/* Dynamic Amenities Row */}
+                            {activeAmenities.length > 0 && (
+                              <div className="pt-2.5 sm:pt-3 border-t border-border/60 dark:border-gray-800/80">
+                                <div className="flex items-stretch justify-between gap-1 sm:gap-1.5 w-full">
+                                  {activeAmenities.map((amenity) => {
+                                    const ratingInfo = getFacilityRatingInfo(restaurant, amenity.key);
+                                    return (
+                                      <div
+                                        key={amenity.key}
+                                        className="flex-1 min-w-0 bg-[#fafafa] dark:bg-[#222222] border border-gray-200/60 dark:border-gray-800/80 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 flex flex-col justify-between items-center text-center shadow-2xs hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-200"
+                                      >
+                                        {/* Icon + Title */}
+                                        <div className="flex flex-col items-center gap-1 w-full min-w-0">
+                                          <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full ${amenity.bgClass} p-1 flex items-center justify-center shrink-0 overflow-hidden`}>
+                                            <img
+                                              src={amenity.icon}
+                                              alt={amenity.label}
+                                              className="w-full h-full object-cover rounded-full"
+                                              onError={(e) => {
+                                                e.target.style.display = 'none';
+                                              }}
+                                            />
+                                          </div>
+                                          <span className="text-[10px] sm:text-xs font-bold text-gray-800 dark:text-gray-100 leading-tight truncate w-full px-0.5">
+                                            {amenity.label}
+                                          </span>
+                                        </div>
+
+                                        {/* Rating & Count */}
+                                        <div className="mt-1 flex flex-col items-center gap-0.5 w-full">
+                                          <div className="flex items-center justify-center gap-0.5 text-[10px] sm:text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                                            <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-emerald-600 dark:fill-emerald-400 text-emerald-600 dark:text-emerald-400" strokeWidth={0} />
+                                            <span>{ratingInfo.ratingText}</span>
+                                          </div>
+                                          {ratingInfo.countText && (
+                                            <div className="flex items-center justify-center gap-0.5 text-[9px] sm:text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+                                              <span>{ratingInfo.countText}</span>
+                                              <Users className="w-2.5 h-2.5 shrink-0" />
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Card Footer Badges */}
+                            <div className="flex items-center justify-between pt-2.5 border-t border-border/60 dark:border-gray-800/80 text-[11px] font-semibold">
+                              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+                                <span>Hygiene Rated</span>
+                              </div>
+
+                              {restaurant.offer ? (
+                                <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                                  <BadgePercent className="h-4 w-4 shrink-0 text-amber-600" strokeWidth={2.5} />
+                                  <span className="uppercase tracking-wider font-bold">{restaurant.offer}</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                                  <span>Verified Partner</span>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
 
                           {/* Border Glow Effect */}
-                          <div className="absolute inset-0 rounded-md pointer-events-none z-0 transition-all duration-300 border border-transparent group-hover:border-[var(--primary)]/30 group-hover:shadow-[inset_0_0_0_1px_rgba(235,89,14,0.2)]" />
+                          <div className="absolute inset-0 rounded-[24px] sm:rounded-[28px] pointer-events-none z-0 transition-all duration-300 border border-transparent group-hover:border-[var(--primary)]/30 group-hover:shadow-[inset_0_0_0_1px_rgba(235,89,14,0.2)]" />
                         </Card>
                       </Link>
                     </div>

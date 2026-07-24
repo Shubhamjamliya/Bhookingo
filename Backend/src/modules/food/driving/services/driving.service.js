@@ -424,7 +424,7 @@ export async function getConnectingHighways({ startLat, startLng, endLat, endLng
     // 3. Find common highways (intersection)
     const endHwRefs = new Set(endHighways.map(h => h.ref).filter(Boolean));
     const endHwIds = new Set(endHighways.map(h => h._id.toString()));
-    
+
     const dbHighways = startHighways.filter(h => {
         if (h.ref && endHwRefs.has(h.ref)) return true;
         return endHwIds.has(h._id.toString());

@@ -61,7 +61,7 @@ export async function fetchPolyline(origin, destination) {
 
         if (data.status === 'OK' && data.routes?.length > 0) {
             return data.routes[0].overview_polyline?.points || '';
-        } else {
+        } else if (data.status !== 'REQUEST_DENIED') {
             logger.warn(`Google Directions API returned status: ${data.status}. Message: ${data.error_message || 'No routes found'}`);
         }
     } catch (err) {
@@ -111,7 +111,7 @@ export async function fetchDirections(origin, destination) {
                 durationText,
                 bounds: route.bounds || null
             };
-        } else {
+        } else if (data.status !== 'REQUEST_DENIED') {
             logger.warn(`Google Directions API returned status: ${data.status}. Message: ${data.error_message || 'No routes found'}`);
         }
     } catch (err) {

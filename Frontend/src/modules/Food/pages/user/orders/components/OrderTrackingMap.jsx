@@ -8,7 +8,7 @@ const MAP_CONTAINER_STYLE = {
 };
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
-const GOOGLE_MAPS_LIBRARIES = [];
+const GOOGLE_MAPS_LIBRARIES = ["geometry", "drawing", "places"];
 
 function getDistanceMeters(p1, p2) {
   if (!p1 || !p2) return 0;

@@ -1,7 +1,7 @@
 import React from "react";
 import { Compass, Flag } from "lucide-react";
 
-export default function DrivingSummaryCard({ highwayRef, distanceAhead, nextStopEta, restaurantCount }) {
+export default function DrivingSummaryCard({ highwayRef, distanceAhead, nextStopEta, restaurantCount, onExit }) {
   return (
     <div className="w-full bg-white dark:bg-[#1a1a1a] shadow-[0_4px_20px_rgba(0,0,0,0.08)] rounded-2xl overflow-hidden border border-gray-100 dark:border-neutral-800 p-4 animate-fade-in relative z-10">
       
@@ -16,11 +16,17 @@ export default function DrivingSummaryCard({ highwayRef, distanceAhead, nextStop
             <span className="text-[10px] font-bold text-gray-400 dark:text-neutral-500 mt-1 block">Food stops along your journey</span>
           </div>
         </div>
-        {highwayRef && (
-          <span className="px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase text-orange-700 bg-orange-50 dark:bg-orange-950/40 dark:text-orange-400 border border-orange-200/40">
-            On {highwayRef}
-          </span>
-        )}
+        {/* Exit button */}
+        <button
+          type="button"
+          onClick={onExit}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200/60 dark:border-red-800/40 text-red-600 dark:text-red-400 text-[10px] font-black tracking-wide uppercase hover:bg-red-100 dark:hover:bg-red-900/40 active:scale-95 transition-all"
+        >
+          <svg width={10} height={10} viewBox="0 0 24 24" className="fill-current shrink-0">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+          </svg>
+          Exit
+        </button>
       </div>
 
       {/* Grid Stats */}

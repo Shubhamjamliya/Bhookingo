@@ -1538,6 +1538,8 @@ export const listApprovedRestaurants = async (query = {}) => {
         status: 1,
         pureVegRestaurant: 1,
         createdAt: 1,
+        facilities: 1,
+        facilityRatings: 1,
         location: 1,
         distance: 1,
         distanceInKm: 1,
@@ -1630,6 +1632,14 @@ export const listApprovedRestaurants = async (query = {}) => {
         name: r.restaurantName || '',
         rating: normalizeRatingValue(r.rating),
         totalRatings: normalizeTotalRatingsValue(r.totalRatings),
+        facilities: r.facilities ? {
+            parking: Boolean(r.facilities.parking),
+            wifi: Boolean(r.facilities.wifi),
+            familyFriendly: Boolean(r.facilities.familyFriendly),
+            evCharging: Boolean(r.facilities.evCharging),
+            washroom: Boolean(r.facilities.washroom)
+        } : null,
+        facilityRatings: r.facilityRatings || null,
         profileImage: r.profileImage ? { url: r.profileImage } : null,
         coverImages: Array.isArray(r.coverImages) ? r.coverImages : [],
         openingTime: r.openingTime || null,

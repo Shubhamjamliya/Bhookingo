@@ -8,16 +8,52 @@ const MAP_CONTAINER_STYLE = {
 };
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
-const GOOGLE_MAPS_LIBRARIES = [];
+const GOOGLE_MAPS_LIBRARIES = ["geometry", "drawing", "places"];
 
-export default function DrivingMap({ 
-  userLocation, 
-  destinationLocation, 
-  journey, 
-  onRouteCalculated, 
-  heading, 
-  highway, 
-  restaurants, 
+// High precision polyline decoder for Google Maps encoded polylines
+function decodePolyline(encoded) {
+  if (!encoded) return [];
+  const poly = [];
+  let index = 0;
+  const len = encoded.length;
+  let lat = 0;
+  let lng = 0;
+
+  while (index < len) {
+    let b;
+    let shift = 0;
+    let result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlat = ((result & 1) !== 0 ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    const dlng = ((result & 1) !== 0 ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+
+    poly.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+  return poly;
+}
+
+export default function DrivingMap({
+  userLocation,
+  destinationLocation,
+  journey,
+  onRouteCalculated,
+  heading,
+  highway,
+  restaurants,
   onRestaurantClick,
   recenterBottomOffset
 }) {
@@ -36,6 +72,9 @@ export default function DrivingMap({
       : DEFAULT_CENTER;
   }, [userLocation?.latitude, userLocation?.longitude]);
 
+  const prevBoundsKeyRef = useRef("");
+  const routeRequestedRef = useRef("");
+
   // Fit bounds to cover user location, destination, and all restaurants ahead
   const fitMapBounds = useCallback(() => {
     if (!mapRef.current || !window.google?.maps) return;
@@ -53,7 +92,7 @@ export default function DrivingMap({
       count++;
     }
 
-    restaurants.forEach((r) => {
+    (restaurants || []).forEach((r) => {
       const loc = r.location;
       const rlat = typeof loc?.latitude === "number" ? loc.latitude
         : (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null);
@@ -72,7 +111,7 @@ export default function DrivingMap({
       mapRef.current.setCenter(center);
       mapRef.current.setZoom(14);
     }
-  }, [userLocation, destinationLocation, restaurants, center]);
+  }, [destinationLocation?.lat, destinationLocation?.lng, (restaurants || []).length, center]);
 
   const onLoad = useCallback((map) => {
     mapRef.current = map;
@@ -92,17 +131,24 @@ export default function DrivingMap({
     mapRef.current.setZoom(14);
   }, [userLocation]);
 
-  // Fetch navigation path via Google Directions Service (cached)
+  // Fetch navigation path via Google Directions Service (cached & high precision)
   useEffect(() => {
     if (!isLoaded || !userLocation || !destinationLocation || !window.google) {
       setLocalRoutePath([]);
       return;
     }
 
-    if (journey?.routePolyline && journey.routePolyline.length > 0) {
+    // Only reuse cached route if it has high-density step points (e.g. >= 150 points)
+    if (journey?.routePolyline && journey.routePolyline.length >= 150) {
       setLocalRoutePath(journey.routePolyline);
       return;
     }
+
+    const routeKey = `${Number(userLocation.latitude).toFixed(3)}_${Number(userLocation.longitude).toFixed(3)}_${Number(destinationLocation.lat).toFixed(3)}_${Number(destinationLocation.lng).toFixed(3)}`;
+    if (routeRequestedRef.current === routeKey) {
+      return;
+    }
+    routeRequestedRef.current = routeKey;
 
     const directionsService = new window.google.maps.DirectionsService();
     directionsService.route(
@@ -113,13 +159,64 @@ export default function DrivingMap({
       },
       (result, status) => {
         if (status === window.google.maps.DirectionsStatus.OK) {
-          const path = result.routes[0]?.overview_path || [];
-          const routePolyline = path.map(p => ({ lat: p.lat(), lng: p.lng() }));
+          const route = result.routes[0];
+          let detailedPath = [];
+
+          // Primary: Decode and merge every step's polyline from all legs for maximum road fidelity
+          if (route?.legs && route.legs.length > 0) {
+            route.legs.forEach(leg => {
+              if (leg?.steps && leg.steps.length > 0) {
+                leg.steps.forEach(step => {
+                  let stepPts = [];
+                  const rawPoly = step.polyline?.points || (typeof step.polyline === "string" ? step.polyline : null);
+                  if (rawPoly) {
+                    stepPts = decodePolyline(rawPoly);
+                  } else if (step.path && Array.isArray(step.path)) {
+                    stepPts = step.path.map(p => ({
+                      lat: typeof p.lat === "function" ? p.lat() : p.lat,
+                      lng: typeof p.lng === "function" ? p.lng() : p.lng
+                    }));
+                  } else if (step.lat_lngs && Array.isArray(step.lat_lngs)) {
+                    stepPts = step.lat_lngs.map(p => ({
+                      lat: typeof p.lat === "function" ? p.lat() : p.lat,
+                      lng: typeof p.lng === "function" ? p.lng() : p.lng
+                    }));
+                  }
+
+                  stepPts.forEach(pt => {
+                    if (detailedPath.length === 0) {
+                      detailedPath.push(pt);
+                    } else {
+                      const prev = detailedPath[detailedPath.length - 1];
+                      if (Math.abs(prev.lat - pt.lat) > 1e-7 || Math.abs(prev.lng - pt.lng) > 1e-7) {
+                        detailedPath.push(pt);
+                      }
+                    }
+                  });
+                });
+              }
+            });
+          }
+
+          // Fallback to overview polyline ONLY if step-by-step extraction produced no points
+          if (detailedPath.length === 0) {
+            const overviewRaw = route?.overview_polyline?.points || (typeof route?.overview_polyline === "string" ? route.overview_polyline : null);
+            if (overviewRaw) {
+              detailedPath = decodePolyline(overviewRaw);
+            } else if (route?.overview_path && Array.isArray(route.overview_path)) {
+              detailedPath = route.overview_path.map(p => ({
+                lat: typeof p.lat === "function" ? p.lat() : p.lat,
+                lng: typeof p.lng === "function" ? p.lng() : p.lng
+              }));
+            }
+          }
+
+          const routePolyline = detailedPath;
           const estimatedDistance = result.routes[0]?.legs[0]?.distance?.text || "";
           const estimatedDuration = result.routes[0]?.legs[0]?.duration?.text || "";
-          
+
           setLocalRoutePath(routePolyline);
-          
+
           if (onRouteCalculated) {
             onRouteCalculated({
               routePolyline,
@@ -135,12 +232,15 @@ export default function DrivingMap({
     );
   }, [isLoaded, userLocation?.latitude, userLocation?.longitude, destinationLocation?.lat, destinationLocation?.lng, journey?.routePolyline, onRouteCalculated]);
 
-  // Fit bounds when restaurants or user location changes
+  // Fit bounds ONLY when destination or restaurants length actually changes (prevents continuous GetViewportInfo loops)
   useEffect(() => {
-    if (isLoaded && mapRef.current) {
+    if (!isLoaded || !mapRef.current) return;
+    const currentKey = `${destinationLocation?.lat || ""}_${destinationLocation?.lng || ""}_${(restaurants || []).length}`;
+    if (currentKey !== prevBoundsKeyRef.current) {
+      prevBoundsKeyRef.current = currentKey;
       fitMapBounds();
     }
-  }, [isLoaded, restaurants, userLocation, destinationLocation, fitMapBounds]);
+  }, [isLoaded, destinationLocation?.lat, destinationLocation?.lng, restaurants?.length, fitMapBounds]);
 
   if (!isLoaded) {
     return (
@@ -168,30 +268,52 @@ export default function DrivingMap({
           zoomControl: true,
         }}
       >
-        {/* Journey Route Polyline (Google Maps Directions) */}
+        {/* Journey Route Polyline (Google Maps Detailed Directions) */}
         {localRoutePath.length >= 2 && (
-          <Polyline 
-            path={localRoutePath} 
+          <Polyline
+            path={localRoutePath}
             options={{
-              strokeColor: "#0284c7", // Google Maps blue
-              strokeOpacity: 0.85,
+              strokeColor: "#0284c7", // Google Maps navigation blue
+              strokeOpacity: 0.9,
               strokeWeight: 6,
-            }} 
+              geodesic: true,
+            }}
           />
         )}
 
-        {/* User Location Marker */}
+        {/* User Location Halo (Round White Circle around cursor like Google Maps) */}
         {userLocation && (
           <Marker
             position={{ lat: userLocation.latitude, lng: userLocation.longitude }}
             options={{
               icon: {
                 path: window.google?.maps?.SymbolPath?.CIRCLE,
-                scale: 8,
-                fillColor: "#3b82f6",
+                scale: 18,
+                fillColor: "#ffffff",
+                fillOpacity: 0.95,
+                strokeColor: "#0284c7",
+                strokeWeight: 2.5,
+              },
+              clickable: false,
+              zIndex: 99,
+            }}
+          />
+        )}
+
+        {/* User Location Marker (Navigation Arrow with GPS Heading Rotation) */}
+        {userLocation && (
+          <Marker
+            position={{ lat: userLocation.latitude, lng: userLocation.longitude }}
+            options={{
+              icon: {
+                path: "M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z",
+                scale: 1.4,
+                fillColor: "#0284c7",
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
-                strokeWeight: 3,
+                strokeWeight: 1.5,
+                rotation: typeof heading === "number" && !isNaN(heading) ? heading : 0,
+                anchor: window.google?.maps ? new window.google.maps.Point(12, 12) : null,
               },
               title: "Your Location",
               zIndex: 100,

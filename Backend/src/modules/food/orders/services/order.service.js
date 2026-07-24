@@ -939,7 +939,7 @@ export async function calculateAndSaveRestaurantRatingStats(restaurantId) {
   if (orders.length === 0) return;
 
   let overallSum = 0, overallCount = 0;
-  
+
   // Initialize dynamic facility stats
   const facilityStats = {};
   FACILITIES_CONFIG.forEach(fac => {
@@ -963,7 +963,7 @@ export async function calculateAndSaveRestaurantRatingStats(restaurantId) {
         const rVal = ratings[facKey].rating;
         facilityStats[facKey].sum += rVal;
         facilityStats[facKey].count++;
-        
+
         overallFacilitySum += rVal;
         overallFacilityCount++;
       }
@@ -989,7 +989,7 @@ export async function calculateAndSaveRestaurantRatingStats(restaurantId) {
   const updateData = {
     rating: overallCount > 0 ? Number((overallSum / overallCount).toFixed(1)) : 0,
     totalRatings: overallCount,
-    
+
     // Backward compatibility (old top-level fields)
     parkingRating: facilityRatings.parking?.average || 0,
     wifiRating: facilityRatings.wifi?.average || 0,

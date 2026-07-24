@@ -438,34 +438,61 @@ export function extractPolylineFromDirections(directionsResult) {
   const route = directionsResult.routes[0];
   const polylinePoints = [];
 
-  // Method 1: Use overview_polyline if available (encoded string)
-  if (route.overview_polyline && route.overview_polyline.points) {
-    return decodePolyline(route.overview_polyline.points);
-  }
-
-  // Method 2: Extract from route legs and steps
+  // Primary: Extract and merge step polylines for maximum road detail
   if (route.legs && route.legs.length > 0) {
     route.legs.forEach(leg => {
       if (leg.steps && leg.steps.length > 0) {
         leg.steps.forEach(step => {
-          if (step.polyline && step.polyline.points) {
-            const decoded = decodePolyline(step.polyline.points);
-            polylinePoints.push(...decoded);
+          let stepPts = [];
+          const rawPoly = step.polyline?.points || (typeof step.polyline === "string" ? step.polyline : null);
+          if (rawPoly) {
+            stepPts = decodePolyline(rawPoly);
+          } else if (step.path && Array.isArray(step.path)) {
+            stepPts = step.path.map(p => ({
+              lat: typeof p.lat === "function" ? p.lat() : p.lat,
+              lng: typeof p.lng === "function" ? p.lng() : p.lng
+            }));
+          } else if (step.lat_lngs && Array.isArray(step.lat_lngs)) {
+            stepPts = step.lat_lngs.map(p => ({
+              lat: typeof p.lat === "function" ? p.lat() : p.lat,
+              lng: typeof p.lng === "function" ? p.lng() : p.lng
+            }));
           }
+
+          stepPts.forEach(pt => {
+            if (polylinePoints.length === 0) {
+              polylinePoints.push(pt);
+            } else {
+              const prev = polylinePoints[polylinePoints.length - 1];
+              if (Math.abs(prev.lat - pt.lat) > 1e-7 || Math.abs(prev.lng - pt.lng) > 1e-7) {
+                polylinePoints.push(pt);
+              }
+            }
+          });
         });
       }
     });
   }
 
-  // Method 3: Use overview_path if available (already decoded)
+  if (polylinePoints.length > 0) {
+    return polylinePoints;
+  }
+
+  // Fallback 1: Use overview_polyline if step extraction yielded nothing
+  if (route.overview_polyline) {
+    const raw = typeof route.overview_polyline === "string" ? route.overview_polyline : route.overview_polyline.points;
+    if (raw) return decodePolyline(raw);
+  }
+
+  // Fallback 2: Use overview_path if available
   if (route.overview_path && route.overview_path.length > 0) {
     return route.overview_path.map(point => ({
-      lat: point.lat(),
-      lng: point.lng()
+      lat: typeof point.lat === "function" ? point.lat() : point.lat,
+      lng: typeof point.lng === "function" ? point.lng() : point.lng
     }));
   }
 
-  return polylinePoints;
+  return [];
 }
 
 /**

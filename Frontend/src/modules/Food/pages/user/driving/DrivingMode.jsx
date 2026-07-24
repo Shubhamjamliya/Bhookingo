@@ -185,6 +185,25 @@ export default function DrivingMode() {
     });
   }, []);
 
+  // Exit driving mode — clears journey and returns to start page
+  const handleExitDriving = useCallback(() => {
+    sessionStorage.removeItem("bh_active_journey");
+    sessionStorage.removeItem("bh_origin_input");
+    sessionStorage.removeItem("bh_origin_coords");
+    sessionStorage.removeItem("bh_destination_input");
+    sessionStorage.removeItem("bh_destination_coords");
+    sessionStorage.removeItem("bh_selected_highway");
+    setJourney(null);
+    navigate("/food/user/driving", { replace: true });
+  }, [navigate]);
+
+  // Intercept browser back button — go to driving start instead of history
+  useEffect(() => {
+    const onPopState = () => handleExitDriving();
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [handleExitDriving]);
+
   // View States
   const [viewMode, setViewMode] = useState("map"); // "map" | "list"
   const [activeFacilityFilter, setActiveFacilityFilter] = useState("all");
@@ -431,10 +450,10 @@ export default function DrivingMode() {
       }
     } catch (err) {
       clearTimeout(timeoutIdRef.current);
-      const isCanceled = 
-        err?.name === "AbortError" || 
-        err?.name === "CanceledError" || 
-        err?.code === "ERR_CANCELED" || 
+      const isCanceled =
+        err?.name === "AbortError" ||
+        err?.name === "CanceledError" ||
+        err?.code === "ERR_CANCELED" ||
         (err?.message && String(err.message).toLowerCase().includes("canceled"));
 
       if (isCanceled) {
@@ -466,7 +485,7 @@ export default function DrivingMode() {
     }, settings.refreshInterval * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [currentLocation, settings?.refreshInterval, fetchRestaurantsAhead, status]);
+  }, [currentLocation?.latitude, currentLocation?.longitude, settings?.refreshInterval, fetchRestaurantsAhead, status]);
 
   // Handle Retry button
   const handleRetry = async () => {
@@ -523,7 +542,7 @@ export default function DrivingMode() {
   };
 
   // Filter & Sort Logic
-  const filteredRestaurants = (() => {
+  const filteredRestaurants = React.useMemo(() => {
     if (!resultData?.restaurants) return [];
 
     let list = [...resultData.restaurants];
@@ -547,7 +566,7 @@ export default function DrivingMode() {
     });
 
     return list;
-  })();
+  }, [resultData?.restaurants, activeFacilityFilter, sortBy]);
 
 
 
@@ -659,6 +678,7 @@ export default function DrivingMode() {
             distanceAhead={nextStop?.distanceKm ?? null}
             nextStopEta={nextStop?.etaMinutes ?? null}
             restaurantCount={filteredRestaurants.length}
+            onExit={handleExitDriving}
           />
         </div>
       </div>
@@ -725,8 +745,8 @@ export default function DrivingMode() {
 
       {/* Floating Bottom Toggle Control */}
       <div className={`absolute z-20 flex justify-center pointer-events-none pb-[env(safe-area-inset-bottom)] left-4 right-4 transition-all duration-300 ${viewMode !== "map"
-          ? "bottom-[138px] opacity-100 scale-100"
-          : (isDrawerExpanded ? "bottom-[calc(100vh-140px)] opacity-0 scale-0 pointer-events-none" : "bottom-[230px] opacity-100 scale-100")
+        ? "bottom-[138px] opacity-100 scale-100"
+        : (isDrawerExpanded ? "bottom-[calc(100vh-140px)] opacity-0 scale-0 pointer-events-none" : "bottom-[230px] opacity-100 scale-100")
         }`}>
         <Button
           onClick={() => setViewMode(viewMode === "map" ? "list" : "map")}
@@ -942,11 +962,10 @@ export default function DrivingMode() {
                       {[1, 2, 3, 4, 5].map((s) => (
                         <Star
                           key={s}
-                          className={`w-3 h-3 ${
-                            s <= rounded 
-                              ? "fill-amber-400 text-amber-400" 
+                          className={`w-3 h-3 ${s <= rounded
+                              ? "fill-amber-400 text-amber-400"
                               : "text-gray-300 dark:text-neutral-700 fill-none stroke-[1.5]"
-                          }`}
+                            }`}
                         />
                       ))}
                     </div>

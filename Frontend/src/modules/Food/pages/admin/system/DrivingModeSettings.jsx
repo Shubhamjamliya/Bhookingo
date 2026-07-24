@@ -15,7 +15,7 @@ const getAdminToastOffsetPx = () => {
 
     const raw = localStorage.getItem("admin_sidebar_state");
     const isCollapsed = raw ? Boolean(JSON.parse(raw)?.isCollapsed) : false;
-    return isCollapsed ? 40 : 160; 
+    return isCollapsed ? 40 : 160;
   } catch {
     return 0;
   }
@@ -138,7 +138,7 @@ export default function DrivingModeSettings() {
             </div>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            
+
             {/* Enabled Switch */}
             <div className="flex items-start justify-between gap-4 p-4 border rounded-xl bg-neutral-50/50 dark:bg-neutral-900/50 dark:border-neutral-800">
               <div className="space-y-1">

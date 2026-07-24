@@ -84,10 +84,6 @@ export default function Home() {
                 <span className="font-semibold">Restaurant Login</span>
               </Button>
             </Link>
-              <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center">
-                <span className="text-2xl mb-2">??</span>
-              </Button>
-            </Link>
             <Link to="/admin/login" className="block">
               <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center">
                 <span className="text-2xl mb-2">???</span>

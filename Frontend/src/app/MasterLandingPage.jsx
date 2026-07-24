@@ -60,7 +60,10 @@ export default function MasterLandingPage() {
         window.location.href = playStoreUrl;
       }, 2000);
     } else {
-      window.open(playStoreUrl, "_blank");
+      window.location.href = appSchemeUrl;
+      setTimeout(() => {
+        window.open(playStoreUrl, "_blank");
+      }, 1500);
     }
   };
 
@@ -157,9 +160,9 @@ export default function MasterLandingPage() {
             <div className="lg:col-span-7 flex flex-col sm:flex-row items-center justify-end gap-6 lg:gap-10 lg:pl-10">
               {/* Phone Mockup */}
               <div className="shrink-0 py-4 flex items-center justify-center">
-                <img 
-                  src="/Landing page phone.png" 
-                  alt="Bhookingo Phone Mockup" 
+                <img
+                  src="/Landing page phone.png"
+                  alt="Bhookingo Phone Mockup"
                   className="w-[270px] sm:w-[290px] h-auto object-contain drop-shadow-[0_25px_60px_rgba(0,0,0,0.4)]"
                 />
               </div>
@@ -640,37 +643,37 @@ export default function MasterLandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
-             <button
+            <button
               onClick={handleAuthClick}
               className="bg-black text-white px-5 py-2.5 rounded-xl text-left flex items-center gap-3 shadow-md hover:bg-gray-900 transition-colors"
             >
               <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="none">
-                <path d="M3.25 2.3c-.15.15-.25.38-.25.68v18.04c0 .3.1.53.25.68l.08.08L13.5 12.18v-.18L3.33 2.22l-.08.08z" fill="url(#play1)"/>
-                <path d="M16.89 15.63l-3.39-3.39v-.18l3.39-3.39.08.05 4.01 2.28c1.15.65 1.15 1.73 0 2.38l-4.01 2.28-.08-.03z" fill="url(#play2)"/>
-                <path d="M13.59 12.09L3.33 22.25c.38.4 1 .33 1.55.02l12.01-6.84-3.3-3.34z" fill="url(#play3)"/>
-                <path d="M13.59 12.09l3.3-3.34-12.01-6.84c-.55-.31-1.17-.38-1.55.02l10.26 10.16z" fill="url(#play4)"/>
+                <path d="M3.25 2.3c-.15.15-.25.38-.25.68v18.04c0 .3.1.53.25.68l.08.08L13.5 12.18v-.18L3.33 2.22l-.08.08z" fill="url(#play1)" />
+                <path d="M16.89 15.63l-3.39-3.39v-.18l3.39-3.39.08.05 4.01 2.28c1.15.65 1.15 1.73 0 2.38l-4.01 2.28-.08-.03z" fill="url(#play2)" />
+                <path d="M13.59 12.09L3.33 22.25c.38.4 1 .33 1.55.02l12.01-6.84-3.3-3.34z" fill="url(#play3)" />
+                <path d="M13.59 12.09l3.3-3.34-12.01-6.84c-.55-.31-1.17-.38-1.55.02l10.26 10.16z" fill="url(#play4)" />
                 <defs>
                   <linearGradient id="play1" x1="10.23" y1="2.46" x2="-2.04" y2="14.73" gradientUnits="userSpaceOnUse">
-                    <stop offset="0" stopColor="#00a0ff"/>
-                    <stop offset="0.01" stopColor="#00a1ff"/>
-                    <stop offset="0.26" stopColor="#00beff"/>
-                    <stop offset="0.57" stopColor="#00d7ff"/>
-                    <stop offset="0.86" stopColor="#00e6ff"/>
-                    <stop offset="1" stopColor="#00ebff"/>
+                    <stop offset="0" stopColor="#00a0ff" />
+                    <stop offset="0.01" stopColor="#00a1ff" />
+                    <stop offset="0.26" stopColor="#00beff" />
+                    <stop offset="0.57" stopColor="#00d7ff" />
+                    <stop offset="0.86" stopColor="#00e6ff" />
+                    <stop offset="1" stopColor="#00ebff" />
                   </linearGradient>
                   <linearGradient id="play2" x1="22.27" y1="12" x2="3.19" y2="12" gradientUnits="userSpaceOnUse">
-                    <stop offset="0" stopColor="#ff3a44"/>
-                    <stop offset="1" stopColor="#c31162"/>
+                    <stop offset="0" stopColor="#ff3a44" />
+                    <stop offset="1" stopColor="#c31162" />
                   </linearGradient>
                   <linearGradient id="play3" x1="16.5" y1="15.89" x2="-2.26" y2="34.65" gradientUnits="userSpaceOnUse">
-                    <stop offset="0" stopColor="#00e676"/>
-                    <stop offset="1" stopColor="#12c37d"/>
+                    <stop offset="0" stopColor="#00e676" />
+                    <stop offset="1" stopColor="#12c37d" />
                   </linearGradient>
                   <linearGradient id="play4" x1="10.45" y1="10.15" x2="-2.25" y2="-2.55" gradientUnits="userSpaceOnUse">
-                    <stop offset="0" stopColor="#ffe000"/>
-                    <stop offset="0.4" stopColor="#ffca00"/>
-                    <stop offset="0.77" stopColor="#ff9f00"/>
-                    <stop offset="1" stopColor="#ff7a00"/>
+                    <stop offset="0" stopColor="#ffe000" />
+                    <stop offset="0.4" stopColor="#ffca00" />
+                    <stop offset="0.77" stopColor="#ff9f00" />
+                    <stop offset="1" stopColor="#ff7a00" />
                   </linearGradient>
                 </defs>
               </svg>

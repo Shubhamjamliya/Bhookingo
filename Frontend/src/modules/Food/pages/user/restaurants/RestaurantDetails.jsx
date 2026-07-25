@@ -2182,13 +2182,13 @@ function RestaurantDetailsContent() {
 
           {/* Filter/Category Buttons */}
           {restaurant?.menuSections && Array.isArray(restaurant.menuSections) && restaurant.menuSections.length > 0 && (
-            <div className="border-y border-border py-3 -mx-4 px-4 overflow-x-auto scrollbar-hide">
+            <div className="border-y border-border py-3 -mx-4 px-4 overflow-x-auto scrollbar-hide bg-white dark:bg-[#1a1a1a]">
             <div className="flex flex-col gap-2 w-max">
               <div className="flex items-center gap-2 w-max">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-1.5 whitespace-nowrap border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] relative"
+                  className="flex items-center gap-1.5 whitespace-nowrap border-border dark:border-gray-700 bg-white dark:bg-[#1a1a1a] relative"
                   onClick={() => setShowFilterSheet(true)}
                 >
                   <SlidersHorizontal className="h-4 w-4" />
@@ -2203,7 +2203,7 @@ function RestaurantDetailsContent() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`flex items-center gap-1.5 whitespace-nowrap border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] dark:text-white rounded-full ${filters.vegNonVeg === "veg" ? "border-green-600 bg-green-50 text-green-700 font-bold dark:border-green-500 dark:bg-green-900/20 dark:text-green-400" : ""
+                  className={`flex items-center gap-1.5 whitespace-nowrap border-border dark:border-gray-700 bg-white dark:bg-[#1a1a1a] dark:text-white rounded-full ${filters.vegNonVeg === "veg" ? "border-green-600 bg-green-50 text-green-700 font-bold dark:border-green-500 dark:bg-green-900/20 dark:text-green-400" : ""
                     }`}
                   onClick={() =>
                     setFilters((prev) => ({
@@ -2221,7 +2221,7 @@ function RestaurantDetailsContent() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`flex items-center gap-1.5 whitespace-nowrap border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] dark:text-white rounded-full ${filters.vegNonVeg === "non-veg" ? "border-primary bg-primary-light/10 text-primary dark:border-red-500 dark:bg-red-900/20 dark:text-primary-light" : ""
+                  className={`flex items-center gap-1.5 whitespace-nowrap border-border dark:border-gray-700 bg-white dark:bg-[#1a1a1a] dark:text-white rounded-full ${filters.vegNonVeg === "non-veg" ? "border-primary bg-primary-light/10 text-primary dark:border-red-500 dark:bg-red-900/20 dark:text-primary-light" : ""
                     }`}
                   onClick={() =>
                     setFilters((prev) => ({
@@ -2246,7 +2246,7 @@ function RestaurantDetailsContent() {
                     className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
                       selectedMenuCategory === "all"
                         ? "border-[var(--primary)] bg-[#DC262615] text-[var(--primary)]"
-                        : "border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300"
+                        : "border-border dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300"
                     }`}
                   >
                     All
@@ -2259,7 +2259,7 @@ function RestaurantDetailsContent() {
                       className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
                         selectedMenuCategory === category.id
                           ? "border-[var(--primary)] bg-[#DC262615] text-[var(--primary)]"
-                          : "border-border dark:border-gray-700 bg-surface dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300"
+                          : "border-border dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300"
                       }`}
                     >
                       {category.image ? (
@@ -3147,7 +3147,7 @@ function RestaurantDetailsContent() {
 
                 {/* Bottom Sheet */}
                 <motion.div
-                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl h-[80vh] md:h-auto md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
+                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl h-[80vh] md:h-auto md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
@@ -3180,7 +3180,7 @@ function RestaurantDetailsContent() {
                           }
                           className={`text-left px-4 py-2.5 rounded-lg border-2 transition-all ${filters.sortBy === "low-to-high"
                             ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                            : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
+                            : "border-border dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                             }`}
                         >
                           Price - low to high
@@ -3194,7 +3194,7 @@ function RestaurantDetailsContent() {
                           }
                           className={`text-left px-4 py-2.5 rounded-lg border-2 transition-all ${filters.sortBy === "high-to-low"
                             ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                            : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
+                            : "border-border dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                             }`}
                         >
                           Price - high to low
@@ -3215,7 +3215,7 @@ function RestaurantDetailsContent() {
                           }
                           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "veg"
                             ? "border-green-600 dark:border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                            : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
+                            : "border-border dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                             }`}
                         >
                           <div className="h-4 w-4 rounded-full bg-green-600 dark:bg-green-500" />
@@ -3230,7 +3230,7 @@ function RestaurantDetailsContent() {
                           }
                           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all flex-1 ${filters.vegNonVeg === "non-veg"
                             ? "border-primary dark:border-primary bg-primary-light/10 dark:bg-red-900/30 text-primary dark:text-gray-300"
-                            : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
+                            : "border-border dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                             }`}
                         >
                           <div className="h-4 w-4 rounded-full bg-primary" />
@@ -3250,8 +3250,8 @@ function RestaurantDetailsContent() {
                           }))
                         }
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all w-full ${filters.highlyReordered
-                          ? "border-[var(--primary)] dark:border-[var(--primary)] bg-background dark:bg-[var(--primary)]/20 text-[var(--primary)] dark:text-[var(--primary)]"
-                          : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
+                          ? "border-[var(--primary)] dark:border-[var(--primary)] bg-white dark:bg-[var(--primary)]/20 text-[var(--primary)] dark:text-[var(--primary)]"
+                          : "border-border dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                           }`}
                       >
                         <RotateCcw className="h-4 w-4" />
@@ -3271,7 +3271,7 @@ function RestaurantDetailsContent() {
                         }
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-all w-full ${filters.spicy
                           ? "border-red-500 dark:border-red-400 bg-primary-light/10 dark:bg-red-900/30 text-red-700 dark:text-primary-light"
-                          : "border-border dark:border-gray-700 bg-surface dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
+                          : "border-border dark:border-gray-700 bg-white dark:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 hover:border-border dark:hover:border-gray-600"
                           }`}
                       >
                         <Flame className="h-4 w-4" />
@@ -3281,7 +3281,7 @@ function RestaurantDetailsContent() {
                   </div>
 
                   {/* Bottom Action Bar */}
-                  <div className="border-t border-border dark:border-gray-800 px-4 py-3 flex items-center justify-between bg-surface dark:bg-[#1a1a1a]">
+                  <div className="border-t border-border dark:border-gray-800 px-4 py-3 flex items-center justify-between bg-white dark:bg-[#1a1a1a]">
                     <button
                       onClick={() => {
                         setFilters({

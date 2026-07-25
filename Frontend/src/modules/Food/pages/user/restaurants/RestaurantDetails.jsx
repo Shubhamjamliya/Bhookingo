@@ -105,9 +105,23 @@ function RestaurantDetailsContent() {
   const showOnlyUnder250 = searchParams.get('under250') === 'true'
   const targetDishId = useMemo(() => String(searchParams.get('dish') || '').trim(), [searchParams])
   const { addToCart, updateQuantity, removeFromCart, getCartItem, cart, itemCount } = useCart()
-  const { vegMode, vegModeOption, addDishFavorite, removeDishFavorite, isDishFavorite, getDishFavorites, getFavorites, addFavorite, removeFavorite, isFavorite } = useProfile()
+  const { vegMode, vegModeOption, addDishFavorite, removeDishFavorite, isDishFavorite, getDishFavorites, getFavorites, addFavorite, removeFavorite, isFavorite, receiverDetails } = useProfile()
   const { location: userLocation } = useLocation() // Get user's current location
-  const { zoneId, zone, loading: loadingZone, isOutOfService } = useZone(userLocation) // Get user's zone for zone-based filtering
+
+  const activeLocation = useMemo(() => {
+    if (receiverDetails?.isForSomeoneElse && Number.isFinite(Number(receiverDetails?.receiverLat)) && Number.isFinite(Number(receiverDetails?.receiverLng))) {
+      return {
+        latitude: Number(receiverDetails.receiverLat),
+        longitude: Number(receiverDetails.receiverLng),
+        address: receiverDetails.receiverAddressText || "",
+        formattedAddress: receiverDetails.receiverAddressText || "",
+        isReceiverLocation: true
+      }
+    }
+    return userLocation
+  }, [receiverDetails, userLocation])
+
+  const { zoneId, zone, loading: loadingZone, isOutOfService } = useZone(activeLocation) // Get user's zone for zone-based filtering
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [highlightIndex, setHighlightIndex] = useState(0)
   const [quantities, setQuantities] = useState({})
@@ -478,11 +492,11 @@ function RestaurantDetailsContent() {
 
           debugLog('? Restaurant coordinates:', { restaurantLat, restaurantLng, locationObj })
 
-          // Get user coordinates
-          const userLat = userLocation?.latitude
-          const userLng = userLocation?.longitude
+          // Get active coordinates (receiver or user location)
+          const userLat = activeLocation?.latitude
+          const userLng = activeLocation?.longitude
 
-          debugLog('? User location:', { userLat, userLng, userLocation })
+          debugLog('? Active location:', { userLat, userLng, activeLocation })
 
           // Calculate distance if both coordinates are available
           let calculatedDistance = null
@@ -1061,12 +1075,12 @@ function RestaurantDetailsContent() {
       ? restaurant.locationObject.coordinates[0]
       : null)
 
-  const userLat = Number(userLocation?.latitude)
-  const userLng = Number(userLocation?.longitude)
+  const userLat = Number(activeLocation?.latitude)
+  const userLng = Number(activeLocation?.longitude)
 
   const currentDistanceVal = useMemo(() => {
-    return getRestaurantDistanceKm(restaurant, userLocation);
-  }, [restaurant, userLocation]);
+    return getRestaurantDistanceKm(restaurant, activeLocation);
+  }, [restaurant, activeLocation]);
 
   const isOutOfRange = useMemo(() => {
     return currentDistanceVal !== null && currentDistanceVal > BOOKING_RADIUS_KM;
@@ -1106,7 +1120,7 @@ function RestaurantDetailsContent() {
     }
 
     // Check booking radius eligibility using shared utility
-    const eligibility = checkRestaurantBookingEligibility(restaurant, userLocation)
+    const eligibility = checkRestaurantBookingEligibility(restaurant, activeLocation)
     if (!eligibility.bookable) {
       toast.error(eligibility.message)
       return

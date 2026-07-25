@@ -1,13 +1,30 @@
 import React, { useMemo } from 'react'
 import { getRestaurantDistanceKm } from '@food/utils/common'
+import { useLocation } from '@food/hooks/useLocation'
+import { useProfile } from '@food/context/ProfileContext'
 
 export { getRestaurantDistanceKm }
 
-export default function BookingRangeBadge({ restaurant, userLocation, className = "" }) {
+export default function BookingRangeBadge({ restaurant, userLocation: propUserLocation, className = "" }) {
+  const { location: geoLoc } = useLocation()
+  const { receiverDetails } = useProfile()
+
+  const activeLocation = useMemo(() => {
+    if (propUserLocation) return propUserLocation
+    if (receiverDetails?.isForSomeoneElse && Number.isFinite(Number(receiverDetails?.receiverLat)) && Number.isFinite(Number(receiverDetails?.receiverLng))) {
+      return {
+        latitude: Number(receiverDetails.receiverLat),
+        longitude: Number(receiverDetails.receiverLng),
+        isReceiverLocation: true
+      }
+    }
+    return geoLoc
+  }, [propUserLocation, receiverDetails, geoLoc])
+
   const isOutOfRange = useMemo(() => {
-    const dVal = getRestaurantDistanceKm(restaurant, userLocation)
+    const dVal = getRestaurantDistanceKm(restaurant, activeLocation)
     return dVal !== null && dVal > 50
-  }, [restaurant, userLocation])
+  }, [restaurant, activeLocation])
 
   if (!isOutOfRange) return null
 

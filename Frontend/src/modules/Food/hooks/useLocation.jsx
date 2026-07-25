@@ -213,14 +213,36 @@ const TEMPORARY_DEFAULT_INDORE_LOCATION = {
   formattedAddress: "Vijay Nagar, Indore, Madhya Pradesh",
 }
 
+const getActiveStoredLocation = () => {
+  try {
+    const savedReceiver = localStorage.getItem("userReceiverDetails")
+    if (savedReceiver) {
+      const parsed = JSON.parse(savedReceiver)
+      if (parsed?.isForSomeoneElse && Number.isFinite(Number(parsed.receiverLat)) && Number.isFinite(Number(parsed.receiverLng))) {
+        return {
+          latitude: Number(parsed.receiverLat),
+          longitude: Number(parsed.receiverLng),
+          city: parsed.city || "Destination City",
+          address: parsed.receiverAddressText || "",
+          formattedAddress: parsed.receiverAddressText || "",
+          isReceiverLocation: true
+        }
+      }
+    }
+    const storedUser = localStorage.getItem("userLocation")
+    if (storedUser) {
+      return JSON.parse(storedUser)
+    }
+  } catch (e) {}
+  return TEMPORARY_DEFAULT_INDORE_LOCATION
+}
+
 export function useLocation() {
   const [isDefaultLocationMode, setIsDefaultLocationMode] = useState(() => {
     return false;
   })
 
-  const [location, setLocation] = useState(() => {
-    return TEMPORARY_DEFAULT_INDORE_LOCATION;
-  })
+  const [location, setLocation] = useState(getActiveStoredLocation)
   const [loading, setLoading] = useState(globalLocationLoading)
 
   useEffect(() => {
@@ -955,6 +977,13 @@ export function useLocation() {
 
   /* ===================== MAIN LOCATION ===================== */
   const getLocation = async (updateDB = true, forceFresh = false, showLoading = false) => {
+    const activeReceiverLoc = getActiveStoredLocation()
+    if (activeReceiverLoc?.isReceiverLocation) {
+      setLocation(activeReceiverLoc)
+      if (showLoading) setGlobalLocationLoading(false)
+      return activeReceiverLoc
+    }
+
     // If not forcing fresh, try DB first (faster)
     let dbLocation = !forceFresh ? await fetchLocationFromDB() : null
     if (dbLocation && !forceFresh) {
@@ -1763,14 +1792,9 @@ export function useLocation() {
 
     // Also listen for custom event that might be fired within the same window
     const handleCustomUpdate = () => {
-      const stored = localStorage.getItem("userLocation")
-      if (stored) {
-        try {
-          const newLoc = JSON.parse(stored)
-          setLocation(newLoc)
-          debugLog("?? Location updated from custom update event:", newLoc)
-        } catch {}
-      }
+      const activeLoc = getActiveStoredLocation()
+      setLocation(activeLoc)
+      debugLog("?? Location updated from custom update event:", activeLoc)
     }
 
     window.addEventListener('storage', handleStorageChange)

@@ -123,11 +123,17 @@ export function ProfileProvider({ children }) {
       localStorage.setItem("userReceiverDetails", JSON.stringify(payload))
       setReceiverDetailsState(payload)
     }
+    try {
+      window.dispatchEvent(new CustomEvent("userLocationUpdated"))
+    } catch (e) {}
   }
 
   const clearReceiverDetails = () => {
     localStorage.removeItem("userReceiverDetails")
     setReceiverDetailsState(null)
+    try {
+      window.dispatchEvent(new CustomEvent("userLocationUpdated"))
+    } catch (e) {}
   }
 
   // Helper to check if authenticated

@@ -134,8 +134,15 @@ export async function calculateOrder(userId, dto) {
   if (!restaurant) throw new ValidationError("Restaurant not found");
 
   const orderType = String(dto.orderType || (dto.address ? "DELIVERY" : "TAKEAWAY")).toUpperCase();
+  const isForSomeoneElse = dto.isForSomeoneElse === true;
+  const targetLocation = orderType === "DELIVERY"
+    ? { address: dto.address }
+    : (isForSomeoneElse && dto.receiverLat != null && dto.receiverLng != null)
+      ? { latitude: dto.receiverLat, longitude: dto.receiverLng }
+      : dto.userLocation;
+
   validateBookingDistance(
-    orderType === "DELIVERY" ? { address: dto.address } : dto.userLocation,
+    targetLocation,
     restaurant.location,
     orderType
   );
@@ -160,6 +167,7 @@ export async function createOrder(userId, dto) {
   }
 
   const orderType = String(dto.orderType || (dto.address ? "DELIVERY" : "TAKEAWAY")).toUpperCase();
+  const isForSomeoneElse = dto.isForSomeoneElse === true;
 
   let distanceKm = null;
   const restLat = restaurant.location?.coordinates?.[1] ?? restaurant.location?.latitude;
@@ -170,14 +178,23 @@ export async function createOrder(userId, dto) {
       const [dLng, dLat] = dto.address.location.coordinates;
       const d = haversineKm(restLat, restLng, dLat, dLng);
       distanceKm = Number.isFinite(d) ? d : null;
+    } else if (isForSomeoneElse && dto.receiverLat != null && dto.receiverLng != null) {
+      const d = haversineKm(restLat, restLng, dto.receiverLat, dto.receiverLng);
+      distanceKm = Number.isFinite(d) ? d : null;
     } else if (dto.userLocation?.latitude != null && dto.userLocation?.longitude != null) {
       const d = haversineKm(restLat, restLng, dto.userLocation.latitude, dto.userLocation.longitude);
       distanceKm = Number.isFinite(d) ? d : null;
     }
   }
 
+  const targetLocation = orderType === "DELIVERY"
+    ? { address: dto.address }
+    : (isForSomeoneElse && dto.receiverLat != null && dto.receiverLng != null)
+      ? { latitude: dto.receiverLat, longitude: dto.receiverLng }
+      : dto.userLocation;
+
   validateBookingDistance(
-    orderType === "DELIVERY" ? { address: dto.address } : dto.userLocation,
+    targetLocation,
     restaurant.location,
     orderType
   );
@@ -205,7 +222,6 @@ export async function createOrder(userId, dto) {
 
 
 
-  const isForSomeoneElse = dto.isForSomeoneElse === true;
   const orderOrigin = dto.orderOrigin || 'RESTAURANT';
 
   if (isForSomeoneElse && orderOrigin === 'DRIVING') {

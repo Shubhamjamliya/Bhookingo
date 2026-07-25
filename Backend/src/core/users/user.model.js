@@ -60,6 +60,20 @@ const userAddressSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
             index: true
+        },
+        isForReceiver: {
+            type: Boolean,
+            default: false
+        },
+        receiverName: {
+            type: String,
+            default: '',
+            trim: true
+        },
+        receiverPhone: {
+            type: String,
+            default: '',
+            trim: true
         }
     },
     { _id: true, timestamps: true }

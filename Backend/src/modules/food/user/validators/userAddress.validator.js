@@ -9,13 +9,23 @@ const coordSchema = z
     .refine((n) => Math.abs(n) <= 180, 'Invalid coordinate');
 
 const createAddressSchema = z.object({
-    label: labelSchema.optional(),
+    label: z.preprocess((val) => {
+        if (typeof val === 'string' && val.startsWith('For:')) return 'Other';
+        return val;
+    }, labelSchema.optional()),
+    addressType: z.preprocess((val) => {
+        if (typeof val === 'string' && val.startsWith('For:')) return 'Other';
+        return val;
+    }, labelSchema.optional()),
     street: z.string().min(1, 'Street is required').max(200).transform((s) => s.trim()),
     additionalDetails: z.string().max(500).optional().or(z.literal('')).transform((s) => String(s || '').trim()),
     city: z.string().min(1, 'City is required').max(100).transform((s) => s.trim()),
     state: z.string().min(1, 'State is required').max(100).transform((s) => s.trim()),
     zipCode: z.string().max(20).optional().or(z.literal('')).transform((s) => String(s || '').trim()),
     phone: z.string().max(20).optional().or(z.literal('')).transform((s) => String(s || '').trim()),
+    isForReceiver: z.boolean().optional(),
+    receiverName: z.string().max(100).optional().or(z.literal('')).transform((s) => String(s || '').trim()),
+    receiverPhone: z.string().max(20).optional().or(z.literal('')).transform((s) => String(s || '').trim()),
     latitude: z.number().finite().min(-90).max(90),
     longitude: coordSchema
 });

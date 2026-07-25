@@ -287,11 +287,22 @@ export default function Cart() {
     }
   }, [showOrderSuccess])
 
-  // Restaurant and pricing state
-  const [restaurantData, setRestaurantData] = useState(null)
+  const activeLocation = useMemo(() => {
+    if (receiverDetails?.isForSomeoneElse && Number.isFinite(Number(receiverDetails?.receiverLat)) && Number.isFinite(Number(receiverDetails?.receiverLng))) {
+      return {
+        latitude: Number(receiverDetails.receiverLat),
+        longitude: Number(receiverDetails.receiverLng),
+        address: receiverDetails.receiverAddressText || "",
+        formattedAddress: receiverDetails.receiverAddressText || "",
+        isReceiverLocation: true
+      }
+    }
+    return currentLocation
+  }, [receiverDetails, currentLocation])
+
   const bookingEligibility = useMemo(() => {
-    return checkRestaurantBookingEligibility(restaurantData, currentLocation)
-  }, [restaurantData, currentLocation])
+    return checkRestaurantBookingEligibility(restaurantData, activeLocation)
+  }, [restaurantData, activeLocation])
   const [loadingRestaurant, setLoadingRestaurant] = useState(false)
   const [pricing, setPricing] = useState(null)
   const [loadingPricing, setLoadingPricing] = useState(false)
@@ -1775,7 +1786,10 @@ export default function Cart() {
         receiverLng: receiverDetails?.receiverLng || undefined,
         receiverAddressText: receiverDetails?.receiverAddressText || undefined,
         consentConfirmed: Boolean(receiverDetails?.consentConfirmed),
-        userLocation: currentLocation?.latitude && currentLocation?.longitude ? {
+        userLocation: (receiverDetails?.isForSomeoneElse && receiverDetails?.receiverLat && receiverDetails?.receiverLng) ? {
+          latitude: Number(receiverDetails.receiverLat),
+          longitude: Number(receiverDetails.receiverLng)
+        } : currentLocation?.latitude && currentLocation?.longitude ? {
           latitude: currentLocation.latitude,
           longitude: currentLocation.longitude
         } : undefined,

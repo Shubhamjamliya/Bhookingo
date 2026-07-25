@@ -125,6 +125,28 @@ export const BOOKING_RADIUS_KM = 50;
 export const getRestaurantDistanceKm = (restaurant, userLocation) => {
   if (!restaurant) return null;
 
+  const locationObj = restaurant.locationObject || restaurant.location || restaurant;
+  const restaurantLat = Number(
+    locationObj?.latitude ??
+    (Array.isArray(locationObj?.coordinates) ? locationObj.coordinates[1] : null)
+  );
+  const restaurantLng = Number(
+    locationObj?.longitude ??
+    (Array.isArray(locationObj?.coordinates) ? locationObj.coordinates[0] : null)
+  );
+  const userLat = Number(userLocation?.latitude);
+  const userLng = Number(userLocation?.longitude);
+
+  const hasCoords =
+    Number.isFinite(userLat) &&
+    Number.isFinite(userLng) &&
+    Number.isFinite(restaurantLat) &&
+    Number.isFinite(restaurantLng);
+
+  if (hasCoords && (userLocation?.isReceiverLocation || userLocation?.forceCalculate)) {
+    return calculateDistance(userLat, userLng, restaurantLat, restaurantLng);
+  }
+
   // 1. Check explicit numerical distance fields in KM returned by backend
   const explicitKm = restaurant.distanceInKm ?? restaurant.distanceKm;
   if (typeof explicitKm === "number" && Number.isFinite(explicitKm)) {
@@ -150,24 +172,7 @@ export const getRestaurantDistanceKm = (restaurant, userLocation) => {
   }
 
   // 3. Fallback: calculate using Haversine formula if coordinates exist
-  const locationObj = restaurant.locationObject || restaurant.location || restaurant;
-  const restaurantLat = Number(
-    locationObj?.latitude ??
-    (Array.isArray(locationObj?.coordinates) ? locationObj.coordinates[1] : null)
-  );
-  const restaurantLng = Number(
-    locationObj?.longitude ??
-    (Array.isArray(locationObj?.coordinates) ? locationObj.coordinates[0] : null)
-  );
-  const userLat = Number(userLocation?.latitude);
-  const userLng = Number(userLocation?.longitude);
-
-  if (
-    Number.isFinite(userLat) &&
-    Number.isFinite(userLng) &&
-    Number.isFinite(restaurantLat) &&
-    Number.isFinite(restaurantLng)
-  ) {
+  if (hasCoords) {
     return calculateDistance(userLat, userLng, restaurantLat, restaurantLng);
   }
 

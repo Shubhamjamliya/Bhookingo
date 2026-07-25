@@ -167,10 +167,12 @@ export default function AddressSelectorPage() {
 
     // Save as address for future reuse
     addAddress({
-      label: `For: ${details.receiverName}`,
+      label: "Other",
       street: addressText,
       city: resolvedLinkData.city || "Destination City",
       state: resolvedLinkData.state || "State",
+      latitude: lat,
+      longitude: lng,
       isForReceiver: true,
       receiverName: details.receiverName,
       receiverPhone: details.receiverPhone,

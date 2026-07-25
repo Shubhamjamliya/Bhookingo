@@ -10,11 +10,12 @@ const toGeoPoint = ({ latitude, longitude }) => {
     return { type: 'Point', coordinates: [lng, lat] };
 };
 
-const normalizeLabel = (label) => {
-    const v = String(label || '').trim();
-    if (v === 'Work') return 'Office';
+const normalizeLabel = (label, addressType) => {
+    const raw = label || addressType;
+    const v = String(raw || '').trim();
+    if (v.startsWith('For:')) return 'Other';
+    if (v === 'Work' || v === 'office' || v === 'Office') return 'Office';
     if (v === 'home' || v === 'Home') return 'Home';
-    if (v === 'office' || v === 'Office') return 'Office';
     if (v === 'other' || v === 'Other') return 'Other';
     return 'Other';
 };
@@ -29,7 +30,7 @@ export const addAddress = async (userId, dto) => {
     if (!user) throw new ValidationError('User not found');
 
     const address = {
-        label: normalizeLabel(dto.label),
+        label: normalizeLabel(dto.label, dto.addressType),
         street: dto.street,
         additionalDetails: dto.additionalDetails || '',
         city: dto.city,
@@ -37,6 +38,9 @@ export const addAddress = async (userId, dto) => {
         zipCode: dto.zipCode || '',
         phone: dto.phone || '',
         location: toGeoPoint(dto),
+        isForReceiver: Boolean(dto.isForReceiver),
+        receiverName: dto.receiverName || '',
+        receiverPhone: dto.receiverPhone || '',
         isDefault: false
     };
 
@@ -51,6 +55,9 @@ export const addAddress = async (userId, dto) => {
         existing.state = address.state;
         existing.zipCode = address.zipCode;
         existing.phone = address.phone;
+        existing.isForReceiver = address.isForReceiver;
+        existing.receiverName = address.receiverName;
+        existing.receiverPhone = address.receiverPhone;
         if (address.location) existing.location = address.location;
         await user.save();
         return { address: existing.toObject() };

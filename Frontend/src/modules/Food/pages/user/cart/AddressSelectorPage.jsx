@@ -86,8 +86,11 @@ export default function AddressSelectorPage() {
     }
     try {
       setIsResolvingLink(true)
-      console.log("[AddressSelector] Resolving Google Maps link payload:", { link: mapsLinkInput.trim() })
-      const res = await api.post("/food/location/resolve-maps-link", { link: mapsLinkInput.trim() })
+      const urlMatch = mapsLinkInput.match(/(https?:\/\/[^\s]+)/i)
+      const cleanLink = urlMatch ? urlMatch[1] : mapsLinkInput.trim()
+
+      console.log("[AddressSelector] Resolving Google Maps link payload:", { originalInput: mapsLinkInput.trim(), link: cleanLink })
+      const res = await api.post("/food/location/resolve-maps-link", { link: cleanLink })
       console.log("[AddressSelector] Resolved link response:", res.data)
       if (res.data?.success && res.data?.data) {
         setResolvedLinkData(res.data.data)

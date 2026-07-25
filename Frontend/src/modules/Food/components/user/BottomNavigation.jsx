@@ -93,21 +93,29 @@ export default function BottomNavigation() {
   // Check active routes
   const { orderType, setOrderType } = useProfile();
   
-  const isDining = normalizedPath === "/food/dining" || normalizedPath.startsWith("/food/user/dining");
-  const isUnder250 = normalizedPath === "/food/under-250" || normalizedPath.startsWith("/food/user/under-250");
-  const isProfile = normalizedPath.startsWith("/food/profile") || normalizedPath.startsWith("/food/user/profile") || normalizedPath.startsWith("/user/profile");
-  const isDriving = normalizedPath === "/food/user/driving" || normalizedPath.startsWith("/food/user/driving");
+  const isDining = normalizedPath === "/food/dining" || normalizedPath.startsWith("/food/user/dining") || normalizedPath === "/dining" || normalizedPath.startsWith("/user/dining");
+  const isUnder250 = normalizedPath === "/food/under-250" || normalizedPath.startsWith("/food/user/under-250") || normalizedPath === "/under-250" || normalizedPath.startsWith("/user/under-250");
+  const isProfile = normalizedPath.startsWith("/food/profile") || normalizedPath.startsWith("/food/user/profile") || normalizedPath.startsWith("/user/profile") || normalizedPath === "/profile";
+  const isDriving = normalizedPath === "/food/user/driving" || normalizedPath.startsWith("/food/user/driving") || normalizedPath === "/driving" || normalizedPath.startsWith("/user/driving");
   
   const isHomePaths = normalizedPath === "/food" || 
     normalizedPath === "/food/user" || 
     normalizedPath === "/user" ||
     normalizedPath === "/" ||
-    normalizedPath.startsWith("/food/user") && !isProfile && !isDining && !isUnder250 && !isDriving && !normalizedPath.startsWith("/food/user/takeaway") ||
+    ((normalizedPath.startsWith("/food/user") || normalizedPath.startsWith("/user")) && !isProfile && !isDining && !isUnder250 && !isDriving && !normalizedPath.startsWith("/food/user/takeaway") && !normalizedPath.startsWith("/user/takeaway")) ||
     normalizedPath.startsWith("/food/restaurants") ||
-    normalizedPath.startsWith("/food/user/restaurants");
+    normalizedPath.startsWith("/food/user/restaurants") ||
+    normalizedPath.startsWith("/user/restaurants") ||
+    normalizedPath.startsWith("/restaurants");
 
   const isTakeaway = normalizedPath === "/food/user/takeaway" || 
     normalizedPath.startsWith("/food/user/takeaway") ||
+    normalizedPath === "/user/takeaway" ||
+    normalizedPath.startsWith("/user/takeaway") ||
+    normalizedPath === "/food/user/restaurants" ||
+    normalizedPath.startsWith("/food/user/restaurants") ||
+    normalizedPath.startsWith("/user/restaurants") ||
+    normalizedPath.startsWith("/restaurants") ||
     (isHomePaths && orderType === "takeaway") || isHomePaths; // Default to Takeaway
 
   const navItems = [

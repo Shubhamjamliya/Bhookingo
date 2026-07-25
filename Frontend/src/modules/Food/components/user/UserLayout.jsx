@@ -267,6 +267,10 @@ function UserLayoutContent() {
 
   const showBottomNav = !isInitialChecking && (normalizedPath === "/" ||
     normalizedPath === "/user" ||
+    normalizedPath === "/driving" ||
+    normalizedPath === "/user/driving" ||
+    normalizedPath === "/restaurants" ||
+    normalizedPath === "/user/restaurants" ||
     normalizedPath === "/dining" ||
     normalizedPath === "/user/dining" ||
     normalizedPath === "/takeaway" ||

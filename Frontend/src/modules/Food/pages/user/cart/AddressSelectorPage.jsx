@@ -46,6 +46,12 @@ const getAddressIcon = (address) => {
   return Home
 }
 
+function GoogleMapsIcon({ className = "w-5 h-5" }) {
+  return (
+    <img src="/assets/images/gmap.png" alt="Google Maps" className={`${className} object-contain`} />
+  )
+}
+
 export default function AddressSelectorPage() {
   const navigate = useNavigate()
   const goBack = useAppBackNavigation()
@@ -80,7 +86,9 @@ export default function AddressSelectorPage() {
     }
     try {
       setIsResolvingLink(true)
+      console.log("[AddressSelector] Resolving Google Maps link payload:", { link: mapsLinkInput.trim() })
       const res = await api.post("/food/location/resolve-maps-link", { link: mapsLinkInput.trim() })
+      console.log("[AddressSelector] Resolved link response:", res.data)
       if (res.data?.success && res.data?.data) {
         setResolvedLinkData(res.data.data)
         setShowMapsLinkModal(false)
@@ -89,6 +97,7 @@ export default function AddressSelectorPage() {
         toast.error(res.data?.message || "Couldn't read this link. Try manual entry.")
       }
     } catch (err) {
+      console.error("[AddressSelector] Resolve maps link error:", err)
       toast.error(err.response?.data?.message || "We couldn't read this link. Please check it and try again, or enter address manually.")
     } finally {
       setIsResolvingLink(false)
@@ -103,14 +112,30 @@ export default function AddressSelectorPage() {
       // Use as user's own location
       clearReceiverDetails()
       if (resolvedLinkData) {
-        const addressText = resolvedLinkData.formattedAddress || `${resolvedLinkData.lat.toFixed(4)}, ${resolvedLinkData.lng.toFixed(4)}`
+        const lat = Number(resolvedLinkData.latitude ?? resolvedLinkData.lat)
+        const lng = Number(resolvedLinkData.longitude ?? resolvedLinkData.lng)
+        const addressText = resolvedLinkData.formattedAddress || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+        
+        const finalLoc = {
+          latitude: lat,
+          longitude: lng,
+          city: resolvedLinkData.city || "Selected Location",
+          state: resolvedLinkData.state || "",
+          country: resolvedLinkData.country || "India",
+          area: resolvedLinkData.area || "",
+          address: addressText,
+          formattedAddress: addressText
+        }
+
         try {
-          sessionStorage.setItem("user_selected_location", JSON.stringify({
-            latitude: resolvedLinkData.lat,
-            longitude: resolvedLinkData.lng,
-            formattedAddress: addressText
-          }))
-        } catch {}
+          localStorage.setItem("userLocation", JSON.stringify(finalLoc))
+          sessionStorage.setItem("user_selected_location", JSON.stringify(finalLoc))
+          sessionStorage.setItem("manual_location_update", "true")
+          window.dispatchEvent(new CustomEvent("userLocationUpdated"))
+        } catch (e) {
+          console.error("Failed to save location to storage:", e)
+        }
+
         toast.success("Location set successfully!")
         goBack()
       }
@@ -119,15 +144,17 @@ export default function AddressSelectorPage() {
 
   const handleSaveReceiverDetails = (details) => {
     if (!resolvedLinkData) return
-    const addressText = resolvedLinkData.formattedAddress || `${resolvedLinkData.lat.toFixed(4)}, ${resolvedLinkData.lng.toFixed(4)}`
+    const lat = Number(resolvedLinkData.latitude ?? resolvedLinkData.lat)
+    const lng = Number(resolvedLinkData.longitude ?? resolvedLinkData.lng)
+    const addressText = resolvedLinkData.formattedAddress || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
     
     const receiverPayload = {
       isForSomeoneElse: true,
       receiverName: details.receiverName,
       receiverPhone: details.receiverPhone,
       consentConfirmed: details.consentConfirmed,
-      receiverLat: resolvedLinkData.lat,
-      receiverLng: resolvedLinkData.lng,
+      receiverLat: lat,
+      receiverLng: lng,
       receiverAddressText: addressText,
       sourceType: "GOOGLE_MAPS_LINK",
       rawGoogleMapsLink: mapsLinkInput
@@ -139,25 +166,37 @@ export default function AddressSelectorPage() {
     addAddress({
       label: `For: ${details.receiverName}`,
       street: addressText,
-      city: "Destination City",
-      state: "State",
+      city: resolvedLinkData.city || "Destination City",
+      state: resolvedLinkData.state || "State",
       isForReceiver: true,
       receiverName: details.receiverName,
       receiverPhone: details.receiverPhone,
       sourceType: "GOOGLE_MAPS_LINK",
       rawGoogleMapsLink: mapsLinkInput,
-      resolvedLat: resolvedLinkData.lat,
-      resolvedLng: resolvedLinkData.lng,
+      resolvedLat: lat,
+      resolvedLng: lng,
       resolvedFormattedAddress: addressText
     })
 
+    const finalLoc = {
+      latitude: lat,
+      longitude: lng,
+      city: resolvedLinkData.city || "Destination City",
+      state: resolvedLinkData.state || "",
+      country: resolvedLinkData.country || "India",
+      area: resolvedLinkData.area || "",
+      address: addressText,
+      formattedAddress: addressText
+    }
+
     try {
-      sessionStorage.setItem("user_selected_location", JSON.stringify({
-        latitude: resolvedLinkData.lat,
-        longitude: resolvedLinkData.lng,
-        formattedAddress: addressText
-      }))
-    } catch {}
+      localStorage.setItem("userLocation", JSON.stringify(finalLoc))
+      sessionStorage.setItem("user_selected_location", JSON.stringify(finalLoc))
+      sessionStorage.setItem("manual_location_update", "true")
+      window.dispatchEvent(new CustomEvent("userLocationUpdated"))
+    } catch (e) {
+      console.error("Failed to save receiver location to storage:", e)
+    }
 
     toast.success(`Ordering for ${details.receiverName}!`)
     goBack()
@@ -938,16 +977,16 @@ export default function AddressSelectorPage() {
 
           <button 
             onClick={() => setShowMapsLinkModal(true)}
-            className="w-full flex items-center gap-4 py-4 px-6 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-all text-left bg-orange-50/30 dark:bg-orange-950/10"
+            className="w-full flex items-center gap-4 py-4 px-6 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-all text-left bg-red-50/30 dark:bg-red-950/10"
           >
-            <div className="h-10 w-10 rounded-full bg-orange-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-500/20">
-              <Link2 className="h-5 w-5" />
+            <div className="h-10 w-10 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center flex-shrink-0 shadow-sm">
+              <GoogleMapsIcon className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-orange-600 dark:text-orange-400 text-[15px]">Paste Google Maps location link</p>
+              <p className="font-bold text-zinc-900 dark:text-zinc-100 text-[15px]">Paste Google Maps location link</p>
               <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate mt-0.5">Quickly resolve location from a shared maps URL</p>
             </div>
-            <ChevronRight className="h-5 w-5 text-orange-400 flex-shrink-0" />
+            <ChevronRight className="h-5 w-5 text-zinc-400 flex-shrink-0" />
           </button>
         </div>
 
@@ -1015,8 +1054,8 @@ export default function AddressSelectorPage() {
             <div className="w-full max-w-md bg-white dark:bg-[#18181b] rounded-3xl p-5 space-y-4 border border-gray-100 dark:border-neutral-800 shadow-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold">
-                    <Link2 className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold shadow-sm">
+                    <GoogleMapsIcon className="w-5 h-5" />
                   </div>
                   <h3 className="font-bold text-base text-gray-900 dark:text-white">Paste Google Maps Link</h3>
                 </div>

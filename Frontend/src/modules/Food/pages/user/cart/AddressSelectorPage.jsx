@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
-import { ChevronLeft, ChevronRight, Plus, MapPin, MoreHorizontal, Navigation, Home, Building2, Briefcase, Phone, X, Crosshair, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, MapPin, MoreHorizontal, Navigation, Home, Building2, Briefcase, Phone, X, Crosshair, Search, Link2, Clipboard, UserCheck } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
@@ -8,10 +8,11 @@ import { Textarea } from "@food/components/ui/textarea"
 import { useLocation as useGeoLocation } from "@food/hooks/useLocation"
 import { useProfile } from "@food/context/ProfileContext"
 import { toast } from "sonner"
-import { locationAPI, userAPI } from "@food/api"
+import api, { locationAPI, userAPI } from "@food/api"
 import { Loader } from '@googlemaps/js-api-loader'
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import useAppBackNavigation from "@food/hooks/useAppBackNavigation"
+import ReceiverDetailsModal from "../address/components/ReceiverDetailsModal"
 
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -49,8 +50,118 @@ export default function AddressSelectorPage() {
   const navigate = useNavigate()
   const goBack = useAppBackNavigation()
   const { location, loading, requestLocation } = useGeoLocation()
-  const { addresses = [], addAddress, updateAddress, setDefaultAddress, userProfile, isAuthenticated, loading: profileLoading } = useProfile()
+  const { addresses = [], addAddress, updateAddress, setDefaultAddress, userProfile, isAuthenticated, loading: profileLoading, setReceiverDetails, clearReceiverDetails } = useProfile()
   const [showAddressForm, setShowAddressForm] = useState(false)
+  const [showMapsLinkModal, setShowMapsLinkModal] = useState(false)
+  const [mapsLinkInput, setMapsLinkInput] = useState("")
+  const [isResolvingLink, setIsResolvingLink] = useState(false)
+  const [resolvedLinkData, setResolvedLinkData] = useState(null)
+  const [showReceiverPromptModal, setShowReceiverPromptModal] = useState(false)
+  const [showReceiverDetailsModal, setShowReceiverDetailsModal] = useState(false)
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText()
+        if (text) {
+          setMapsLinkInput(text)
+          toast.success("Pasted from clipboard")
+        }
+      }
+    } catch {
+      toast.error("Clipboard permission denied")
+    }
+  }
+
+  const handleResolveMapsLink = async () => {
+    if (!mapsLinkInput || !mapsLinkInput.trim()) {
+      toast.error("Please paste a Google Maps location link.")
+      return
+    }
+    try {
+      setIsResolvingLink(true)
+      const res = await api.post("/food/location/resolve-maps-link", { link: mapsLinkInput.trim() })
+      if (res.data?.success && res.data?.data) {
+        setResolvedLinkData(res.data.data)
+        setShowMapsLinkModal(false)
+        setShowReceiverPromptModal(true)
+      } else {
+        toast.error(res.data?.message || "Couldn't read this link. Try manual entry.")
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "We couldn't read this link. Please check it and try again, or enter address manually.")
+    } finally {
+      setIsResolvingLink(false)
+    }
+  }
+
+  const handleReceiverPromptResponse = (isForSomeoneElse) => {
+    setShowReceiverPromptModal(false)
+    if (isForSomeoneElse) {
+      setShowReceiverDetailsModal(true)
+    } else {
+      // Use as user's own location
+      clearReceiverDetails()
+      if (resolvedLinkData) {
+        const addressText = resolvedLinkData.formattedAddress || `${resolvedLinkData.lat.toFixed(4)}, ${resolvedLinkData.lng.toFixed(4)}`
+        try {
+          sessionStorage.setItem("user_selected_location", JSON.stringify({
+            latitude: resolvedLinkData.lat,
+            longitude: resolvedLinkData.lng,
+            formattedAddress: addressText
+          }))
+        } catch {}
+        toast.success("Location set successfully!")
+        goBack()
+      }
+    }
+  }
+
+  const handleSaveReceiverDetails = (details) => {
+    if (!resolvedLinkData) return
+    const addressText = resolvedLinkData.formattedAddress || `${resolvedLinkData.lat.toFixed(4)}, ${resolvedLinkData.lng.toFixed(4)}`
+    
+    const receiverPayload = {
+      isForSomeoneElse: true,
+      receiverName: details.receiverName,
+      receiverPhone: details.receiverPhone,
+      consentConfirmed: details.consentConfirmed,
+      receiverLat: resolvedLinkData.lat,
+      receiverLng: resolvedLinkData.lng,
+      receiverAddressText: addressText,
+      sourceType: "GOOGLE_MAPS_LINK",
+      rawGoogleMapsLink: mapsLinkInput
+    }
+
+    setReceiverDetails(receiverPayload)
+
+    // Save as address for future reuse
+    addAddress({
+      label: `For: ${details.receiverName}`,
+      street: addressText,
+      city: "Destination City",
+      state: "State",
+      isForReceiver: true,
+      receiverName: details.receiverName,
+      receiverPhone: details.receiverPhone,
+      sourceType: "GOOGLE_MAPS_LINK",
+      rawGoogleMapsLink: mapsLinkInput,
+      resolvedLat: resolvedLinkData.lat,
+      resolvedLng: resolvedLinkData.lng,
+      resolvedFormattedAddress: addressText
+    })
+
+    try {
+      sessionStorage.setItem("user_selected_location", JSON.stringify({
+        latitude: resolvedLinkData.lat,
+        longitude: resolvedLinkData.lng,
+        formattedAddress: addressText
+      }))
+    } catch {}
+
+    toast.success(`Ordering for ${details.receiverName}!`)
+    goBack()
+  }
   const [mapPosition, setMapPosition] = useState([22.7196, 75.8577]) // Default Indore coordinates [lat, lng]
   const [addressFormData, setAddressFormData] = useState({
     street: "",
@@ -820,9 +931,23 @@ export default function AddressSelectorPage() {
               <Plus className="h-5 w-5 text-[var(--primary)]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-[var(--primary)] text-[15px]">Add Address</p>
+              <p className="font-bold text-[var(--primary)] text-[15px]">Enter address manually</p>
             </div>
             <ChevronRight className="h-5 w-5 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
+          </button>
+
+          <button 
+            onClick={() => setShowMapsLinkModal(true)}
+            className="w-full flex items-center gap-4 py-4 px-6 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-all text-left bg-orange-50/30 dark:bg-orange-950/10"
+          >
+            <div className="h-10 w-10 rounded-full bg-orange-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-500/20">
+              <Link2 className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-orange-600 dark:text-orange-400 text-[15px]">Paste Google Maps location link</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate mt-0.5">Quickly resolve location from a shared maps URL</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-orange-400 flex-shrink-0" />
           </button>
         </div>
 
@@ -851,22 +976,30 @@ export default function AddressSelectorPage() {
             ) : (
               addresses.map((addr, idx) => {
                 const Icon = getAddressIcon(addr)
+                const isReceiver = addr.isForReceiver === true || Boolean(addr.receiverPhone)
                 return (
                   <button
                     key={getAddressId(addr) || idx}
                     onClick={() => handleSelectSavedAddress(addr)}
-                    className="w-full flex items-start gap-4 p-4 bg-slate-50 dark:bg-[#1a1a1a] rounded-xl hover:bg-[#DC262610] dark:hover:bg-[#DC262620] transition-colors text-left group"
+                    className="w-full flex items-start gap-4 p-4 bg-slate-50 dark:bg-[#1a1a1a] rounded-xl hover:bg-[#DC262610] dark:hover:bg-[#DC262620] transition-colors text-left group border border-transparent hover:border-orange-500/20"
                   >
-                    <div className="h-10 w-10 rounded-full bg-surface dark:bg-gray-800 flex items-center justify-center shadow-sm">
+                    <div className="h-10 w-10 rounded-full bg-surface dark:bg-gray-800 flex items-center justify-center shadow-sm shrink-0">
                       <Icon className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-text-primary dark:text-white capitalize">{addr.label || "Address"}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-text-primary dark:text-white capitalize">{addr.label || "Address"}</p>
+                        {isReceiver && (
+                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-900">
+                            For: {addr.receiverName || "Someone else"} {addr.receiverPhone ? `(${addr.receiverPhone})` : ""}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-text-secondary dark:text-text-secondary line-clamp-2 mt-0.5">
                         {[addr.additionalDetails, addr.street, addr.city, addr.state].filter(Boolean).join(", ")}
                       </p>
                     </div>
-                    <div className="h-6 w-6 rounded-full border border-border dark:border-gray-700 mt-2 flex items-center justify-center group-hover:border-[var(--primary)]">
+                    <div className="h-6 w-6 rounded-full border border-border dark:border-gray-700 mt-2 flex items-center justify-center group-hover:border-[var(--primary)] shrink-0">
                        <ChevronRight className="h-3 w-3 text-text-secondary group-hover:text-[var(--primary)]" />
                     </div>
                   </button>
@@ -875,6 +1008,114 @@ export default function AddressSelectorPage() {
             )}
           </div>
         </div>
+
+        {/* Modal 1: Paste Google Maps Link Modal */}
+        {showMapsLinkModal && (
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white dark:bg-[#18181b] rounded-3xl p-5 space-y-4 border border-gray-100 dark:border-neutral-800 shadow-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center font-bold">
+                    <Link2 className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-base text-gray-900 dark:text-white">Paste Google Maps Link</h3>
+                </div>
+                <button onClick={() => setShowMapsLinkModal(false)} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-400">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-neutral-400 mb-1.5">
+                  Google Maps Location URL
+                </label>
+                <div className="relative">
+                  <input
+                    type="url"
+                    placeholder="https://maps.app.goo.gl/... or https://maps.google.com/..."
+                    value={mapsLinkInput}
+                    onChange={(e) => setMapsLinkInput(e.target.value)}
+                    className="w-full pl-3.5 pr-24 py-3 text-xs rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={handlePasteFromClipboard}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 flex items-center gap-1 hover:bg-orange-200"
+                  >
+                    <Clipboard className="w-3 h-3" /> Paste
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-400 dark:text-neutral-500 mt-1.5">
+                  Ask the person to open Google Maps &rarr; tap Share &rarr; Copy link, then paste it here.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowMapsLinkModal(false)}
+                  className="px-4 py-2.5 text-xs font-semibold text-gray-600 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <Button
+                  type="button"
+                  disabled={isResolvingLink || !mapsLinkInput.trim()}
+                  onClick={handleResolveMapsLink}
+                  className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-orange-500/20 disabled:opacity-40"
+                >
+                  {isResolvingLink ? "Fetching Location..." : "Fetch Location"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal 2: "Is this order for someone else?" Prompt */}
+        {showReceiverPromptModal && (
+          <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-sm bg-white dark:bg-[#18181b] rounded-3xl p-6 text-center space-y-4 border border-gray-100 dark:border-neutral-800 shadow-2xl">
+              <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-950 text-orange-500 mx-auto flex items-center justify-center">
+                <UserCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-gray-900 dark:text-white">Is this order for someone else?</h3>
+                <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1">
+                  Specify receiver details so they get SMS updates & pickup OTP directly.
+                </p>
+              </div>
+              {resolvedLinkData?.formattedAddress && (
+                <div className="p-3 rounded-2xl bg-gray-50 dark:bg-neutral-900 text-xs text-gray-600 dark:text-neutral-300 text-left line-clamp-2">
+                  📍 {resolvedLinkData.formattedAddress}
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleReceiverPromptResponse(false)}
+                  className="w-full py-3 rounded-xl border border-gray-200 dark:border-neutral-700 text-xs font-bold text-gray-700 dark:text-neutral-300 hover:bg-gray-50 dark:hover:bg-neutral-800"
+                >
+                  No, for Me
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleReceiverPromptResponse(true)}
+                  className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold shadow-lg shadow-orange-500/20"
+                >
+                  Yes, Someone Else
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal 3: Receiver Details Form Modal */}
+        <ReceiverDetailsModal
+          isOpen={showReceiverDetailsModal}
+          onClose={() => setShowReceiverDetailsModal(false)}
+          addressText={resolvedLinkData?.formattedAddress || ""}
+          onSave={handleSaveReceiverDetails}
+        />
       </div>
       <style>{`
         @keyframes bounce-short {

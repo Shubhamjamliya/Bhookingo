@@ -1459,8 +1459,8 @@ export const listApprovedRestaurants = async (query = {}) => {
 
     const filter = { status: 'approved' };
 
-    const lat = toFiniteNumber(query.lat);
-    const lng = toFiniteNumber(query.lng);
+    const lat = toFiniteNumber(query.overrideLat ?? query.lat);
+    const lng = toFiniteNumber(query.overrideLng ?? query.lng);
 
     // Only apply city, area filters if coordinates are NOT provided (legacy fallback)
     if (lat === null || lng === null) {

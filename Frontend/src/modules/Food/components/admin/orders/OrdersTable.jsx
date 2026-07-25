@@ -256,6 +256,11 @@ export default function OrdersTable({
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-slate-700">{order.customerName}</span>
                       <span className="text-xs text-slate-500 mt-0.5">{order.customerPhone}</span>
+                      {(order.isForSomeoneElse || order.receiverPhone) && (
+                        <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-orange-100 text-orange-700 border border-orange-200 w-max">
+                          For: {order.receiverName || "Receiver"} ({order.receiverPhone})
+                        </span>
+                      )}
                     </div>
                   </td>
                 )}

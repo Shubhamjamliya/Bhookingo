@@ -1767,6 +1767,14 @@ export default function Cart() {
         sendCutlery: sendCutlery !== false,
         paymentMethod: selectedPaymentMethod,
         orderType: mappedOrderType,
+        isForSomeoneElse: Boolean(receiverDetails?.isForSomeoneElse),
+        orderOrigin: 'RESTAURANT',
+        receiverName: receiverDetails?.receiverName || undefined,
+        receiverPhone: receiverDetails?.receiverPhone || undefined,
+        receiverLat: receiverDetails?.receiverLat || undefined,
+        receiverLng: receiverDetails?.receiverLng || undefined,
+        receiverAddressText: receiverDetails?.receiverAddressText || undefined,
+        consentConfirmed: Boolean(receiverDetails?.consentConfirmed),
         userLocation: currentLocation?.latitude && currentLocation?.longitude ? {
           latitude: currentLocation.latitude,
           longitude: currentLocation.longitude

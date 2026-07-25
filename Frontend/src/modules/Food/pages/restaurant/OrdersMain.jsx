@@ -102,6 +102,10 @@ const transformOrderForList = (order) => ({
   scheduledAt: order.scheduledAt || null,
   restaurantNote: order.restaurantNote || null,
   type: order.orderType || "DELIVERY",
+  isForSomeoneElse: order.isForSomeoneElse || false,
+  receiverName: order.receiverName || null,
+  receiverPhone: order.receiverPhone || null,
+  receiverAddressText: order.receiverAddressText || null,
 });
 
 // Completed Orders List Component

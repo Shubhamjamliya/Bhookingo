@@ -22,6 +22,8 @@ import searchRoutes from '../modules/food/search/routes/search.routes.js';
 import diningBookingRoutes from '../modules/food/dining/routes/diningBooking.routes.js';
 import drivingModeRoutes from '../modules/food/driving/routes/driving.routes.js';
 
+import locationRoutes from '../modules/food/location/routes/location.routes.js';
+
 const router = express.Router();
 
 router.get('/v1/health', (req, res) => {
@@ -37,6 +39,8 @@ router.use('/v1/food/restaurant', restaurantRoutes);
 // Landing & hero-banners for Food user app (paths start with /food/hero-banners/...)
 router.use('/v1/food', landingRoutes);
 router.use('/v1/food/search', searchRoutes);
+router.use('/v1/food/location', locationRoutes);
+router.use('/v1/location', locationRoutes);
 router.get('/v1/food/dining/categories/public', getPublicDiningCategories);
 router.get('/v1/food/dining/restaurants/public', getPublicDiningRestaurants);
 router.use('/v1/food/dining/bookings', diningBookingRoutes);

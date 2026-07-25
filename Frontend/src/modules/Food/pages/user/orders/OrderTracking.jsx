@@ -1434,25 +1434,66 @@ export default function OrderTracking() {
         </div>
       </div>
 
-      {/* 3. Full Screen Map Background */}
+      {/* 3. Full Screen Map / Neutral Receiver View Background */}
       <div className="absolute inset-0 z-0 h-full w-full bg-gray-100 dark:bg-neutral-900">
-        <MapErrorBoundary>
-          {activeUserCoords && restaurantCoordsResolved ? (
-            <OrderTrackingMap
-              userLocation={activeUserCoords}
-              restaurantLocation={restaurantCoordsResolved}
-              restaurantName={order.restaurant || "Restaurant"}
-              restaurantsAhead={restaurantsAhead}
-              orderType={order.orderType || "TAKEAWAY"}
-              onDirectionsCalculated={handleDirectionsCalculated}
-            />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-neutral-900 p-4">
-              <Loader2 className="w-8 h-8 animate-spin text-orange-600 mb-2" />
-              <p className="text-sm font-extrabold text-gray-500 uppercase tracking-wider">Locating coordinates...</p>
+        {order?.polylineEnabled === false || order?.isForSomeoneElse === true ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 dark:from-neutral-950 dark:via-[#121212] dark:to-neutral-900 p-6 text-center">
+            <div className="w-20 h-20 rounded-3xl bg-orange-500 text-white flex items-center justify-center shadow-2xl shadow-orange-500/30 mb-4 animate-bounce-short">
+              <MapPin className="w-10 h-10" />
             </div>
-          )}
-        </MapErrorBoundary>
+            <span className="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 text-xs font-black uppercase tracking-wider mb-2 border border-orange-200 dark:border-orange-900">
+              Ordered for {order?.receiverName || "Someone else"}
+            </span>
+            <h3 className="text-xl font-black text-gray-900 dark:text-white max-w-sm">
+              {order?.restaurant || "Bhookingo Partner Restaurant"}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-neutral-400 max-w-md mt-1.5 line-clamp-2">
+              {order?.restaurantAddress || "Destination location set for receiver collection"}
+            </p>
+            {order?.receiverPhone && (
+              <p className="text-xs font-semibold text-gray-700 dark:text-neutral-300 mt-2">
+                Receiver Phone: <span className="font-bold text-orange-600 dark:text-orange-400">{order.receiverPhone}</span>
+              </p>
+            )}
+            <button
+              onClick={() => {
+                const receiverName = order?.receiverName || "Receiver";
+                const restName = order?.restaurant || order?.restaurantName || "Bhookingo Restaurant";
+                const restPhone = order?.restaurantPhone || "";
+                const restAddr = order?.restaurantAddress || "";
+                const text = `Hi ${receiverName}, your order from ${restName} has been placed! Mode: ${order?.orderType || 'TAKEAWAY'}.${restAddr ? ` Address: ${restAddr}.` : ''}${restPhone ? ` Phone: ${restPhone}.` : ''} Your pickup OTP will follow via SMS once ready.`;
+
+                if (navigator.share) {
+                  navigator.share({ title: `Order from ${restName}`, text, url: window.location.href }).catch(() => {});
+                } else if (navigator.clipboard) {
+                  navigator.clipboard.writeText(text);
+                  toast.success("Order details copied to clipboard!");
+                }
+              }}
+              className="mt-5 px-6 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shadow-lg shadow-orange-500/25 flex items-center gap-2 transition-all active:scale-95"
+            >
+              <Share2 className="w-4 h-4" /> Share Order with {order?.receiverName || "Receiver"}
+            </button>
+          </div>
+        ) : (
+          <MapErrorBoundary>
+            {activeUserCoords && restaurantCoordsResolved ? (
+              <OrderTrackingMap
+                userLocation={activeUserCoords}
+                restaurantLocation={restaurantCoordsResolved}
+                restaurantName={order.restaurant || "Restaurant"}
+                restaurantsAhead={restaurantsAhead}
+                orderType={order.orderType || "TAKEAWAY"}
+                onDirectionsCalculated={handleDirectionsCalculated}
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-neutral-900 p-4">
+                <Loader2 className="w-8 h-8 animate-spin text-orange-600 mb-2" />
+                <p className="text-sm font-extrabold text-gray-500 uppercase tracking-wider">Locating coordinates...</p>
+              </div>
+            )}
+          </MapErrorBoundary>
+        )}
 
         {/* Floating Map Action Buttons & Dashboard Metrics */}
         {activeUserCoords && restaurantCoordsResolved && (

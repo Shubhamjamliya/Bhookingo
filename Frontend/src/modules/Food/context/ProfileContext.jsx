@@ -104,6 +104,32 @@ export function ProfileProvider({ children }) {
     return "takeaway"
   })
 
+  // Receiver details state for "Order for Someone Else"
+  const [receiverDetails, setReceiverDetailsState] = useState(() => {
+    try {
+      const saved = localStorage.getItem("userReceiverDetails")
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
+
+  const setReceiverDetails = (details) => {
+    if (!details) {
+      localStorage.removeItem("userReceiverDetails")
+      setReceiverDetailsState(null)
+    } else {
+      const payload = { ...details, isForSomeoneElse: true }
+      localStorage.setItem("userReceiverDetails", JSON.stringify(payload))
+      setReceiverDetailsState(payload)
+    }
+  }
+
+  const clearReceiverDetails = () => {
+    localStorage.removeItem("userReceiverDetails")
+    setReceiverDetailsState(null)
+  }
+
   // Helper to check if authenticated
   const isAuthenticated = useMemo(() => {
     return localStorage.getItem("user_authenticated") === "true" || !!localStorage.getItem("user_accessToken")
@@ -566,6 +592,9 @@ export function ProfileProvider({ children }) {
       isDishFavorite,
       getDishFavorites,
       isAuthenticated,
+      receiverDetails,
+      setReceiverDetails,
+      clearReceiverDetails,
     }),
     [
       userProfile,
@@ -581,6 +610,9 @@ export function ProfileProvider({ children }) {
       setVegModeOption,
       orderType,
       setOrderType,
+      receiverDetails,
+      setReceiverDetails,
+      clearReceiverDetails,
       addAddress,
       updateAddress,
       deleteAddress,

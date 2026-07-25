@@ -215,6 +215,21 @@ const orderSchema = new mongoose.Schema(
         
         customerName: { type: String, default: '', trim: true },
         customerPhone: { type: String, default: '', trim: true },
+
+        // "Order for Someone Else" fields
+        isForSomeoneElse: { type: Boolean, default: false },
+        orderOrigin: { type: String, enum: ['DRIVING', 'RESTAURANT'], default: 'RESTAURANT' },
+        receiverName: { type: String, default: '', trim: true },
+        receiverPhone: { type: String, default: '', trim: true },
+        receiverLat: { type: Number, default: null },
+        receiverLng: { type: Number, default: null },
+        receiverAddressText: { type: String, default: '', trim: true },
+        consentConfirmed: { type: Boolean, default: false },
+        polylineEnabled: { type: Boolean, default: true },
+        receiverOtpSentAt: { type: Date, default: null },
+        receiverNotifiedAt: { type: Date, default: null },
+        receiverCancelledAt: { type: Date, default: null },
+
         pricing: {
             type: pricingSchema,
             required: false

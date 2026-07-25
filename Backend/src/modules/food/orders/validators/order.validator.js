@@ -80,7 +80,15 @@ export function validateCreateOrderDto(body) {
         userLocation: z.object({
             latitude: z.number(),
             longitude: z.number()
-        }).optional()
+        }).optional(),
+        isForSomeoneElse: z.boolean().optional().default(false),
+        orderOrigin: z.enum(['DRIVING', 'RESTAURANT']).optional().default('RESTAURANT'),
+        receiverName: z.string().optional(),
+        receiverPhone: z.string().optional(),
+        receiverLat: z.number().nullable().optional(),
+        receiverLng: z.number().nullable().optional(),
+        receiverAddressText: z.string().optional(),
+        consentConfirmed: z.boolean().optional()
     }).refine(data => {
         if (data.orderType === 'DELIVERY' && !data.address) {
             return false;
@@ -89,6 +97,25 @@ export function validateCreateOrderDto(body) {
     }, {
         message: 'Delivery address is required for delivery orders',
         path: ['address']
+    }).refine(data => {
+        if (data.isForSomeoneElse && data.orderOrigin === 'DRIVING') {
+            return false;
+        }
+        return true;
+    }, {
+        message: 'Order for someone else is not available in Driving mode.',
+        path: ['isForSomeoneElse']
+    }).refine(data => {
+        if (data.isForSomeoneElse) {
+            if (!data.receiverName || !data.receiverName.trim()) return false;
+            const digits = String(data.receiverPhone || '').replace(/\D/g, '');
+            if (digits.length < 10) return false;
+            if (!data.consentConfirmed) return false;
+        }
+        return true;
+    }, {
+        message: 'Valid receiver name, 10-digit mobile number, and consent confirmation are required when ordering for someone else.',
+        path: ['receiverPhone']
     });
     const result = schema.safeParse(body);
     if (!result.success) {

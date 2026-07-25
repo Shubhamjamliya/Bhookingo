@@ -36,6 +36,11 @@ import { calculateOrderPricing } from './order-pricing.service.js';
 
 import { decryptOtp } from '../utils/otpSecurity.js';
 import { sendOrderSms } from '../../../../core/otp/otp.service.js';
+import {
+  sendReceiverOrderPlacedSMS,
+  sendReceiverPickupOtpSMS,
+  sendReceiverCancellationSMS
+} from '../../../../services/sms/sms.service.js';
 import * as paymentService from './order-payment.service.js';
 import * as dispatchService from './dispatch.service.js';
 import {
@@ -200,6 +205,26 @@ export async function createOrder(userId, dto) {
 
 
 
+  const isForSomeoneElse = dto.isForSomeoneElse === true;
+  const orderOrigin = dto.orderOrigin || 'RESTAURANT';
+
+  if (isForSomeoneElse && orderOrigin === 'DRIVING') {
+    throw new ValidationError('Order for someone else is not available in Driving mode');
+  }
+
+  if (isForSomeoneElse) {
+    const maxPerUser = parseInt(process.env.SMS_RECEIVER_MAX_PER_HOUR || '10', 10);
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const distinctReceivers = await FoodOrder.distinct('receiverPhone', {
+      userId: new mongoose.Types.ObjectId(userId),
+      isForSomeoneElse: true,
+      createdAt: { $gte: oneHourAgo }
+    });
+    if (distinctReceivers.length >= maxPerUser && !distinctReceivers.includes(dto.receiverPhone)) {
+      throw new ValidationError('SMS rate limit exceeded for new receiver phone numbers. Please try again later.');
+    }
+  }
+
   const paymentMethod =
     dto.paymentMethod === "card" ? "razorpay" : dto.paymentMethod;
   const isCash = paymentMethod === "cash";
@@ -345,6 +370,17 @@ export async function createOrder(userId, dto) {
     scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
     riderEarning,
     platformProfit,
+
+    isForSomeoneElse,
+    orderOrigin,
+    receiverName: isForSomeoneElse ? dto.receiverName : '',
+    receiverPhone: isForSomeoneElse ? dto.receiverPhone : '',
+    receiverLat: isForSomeoneElse ? dto.receiverLat : null,
+    receiverLng: isForSomeoneElse ? dto.receiverLng : null,
+    receiverAddressText: isForSomeoneElse ? dto.receiverAddressText : '',
+    consentConfirmed: isForSomeoneElse ? dto.consentConfirmed : false,
+    polylineEnabled: !isForSomeoneElse,
+    receiverNotifiedAt: isForSomeoneElse ? new Date() : null,
   });
 
   let razorpayPayload = null;
@@ -392,6 +428,16 @@ export async function createOrder(userId, dto) {
 
   if (paymentMethod === "razorpay" && payment?.razorpay?.orderId) {
     // Audit can still happen here or via FinanceService events
+  }
+
+  if (isForSomeoneElse && dto.receiverPhone) {
+    sendReceiverOrderPlacedSMS({
+      phone: dto.receiverPhone,
+      receiverName: dto.receiverName,
+      restaurantName: restaurant.restaurantName,
+      restaurantAddress: restaurant.addressLine1 || restaurant.city || '',
+      mapsLink: dto.receiverAddressText || ''
+    }).catch(err => logger.error('[SMS] Failed to send order placed SMS to receiver:', err));
   }
 
   // Realtime + push notifications.
@@ -712,6 +758,21 @@ export async function cancelOrder(orderId, userId, reason, refundDestination = "
     to: "cancelled_by_user",
     note: reason || "",
   });
+
+  if (order.isForSomeoneElse && order.receiverPhone && !order.receiverCancelledAt) {
+    try {
+      FoodRestaurant.findById(order.restaurantId).select('restaurantName').lean().then(restDoc => {
+        sendReceiverCancellationSMS({
+          phone: order.receiverPhone,
+          receiverName: order.receiverName,
+          restaurantName: restDoc?.restaurantName || 'Bhookingo Partner'
+        }).catch(e => logger.warn(`Failed receiver cancel SMS: ${e.message}`));
+      }).catch(e => logger.warn(`Failed to fetch restaurant for receiver cancel SMS: ${e.message}`));
+      order.receiverCancelledAt = new Date();
+    } catch (e) {
+      logger.warn(`Failed receiver cancellation SMS in cancelOrder: ${e.message}`);
+    }
+  }
 
   const paymentMethod = String(order.payment?.method || "cash").toLowerCase();
   const paymentStatus = String(order.payment?.status || "cod_pending").toLowerCase();
@@ -1128,6 +1189,43 @@ export async function updateOrderStatusRestaurant(
       }
     } catch (err) {
       logger.warn(`Failed to send order ready SMS: ${err.message}`);
+    }
+  }
+
+  // Receiver SMS Notifications for "Order for someone else"
+  if (order.isForSomeoneElse && order.receiverPhone) {
+    try {
+      const restDoc = await FoodRestaurant.findById(order.restaurantId).select('restaurantName primaryContactNumber location addressLine1 city').lean();
+      const restName = restDoc?.restaurantName || 'Bhookingo Partner';
+      const restPhone = restDoc?.primaryContactNumber || '';
+      const restAddr = restDoc?.addressLine1 || restDoc?.city || '';
+
+      if (['ready_for_pickup', 'completed'].includes(orderStatus) && !order.receiverOtpSentAt) {
+        let otpCode = '1234';
+        if (order.pickupOtp?.hash) {
+          otpCode = decryptOtp(order.pickupOtp.hash) || '1234';
+        }
+        await sendReceiverPickupOtpSMS({
+          phone: order.receiverPhone,
+          receiverName: order.receiverName,
+          otp: otpCode,
+          restaurantName: restName,
+          restaurantPhone: restPhone,
+          mapsLink: restAddr
+        });
+        order.receiverOtpSentAt = new Date();
+        await order.save();
+      } else if (String(orderStatus).includes('cancel') && !order.receiverCancelledAt) {
+        await sendReceiverCancellationSMS({
+          phone: order.receiverPhone,
+          receiverName: order.receiverName,
+          restaurantName: restName
+        });
+        order.receiverCancelledAt = new Date();
+        await order.save();
+      }
+    } catch (rxErr) {
+      logger.warn(`Failed to send receiver SMS on status update: ${rxErr.message}`);
     }
   }
 

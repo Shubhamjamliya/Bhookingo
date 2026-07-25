@@ -207,8 +207,9 @@ export default function OrderDetails() {
             address: fullAddress,
             orderType: order.orderType || "DELIVERY",
             paymentMethod: order.payment?.method || "cash",
-            paymentStatus: order.payment?.status || "cod_pending",
-            pickupOtp: order.pickupOtp || null,
+            isForSomeoneElse: Boolean(order.isForSomeoneElse),
+            receiverName: order.receiverName || '',
+            receiverPhone: order.receiverPhone || '',
             customer: {
               name: customerName,
               orderCount: order.userId?.orderCount || 1,
@@ -1101,6 +1102,30 @@ export default function OrderDetails() {
               )}
             </AnimatePresence>
           </>
+        )}
+
+        {/* Ordered For Someone Else Banner */}
+        {orderData.isForSomeoneElse && (
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider">
+                ORDERED FOR SOMEONE ELSE
+              </span>
+            </div>
+            <p className="text-sm font-bold text-gray-900">
+              Ordered for: {orderData.receiverName || "Receiver"} — {orderData.receiverPhone}
+            </p>
+            {orderData.receiverPhone && (
+              <div className="mt-2">
+                <a
+                  href={`tel:${orderData.receiverPhone}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-200/80 hover:bg-amber-300 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  📞 Call Receiver: {orderData.receiverPhone}
+                </a>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Customer Details Section */}

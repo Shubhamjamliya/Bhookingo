@@ -22,8 +22,8 @@ const sendSmsViaIndiaHub = async (phone, otp) => {
         const msisdn = digits.startsWith('91') ? digits : `91${digits}`;
 
         // EXACT DLT TEMPLATE provided by user:
-        // "Welcome to the ##var## powered by SMSINDIAHUB. Your OTP for registration is ##var##"
-        const message = `Welcome to the Bhookingo. Your OTP for registration is ${otp}`;
+        // "Welcome to the ##var## powered by Appzeto.Your OTP for registration is ##var##.BGADEC"
+        const message = `Welcome to the Bhookingo powered by Appzeto.Your OTP for registration is ${otp}.BGADEC`;
 
         // SMS India Hub HTTP GET API — query param names are case-sensitive per SOP
         const url = new URL('http://cloud.smsindiahub.in/vendorsms/pushsms.aspx');
@@ -39,8 +39,13 @@ const sendSmsViaIndiaHub = async (phone, otp) => {
         if (config.smsDltTemplateId) {
             url.searchParams.append('DLT_TE_ID', config.smsDltTemplateId);
         }
+        if (config.smsPeId) {
+            url.searchParams.append('entityid', config.smsPeId);
+        }
 
-        logger.info(`[SMS] Sending OTP to ${msisdn} via SMS India Hub...`);
+        logger.info(`[SMS] Sending OTP to ${msisdn} via official SMS India Hub...`);
+        // eslint-disable-next-line no-console
+        console.log(`📱 [SMS INDIA HUB] Sending OTP ${otp} to ${msisdn} via official SMS India Hub...`);
         const response = await fetch(url.toString());
         const resultText = await response.text();
         logger.info(`[SMS] Raw response for ${msisdn}: ${resultText}`);

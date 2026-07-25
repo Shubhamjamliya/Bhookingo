@@ -23,6 +23,9 @@ async function sendRawSMS(phone, message, templateId = null) {
     if (finalTemplateId) {
       url.searchParams.append('DLT_TE_ID', finalTemplateId);
     }
+    if (config.smsPeId) {
+      url.searchParams.append('entityid', config.smsPeId);
+    }
 
     logger.info(`[ReceiverSMS] Sending message to ${msisdn}...`);
     const response = await fetch(url.toString());

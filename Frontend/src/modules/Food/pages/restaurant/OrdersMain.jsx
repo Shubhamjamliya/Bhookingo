@@ -3612,6 +3612,9 @@ function OrderCard({
   isMarkingReady = false,
   scheduledAt = null,
   restaurantNote = null,
+  isForSomeoneElse = false,
+  receiverName = null,
+  receiverPhone = null,
 }) {
   const normalizedStatus = String(status || "").toLowerCase();
   const isReady = normalizedStatus === "ready";
@@ -3708,6 +3711,19 @@ function OrderCard({
               <p className="text-[9px] text-blue-700 font-bold line-clamp-1 italic">
                 Note: {restaurantNote}
               </p>
+            </div>
+          )}
+
+          {isForSomeoneElse && (
+            <div className="mb-2 px-2 py-1 bg-amber-50 border border-amber-200 rounded-md flex items-center justify-between">
+              <span className="text-[9px] text-amber-900 font-bold">
+                Ordered for: {receiverName || "Receiver"} ({receiverPhone})
+              </span>
+              {receiverPhone && (
+                <a href={`tel:${receiverPhone}`} onClick={(e) => e.stopPropagation()} className="text-[9px] font-black text-amber-700 underline">
+                  📞 Call
+                </a>
+              )}
             </div>
           )}
 
@@ -3834,6 +3850,9 @@ function PreparingOrders({
               totalAmount: order.pricing?.total || order.totalAmount || order.total || order.amount || 0,
               scheduledAt: order.scheduledAt || null,
               restaurantNote: order.restaurantNote || null,
+              isForSomeoneElse: Boolean(order.isForSomeoneElse),
+              receiverName: order.receiverName || null,
+              receiverPhone: order.receiverPhone || null,
             };
           });
 
@@ -4078,7 +4097,9 @@ function PreparingOrders({
                 photoUrl={order.photoUrl}
                 photoAlt={order.photoAlt}
                 paymentMethod={order.paymentMethod}
-                
+                isForSomeoneElse={order.isForSomeoneElse}
+                receiverName={order.receiverName}
+                receiverPhone={order.receiverPhone}
 
                 onSelect={onSelectOrder}
                 onCancel={onCancel}

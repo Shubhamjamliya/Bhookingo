@@ -281,6 +281,13 @@ const transformOrderForTracking = (apiOrder, previousOrder = null, explicitResta
     restaurantRating: apiOrder?.ratings?.restaurant?.rating || apiOrder?.restaurantRating || previousOrder?.restaurantRating || null,
     orderType: apiOrder?.orderType || previousOrder?.orderType || "DELIVERY",
     pickupOtp: apiOrder?.pickupOtp || previousOrder?.pickupOtp || null,
+    isForSomeoneElse: Boolean(apiOrder?.isForSomeoneElse ?? previousOrder?.isForSomeoneElse ?? false),
+    polylineEnabled: apiOrder?.polylineEnabled !== undefined ? apiOrder.polylineEnabled : (previousOrder?.polylineEnabled !== undefined ? previousOrder.polylineEnabled : !Boolean(apiOrder?.isForSomeoneElse ?? previousOrder?.isForSomeoneElse ?? false)),
+    receiverName: apiOrder?.receiverName || previousOrder?.receiverName || '',
+    receiverPhone: apiOrder?.receiverPhone || previousOrder?.receiverPhone || '',
+    receiverLat: apiOrder?.receiverLat || previousOrder?.receiverLat || null,
+    receiverLng: apiOrder?.receiverLng || previousOrder?.receiverLng || null,
+    receiverAddressText: apiOrder?.receiverAddressText || previousOrder?.receiverAddressText || '',
   }
 }
 
@@ -1496,7 +1503,7 @@ export default function OrderTracking() {
         )}
 
         {/* Floating Map Action Buttons & Dashboard Metrics */}
-        {activeUserCoords && restaurantCoordsResolved && (
+        {activeUserCoords && restaurantCoordsResolved && !order?.isForSomeoneElse && order?.polylineEnabled !== false && (
           <div className="absolute bottom-32 left-4 right-4 z-20 flex flex-col gap-3">
             {/* Real-time Dashboard metrics floating on the map */}
             <div className="bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-3 border border-gray-100/60 dark:border-neutral-800/50 shadow-xl flex items-center justify-between text-left">
@@ -1781,7 +1788,18 @@ export default function OrderTracking() {
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">Payment status</span>
                 <span className="font-bold text-green-600 uppercase text-[10px] tracking-wider">
-                  {order.payment?.status === "paid" || order.paymentMethod === "wallet" ? "Paid" : "Pending / COD"}
+                  {(() => {
+                    const pStatus = String(order.payment?.status || order.paymentStatus || "").toLowerCase()
+                    const pMethod = String(order.payment?.method || order.paymentMethod || "").toLowerCase()
+                    if (pStatus === "failed") return "Payment Failed"
+                    if (pStatus === "paid" || pStatus === "completed" || pMethod === "wallet") {
+                      if (pMethod === "wallet") return "Paid via Wallet"
+                      if (pMethod === "razorpay" || pMethod === "online") return "Paid Online"
+                      return "Paid"
+                    }
+                    if (pMethod === "razorpay" || pMethod === "online") return "Paid Online"
+                    return "COD (Pay on Handover)"
+                  })()}
                 </span>
               </div>
               <div className="flex justify-between items-center">

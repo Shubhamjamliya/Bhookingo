@@ -4,6 +4,9 @@ import { logger } from '../../../../utils/logger.js';
 export async function resolveMapsLinkController(req, res, next) {
   try {
     const { link } = req.body || {};
+    console.log('==================================================');
+    console.log('[USER MAP LINK ENTERED]:', link);
+    console.log('==================================================');
     logger.info('[ResolveMapsLinkAPI] [REQUEST] Incoming resolve-maps-link request:', { link, body: req.body });
 
     if (!link || typeof link !== 'string') {

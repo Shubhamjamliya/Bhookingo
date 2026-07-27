@@ -136,7 +136,7 @@ export async function resolveGoogleMapsLink(link) {
           try { rawName = decodeURIComponent(rawName); } catch {}
           rawName = rawName.trim();
 
-          if (rawName && rawName.length > 1 && !rawName.match(/^-?\d+\.\d+$/)) {
+          if (rawName && rawName.length > 2 && !rawName.match(/^[a-zA-Z0-9]{10,25}$/) && !rawName.match(/^-?\d+\.\d+/)) {
             logger.info('[LocationService] Resolving place query via Google Geocoding API:', rawName);
             try {
               const geoRes = await axios.get(
@@ -254,58 +254,129 @@ export async function resolveGoogleMapsLink(link) {
   }
 }
 
+function extractRedirectFromHtml(html, baseUrl) {
+  if (!html || typeof html !== 'string') return null;
+
+  // 1. Meta refresh tag
+  const metaRefresh = html.match(/<meta[^>]*http-equiv=["']?refresh["']?[^>]*content=["']?[^"'>]*url=([^"'>\s]+)/i);
+  if (metaRefresh && metaRefresh[1]) {
+    try {
+      const target = metaRefresh[1].replace(/^['"]|['"]$/g, '');
+      return new URL(target, baseUrl).toString();
+    } catch (e) {}
+  }
+
+  // 2. OpenGraph / Twitter meta tag
+  const ogUrl = html.match(/<meta[^>]*(?:property|name)=["'](?:og:url|twitter:url)["'][^>]*content=["']([^"']+)["']/i);
+  if (ogUrl && ogUrl[1] && ogUrl[1].includes('google.')) {
+    try {
+      return new URL(ogUrl[1], baseUrl).toString();
+    } catch (e) {}
+  }
+
+  // 3. Canonical link tag
+  const canonical = html.match(/<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i);
+  if (canonical && canonical[1] && canonical[1].includes('google.')) {
+    try {
+      return new URL(canonical[1], baseUrl).toString();
+    } catch (e) {}
+  }
+
+  // 4. JS location redirect
+  const jsLoc = html.match(/(?:window\.)?location(?:\.href|\.replace)?\s*=\s*['"](https?:\/\/[^'"]+)['"]/i);
+  if (jsLoc && jsLoc[1] && jsLoc[1].includes('google.')) {
+    try {
+      return new URL(jsLoc[1], baseUrl).toString();
+    } catch (e) {}
+  }
+
+  // 5. Embedded Google Maps link tag
+  const aHref = html.match(/href=["'](https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/[^\s"'<>]+)["']/i);
+  if (aHref && aHref[1]) {
+    try {
+      return new URL(aHref[1], baseUrl).toString();
+    } catch (e) {}
+  }
+
+  return null;
+}
+
 async function expandUrlHistory(initialUrl) {
-  const history = [initialUrl];
+  let currentUrl = initialUrl;
+  const history = [currentUrl];
   const visited = new Set([initialUrl]);
 
-  let currentUrl = initialUrl;
-  try {
-    const parsed = new URL(initialUrl);
-    ['g_st', 'g_ep', 'g_abs', 'utm_source', 'utm_medium', 'utm_campaign'].forEach(param => {
-      parsed.searchParams.delete(param);
-    });
-    currentUrl = parsed.toString();
-    if (!visited.has(currentUrl)) {
-      visited.add(currentUrl);
-      history.push(currentUrl);
-    }
-  } catch (e) {}
-
-  try {
-    const res = await axios.get(currentUrl, {
-      maxRedirects: 10,
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-      }
-    });
-
-    const finalUrl = res.request?.res?.responseUrl || res.config?.url;
-    if (finalUrl && !visited.has(finalUrl)) {
-      visited.add(finalUrl);
-      history.push(finalUrl);
-    }
-
-    if (typeof res.data === 'string') {
-      const matches = res.data.matchAll(/(https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/[^\s"'<>]+)/gi);
-      for (const m of matches) {
-        if (m[1] && !visited.has(m[1])) {
-          visited.add(m[1]);
-          history.push(m[1]);
+  for (let i = 0; i < 10; i++) {
+    let urlToFetch = currentUrl;
+    try {
+      const parsed = new URL(currentUrl);
+      let changed = false;
+      ['g_st', 'g_ep', 'g_abs', 'utm_source', 'utm_medium', 'utm_campaign'].forEach(param => {
+        if (parsed.searchParams.has(param)) {
+          parsed.searchParams.delete(param);
+          changed = true;
+        }
+      });
+      if (changed) {
+        urlToFetch = parsed.toString();
+        if (!visited.has(urlToFetch)) {
+          visited.add(urlToFetch);
+          history.push(urlToFetch);
         }
       }
-    }
-  } catch (err) {
-    const finalUrl = err.response?.request?.res?.responseUrl || err.config?.url;
-    if (finalUrl && !visited.has(finalUrl)) {
-      visited.add(finalUrl);
-      history.push(finalUrl);
-    }
-    const redirectUrl = err.response?.headers?.location;
-    if (redirectUrl && !visited.has(redirectUrl)) {
-      visited.add(redirectUrl);
-      history.push(redirectUrl);
+    } catch (e) {}
+
+    try {
+      // Step A: Request without desktop user-agent to force 301/302 Location header from shortlinks
+      const res = await axios.get(urlToFetch, {
+        maxRedirects: 0,
+        timeout: 8000,
+        validateStatus: (status) => status >= 200 && status < 400,
+        headers: {
+          'User-Agent': 'curl/7.88.1',
+          'Accept': '*/*'
+        }
+      });
+
+      let nextUrl = res.headers?.location;
+      if (!nextUrl && typeof res.data === 'string') {
+        nextUrl = extractRedirectFromHtml(res.data, urlToFetch);
+      }
+
+      if (nextUrl) {
+        const resolvedNextUrl = new URL(nextUrl, currentUrl).toString();
+        if (!visited.has(resolvedNextUrl)) {
+          visited.add(resolvedNextUrl);
+          history.push(resolvedNextUrl);
+          currentUrl = resolvedNextUrl;
+        } else {
+          break;
+        }
+      } else {
+        break;
+      }
+    } catch (err) {
+      let redirectUrl = err.response?.headers?.location;
+      if (!redirectUrl && typeof err.response?.data === 'string') {
+        redirectUrl = extractRedirectFromHtml(err.response.data, urlToFetch);
+      }
+
+      if (redirectUrl) {
+        try {
+          const nextUrl = new URL(redirectUrl, currentUrl).toString();
+          if (!visited.has(nextUrl)) {
+            visited.add(nextUrl);
+            history.push(nextUrl);
+            currentUrl = nextUrl;
+          } else {
+            break;
+          }
+        } catch (e) {
+          break;
+        }
+      } else {
+        break;
+      }
     }
   }
 

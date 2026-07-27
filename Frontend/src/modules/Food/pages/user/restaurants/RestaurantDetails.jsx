@@ -106,20 +106,7 @@ function RestaurantDetailsContent() {
   const targetDishId = useMemo(() => String(searchParams.get('dish') || '').trim(), [searchParams])
   const { addToCart, updateQuantity, removeFromCart, getCartItem, cart, itemCount } = useCart()
   const { vegMode, vegModeOption, addDishFavorite, removeDishFavorite, isDishFavorite, getDishFavorites, getFavorites, addFavorite, removeFavorite, isFavorite, receiverDetails } = useProfile()
-  const { location: userLocation } = useLocation() // Get user's current location
-
-  const activeLocation = useMemo(() => {
-    if (receiverDetails?.isForSomeoneElse && Number.isFinite(Number(receiverDetails?.receiverLat)) && Number.isFinite(Number(receiverDetails?.receiverLng))) {
-      return {
-        latitude: Number(receiverDetails.receiverLat),
-        longitude: Number(receiverDetails.receiverLng),
-        address: receiverDetails.receiverAddressText || "",
-        formattedAddress: receiverDetails.receiverAddressText || "",
-        isReceiverLocation: true
-      }
-    }
-    return userLocation
-  }, [receiverDetails, userLocation])
+  const { activeLocation } = useLocation()
 
   const { zoneId, zone, loading: loadingZone, isOutOfService } = useZone(activeLocation) // Get user's zone for zone-based filtering
   const [currentImageIndex, setCurrentImageIndex] = useState(0)

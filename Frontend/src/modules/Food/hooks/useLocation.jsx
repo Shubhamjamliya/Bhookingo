@@ -215,26 +215,19 @@ const TEMPORARY_DEFAULT_INDORE_LOCATION = {
 
 const getActiveStoredLocation = () => {
   try {
-    const savedReceiver = localStorage.getItem("userReceiverDetails")
-    if (savedReceiver) {
-      const parsed = JSON.parse(savedReceiver)
-      if (parsed?.isForSomeoneElse && Number.isFinite(Number(parsed.receiverLat)) && Number.isFinite(Number(parsed.receiverLng))) {
-        return {
-          latitude: Number(parsed.receiverLat),
-          longitude: Number(parsed.receiverLng),
-          city: parsed.city || "Destination City",
-          address: parsed.receiverAddressText || "",
-          formattedAddress: parsed.receiverAddressText || "",
-          isReceiverLocation: true
-        }
-      }
-    }
     const storedUser = localStorage.getItem("userLocation")
     if (storedUser) {
-      return JSON.parse(storedUser)
+      const parsed = JSON.parse(storedUser)
+      return {
+        ...parsed,
+        source: parsed.source || (localStorage.getItem("manual_location_update") === "true" ? "MANUAL" : "DEVICE")
+      }
     }
   } catch (e) {}
-  return TEMPORARY_DEFAULT_INDORE_LOCATION
+  return {
+    ...TEMPORARY_DEFAULT_INDORE_LOCATION,
+    source: "MANUAL"
+  }
 }
 
 export function useLocation() {
@@ -1980,8 +1973,35 @@ export function useLocation() {
     return location
   }, [location, defaultSavedAddressLocation, addressMode, defaultSavedAddress])
 
+  const activeLocation = useMemo(() => {
+    try {
+      const savedReceiver = localStorage.getItem("userReceiverDetails")
+      if (savedReceiver) {
+        const parsed = JSON.parse(savedReceiver)
+        if (parsed?.isForSomeoneElse && Number.isFinite(Number(parsed.receiverLat)) && Number.isFinite(Number(parsed.receiverLng))) {
+          return {
+            latitude: Number(parsed.receiverLat),
+            longitude: Number(parsed.receiverLng),
+            city: parsed.city || "Destination City",
+            address: parsed.receiverAddressText || "",
+            formattedAddress: parsed.receiverAddressText || "",
+            source: parsed.sourceType || "RECEIVER",
+            isReceiverLocation: true
+          }
+        }
+      }
+    } catch (e) {}
+
+    return effectiveLocation ? {
+      ...effectiveLocation,
+      source: effectiveLocation.source || (localStorage.getItem("manual_location_update") === "true" ? "MANUAL" : "DEVICE")
+    } : null
+  }, [effectiveLocation])
+
   return {
-    location: effectiveLocation,
+    location: activeLocation,
+    activeLocation,
+    userLocation: effectiveLocation,
     geoLocation: location,
     effectiveLocation,
     loading,

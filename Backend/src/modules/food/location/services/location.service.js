@@ -109,8 +109,15 @@ export async function resolveGoogleMapsLink(link) {
       if (htmlBody) {
         const matchAppInit = htmlBody.match(/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/);
         if (matchAppInit) {
-          lat = parseFloat(matchAppInit[1]);
-          lng = parseFloat(matchAppInit[2]);
+          const parsedLat = parseFloat(matchAppInit[1]);
+          const parsedLng = parseFloat(matchAppInit[2]);
+          // Check if coordinates match default Google Maps India server fallback (Mumbai ~19.076, 72.877)
+          const isMumbaiDefault = (parsedLat >= 18.9 && parsedLat <= 19.3 && parsedLng >= 72.7 && parsedLng <= 73.1);
+          const linkMentionsMumbai = link.toLowerCase().includes('mumbai') || link.toLowerCase().includes('kurla');
+          if (!isMumbaiDefault || linkMentionsMumbai) {
+            lat = parsedLat;
+            lng = parsedLng;
+          }
         }
       }
     }

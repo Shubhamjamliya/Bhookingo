@@ -197,9 +197,7 @@ export default function AddressSelectorPage() {
     }
 
     try {
-      localStorage.setItem("userLocation", JSON.stringify(finalLoc))
       sessionStorage.setItem("user_selected_location", JSON.stringify(finalLoc))
-      sessionStorage.setItem("manual_location_update", "true")
       window.dispatchEvent(new CustomEvent("userLocationUpdated"))
     } catch (e) {
       console.error("Failed to save receiver location to storage:", e)

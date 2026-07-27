@@ -240,10 +240,66 @@ export async function resolveGoogleMapsLink(link) {
   }
 }
 
+function extractRedirectUrlFromHtml(html, baseUrl) {
+  if (!html || typeof html !== 'string') return null;
+
+  // 1. Meta refresh tag
+  const metaRefresh = html.match(/<meta[^>]*http-equiv=["']?refresh["']?[^>]*content=["']?[^"'>]*url=([^"'>\s]+)/i);
+  if (metaRefresh && metaRefresh[1]) {
+    try {
+      const cleanUrl = metaRefresh[1].replace(/^['"]|['"]$/g, '');
+      return new URL(cleanUrl, baseUrl).toString();
+    } catch (e) {}
+  }
+
+  // 2. OpenGraph / Twitter meta tags
+  const ogUrl = html.match(/<meta[^>]*(?:property|name)=["'](?:og:url|twitter:url)["'][^>]*content=["']([^"']+)["']/i);
+  if (ogUrl && ogUrl[1] && ogUrl[1].includes('google.')) {
+    try {
+      return new URL(ogUrl[1], baseUrl).toString();
+    } catch (e) {}
+  }
+
+  // 3. Canonical link tag
+  const canonical = html.match(/<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i);
+  if (canonical && canonical[1] && canonical[1].includes('google.')) {
+    try {
+      return new URL(canonical[1], baseUrl).toString();
+    } catch (e) {}
+  }
+
+  // 4. JS location redirect
+  const jsLoc = html.match(/(?:window\.)?location(?:\.href|\.replace)?\s*=\s*['"](https?:\/\/[^'"]+)['"]/i);
+  if (jsLoc && jsLoc[1] && jsLoc[1].includes('google.')) {
+    try {
+      return new URL(jsLoc[1], baseUrl).toString();
+    } catch (e) {}
+  }
+
+  // 5. Embedded google maps link tag
+  const aHref = html.match(/href=["'](https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/[^"']+)["']/i);
+  if (aHref && aHref[1]) {
+    try {
+      return new URL(aHref[1], baseUrl).toString();
+    } catch (e) {}
+  }
+
+  // 6. Direct Google Maps URL anywhere in the HTML string
+  const directMapsUrl = html.match(/(https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/(?:place|search|dir|@)[^\s"'\\]+)/i);
+  if (directMapsUrl && directMapsUrl[1]) {
+    try {
+      return new URL(directMapsUrl[1], baseUrl).toString();
+    } catch (e) {}
+  }
+
+  return null;
+}
+
 async function expandUrlAndGetHistory(initialUrl) {
   let currentUrl = initialUrl;
   const history = [currentUrl];
   let htmlBody = '';
+  const visited = new Set([initialUrl]);
 
   for (let i = 0; i < 10; i++) {
     // Strip mobile tracking parameters like g_st, g_ep, g_abs
@@ -259,7 +315,10 @@ async function expandUrlAndGetHistory(initialUrl) {
       });
       if (changed) {
         urlToFetch = parsed.toString();
-        history.push(urlToFetch);
+        if (!visited.has(urlToFetch)) {
+          visited.add(urlToFetch);
+          history.push(urlToFetch);
+        }
       }
     } catch (e) {}
 
@@ -279,11 +338,20 @@ async function expandUrlAndGetHistory(initialUrl) {
         htmlBody += '\n' + res.data;
       }
 
-      const redirectUrl = res.headers?.location;
+      let redirectUrl = res.headers?.location;
+      if (!redirectUrl && typeof res.data === 'string') {
+        redirectUrl = extractRedirectUrlFromHtml(res.data, urlToFetch);
+      }
+
       if (redirectUrl) {
         const nextUrl = new URL(redirectUrl, currentUrl).toString();
-        history.push(nextUrl);
-        currentUrl = nextUrl;
+        if (!visited.has(nextUrl)) {
+          visited.add(nextUrl);
+          history.push(nextUrl);
+          currentUrl = nextUrl;
+        } else {
+          break;
+        }
       } else {
         break;
       }
@@ -291,12 +359,21 @@ async function expandUrlAndGetHistory(initialUrl) {
       if (typeof err.response?.data === 'string') {
         htmlBody += '\n' + err.response.data;
       }
-      const redirectUrl = err.response?.headers?.location;
+      let redirectUrl = err.response?.headers?.location;
+      if (!redirectUrl && typeof err.response?.data === 'string') {
+        redirectUrl = extractRedirectUrlFromHtml(err.response.data, urlToFetch);
+      }
+
       if (redirectUrl) {
         try {
           const nextUrl = new URL(redirectUrl, currentUrl).toString();
-          history.push(nextUrl);
-          currentUrl = nextUrl;
+          if (!visited.has(nextUrl)) {
+            visited.add(nextUrl);
+            history.push(nextUrl);
+            currentUrl = nextUrl;
+          } else {
+            break;
+          }
         } catch (e) {
           break;
         }

@@ -154,8 +154,8 @@ export async function resolveGoogleMapsLink(link) {
       }
     }
 
-    // Strategy 6: Geocode place name from URL path using Google Geocoding API
-    if ((lat === null || lng === null) && apiKey) {
+    // Strategy 6: Geocode place name from URL path using Google Geocoding API or Nominatim Search
+    if (lat === null || lng === null) {
       for (const urlStr of sourcesToSearch) {
         if (!urlStr) continue;
         const placeMatch = urlStr.match(/\/(?:place|search)\/([^\/?#]+)/i);
@@ -165,23 +165,59 @@ export async function resolveGoogleMapsLink(link) {
           rawName = rawName.trim();
 
           if (rawName && rawName.length > 2 && !rawName.match(/^[a-zA-Z0-9]{10,25}$/) && !rawName.match(/^-?\d+\.\d+/)) {
-            logger.info('[LocationService] [STRATEGY 6] Resolving place query via Google Geocoding API:', rawName);
-            try {
-              const geoRes = await axios.get(
-                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(rawName)}&key=${apiKey}`,
-                { timeout: 5000 }
-              );
-              logger.info('[LocationService] [STRATEGY 6 RESULT] Geocoding API status:', { status: geoRes.data?.status, resultsCount: geoRes.data?.results?.length });
-              if (geoRes.data?.status === 'OK' && geoRes.data?.results?.length > 0) {
-                const first = geoRes.data.results[0];
-                lat = first.geometry.location.lat;
-                lng = first.geometry.location.lng;
-                placeIdFound = first.place_id || placeIdFound;
-                logger.info('[LocationService] [STRATEGY 6 SUCCESS] Coordinates resolved via Google Geocoding API:', { lat, lng, placeName: rawName });
-                break;
+            console.log('==================================================');
+            console.log('[STRATEGY 6 EXTRACTED PLACE QUERY]:', rawName);
+            console.log('==================================================');
+
+            // 6A. Try Google Geocoding API if key available
+            if (apiKey) {
+              try {
+                const geoRes = await axios.get(
+                  `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(rawName)}&key=${apiKey}`,
+                  { timeout: 5000 }
+                );
+                console.log('[STRATEGY 6 GOOGLE GEOCODE RESPONSE]:', { status: geoRes.data?.status, resultsCount: geoRes.data?.results?.length, error_message: geoRes.data?.error_message });
+                if (geoRes.data?.status === 'OK' && geoRes.data?.results?.length > 0) {
+                  const first = geoRes.data.results[0];
+                  lat = first.geometry.location.lat;
+                  lng = first.geometry.location.lng;
+                  placeIdFound = first.place_id || placeIdFound;
+                  logger.info('[LocationService] [STRATEGY 6 SUCCESS] Coordinates resolved via Google Geocoding API:', { lat, lng, placeName: rawName });
+                  break;
+                }
+              } catch (gErr) {
+                logger.warn('[LocationService] Google Geocoding API lookup failed for place query:', gErr.message);
               }
-            } catch (gErr) {
-              logger.warn('[LocationService] Google Geocoding API lookup failed for place query:', gErr.message);
+            }
+
+            // 6B. Fallback: Try Nominatim Search API
+            if (lat === null || lng === null) {
+              try {
+                const nomRes = await axios.get(
+                  `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(rawName)}&format=json&limit=1`,
+                  {
+                    headers: {
+                      'User-Agent': 'BhookingoApp/1.0 (contact@bhookingo.com)',
+                      Accept: 'application/json'
+                    },
+                    timeout: 5000
+                  }
+                );
+                console.log('[STRATEGY 6 NOMINATIM RESPONSE]:', nomRes.data);
+                if (Array.isArray(nomRes.data) && nomRes.data.length > 0) {
+                  const firstNom = nomRes.data[0];
+                  const parsedLat = parseFloat(firstNom.lat);
+                  const parsedLng = parseFloat(firstNom.lon);
+                  if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng)) {
+                    lat = parsedLat;
+                    lng = parsedLng;
+                    logger.info('[LocationService] [STRATEGY 6 SUCCESS] Coordinates resolved via Nominatim Search:', { lat, lng, placeName: rawName });
+                    break;
+                  }
+                }
+              } catch (nomErr) {
+                logger.warn('[LocationService] Nominatim Search API failed for place query:', nomErr.message);
+              }
             }
           }
         }

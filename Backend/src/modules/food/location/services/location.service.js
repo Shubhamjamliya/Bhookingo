@@ -14,7 +14,7 @@ export async function resolveGoogleMapsLink(link) {
   // Extract raw URL if user pasted mobile share text containing URL
   const urlMatch = link.match(/(https?:\/\/[^\s]+)/i);
   const rawUrl = urlMatch ? urlMatch[1] : link.trim();
-  logger.info('[LocationService] Resolving Google Maps link:', { rawInput: link, extractedUrl: rawUrl });
+  logger.info('[LocationService] [STEP 1] Resolving Google Maps link:', { rawInput: link, extractedUrl: rawUrl });
 
   const cached = resolutionCache.get(rawUrl);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
@@ -24,7 +24,7 @@ export async function resolveGoogleMapsLink(link) {
 
   try {
     const history = await expandUrlHistory(rawUrl);
-    logger.info('[LocationService] Expanded URL history:', history);
+    logger.info('[LocationService] [STEP 2] Complete expanded URL history:', history);
 
     const apiKey = config.googleMapsApiKey;
     let lat = null;
@@ -41,10 +41,10 @@ export async function resolveGoogleMapsLink(link) {
     // Strategy 1: Check for explicit Place ID or CID parameters in URLs
     for (const src of sourcesToSearch) {
       if (!src) continue;
-      const placeIdMatch = src.match(/[?&](?:place_id|ftid|cid)=([^&]+)/i);
+      const placeIdMatch = src.match(/[?&](?:place_id|ftid|cid)=([^&]+)/i) || src.match(/!1s(ChIJ[a-zA-Z0-9_-]+)/i);
       if (placeIdMatch && placeIdMatch[1]) {
         placeIdFound = placeIdMatch[1];
-        logger.info('[LocationService] Detected Place ID from URL:', placeIdFound);
+        logger.info('[LocationService] [STRATEGY 1] Detected Place ID from URL:', placeIdFound);
         break;
       }
     }
@@ -58,14 +58,42 @@ export async function resolveGoogleMapsLink(link) {
         if (placeRes.data?.status === 'OK' && placeRes.data?.result?.geometry?.location) {
           lat = placeRes.data.result.geometry.location.lat;
           lng = placeRes.data.result.geometry.location.lng;
-          logger.info('[LocationService] Coordinates resolved via Google Places API (Place ID):', { lat, lng });
+          logger.info('[LocationService] [STRATEGY 1 SUCCESS] Coordinates resolved via Google Places API (Place ID):', { lat, lng });
         }
       } catch (pErr) {
         logger.warn('[LocationService] Google Places API lookup failed:', pErr.message);
       }
     }
 
-    // Strategy 2: Extract explicit @lat,lng coordinates from URL path
+    // Strategy 2: Check for Hex CID (0x...:0x...) in data=!1s0x... or URL query params
+    if ((lat === null || lng === null) && apiKey) {
+      for (const src of sourcesToSearch) {
+        if (!src) continue;
+        const hexCidMatch = src.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/i);
+        if (hexCidMatch && hexCidMatch[1]) {
+          const cidHex = hexCidMatch[1];
+          logger.info('[LocationService] [STRATEGY 2] Detected Hex CID from URL:', cidHex);
+          try {
+            const cidRes = await axios.get(
+              `https://maps.googleapis.com/maps/api/geocode/json?cid=${encodeURIComponent(cidHex)}&key=${apiKey}`,
+              { timeout: 5000 }
+            );
+            if (cidRes.data?.status === 'OK' && cidRes.data?.results?.length > 0) {
+              const first = cidRes.data.results[0];
+              lat = first.geometry.location.lat;
+              lng = first.geometry.location.lng;
+              placeIdFound = placeIdFound || first.place_id || null;
+              logger.info('[LocationService] [STRATEGY 2 SUCCESS] Coordinates resolved via Google Geocoding API (CID):', { lat, lng, cidHex });
+              break;
+            }
+          } catch (cErr) {
+            logger.warn('[LocationService] CID geocode failed:', cErr.message);
+          }
+        }
+      }
+    }
+
+    // Strategy 3: Extract explicit @lat,lng coordinates from URL path
     if (lat === null || lng === null) {
       for (const src of sourcesToSearch) {
         if (!src) continue;
@@ -76,14 +104,14 @@ export async function resolveGoogleMapsLink(link) {
           if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng)) {
             lat = parsedLat;
             lng = parsedLng;
-            logger.info('[LocationService] Coordinates resolved via @lat,lng in URL:', { lat, lng });
+            logger.info('[LocationService] [STRATEGY 3 SUCCESS] Coordinates resolved via @lat,lng in URL:', { lat, lng });
             break;
           }
         }
       }
     }
 
-    // Strategy 3: Extract !3d<lat>!4d<lng> or !4d<lng>!3d<lat> from Google Maps URL parameters
+    // Strategy 4: Extract !3d<lat>!4d<lng> or !4d<lng>!3d<lat> from Google Maps URL parameters
     if (lat === null || lng === null) {
       for (const src of sourcesToSearch) {
         if (!src) continue;
@@ -92,7 +120,7 @@ export async function resolveGoogleMapsLink(link) {
           lat = parseFloat(match3d4d[1]);
           lng = parseFloat(match3d4d[2]);
           if (Number.isFinite(lat) && Number.isFinite(lng)) {
-            logger.info('[LocationService] Coordinates resolved via !3d!4d in URL:', { lat, lng });
+            logger.info('[LocationService] [STRATEGY 4 SUCCESS] Coordinates resolved via !3d!4d in URL:', { lat, lng });
             break;
           }
         }
@@ -101,14 +129,14 @@ export async function resolveGoogleMapsLink(link) {
           lat = parseFloat(match4d3d[2]);
           lng = parseFloat(match4d3d[1]);
           if (Number.isFinite(lat) && Number.isFinite(lng)) {
-            logger.info('[LocationService] Coordinates resolved via !4d!3d in URL:', { lat, lng });
+            logger.info('[LocationService] [STRATEGY 4 SUCCESS] Coordinates resolved via !4d!3d in URL:', { lat, lng });
             break;
           }
         }
       }
     }
 
-    // Strategy 4: Extract ?q=lat,lng or ?ll=lat,lng or ?query=lat,lng from URL
+    // Strategy 5: Extract ?q=lat,lng or ?ll=lat,lng or ?query=lat,lng from URL
     if (lat === null || lng === null) {
       for (const src of sourcesToSearch) {
         if (!src) continue;
@@ -119,14 +147,14 @@ export async function resolveGoogleMapsLink(link) {
           if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng)) {
             lat = parsedLat;
             lng = parsedLng;
-            logger.info('[LocationService] Coordinates resolved via ?q=lat,lng in URL:', { lat, lng });
+            logger.info('[LocationService] [STRATEGY 5 SUCCESS] Coordinates resolved via ?q=lat,lng in URL:', { lat, lng });
             break;
           }
         }
       }
     }
 
-    // Strategy 5: Geocode place name from URL path using Google Geocoding API
+    // Strategy 6: Geocode place name from URL path using Google Geocoding API
     if ((lat === null || lng === null) && apiKey) {
       for (const urlStr of sourcesToSearch) {
         if (!urlStr) continue;
@@ -137,18 +165,19 @@ export async function resolveGoogleMapsLink(link) {
           rawName = rawName.trim();
 
           if (rawName && rawName.length > 2 && !rawName.match(/^[a-zA-Z0-9]{10,25}$/) && !rawName.match(/^-?\d+\.\d+/)) {
-            logger.info('[LocationService] Resolving place query via Google Geocoding API:', rawName);
+            logger.info('[LocationService] [STRATEGY 6] Resolving place query via Google Geocoding API:', rawName);
             try {
               const geoRes = await axios.get(
                 `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(rawName)}&key=${apiKey}`,
                 { timeout: 5000 }
               );
+              logger.info('[LocationService] [STRATEGY 6 RESULT] Geocoding API status:', { status: geoRes.data?.status, resultsCount: geoRes.data?.results?.length });
               if (geoRes.data?.status === 'OK' && geoRes.data?.results?.length > 0) {
                 const first = geoRes.data.results[0];
                 lat = first.geometry.location.lat;
                 lng = first.geometry.location.lng;
                 placeIdFound = first.place_id || placeIdFound;
-                logger.info('[LocationService] Coordinates resolved via Google Geocoding API (Place query):', { lat, lng, placeName: rawName });
+                logger.info('[LocationService] [STRATEGY 6 SUCCESS] Coordinates resolved via Google Geocoding API:', { lat, lng, placeName: rawName });
                 break;
               }
             } catch (gErr) {
@@ -343,6 +372,8 @@ async function expandUrlHistory(initialUrl) {
         nextUrl = extractRedirectFromHtml(res.data, urlToFetch);
       }
 
+      logger.info(`[LocationService] [REDIRECT HOP ${i + 1}] Status: ${res.status}, Location: ${res.headers?.location || 'none'}, Extracted: ${nextUrl || 'none'}`);
+
       if (nextUrl) {
         const resolvedNextUrl = new URL(nextUrl, currentUrl).toString();
         if (!visited.has(resolvedNextUrl)) {
@@ -360,6 +391,8 @@ async function expandUrlHistory(initialUrl) {
       if (!redirectUrl && typeof err.response?.data === 'string') {
         redirectUrl = extractRedirectFromHtml(err.response.data, urlToFetch);
       }
+
+      logger.info(`[LocationService] [REDIRECT HOP ${i + 1} ERROR] Status: ${err.response?.status || 'network_error'}, Location: ${redirectUrl || 'none'}`);
 
       if (redirectUrl) {
         try {

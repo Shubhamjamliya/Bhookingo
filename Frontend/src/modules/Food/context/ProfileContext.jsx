@@ -454,7 +454,7 @@ export function ProfileProvider({ children }) {
   }, [])
 
   const getDefaultAddress = useCallback(() => {
-    return addresses.find((addr) => addr.isDefault) || addresses[0] || null
+    return addresses.find((addr) => addr.isDefault && !addr.isForReceiver && !addr.isReceiver) || addresses.find((addr) => !addr.isForReceiver && !addr.isReceiver) || null
   }, [addresses])
 
   // Payment method functions - memoized with useCallback

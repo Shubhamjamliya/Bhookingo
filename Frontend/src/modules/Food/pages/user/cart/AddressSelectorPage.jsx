@@ -379,11 +379,13 @@ export default function AddressSelectorPage() {
   const handleUseCurrentLocation = async () => {
     try {
       setIsFetchingLocationState(true)
+      clearReceiverDetails()
       
-      // Fetch fresh location via requestLocation (which now dispatches userLocationUpdated on success)
+      // Fetch fresh location via requestLocation
       const loc = await requestLocation()
       
       if (loc) {
+        localStorage.setItem("userLocation", JSON.stringify(loc))
         sessionStorage.setItem("manual_location_update", "true")
         window.dispatchEvent(new CustomEvent("userLocationUpdated"))
         // Go back instantly after successful location lock!

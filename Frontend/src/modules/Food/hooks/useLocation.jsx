@@ -1835,6 +1835,8 @@ export function useLocation() {
 
     try {
       try {
+        localStorage.removeItem("userReceiverDetails")
+        sessionStorage.setItem("manual_location_update", "true")
       } catch {}
 
       // Clear cached location to force fresh fetch
@@ -1944,6 +1946,8 @@ export function useLocation() {
 
     if (
       defaultSavedAddressLocation &&
+      !defaultSavedAddress?.isForReceiver &&
+      !defaultSavedAddress?.isReceiver &&
       Number.isFinite(defaultSavedAddressLocation.latitude) &&
       Number.isFinite(defaultSavedAddressLocation.longitude)
     ) {

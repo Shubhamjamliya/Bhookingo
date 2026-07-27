@@ -58,9 +58,9 @@ export default function GoogleLoginButton() {
         </div>
       )}
 
-      <div className={`w-full flex justify-center [&>div]:!w-full [&>div>iframe]:!w-full [&_iframe]:!w-full ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
+      <div className={`w-full flex justify-center rounded-full overflow-hidden [&>div]:!w-full [&>div]:!rounded-full [&>div]:!overflow-hidden [&>div>iframe]:!w-full [&_iframe]:!w-full [&_iframe]:!rounded-full ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
         {isLoading ? (
-          <div className="flex items-center justify-center gap-3 w-full h-12 md:h-14 bg-surface dark:bg-[#2a2a2a] border border-border dark:border-gray-700 rounded-lg text-text-secondary">
+          <div className="flex items-center justify-center gap-3 w-full h-12 md:h-14 bg-surface dark:bg-[#2a2a2a] border border-border dark:border-gray-700 rounded-full text-text-secondary">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span className="font-medium">Authenticating...</span>
           </div>
@@ -72,10 +72,10 @@ export default function GoogleLoginButton() {
             theme="outline"
             size="large"
             width="400"
-            shape="rectangular"
+            shape="pill"
             text="continue_with"
             containerProps={{
-              className: "w-full flex justify-center [&>iframe]:!w-full [&_iframe]:!w-full"
+              className: "w-full flex justify-center rounded-full overflow-hidden [&>iframe]:!w-full [&_iframe]:!w-full [&_iframe]:!rounded-full"
             }}
           />
         )}

@@ -89,9 +89,9 @@ export default function AddressSelectorPage() {
       const urlMatch = mapsLinkInput.match(/(https?:\/\/[^\s]+)/i)
       const cleanLink = urlMatch ? urlMatch[1] : mapsLinkInput.trim()
 
-      console.log("[AddressSelector] Resolving Google Maps link payload:", { originalInput: mapsLinkInput.trim(), link: cleanLink })
+      console.log("[AddressSelector] [STEP 5 & 7] Resolving Google Maps link payload:", { originalInput: mapsLinkInput.trim(), link: cleanLink })
       const res = await api.post("/food/location/resolve-maps-link", { link: cleanLink })
-      console.log("[AddressSelector] Resolved link response:", res.data)
+      console.log("[AddressSelector] [STEP 6] Resolved link response from backend:", res.data)
       if (res.data?.success && res.data?.data) {
         setResolvedLinkData(res.data.data)
         setShowMapsLinkModal(false)
@@ -129,6 +129,8 @@ export default function AddressSelectorPage() {
           address: addressText,
           formattedAddress: addressText
         }
+
+        console.log("[AddressSelector] [STEP 4 & 8] Saving manual resolved location to storage & state:", finalLoc)
 
         try {
           localStorage.setItem("userLocation", JSON.stringify(finalLoc))

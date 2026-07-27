@@ -14,7 +14,7 @@ export async function resolveGoogleMapsLink(link) {
   // Extract raw URL if user pasted mobile share text containing URL
   const urlMatch = link.match(/(https?:\/\/[^\s]+)/i);
   const rawUrl = urlMatch ? urlMatch[1] : link.trim();
-  logger.info('[LocationService] Resolving Google Maps link:', { rawInput: link, extractedUrl: rawUrl });
+  logger.info('[LocationService] [STEP 1 & 7] Resolving Google Maps link:', { rawInput: link, extractedUrl: rawUrl });
 
   const cached = resolutionCache.get(rawUrl);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {

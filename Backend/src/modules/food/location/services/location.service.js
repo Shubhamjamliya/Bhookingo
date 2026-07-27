@@ -130,20 +130,17 @@ export async function resolveGoogleMapsLink(link) {
     if ((lat === null || lng === null) && apiKey) {
       for (const urlStr of sourcesToSearch) {
         if (!urlStr) continue;
-        const placeMatch = urlStr.match(/\/(?:place|search)\/([^\/@?]+)/i);
+        const placeMatch = urlStr.match(/\/(?:place|search)\/([^\/?#]+)/i);
         if (placeMatch && placeMatch[1]) {
-          const rawPlaceName = placeMatch[1].replace(/\+/g, ' ');
-          let cleanPlaceName = rawPlaceName;
-          try {
-            cleanPlaceName = decodeURIComponent(rawPlaceName);
-          } catch (e) {}
-          cleanPlaceName = cleanPlaceName.trim();
+          let rawName = placeMatch[1].split('@')[0].replace(/\+/g, ' ');
+          try { rawName = decodeURIComponent(rawName); } catch {}
+          rawName = rawName.trim();
 
-          if (cleanPlaceName && cleanPlaceName.length > 1 && !cleanPlaceName.match(/^-?\d+\.\d+$/)) {
-            logger.info('[LocationService] Resolving place query via Google Geocoding API:', cleanPlaceName);
+          if (rawName && rawName.length > 1 && !rawName.match(/^-?\d+\.\d+$/)) {
+            logger.info('[LocationService] Resolving place query via Google Geocoding API:', rawName);
             try {
               const geoRes = await axios.get(
-                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cleanPlaceName)}&key=${apiKey}`,
+                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(rawName)}&key=${apiKey}`,
                 { timeout: 5000 }
               );
               if (geoRes.data?.status === 'OK' && geoRes.data?.results?.length > 0) {
@@ -151,7 +148,7 @@ export async function resolveGoogleMapsLink(link) {
                 lat = first.geometry.location.lat;
                 lng = first.geometry.location.lng;
                 placeIdFound = first.place_id || placeIdFound;
-                logger.info('[LocationService] Coordinates resolved via Google Geocoding API (Place query):', { lat, lng, placeName: cleanPlaceName });
+                logger.info('[LocationService] Coordinates resolved via Google Geocoding API (Place query):', { lat, lng, placeName: rawName });
                 break;
               }
             } catch (gErr) {
@@ -258,73 +255,57 @@ export async function resolveGoogleMapsLink(link) {
 }
 
 async function expandUrlHistory(initialUrl) {
-  let currentUrl = initialUrl;
-  const history = [currentUrl];
+  const history = [initialUrl];
   const visited = new Set([initialUrl]);
 
-  for (let i = 0; i < 10; i++) {
-    let urlToFetch = currentUrl;
-    try {
-      const parsed = new URL(currentUrl);
-      let changed = false;
-      ['g_st', 'g_ep', 'g_abs', 'utm_source', 'utm_medium', 'utm_campaign'].forEach(param => {
-        if (parsed.searchParams.has(param)) {
-          parsed.searchParams.delete(param);
-          changed = true;
-        }
-      });
-      if (changed) {
-        urlToFetch = parsed.toString();
-        if (!visited.has(urlToFetch)) {
-          visited.add(urlToFetch);
-          history.push(urlToFetch);
-        }
-      }
-    } catch (e) {}
+  let currentUrl = initialUrl;
+  try {
+    const parsed = new URL(initialUrl);
+    ['g_st', 'g_ep', 'g_abs', 'utm_source', 'utm_medium', 'utm_campaign'].forEach(param => {
+      parsed.searchParams.delete(param);
+    });
+    currentUrl = parsed.toString();
+    if (!visited.has(currentUrl)) {
+      visited.add(currentUrl);
+      history.push(currentUrl);
+    }
+  } catch (e) {}
 
-    try {
-      // Use curl user-agent to force HTTP 301/302 location header redirects from Google short links
-      const res = await axios.get(urlToFetch, {
-        maxRedirects: 0,
-        timeout: 8000,
-        validateStatus: (status) => status >= 200 && status < 400,
-        headers: {
-          'User-Agent': 'curl/7.88.1',
-          'Accept': '*/*'
-        }
-      });
+  try {
+    const res = await axios.get(currentUrl, {
+      maxRedirects: 10,
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+    });
 
-      const redirectUrl = res.headers?.location;
-      if (redirectUrl) {
-        const nextUrl = new URL(redirectUrl, currentUrl).toString();
-        if (!visited.has(nextUrl)) {
-          visited.add(nextUrl);
-          history.push(nextUrl);
-          currentUrl = nextUrl;
-        } else {
-          break;
+    const finalUrl = res.request?.res?.responseUrl || res.config?.url;
+    if (finalUrl && !visited.has(finalUrl)) {
+      visited.add(finalUrl);
+      history.push(finalUrl);
+    }
+
+    if (typeof res.data === 'string') {
+      const matches = res.data.matchAll(/(https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/[^\s"'<>]+)/gi);
+      for (const m of matches) {
+        if (m[1] && !visited.has(m[1])) {
+          visited.add(m[1]);
+          history.push(m[1]);
         }
-      } else {
-        break;
       }
-    } catch (err) {
-      const redirectUrl = err.response?.headers?.location;
-      if (redirectUrl) {
-        try {
-          const nextUrl = new URL(redirectUrl, currentUrl).toString();
-          if (!visited.has(nextUrl)) {
-            visited.add(nextUrl);
-            history.push(nextUrl);
-            currentUrl = nextUrl;
-          } else {
-            break;
-          }
-        } catch (e) {
-          break;
-        }
-      } else {
-        break;
-      }
+    }
+  } catch (err) {
+    const finalUrl = err.response?.request?.res?.responseUrl || err.config?.url;
+    if (finalUrl && !visited.has(finalUrl)) {
+      visited.add(finalUrl);
+      history.push(finalUrl);
+    }
+    const redirectUrl = err.response?.headers?.location;
+    if (redirectUrl && !visited.has(redirectUrl)) {
+      visited.add(redirectUrl);
+      history.push(redirectUrl);
     }
   }
 

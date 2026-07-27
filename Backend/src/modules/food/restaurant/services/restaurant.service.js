@@ -1453,7 +1453,7 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}, o
 };
 
 export const listApprovedRestaurants = async (query = {}) => {
-    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 20, 1), 1000);
+    const limit = Math.min(Math.max(parseInt(query.limit, 10) || 20, 1), 100);
     const page = Math.max(parseInt(query.page, 10) || 1, 1);
     const skip = (page - 1) * limit;
 
@@ -1550,16 +1550,6 @@ export const listApprovedRestaurants = async (query = {}) => {
         outletTimings: { $arrayElemAt: ['$outletTimingsData.timings', 0] }
     };
 
-    // Lookup outlet timings
-    pipeline.push({
-        $lookup: {
-            from: 'food_restaurant_outlet_timings',
-            localField: '_id',
-            foreignField: 'restaurantId',
-            as: 'outletTimingsData'
-        }
-    });
-
     // Custom Sorting override if coordinates are NOT provided but sortBy is set
     if (lat === null || lng === null) {
         if (sortBy === 'rating' || sortBy === 'rating-high') {
@@ -1573,14 +1563,22 @@ export const listApprovedRestaurants = async (query = {}) => {
         }
     }
 
-    // Final Facet for Pagination
+    // Final Facet for Pagination - perform lookup and projection ONLY on paginated slice
     pipeline.push({
         $facet: {
             metadata: [{ $count: 'total' }],
             data: [
-                { $project: projection },
                 { $skip: skip },
-                { $limit: limit }
+                { $limit: limit },
+                {
+                    $lookup: {
+                        from: 'food_restaurant_outlet_timings',
+                        localField: '_id',
+                        foreignField: 'restaurantId',
+                        as: 'outletTimingsData'
+                    }
+                },
+                { $project: projection }
             ]
         }
     });
@@ -1588,6 +1586,17 @@ export const listApprovedRestaurants = async (query = {}) => {
     const aggregationResult = await FoodRestaurant.aggregate(pipeline);
     const pageDocs = aggregationResult[0]?.data || [];
     const total = aggregationResult[0]?.metadata[0]?.total || 0;
+
+    if (pageDocs.length === 0) {
+        return {
+            restaurants: [],
+            total,
+            totalCount: total,
+            page,
+            limit,
+            hasMore: false
+        };
+    }
 
     // Attach recommended dishes and compute hasVegItems
     const restaurantIds = pageDocs.map(r => r._id);
@@ -1604,8 +1613,7 @@ export const listApprovedRestaurants = async (query = {}) => {
             isAvailable: { $ne: false },
             $or: [
                 { isVeg: true },
-                { foodType: 'Veg' },
-                { foodType: { $regex: /^veg$/i } }
+                { foodType: { $in: ['Veg', 'veg', 'VEG'] } }
             ]
         })
     ]);

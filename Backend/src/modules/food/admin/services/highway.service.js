@@ -22,11 +22,11 @@ const HIGHWAY_THRESHOLD_CONFIG_KEY = 'highway_threshold_meters';
 
 /** Return all line segments for a highway document. */
 const getHighwaySegments = (highway) => {
-    if (Array.isArray(highway.segments) && highway.segments.length > 0) {
-        return highway.segments;
-    }
     if (Array.isArray(highway.coordinates) && highway.coordinates.length >= 2) {
         return [highway.coordinates];
+    }
+    if (Array.isArray(highway.segments) && highway.segments.length > 0) {
+        return highway.segments;
     }
     return [];
 };
@@ -151,15 +151,37 @@ export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters 
 
     const paddingDeg = searchPaddingMeters / 111_000;
 
-    const candidates = await FoodHighway.find({
-        isActive: true,
-        'boundingBox.minLat': { $lte: lat + paddingDeg },
-        'boundingBox.maxLat': { $gte: lat - paddingDeg },
-        'boundingBox.minLng': { $lte: lng + paddingDeg },
-        'boundingBox.maxLng': { $gte: lng - paddingDeg }
-    })
-        .select('name ref coordinates segments')
-        .lean();
+    const candidates = await FoodHighway.aggregate([
+        {
+            $match: {
+                isActive: true,
+                'boundingBox.minLat': { $lte: lat + paddingDeg },
+                'boundingBox.maxLat': { $gte: lat - paddingDeg },
+                'boundingBox.minLng': { $lte: lng + paddingDeg },
+                'boundingBox.maxLng': { $gte: lng - paddingDeg }
+            }
+        },
+        {
+            $project: {
+                name: 1,
+                ref: 1,
+                coordinates: {
+                    $filter: {
+                        input: '$coordinates',
+                        as: 'c',
+                        cond: {
+                            $and: [
+                                { $lte: ['$$c.lat', lat + paddingDeg] },
+                                { $gte: ['$$c.lat', lat - paddingDeg] },
+                                { $lte: ['$$c.lng', lng + paddingDeg] },
+                                { $gte: ['$$c.lng', lng - paddingDeg] }
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+    ]);
 
     if (!candidates.length) return null;
 
@@ -173,7 +195,11 @@ export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters 
         for (const coords of segmentList) {
             if (!coords || coords.length < 2) continue;
 
-            const lineCoords = coords.map((c) => [c.lng, c.lat]);
+            const lineCoords = coords
+                .map((c) => (Array.isArray(c) ? [Number(c[0]), Number(c[1])] : [Number(c?.lng ?? c?.longitude), Number(c?.lat ?? c?.latitude)]))
+                .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]));
+            if (lineCoords.length < 2) continue;
+
             const line = turf.lineString(lineCoords);
 
             let nearestPt;

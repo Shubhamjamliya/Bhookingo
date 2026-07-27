@@ -468,6 +468,7 @@ restaurantSchema.index(
   },
 );
 restaurantSchema.index({ status: 1, createdAt: -1 });
+restaurantSchema.index({ status: 1, rating: -1, createdAt: -1 });
 restaurantSchema.index({ "takeawaySettings.isEnabled": 1 });
 restaurantSchema.index({ "diningSettings.isEnabled": 1 });
 

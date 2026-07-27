@@ -66,11 +66,19 @@ export default function DrivingMap({
     libraries: GOOGLE_MAPS_LIBRARIES
   });
 
+  const userLat = Number(userLocation?.latitude ?? userLocation?.lat);
+  const userLng = Number(userLocation?.longitude ?? userLocation?.lng);
+  const hasUserLocation = Number.isFinite(userLat) && Number.isFinite(userLng);
+
+  const destLat = Number(destinationLocation?.latitude ?? destinationLocation?.lat);
+  const destLng = Number(destinationLocation?.longitude ?? destinationLocation?.lng);
+  const hasDestLocation = Number.isFinite(destLat) && Number.isFinite(destLng);
+
   const center = useMemo(() => {
-    return userLocation
-      ? { lat: userLocation.latitude, lng: userLocation.longitude }
+    return hasUserLocation
+      ? { lat: userLat, lng: userLng }
       : DEFAULT_CENTER;
-  }, [userLocation?.latitude, userLocation?.longitude]);
+  }, [hasUserLocation, userLat, userLng]);
 
   const prevBoundsKeyRef = useRef("");
   const routeRequestedRef = useRef("");
@@ -82,13 +90,13 @@ export default function DrivingMap({
     const bounds = new window.google.maps.LatLngBounds();
     let count = 0;
 
-    if (userLocation) {
-      bounds.extend({ lat: userLocation.latitude, lng: userLocation.longitude });
+    if (hasUserLocation) {
+      bounds.extend({ lat: userLat, lng: userLng });
       count++;
     }
 
-    if (destinationLocation) {
-      bounds.extend({ lat: destinationLocation.lat, lng: destinationLocation.lng });
+    if (hasDestLocation) {
+      bounds.extend({ lat: destLat, lng: destLng });
       count++;
     }
 
@@ -107,11 +115,11 @@ export default function DrivingMap({
 
     if (count >= 2) {
       mapRef.current.fitBounds(bounds, 80); // padding of 80px
-    } else if (userLocation) {
+    } else if (hasUserLocation) {
       mapRef.current.setCenter(center);
       mapRef.current.setZoom(14);
     }
-  }, [destinationLocation?.lat, destinationLocation?.lng, (restaurants || []).length, center]);
+  }, [hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, (restaurants || []).length, center]);
 
   const onLoad = useCallback((map) => {
     mapRef.current = map;
@@ -128,10 +136,8 @@ export default function DrivingMap({
     }
 
     if (mapRef.current) {
-      const uLat = userLocation?.latitude ?? userLocation?.lat;
-      const uLng = userLocation?.longitude ?? userLocation?.lng;
-      if (uLat != null && uLng != null) {
-        mapRef.current.panTo({ lat: Number(uLat), lng: Number(uLng) });
+      if (hasUserLocation) {
+        mapRef.current.panTo({ lat: userLat, lng: userLng });
         mapRef.current.setZoom(16);
       }
     }
@@ -148,22 +154,22 @@ export default function DrivingMap({
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     }
-  }, [userLocation]);
+  }, [hasUserLocation, userLat, userLng]);
 
   // Fetch navigation path via Google Directions Service (cached & high precision)
   useEffect(() => {
-    if (!isLoaded || !userLocation || !destinationLocation || !window.google) {
+    if (!isLoaded || !hasUserLocation || !hasDestLocation || !window.google) {
       setLocalRoutePath([]);
       return;
     }
 
-    // Only reuse cached route if it has high-density step points (e.g. >= 150 points)
-    if (journey?.routePolyline && journey.routePolyline.length >= 150) {
+    // Only reuse cached route if valid route points exist
+    if (journey?.routePolyline && Array.isArray(journey.routePolyline) && journey.routePolyline.length >= 2) {
       setLocalRoutePath(journey.routePolyline);
       return;
     }
 
-    const routeKey = `${Number(userLocation.latitude).toFixed(3)}_${Number(userLocation.longitude).toFixed(3)}_${Number(destinationLocation.lat).toFixed(3)}_${Number(destinationLocation.lng).toFixed(3)}`;
+    const routeKey = `${userLat.toFixed(3)}_${userLng.toFixed(3)}_${destLat.toFixed(3)}_${destLng.toFixed(3)}`;
     if (routeRequestedRef.current === routeKey) {
       return;
     }
@@ -172,8 +178,8 @@ export default function DrivingMap({
     const directionsService = new window.google.maps.DirectionsService();
     directionsService.route(
       {
-        origin: { lat: userLocation.latitude, lng: userLocation.longitude },
-        destination: { lat: destinationLocation.lat, lng: destinationLocation.lng },
+        origin: { lat: userLat, lng: userLng },
+        destination: { lat: destLat, lng: destLng },
         travelMode: window.google.maps.TravelMode.DRIVING,
       },
       (result, status) => {
@@ -249,17 +255,17 @@ export default function DrivingMap({
         }
       }
     );
-  }, [isLoaded, userLocation?.latitude, userLocation?.longitude, destinationLocation?.lat, destinationLocation?.lng, journey?.routePolyline, onRouteCalculated]);
+  }, [isLoaded, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, journey?.routePolyline, onRouteCalculated]);
 
   // Fit bounds ONLY when destination or restaurants length actually changes (prevents continuous GetViewportInfo loops)
   useEffect(() => {
     if (!isLoaded || !mapRef.current) return;
-    const currentKey = `${destinationLocation?.lat || ""}_${destinationLocation?.lng || ""}_${(restaurants || []).length}`;
+    const currentKey = `${destLat || ""}_${destLng || ""}_${(restaurants || []).length}`;
     if (currentKey !== prevBoundsKeyRef.current) {
       prevBoundsKeyRef.current = currentKey;
       fitMapBounds();
     }
-  }, [isLoaded, destinationLocation?.lat, destinationLocation?.lng, restaurants?.length, fitMapBounds]);
+  }, [isLoaded, destLat, destLng, restaurants?.length, fitMapBounds]);
 
 
   if (!isLoaded) {
@@ -302,9 +308,9 @@ export default function DrivingMap({
         )}
 
         {/* User Location Halo (Round White Circle around cursor like Google Maps) */}
-        {userLocation && (
+        {hasUserLocation && (
           <Marker
-            position={{ lat: userLocation.latitude, lng: userLocation.longitude }}
+            position={{ lat: userLat, lng: userLng }}
             options={{
               icon: {
                 path: window.google?.maps?.SymbolPath?.CIRCLE,
@@ -321,9 +327,9 @@ export default function DrivingMap({
         )}
 
         {/* User Location Marker (Navigation Arrow with GPS Heading Rotation) */}
-        {userLocation && (
+        {hasUserLocation && (
           <Marker
-            position={{ lat: userLocation.latitude, lng: userLocation.longitude }}
+            position={{ lat: userLat, lng: userLng }}
             options={{
               icon: {
                 path: "M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z",
@@ -342,9 +348,9 @@ export default function DrivingMap({
         )}
 
         {/* Destination Marker */}
-        {destinationLocation && (
+        {hasDestLocation && (
           <Marker
-            position={{ lat: destinationLocation.lat, lng: destinationLocation.lng }}
+            position={{ lat: destLat, lng: destLng }}
             title="Destination"
             options={{
               zIndex: 101,

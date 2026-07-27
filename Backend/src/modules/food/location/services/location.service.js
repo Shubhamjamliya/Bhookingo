@@ -14,7 +14,7 @@ export async function resolveGoogleMapsLink(link) {
   // Extract raw URL if user pasted mobile share text containing URL
   const urlMatch = link.match(/(https?:\/\/[^\s]+)/i);
   const rawUrl = urlMatch ? urlMatch[1] : link.trim();
-  logger.info('[LocationService] [STEP 1 & 7] Resolving Google Maps link:', { rawInput: link, extractedUrl: rawUrl });
+  logger.info('[LocationService] Resolving Google Maps link:', { rawInput: link, extractedUrl: rawUrl });
 
   const cached = resolutionCache.get(rawUrl);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
@@ -23,43 +23,67 @@ export async function resolveGoogleMapsLink(link) {
   }
 
   try {
-    const { history, htmlBody } = await expandUrlAndGetHistory(rawUrl);
+    const history = await expandUrlHistory(rawUrl);
     logger.info('[LocationService] Expanded URL history:', history);
 
-    const sourcesToSearch = [
-      ...history.map(u => decodeURIComponent(u)),
-      ...history,
-      htmlBody
-    ];
-
+    const apiKey = config.googleMapsApiKey;
     let lat = null;
     let lng = null;
+    let placeIdFound = null;
 
-    // Pattern 1: @lat,lng (e.g. @22.7196,75.8577 or @22.7196,75.8577,17z)
+    const sourcesToSearch = [
+      ...history.map(u => {
+        try { return decodeURIComponent(u); } catch { return u; }
+      }),
+      ...history
+    ];
+
+    // Strategy 1: Check for explicit Place ID or CID parameters in URLs
     for (const src of sourcesToSearch) {
       if (!src) continue;
-      const match = src.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-      if (match) {
-        lat = parseFloat(match[1]);
-        lng = parseFloat(match[2]);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) break;
+      const placeIdMatch = src.match(/[?&](?:place_id|ftid|cid)=([^&]+)/i);
+      if (placeIdMatch && placeIdMatch[1]) {
+        placeIdFound = placeIdMatch[1];
+        logger.info('[LocationService] Detected Place ID from URL:', placeIdFound);
+        break;
       }
     }
 
-    // Pattern 2: ?q=lat,lng or query=lat,lng or ll=lat,lng or center=lat,lng or destination=lat,lng or daddr=lat,lng
+    if (placeIdFound && apiKey) {
+      try {
+        const placeRes = await axios.get(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeIdFound)}&key=${apiKey}`,
+          { timeout: 5000 }
+        );
+        if (placeRes.data?.status === 'OK' && placeRes.data?.result?.geometry?.location) {
+          lat = placeRes.data.result.geometry.location.lat;
+          lng = placeRes.data.result.geometry.location.lng;
+          logger.info('[LocationService] Coordinates resolved via Google Places API (Place ID):', { lat, lng });
+        }
+      } catch (pErr) {
+        logger.warn('[LocationService] Google Places API lookup failed:', pErr.message);
+      }
+    }
+
+    // Strategy 2: Extract explicit @lat,lng coordinates from URL path
     if (lat === null || lng === null) {
       for (const src of sourcesToSearch) {
         if (!src) continue;
-        const match = src.match(/[?&](?:q|query|ll|center|destination|daddr|origin|near)=(-?\d+(?:\.\d+)?)(?:,|%2C|\s+)(-?\d+(?:\.\d+)?)/i);
+        const match = src.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
         if (match) {
-          lat = parseFloat(match[1]);
-          lng = parseFloat(match[2]);
-          if (Number.isFinite(lat) && Number.isFinite(lng)) break;
+          const parsedLat = parseFloat(match[1]);
+          const parsedLng = parseFloat(match[2]);
+          if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng)) {
+            lat = parsedLat;
+            lng = parsedLng;
+            logger.info('[LocationService] Coordinates resolved via @lat,lng in URL:', { lat, lng });
+            break;
+          }
         }
       }
     }
 
-    // Pattern 3: !3d<lat>!4d<lng> or !4d<lng>!3d<lat>
+    // Strategy 3: Extract !3d<lat>!4d<lng> or !4d<lng>!3d<lat> from Google Maps URL parameters
     if (lat === null || lng === null) {
       for (const src of sourcesToSearch) {
         if (!src) continue;
@@ -67,74 +91,71 @@ export async function resolveGoogleMapsLink(link) {
         if (match3d4d) {
           lat = parseFloat(match3d4d[1]);
           lng = parseFloat(match3d4d[2]);
-          if (Number.isFinite(lat) && Number.isFinite(lng)) break;
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            logger.info('[LocationService] Coordinates resolved via !3d!4d in URL:', { lat, lng });
+            break;
+          }
         }
         const match4d3d = src.match(/!4d(-?\d+(?:\.\d+)?).*?!3d(-?\d+(?:\.\d+)?)/);
         if (match4d3d) {
           lat = parseFloat(match4d3d[2]);
           lng = parseFloat(match4d3d[1]);
-          if (Number.isFinite(lat) && Number.isFinite(lng)) break;
-        }
-      }
-    }
-
-    // Pattern 4: /place/.../lat,lng or /search/lat,lng or /dir/.../lat,lng
-    if (lat === null || lng === null) {
-      for (const src of sourcesToSearch) {
-        if (!src) continue;
-        const matchPlace = src.match(/\/(?:place|search|dir)\/[^\/]*?\/?(-?\d+\.\d+),(?:%20|\+)?(-?\d+\.\d+)/i);
-        if (matchPlace) {
-          lat = parseFloat(matchPlace[1]);
-          lng = parseFloat(matchPlace[2]);
-          if (Number.isFinite(lat) && Number.isFinite(lng)) break;
-        }
-      }
-    }
-
-    // Pattern 5: staticmap center parameter inside HTML
-    if (lat === null || lng === null) {
-      for (const src of sourcesToSearch) {
-        if (!src) continue;
-        const matchStatic = src.match(/center=(-?\d+\.\d+)(?:%2C|,)(-?\d+\.\d+)/i);
-        if (matchStatic) {
-          lat = parseFloat(matchStatic[1]);
-          lng = parseFloat(matchStatic[2]);
-          if (Number.isFinite(lat) && Number.isFinite(lng)) break;
-        }
-      }
-    }
-
-    // Pattern 6: APP_INITIALIZATION_STATE in Google Maps HTML
-    if (lat === null || lng === null) {
-      if (htmlBody) {
-        const matchAppInit = htmlBody.match(/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/);
-        if (matchAppInit) {
-          const parsedLat = parseFloat(matchAppInit[1]);
-          const parsedLng = parseFloat(matchAppInit[2]);
-          // Check if coordinates match default Google Maps India server fallback (Mumbai ~19.076, 72.877)
-          const isMumbaiDefault = (parsedLat >= 18.9 && parsedLat <= 19.3 && parsedLng >= 72.7 && parsedLng <= 73.1);
-          const linkMentionsMumbai = link.toLowerCase().includes('mumbai') || link.toLowerCase().includes('kurla');
-          if (!isMumbaiDefault || linkMentionsMumbai) {
-            lat = parsedLat;
-            lng = parsedLng;
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            logger.info('[LocationService] Coordinates resolved via !4d!3d in URL:', { lat, lng });
+            break;
           }
         }
       }
     }
 
-    // Fallback Pattern 7: Geocode place name from URL if coordinates couldn't be extracted directly
+    // Strategy 4: Extract ?q=lat,lng or ?ll=lat,lng or ?query=lat,lng from URL
     if (lat === null || lng === null) {
-      for (const urlStr of history) {
+      for (const src of sourcesToSearch) {
+        if (!src) continue;
+        const matchQuery = src.match(/[?&](?:q|query|ll|center|destination|daddr|origin|near)=(-?\d+(?:\.\d+)?)(?:,|%2C|\s+)(-?\d+(?:\.\d+)?)/i);
+        if (matchQuery) {
+          const parsedLat = parseFloat(matchQuery[1]);
+          const parsedLng = parseFloat(matchQuery[2]);
+          if (Number.isFinite(parsedLat) && Number.isFinite(parsedLng)) {
+            lat = parsedLat;
+            lng = parsedLng;
+            logger.info('[LocationService] Coordinates resolved via ?q=lat,lng in URL:', { lat, lng });
+            break;
+          }
+        }
+      }
+    }
+
+    // Strategy 5: Geocode place name from URL path using Google Geocoding API
+    if ((lat === null || lng === null) && apiKey) {
+      for (const urlStr of sourcesToSearch) {
+        if (!urlStr) continue;
         const placeMatch = urlStr.match(/\/(?:place|search)\/([^\/@?]+)/i);
         if (placeMatch && placeMatch[1]) {
-          const placeQuery = decodeURIComponent(placeMatch[1].replace(/\+/g, ' ')).trim();
-          if (placeQuery && placeQuery.length > 2) {
-            logger.info('[LocationService] Attempting geocode for place query from URL:', placeQuery);
-            const geocoded = await geocodePlaceQuery(placeQuery);
-            if (geocoded) {
-              lat = geocoded.lat;
-              lng = geocoded.lng;
-              break;
+          const rawPlaceName = placeMatch[1].replace(/\+/g, ' ');
+          let cleanPlaceName = rawPlaceName;
+          try {
+            cleanPlaceName = decodeURIComponent(rawPlaceName);
+          } catch (e) {}
+          cleanPlaceName = cleanPlaceName.trim();
+
+          if (cleanPlaceName && cleanPlaceName.length > 1 && !cleanPlaceName.match(/^-?\d+\.\d+$/)) {
+            logger.info('[LocationService] Resolving place query via Google Geocoding API:', cleanPlaceName);
+            try {
+              const geoRes = await axios.get(
+                `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cleanPlaceName)}&key=${apiKey}`,
+                { timeout: 5000 }
+              );
+              if (geoRes.data?.status === 'OK' && geoRes.data?.results?.length > 0) {
+                const first = geoRes.data.results[0];
+                lat = first.geometry.location.lat;
+                lng = first.geometry.location.lng;
+                placeIdFound = first.place_id || placeIdFound;
+                logger.info('[LocationService] Coordinates resolved via Google Geocoding API (Place query):', { lat, lng, placeName: cleanPlaceName });
+                break;
+              }
+            } catch (gErr) {
+              logger.warn('[LocationService] Google Geocoding API lookup failed for place query:', gErr.message);
             }
           }
         }
@@ -142,25 +163,21 @@ export async function resolveGoogleMapsLink(link) {
     }
 
     if (lat === null || lng === null || !Number.isFinite(lat) || !Number.isFinite(lng)) {
-      logger.warn('[LocationService] Failed to extract coordinates from Google Maps link:', { rawUrl, history });
+      logger.warn('[LocationService] Could not resolve valid coordinates from link:', { rawUrl, history });
       return {
         success: false,
         error: "This Google Maps link could not be resolved. Please check the link or enter the address manually."
       };
     }
 
-    logger.info('[LocationService] Successfully extracted coordinates:', { lat, lng });
-
-    // Reverse Geocode to get normalized address details
+    // Official Reverse Geocoding via Google Geocoding API
     let formattedAddress = null;
     let city = null;
     let state = null;
     let country = 'India';
     let pincode = null;
     let area = null;
-    let placeId = null;
 
-    const apiKey = config.googleMapsApiKey;
     if (apiKey) {
       try {
         const googleGeoRes = await axios.get(
@@ -170,7 +187,7 @@ export async function resolveGoogleMapsLink(link) {
         if (googleGeoRes.data?.status === 'OK' && googleGeoRes.data?.results?.length > 0) {
           const first = googleGeoRes.data.results[0];
           formattedAddress = first.formatted_address;
-          placeId = first.place_id || null;
+          placeIdFound = placeIdFound || first.place_id || null;
 
           const comp = first.address_components || [];
           const getComp = (types) => comp.find(c => types.some(t => c.types.includes(t)))?.long_name || '';
@@ -182,11 +199,11 @@ export async function resolveGoogleMapsLink(link) {
           area = getComp(['sublocality_level_1', 'sublocality', 'neighborhood']);
         }
       } catch (gErr) {
-        logger.warn('[LocationService] Google Reverse Geocode error, trying Nominatim fallback:', gErr.message);
+        logger.warn('[LocationService] Google Reverse Geocode error:', gErr.message);
       }
     }
 
-    // Fallback reverse geocoding if Google API returned no result or wasn't configured
+    // Fallback Nominatim Reverse Geocoding if Google API fails or is unconfigured
     if (!formattedAddress) {
       try {
         const geoRes = await axios.get(
@@ -225,7 +242,7 @@ export async function resolveGoogleMapsLink(link) {
       country: country || 'India',
       pincode: pincode || '',
       area: area || '',
-      placeId: placeId || null
+      placeId: placeIdFound || null
     };
 
     logger.info('[LocationService] Final resolved location:', result);
@@ -240,69 +257,12 @@ export async function resolveGoogleMapsLink(link) {
   }
 }
 
-function extractRedirectUrlFromHtml(html, baseUrl) {
-  if (!html || typeof html !== 'string') return null;
-
-  // 1. Meta refresh tag
-  const metaRefresh = html.match(/<meta[^>]*http-equiv=["']?refresh["']?[^>]*content=["']?[^"'>]*url=([^"'>\s]+)/i);
-  if (metaRefresh && metaRefresh[1]) {
-    try {
-      const cleanUrl = metaRefresh[1].replace(/^['"]|['"]$/g, '');
-      return new URL(cleanUrl, baseUrl).toString();
-    } catch (e) {}
-  }
-
-  // 2. OpenGraph / Twitter meta tags
-  const ogUrl = html.match(/<meta[^>]*(?:property|name)=["'](?:og:url|twitter:url)["'][^>]*content=["']([^"']+)["']/i);
-  if (ogUrl && ogUrl[1] && ogUrl[1].includes('google.')) {
-    try {
-      return new URL(ogUrl[1], baseUrl).toString();
-    } catch (e) {}
-  }
-
-  // 3. Canonical link tag
-  const canonical = html.match(/<link[^>]*rel=["']canonical["'][^>]*href=["']([^"']+)["']/i);
-  if (canonical && canonical[1] && canonical[1].includes('google.')) {
-    try {
-      return new URL(canonical[1], baseUrl).toString();
-    } catch (e) {}
-  }
-
-  // 4. JS location redirect
-  const jsLoc = html.match(/(?:window\.)?location(?:\.href|\.replace)?\s*=\s*['"](https?:\/\/[^'"]+)['"]/i);
-  if (jsLoc && jsLoc[1] && jsLoc[1].includes('google.')) {
-    try {
-      return new URL(jsLoc[1], baseUrl).toString();
-    } catch (e) {}
-  }
-
-  // 5. Embedded google maps link tag
-  const aHref = html.match(/href=["'](https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/[^"']+)["']/i);
-  if (aHref && aHref[1]) {
-    try {
-      return new URL(aHref[1], baseUrl).toString();
-    } catch (e) {}
-  }
-
-  // 6. Direct Google Maps URL anywhere in the HTML string
-  const directMapsUrl = html.match(/(https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/(?:place|search|dir|@)[^\s"'\\]+)/i);
-  if (directMapsUrl && directMapsUrl[1]) {
-    try {
-      return new URL(directMapsUrl[1], baseUrl).toString();
-    } catch (e) {}
-  }
-
-  return null;
-}
-
-async function expandUrlAndGetHistory(initialUrl) {
+async function expandUrlHistory(initialUrl) {
   let currentUrl = initialUrl;
   const history = [currentUrl];
-  let htmlBody = '';
   const visited = new Set([initialUrl]);
 
   for (let i = 0; i < 10; i++) {
-    // Strip mobile tracking parameters like g_st, g_ep, g_abs
     let urlToFetch = currentUrl;
     try {
       const parsed = new URL(currentUrl);
@@ -323,26 +283,18 @@ async function expandUrlAndGetHistory(initialUrl) {
     } catch (e) {}
 
     try {
+      // Use curl user-agent to force HTTP 301/302 location header redirects from Google short links
       const res = await axios.get(urlToFetch, {
         maxRedirects: 0,
         timeout: 8000,
         validateStatus: (status) => status >= 200 && status < 400,
         headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+          'User-Agent': 'curl/7.88.1',
+          'Accept': '*/*'
         }
       });
 
-      if (typeof res.data === 'string') {
-        htmlBody += '\n' + res.data;
-      }
-
-      let redirectUrl = res.headers?.location;
-      if (!redirectUrl && typeof res.data === 'string') {
-        redirectUrl = extractRedirectUrlFromHtml(res.data, urlToFetch);
-      }
-
+      const redirectUrl = res.headers?.location;
       if (redirectUrl) {
         const nextUrl = new URL(redirectUrl, currentUrl).toString();
         if (!visited.has(nextUrl)) {
@@ -356,14 +308,7 @@ async function expandUrlAndGetHistory(initialUrl) {
         break;
       }
     } catch (err) {
-      if (typeof err.response?.data === 'string') {
-        htmlBody += '\n' + err.response.data;
-      }
-      let redirectUrl = err.response?.headers?.location;
-      if (!redirectUrl && typeof err.response?.data === 'string') {
-        redirectUrl = extractRedirectUrlFromHtml(err.response.data, urlToFetch);
-      }
-
+      const redirectUrl = err.response?.headers?.location;
       if (redirectUrl) {
         try {
           const nextUrl = new URL(redirectUrl, currentUrl).toString();
@@ -383,46 +328,5 @@ async function expandUrlAndGetHistory(initialUrl) {
     }
   }
 
-  return { history, htmlBody };
-}
-
-async function geocodePlaceQuery(query) {
-  const apiKey = config.googleMapsApiKey;
-  if (apiKey) {
-    try {
-      const res = await axios.get(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}`,
-        { timeout: 5000 }
-      );
-      if (res.data?.status === 'OK' && res.data?.results?.length > 0) {
-        const loc = res.data.results[0].geometry.location;
-        return { lat: loc.lat, lng: loc.lng };
-      }
-    } catch (e) {
-      logger.warn('[LocationService] Google geocodePlaceQuery error:', e.message);
-    }
-  }
-
-  try {
-    const res = await axios.get(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
-      {
-        headers: {
-          'User-Agent': 'BhookingoApp/1.0 (contact@bhookingo.com)',
-          Accept: 'application/json'
-        },
-        timeout: 5000
-      }
-    );
-    if (res.data && res.data.length > 0) {
-      return {
-        lat: parseFloat(res.data[0].lat),
-        lng: parseFloat(res.data[0].lon)
-      };
-    }
-  } catch (e) {
-    logger.warn('[LocationService] Nominatim geocodePlaceQuery error:', e.message);
-  }
-
-  return null;
+  return history;
 }

@@ -15,7 +15,7 @@ import {
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const DEFAULT_THRESHOLD_METERS = 1000;
+const DEFAULT_THRESHOLD_METERS = 2000;
 const HIGHWAY_THRESHOLD_CONFIG_KEY = 'highway_threshold_meters';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -35,9 +35,24 @@ const getHighwaySegments = (highway) => {
 
 export async function getHighwayThresholdMeters() {
     try {
-        const config = await FoodSystemConfig.findOne({ key: HIGHWAY_THRESHOLD_CONFIG_KEY }).lean();
-        const val = Number(config?.value);
-        return Number.isFinite(val) && val > 0 ? val : DEFAULT_THRESHOLD_METERS;
+        const configDoc = await FoodSystemConfig.findOne({ key: HIGHWAY_THRESHOLD_CONFIG_KEY }).lean();
+        const val = Number(configDoc?.value);
+        if (Number.isFinite(val) && val >= 2000) {
+            return val;
+        }
+        // Auto-update MongoDB config to 2000 meters (2 KM)
+        await FoodSystemConfig.findOneAndUpdate(
+            { key: HIGHWAY_THRESHOLD_CONFIG_KEY },
+            {
+                $set: {
+                    key: HIGHWAY_THRESHOLD_CONFIG_KEY,
+                    value: 2000,
+                    description: 'Distance threshold (meters) for restaurant-to-highway proximity assignment'
+                }
+            },
+            { upsert: true }
+        ).catch(() => {});
+        return DEFAULT_THRESHOLD_METERS;
     } catch {
         return DEFAULT_THRESHOLD_METERS;
     }

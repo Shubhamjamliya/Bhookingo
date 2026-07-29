@@ -800,72 +800,93 @@ export default function RestaurantOnboarding() {
     setIsProcessingLink(true);
     try {
       let resolvedUrl = urlStr;
-      if (urlStr.includes("maps.app.goo.gl") || urlStr.includes("goo.gl/maps")) {
-        const response = await restaurantAPI.resolveMapsLink({ url: urlStr });
-        if (response?.data?.success && response?.data?.url) {
-          resolvedUrl = response.data.url;
+      let backendData = null;
+      if (urlStr.includes("maps.app.goo.gl") || urlStr.includes("goo.gl/maps") || true) {
+        const response = await restaurantAPI.resolveMapsLink({ url: urlStr, link: urlStr });
+        if (response?.data?.success) {
+          if (response?.data?.url) resolvedUrl = response.data.url;
+          if (response?.data?.data) backendData = response.data.data;
         } else {
           throw new Error("Unable to resolve shortened URL");
         }
       }
 
-      const coords = extractCoordsFromUrl(resolvedUrl);
-      if (!coords) {
+      let lat = backendData?.lat || backendData?.latitude;
+      let lng = backendData?.lng || backendData?.longitude;
+
+      if (!lat || !lng) {
+        const coords = extractCoordsFromUrl(resolvedUrl);
+        if (coords) {
+          lat = coords.lat;
+          lng = coords.lng;
+        }
+      }
+
+      if (!lat || !lng) {
         toast.error("Unable to detect location from this link.");
         setIsProcessingLink(false);
         return;
       }
 
-      // Perform Reverse Geocoding
-      if (!window.google?.maps?.Geocoder) {
-        toast.error("Google Maps SDK not loaded. Cannot reverse geocode.");
-        setIsProcessingLink(false);
-        return;
+      const applyLocationData = (locDetails) => {
+        const extractedPlaceName = extractPlaceNameFromUrl(resolvedUrl);
+        setStep1((prev) => {
+          const updated = {
+            ...prev,
+            location: {
+              ...prev.location,
+              formattedAddress: locDetails.formattedAddress || prev.location.formattedAddress,
+              addressLine1: locDetails.formattedAddress || prev.location.addressLine1 || "",
+              area: locDetails.area || prev.location.area,
+              city: locDetails.city || prev.location.city,
+              state: locDetails.state || prev.location.state,
+              pincode: locDetails.pincode || prev.location.pincode,
+              latitude: lat,
+              longitude: lng,
+              placeId: locDetails.placeId || "",
+            },
+            locationSource: "google_maps_link",
+          };
+          if (extractedPlaceName) {
+            updated.restaurantName = extractedPlaceName;
+          }
+          return updated;
+        });
+
+        setLocationSearchValue(locDetails.placeName || locDetails.formattedAddress || "");
+        toast.success("Location details populated from Google Maps link!");
+      };
+
+      if (backendData?.formattedAddress) {
+        applyLocationData(backendData);
+      } else if (window.google?.maps?.Geocoder) {
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          if (status === "OK" && results[0]) {
+            const place = results[0];
+            const comps = Array.isArray(place?.address_components) ? place.address_components : [];
+            const get = (types) => comps.find((c) => types.some((t) => c.types?.includes(t)))?.long_name || "";
+
+            const area = get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"]);
+            const city = get(["locality"]) || get(["administrative_area_level_2"]);
+            const state = get(["administrative_area_level_1"]) || get(["administrative_area_level_2"]);
+            const pincode = get(["postal_code"]);
+
+            applyLocationData({
+              formattedAddress: place.formatted_address,
+              area,
+              city,
+              state,
+              pincode,
+              placeId: place.place_id
+            });
+          } else {
+            applyLocationData({ formattedAddress: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
+          }
+        });
+      } else {
+        applyLocationData({ formattedAddress: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
       }
-
-      const geocoder = new window.google.maps.Geocoder();
-      geocoder.geocode({ location: { lat: coords.lat, lng: coords.lng } }, (results, status) => {
-        if (status === "OK" && results[0]) {
-          const place = results[0];
-          const comps = Array.isArray(place?.address_components) ? place.address_components : [];
-          const get = (types) => comps.find((c) => types.some((t) => c.types?.includes(t)))?.long_name || "";
-
-          const area = get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"]);
-          const city = get(["locality"]) || get(["administrative_area_level_2"]);
-          const state = get(["administrative_area_level_1"]) || get(["administrative_area_level_2"]);
-          const pincode = get(["postal_code"]);
-
-          const extractedPlaceName = extractPlaceNameFromUrl(resolvedUrl);
-
-          setStep1((prev) => {
-            const updated = {
-              ...prev,
-              location: {
-                ...prev.location,
-                formattedAddress: place.formatted_address || prev.location.formattedAddress,
-                addressLine1: place.formatted_address || prev.location.addressLine1 || "",
-                area: area || prev.location.area,
-                city: city || prev.location.city,
-                state: state || prev.location.state,
-                pincode: pincode || prev.location.pincode,
-                latitude: coords.lat,
-                longitude: coords.lng,
-                placeId: place.place_id || "",
-              },
-              locationSource: "google_maps_link",
-            };
-            if (extractedPlaceName) {
-              updated.restaurantName = extractedPlaceName;
-            }
-            return updated;
-          });
-
-          setLocationSearchValue(place.formatted_address || "");
-          toast.success("Location details populated from Google Maps link!");
-        } else {
-          toast.error("Unable to retrieve location details from coordinates.");
-        }
-      });
     } catch (err) {
       console.error("Failed to process Google Maps link:", err);
       toast.error(err?.response?.data?.message || "Unable to detect location from this link.");

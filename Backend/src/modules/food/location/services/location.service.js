@@ -292,12 +292,53 @@ export async function resolveGoogleMapsLink(link) {
       }
     }
 
+    // Fetch official Place / Business / Landmark Name via Google Places Details API if placeId is available
+    let officialPlaceName = null;
+    if (placeIdFound && apiKey) {
+      try {
+        const placeDetailsRes = await axios.get(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeIdFound)}&fields=name,formatted_address&key=${apiKey}`,
+          { timeout: 5000 }
+        );
+        if (placeDetailsRes.data?.status === 'OK' && placeDetailsRes.data?.result?.name) {
+          officialPlaceName = placeDetailsRes.data.result.name;
+          logger.info('[LocationService] Resolved official placeName via Google Places Details API:', officialPlaceName);
+        }
+      } catch (pdErr) {
+        logger.warn('[LocationService] Google Places Details API lookup failed:', pdErr.message);
+      }
+    }
+
+    // Fallback: extract place name from expanded URL path if available
+    if (!officialPlaceName) {
+      for (const urlStr of sourcesToSearch) {
+        if (!urlStr) continue;
+        const placeMatch = urlStr.match(/\/(?:place|search)\/([^\/?#]+)/i);
+        if (placeMatch && placeMatch[1]) {
+          let rawName = placeMatch[1].split('@')[0].replace(/\+/g, ' ');
+          try { rawName = decodeURIComponent(rawName); } catch {}
+          rawName = rawName.trim();
+          if (rawName && rawName.length > 2 && !rawName.match(/^[a-zA-Z0-9]{10,25}$/) && !rawName.match(/^-?\d+\.\d+/)) {
+            // Strip trailing address components if it contains comma, keeping the leading landmark name
+            const firstSegment = rawName.split(',')[0].trim();
+            if (firstSegment && firstSegment.length > 2) {
+              officialPlaceName = firstSegment;
+            } else {
+              officialPlaceName = rawName;
+            }
+            break;
+          }
+        }
+      }
+    }
+
     const result = {
       success: true,
       lat,
       lng,
       latitude: lat,
       longitude: lng,
+      placeName: officialPlaceName || null,
       formattedAddress: formattedAddress || `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
       city: city || 'Selected Location',
       state: state || '',

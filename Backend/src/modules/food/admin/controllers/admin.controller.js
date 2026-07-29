@@ -1346,9 +1346,13 @@ export async function resolveMapsLink(req, res, next) {
             });
         }
 
+        const mapsUrl = (result.lat && result.lng)
+            ? `https://www.google.com/maps/@${result.lat},${result.lng},17z`
+            : result.formattedAddress;
+
         return res.status(200).json({
             success: true,
-            url: result.formattedAddress,
+            url: mapsUrl,
             data: result
         });
     } catch (error) {

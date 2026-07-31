@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import AnimatedPage from "@food/components/user/AnimatedPage"
 import { Button } from "@food/components/ui/button"
 import { Card, CardContent } from "@food/components/ui/card"
-import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp"
+import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 import api from "@food/api"
 import { API_ENDPOINTS } from "@food/api/config"
 import { useCompanyName } from "@food/hooks/useCompanyName"

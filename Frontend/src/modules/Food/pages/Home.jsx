@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@food/components/ui/card"
 import { Button } from "@food/components/ui/button"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
-import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp"
+import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 
 export default function Home() {
   const navigate = useNavigate()

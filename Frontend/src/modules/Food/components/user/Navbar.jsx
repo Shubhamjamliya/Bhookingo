@@ -20,7 +20,7 @@ const debugWarn = (...args) => {}
 const debugError = (...args) => {}
 
 
-import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp"
+import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 
 export default function Navbar() {
   const routerLocation = useRouterLocation()

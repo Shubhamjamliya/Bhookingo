@@ -165,7 +165,7 @@ import {
 } from "@food/components/ui/dropdown-menu";
 import { useLocation } from "@food/hooks/useLocation";
 import { useHighway as useZone } from "@food/hooks/useHighway";
-import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp";
+import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 import homeBannerRed from "@food/assets/home-banner-orange-clean.png";
 import offerImage from "@food/assets/offerimage.png";
 import api, { publicGetOnce, restaurantAPI, adminAPI } from "@food/api";

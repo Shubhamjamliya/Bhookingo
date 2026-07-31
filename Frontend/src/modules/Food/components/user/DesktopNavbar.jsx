@@ -10,7 +10,7 @@ import { useLocationSelector, useSearchOverlay } from "./UserLayout"
 import { useProfile } from "@food/context/ProfileContext"
 import { FaLocationDot } from "react-icons/fa6"
 import { AnimatePresence, motion } from "framer-motion"
-import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp"
+import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import api from "@food/api"
 import { isModuleAuthenticated } from "@food/utils/auth"

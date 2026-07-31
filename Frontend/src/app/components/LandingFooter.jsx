@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Smartphone, Globe } from 'lucide-react';
 import api from "@food/api";
-import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp";
+import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 
 export default function LandingFooter() {
   const navigate = useNavigate();

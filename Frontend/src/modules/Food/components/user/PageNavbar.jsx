@@ -7,7 +7,7 @@ import { useCart } from "@food/context/CartContext"
 import { useLocationSelector } from "./UserLayout"
 import { FaLocationDot } from "react-icons/fa6"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
-import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp"
+import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 import { Avatar, AvatarFallback, AvatarImage } from "@food/components/ui/avatar"
 import { useProfile } from "@food/context/ProfileContext"
 import { isModuleAuthenticated } from "@food/utils/auth"

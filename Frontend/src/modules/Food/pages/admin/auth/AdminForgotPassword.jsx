@@ -13,7 +13,7 @@ import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
 import { Mail, ArrowLeft, Shield, Phone } from "lucide-react"
 import { adminAPI } from "@food/api"
-import bhookingoLogo from "@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp"
+import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 import { useCompanyName } from "@food/hooks/useCompanyName"
 import { loadBusinessSettings } from "@food/utils/businessSettings"
 import { toast } from "sonner"

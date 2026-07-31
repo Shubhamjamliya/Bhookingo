@@ -34,7 +34,6 @@ import {
 } from 'lucide-react';
 import LandingHeader from './components/LandingHeader';
 import LandingFooter from './components/LandingFooter';
-import bhookingoLogo from '@backend-uploads/logos/2026/07/e997aea1-c104-473d-9491-2b471c01f36f.webp';
 
 export default function MasterLandingPage() {
   const navigate = useNavigate();

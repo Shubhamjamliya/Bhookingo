@@ -1,62 +1,45 @@
 import express from 'express';
 import { upload } from '../../../middleware/upload.js';
-import { uploadImageBuffer, uploadVideoBuffer } from '../../../services/cloudinary.service.js';
+import { authMiddleware } from '../../../core/auth/auth.middleware.js';
+import {
+    uploadFileBuffer,
+    uploadGenericImage,
+    uploadVideoBuffer
+} from '../../../services/cloudinary.service.js';
 
 const router = express.Router();
 
-// POST /v1/uploads/image
+const MAX_IMAGE_SIZE = 15 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const ALLOWED_IMAGE_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+
+const getFolder = (req, fallback) => {
+    const folder = typeof req.body?.folder === 'string' ? req.body.folder.trim() : '';
+    return folder || fallback;
+};
+
 router.post('/image', upload.single('file'), async (req, res, next) => {
     try {
-        if (!req.file || !req.file.buffer) {
-            return res.status(400).json({
-                success: false,
-                message: 'No file provided'
-            });
+        if (!req.file?.buffer) {
+            return res.status(400).json({ success: false, message: 'No file provided' });
         }
 
-        // Limit size to 15 MB
-        const MAX_SIZE = 15 * 1024 * 1024;
-        if (req.file.size > MAX_SIZE) {
-            return res.status(400).json({
-                success: false,
-                message: 'The uploaded image exceeds the maximum size of 15 MB.'
-            });
+        if (req.file.size > MAX_IMAGE_SIZE) {
+            return res.status(400).json({ success: false, message: 'The uploaded image exceeds the maximum size of 15 MB.' });
         }
 
-        // Validate allowed file types
         const mimeType = String(req.file.mimetype || '').toLowerCase();
-        const originalName = String(req.file.originalname || '').toLowerCase();
-        const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-        const isAllowedExtension = originalName.endsWith('.jpg') || originalName.endsWith('.jpeg') || originalName.endsWith('.png') || originalName.endsWith('.webp');
-
-        if (!allowedMimeTypes.includes(mimeType) && !isAllowedExtension) {
-            return res.status(400).json({
-                success: false,
-                message: 'Only JPG, JPEG, PNG and WebP images are supported.'
-            });
+        if (!ALLOWED_IMAGE_MIME_TYPES.includes(mimeType)) {
+            return res.status(400).json({ success: false, message: 'Only JPG, JPEG, PNG, WEBP and GIF images are supported.' });
         }
 
-        const folder = typeof req.body?.folder === 'string' && req.body.folder.trim()
-            ? req.body.folder.trim()
-            : 'uploads';
-
-        let url;
-        try {
-            url = await uploadImageBuffer(req.file.buffer, folder);
-        } catch (uploadError) {
-            console.error('Image upload buffer error:', uploadError);
-            return res.status(400).json({
-                success: false,
-                message: 'Image processing failed.'
-            });
-        }
-
+        const url = await uploadGenericImage(req.file.buffer, getFolder(req, 'image'));
         return res.status(200).json({
             success: true,
             message: 'Image uploaded successfully',
             data: {
                 url,
-                publicId: null
+                publicId: url
             }
         });
     } catch (error) {
@@ -64,37 +47,92 @@ router.post('/image', upload.single('file'), async (req, res, next) => {
     }
 });
 
+router.post('/file', upload.single('file'), async (req, res, next) => {
+    try {
+        if (!req.file?.buffer) {
+            return res.status(400).json({ success: false, message: 'No file provided' });
+        }
 
-// POST /v1/uploads/video
+        if (req.file.size > MAX_FILE_SIZE) {
+            return res.status(400).json({ success: false, message: 'The uploaded file exceeds the maximum size of 50 MB.' });
+        }
+
+        const originalName = String(req.file.originalname || 'file');
+        const extension = originalName.includes('.') ? originalName.split('.').pop() : 'bin';
+        const url = await uploadFileBuffer(req.file.buffer, getFolder(req, 'file'), {
+            fileName: originalName,
+            format: extension
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'File uploaded successfully',
+            data: {
+                url,
+                publicId: url,
+                originalName
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 router.post('/video', upload.single('file'), async (req, res, next) => {
     try {
-        if (!req.file || !req.file.buffer) {
-            return res.status(400).json({
-                success: false,
-                message: 'No file provided'
-            });
+        if (!req.file?.buffer) {
+            return res.status(400).json({ success: false, message: 'No file provided' });
         }
 
         const mimeType = String(req.file.mimetype || '').toLowerCase();
         if (!mimeType.startsWith('video/')) {
-            return res.status(400).json({
-                success: false,
-                message: 'Only video files are allowed'
-            });
+            return res.status(400).json({ success: false, message: 'Only video files are allowed' });
         }
 
-        const folder = typeof req.body?.folder === 'string' && req.body.folder.trim()
-            ? req.body.folder.trim()
-            : 'uploads/videos';
+        if (req.file.size > MAX_FILE_SIZE) {
+            return res.status(400).json({ success: false, message: 'The uploaded video exceeds the maximum size of 50 MB.' });
+        }
 
-        const url = await uploadVideoBuffer(req.file.buffer, folder);
+        const originalName = String(req.file.originalname || 'video.mp4');
+        const extension = originalName.includes('.') ? originalName.split('.').pop() : 'mp4';
+        const url = await uploadVideoBuffer(req.file.buffer, getFolder(req, 'video'), {
+            format: extension
+        });
 
         return res.status(200).json({
             success: true,
             message: 'Video uploaded successfully',
             data: {
                 url,
-                publicId: null
+                publicId: url,
+                originalName
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+router.post('/single', authMiddleware, upload.single('file'), async (req, res, next) => {
+    try {
+        if (!req.file?.buffer) {
+            return res.status(400).json({ success: false, message: 'No file provided' });
+        }
+
+        const originalName = String(req.file.originalname || 'file');
+        const extension = originalName.includes('.') ? originalName.split('.').pop() : 'bin';
+        const url = await uploadFileBuffer(req.file.buffer, getFolder(req, 'file'), {
+            fileName: originalName,
+            format: extension
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'File uploaded successfully',
+            data: {
+                url,
+                publicId: url,
+                originalName
             }
         });
     } catch (error) {
@@ -103,4 +141,3 @@ router.post('/video', upload.single('file'), async (req, res, next) => {
 });
 
 export default router;
-

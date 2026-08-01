@@ -6,6 +6,10 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const defaultStorageDir = process.env.NODE_ENV === 'production'
+    ? '/var/www/uploads'
+    : path.resolve(__dirname, '../../uploads');
+const resolvedStorageDir = path.resolve(process.env.STORAGE_DIR || defaultStorageDir);
 
 export const config = {
     // Basic server config
@@ -57,7 +61,7 @@ export const config = {
     bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS || 10),
 
     // Uploads
-    uploadPath: process.env.UPLOAD_PATH || 'uploads/',
+    uploadPath: resolvedStorageDir,
 
     // Redis
     redisEnabled: process.env.REDIS_ENABLED === 'true',
@@ -91,18 +95,18 @@ export const config = {
     // Razorpay (payments)
     razorpayKeyId: process.env.RAZORPAY_KEY_ID,
     razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET,
-    razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET, // ✅ NEW
+    razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET,
 
     // Google Maps
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY,
 
-    // Email (SMTP) – for admin forgot password OTP etc.
+    // Email (SMTP) for admin forgot password OTP etc.
     emailHost: process.env.EMAIL_HOST,
     emailPort: Number(process.env.EMAIL_PORT) || 587,
     emailUser: process.env.EMAIL_USER,
     emailPass: process.env.EMAIL_PASS ? String(process.env.EMAIL_PASS).replace(/\s/g, '') : '',
     emailFrom: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@example.com',
     bookingRadiusKm: Number(process.env.BOOKING_RADIUS_KM || 50),
-    storageDir: process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_DIR) : path.resolve(__dirname, '../../uploads'),
+    storageDir: resolvedStorageDir,
     baseUrl: (process.env.BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
 };

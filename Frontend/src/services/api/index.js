@@ -2,9 +2,12 @@
  * API layer - auth connected to new backend; rest stubbed for UI compatibility.
  */
 
+import axios from "axios";
 import apiClient from "./axios.js";
 import { API_ENDPOINTS } from "./config.js";
 import * as authService from "./auth.js";
+import { getUploadApiBaseUrl, getUploadAuthHeaders, joinApiUrl } from "./uploadTarget.js";
+import { getUploadErrorMessage } from "../../shared/utils/uploadErrors.js";
 
 const stub = () =>
   Promise.resolve({
@@ -1707,12 +1710,35 @@ export const highwayAPI = {
 };
 
 
+const uploadRequestWithFallback = async (paths, formData) => {
+  const baseUrl = getUploadApiBaseUrl();
+  const headers = getUploadAuthHeaders();
+  let lastError = null;
+
+  for (const requestPath of paths) {
+    try {
+      return await axios.post(joinApiUrl(baseUrl, requestPath), formData, {
+        timeout: 300000,
+        headers,
+      });
+    } catch (error) {
+      lastError = error;
+      if (error?.response?.status && error.response.status !== 404) {
+        error.userMessage = getUploadErrorMessage(error, { fallback: "Failed to upload file." });
+        throw error;
+      }
+    }
+  }
+
+  if (lastError) {
+    lastError.userMessage = getUploadErrorMessage(lastError, { fallback: "Failed to upload file." });
+    throw lastError;
+  }
+
+  throw new Error("Upload failed");
+};
+
 export const uploadAPI = {
-  /**
-   * Upload a single image file to the backend (Cloudinary-backed).
-   * @param {File|Blob} file
-   * @param {{ folder?: string }} options
-   */
   uploadMedia: (file, options = {}) => {
     if (!file) {
       return Promise.reject(new Error("File is required for upload"));
@@ -1724,9 +1750,33 @@ export const uploadAPI = {
       formData.append("folder", options.folder);
     }
 
-    return apiClient.post("/uploads/image", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    return uploadRequestWithFallback(["/uploads/image"], formData);
+  },
+  uploadFile: (file, options = {}) => {
+    if (!file) {
+      return Promise.reject(new Error("File is required for upload"));
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    if (options.folder) {
+      formData.append("folder", options.folder);
+    }
+
+    return uploadRequestWithFallback(["/uploads/file"], formData);
+  },
+  uploadVideo: (file, options = {}) => {
+    if (!file) {
+      return Promise.reject(new Error("File is required for upload"));
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    if (options.folder) {
+      formData.append("folder", options.folder);
+    }
+
+    return uploadRequestWithFallback(["/uploads/video"], formData);
   },
 };
 /** Order API (user app – Bearer USER token). Minimal calls: single create/verify, list/details cached by caller. */
@@ -2042,3 +2092,5 @@ export const diningAPI = {
 };
 export const heroBannerAPI = createStubAPI();
 export const publicAPI = createStubAPI();
+
+

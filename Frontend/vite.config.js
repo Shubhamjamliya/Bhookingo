@@ -17,16 +17,11 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      // Food module aliases
       '@food/api/axios': path.resolve(servicesApi, 'axios.js'),
       '@food/api/config': path.resolve(servicesApi, 'config.js'),
       '@food/api': servicesApi,
       '@food': foodSrc,
-
-      // Backend uploads alias
       '@backend-uploads': path.resolve(__dirname, '../Backend/uploads'),
-
-      // Main source alias
       '@': path.resolve(__dirname, './src'),
     },
 
@@ -60,6 +55,14 @@ export default defineConfig({
         secure: false,
       },
       '/images': {
+        target:
+          process.env.VITE_BACKEND_PROXY_TARGET ||
+          'http://localhost:5000',
+
+        changeOrigin: true,
+        secure: false,
+      },
+      '/uploads': {
         target:
           process.env.VITE_BACKEND_PROXY_TARGET ||
           'http://localhost:5000',

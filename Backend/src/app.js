@@ -16,13 +16,9 @@ import { config } from './config/env.js';
 
 const app = express();
 
-// Trust first proxy (essential for express-rate-limit if behind a proxy)
 app.set('trust proxy', 1);
-
-// Request ID tracing (before other middlewares so all logs can use it)
 app.use(requestIdMiddleware);
 
-// Health endpoints (no rate limit, minimal JSON, no secrets)
 app.get('/health', async (_req, res) => {
     try {
         const data = await healthCheck();
@@ -35,7 +31,6 @@ app.get('/ready', (_req, res) => {
     res.status(200).json({ status: 'ready' });
 });
 
-// Security & parsing middlewares
 app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     contentSecurityPolicy: { directives: { defaultSrc: ["'self'"] } },
@@ -45,21 +40,20 @@ app.use(helmet({
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 app.use(cors({
-    origin: ["http://localhost:5173"],
+    origin: ['http://localhost:5173'],
     credentials: true
 }));
 // app.use(morgan('dev'));
 app.use(express.json({
+    limit: '15mb',
     verify: (req, res, buf) => {
-        // ✅ Store rawBody for signature verification (Razorpay Webhooks)
         if (req.originalUrl && req.originalUrl.includes('/webhook/razorpay')) {
             req.rawBody = buf;
         }
     }
 }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
-// Protect against NoSQL injection and XSS
 app.use((req, _res, next) => {
     req.body = mongoSanitize(req.body);
     req.query = mongoSanitize(req.query);
@@ -68,29 +62,28 @@ app.use((req, _res, next) => {
 });
 app.use(xssClean());
 
-// Serve processed images locally (useful for development)
-app.use('/images', express.static(path.resolve(config.storageDir)));
+const storageRoot = path.resolve(config.storageDir);
+app.use('/uploads', express.static(storageRoot));
+app.use('/images', express.static(storageRoot));
 
-// Global rate limiting for API routes
 app.use('/api', apiRateLimiter);
-
-// Optional: log API response time (method, path, status, duration) - no sensitive data
 // app.use('/api', responseTimeLogger);
 
-// Middleware to dynamically transform relative image paths in API responses to absolute URLs
 app.use((req, res, next) => {
     const originalJson = res.json;
     res.json = function (body) {
         const baseUrl = config.baseUrl;
-        
-        const transformImageUrls = (obj) => {
+
+        const transformMediaUrls = (obj) => {
             if (!obj) return obj;
 
             if (typeof obj === 'string') {
-                if (obj.startsWith('/images/')) {
+                if (obj.startsWith('/uploads/') || obj.startsWith('/images/')) {
                     return `${baseUrl}${obj}`;
                 }
-                // Also clean up any lingering localhost:5000 references if base URL is different
+                if (obj.includes('localhost:5000/uploads/') && baseUrl !== 'http://localhost:5000') {
+                    return obj.replace(/https?:\/\/localhost:5000\/uploads\//g, `${baseUrl}/uploads/`);
+                }
                 if (obj.includes('localhost:5000/images/') && baseUrl !== 'http://localhost:5000') {
                     return obj.replace(/https?:\/\/localhost:5000\/images\//g, `${baseUrl}/images/`);
                 }
@@ -98,7 +91,7 @@ app.use((req, res, next) => {
             }
 
             if (Array.isArray(obj)) {
-                return obj.map(transformImageUrls);
+                return obj.map(transformMediaUrls);
             }
 
             if (typeof obj === 'object') {
@@ -113,10 +106,10 @@ app.use((req, res, next) => {
                 } else if (obj.toJSON && typeof obj.toJSON === 'function') {
                     doc = obj.toJSON();
                 }
-                
+
                 const newObj = {};
                 for (const key of Object.keys(doc)) {
-                    newObj[key] = transformImageUrls(doc[key]);
+                    newObj[key] = transformMediaUrls(doc[key]);
                 }
                 return newObj;
             }
@@ -124,16 +117,13 @@ app.use((req, res, next) => {
             return obj;
         };
 
-        const transformedBody = transformImageUrls(body);
+        const transformedBody = transformMediaUrls(body);
         return originalJson.call(this, transformedBody);
     };
     next();
 });
 
-// API Routes
 app.use('/api', routes);
-
-// Error Handling
 app.use(errorHandler);
 
 export default app;

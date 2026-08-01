@@ -12,26 +12,129 @@ import {
     countNodes,
     mergeConnectedSegments
 } from '../utils/geojsonHighwayParser.js';
-
-// ─── Constants ──────────────────────────────────────────────────────────────
+import {
+    saveHighwayGeometry,
+    readHighwayGeometry,
+    deleteHighwayGeometry
+} from '../utils/highwayGeometryStorage.js';
 
 const DEFAULT_THRESHOLD_METERS = 2000;
 const HIGHWAY_THRESHOLD_CONFIG_KEY = 'highway_threshold_meters';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+const cloneCoordinate = (coord) => ({ lat: Number(coord?.lat), lng: Number(coord?.lng) });
+const cloneSegment = (segment = []) => segment.map(cloneCoordinate);
 
-/** Return all line segments for a highway document. */
-const getHighwaySegments = (highway) => {
-    if (Array.isArray(highway.coordinates) && highway.coordinates.length >= 2) {
-        return [highway.coordinates];
+const normalizeGeometryPayload = (geometry = {}) => {
+    const coordinates = Array.isArray(geometry.coordinates)
+        ? geometry.coordinates.map(cloneCoordinate).filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng))
+        : [];
+    const segments = Array.isArray(geometry.segments)
+        ? geometry.segments
+            .map((segment) => cloneSegment(segment).filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng)))
+            .filter((segment) => segment.length >= 2)
+        : [];
+
+    const fallbackSegments = segments.length > 0
+        ? segments
+        : (coordinates.length >= 2 ? [coordinates] : []);
+    const fallbackCoordinates = coordinates.length >= 2
+        ? coordinates
+        : (fallbackSegments[0] || []);
+
+    return {
+        coordinates: fallbackCoordinates,
+        segments: fallbackSegments
+    };
+};
+
+const persistHighwayGeometryIfNeeded = async (highway) => {
+    if (!highway?._id) return highway;
+    if (highway.geometryPath) return highway;
+
+    const geometry = normalizeGeometryPayload({
+        coordinates: highway.coordinates,
+        segments: highway.segments
+    });
+
+    if (!geometry.coordinates.length && !geometry.segments.length) {
+        return highway;
     }
-    if (Array.isArray(highway.segments) && highway.segments.length > 0) {
-        return highway.segments;
+
+    const geometryPath = await saveHighwayGeometry({
+        docId: highway._id,
+        ref: highway.ref,
+        name: highway.name,
+        coordinates: geometry.coordinates,
+        segments: geometry.segments
+    });
+
+    await FoodHighway.updateOne(
+        { _id: highway._id },
+        {
+            $set: { geometryPath },
+            $unset: { coordinates: '', segments: '' }
+        }
+    );
+
+    return {
+        ...highway,
+        geometryPath,
+        coordinates: geometry.coordinates,
+        segments: geometry.segments
+    };
+};
+
+export const hydrateHighwayGeometry = async (highway, options = {}) => {
+    if (!highway) return highway;
+
+    const { mergeSegments: shouldMergeSegments = false } = options;
+    let workingHighway = highway;
+    const hasInlineGeometry =
+        (Array.isArray(workingHighway.coordinates) && workingHighway.coordinates.length >= 2) ||
+        (Array.isArray(workingHighway.segments) && workingHighway.segments.length > 0);
+
+    if (!workingHighway.geometryPath && !hasInlineGeometry && workingHighway._id) {
+        const legacyDoc = await FoodHighway.findById(workingHighway._id)
+            .select('name ref geometryPath coordinates segments')
+            .lean();
+        if (legacyDoc) {
+            workingHighway = { ...workingHighway, ...legacyDoc };
+        }
+    }
+
+    workingHighway = await persistHighwayGeometryIfNeeded(workingHighway);
+
+    const geometry = workingHighway.geometryPath
+        ? normalizeGeometryPayload(await readHighwayGeometry(workingHighway.geometryPath))
+        : normalizeGeometryPayload({
+            coordinates: workingHighway.coordinates,
+            segments: workingHighway.segments
+        });
+
+    const hydrated = {
+        ...workingHighway,
+        coordinates: geometry.coordinates,
+        segments: geometry.segments
+    };
+
+    if (shouldMergeSegments && Array.isArray(hydrated.segments) && hydrated.segments.length > 1) {
+        hydrated.segments = mergeConnectedSegments(hydrated.segments);
+        hydrated.coordinates = pickLongestSegment(hydrated.segments);
+    }
+
+    return hydrated;
+};
+
+const getHighwaySegments = async (highway) => {
+    const hydrated = await hydrateHighwayGeometry(highway);
+    if (Array.isArray(hydrated?.segments) && hydrated.segments.length > 0) {
+        return hydrated.segments;
+    }
+    if (Array.isArray(hydrated?.coordinates) && hydrated.coordinates.length >= 2) {
+        return [hydrated.coordinates];
     }
     return [];
 };
-
-// ─── Threshold Config ────────────────────────────────────────────────────────
 
 export async function getHighwayThresholdMeters() {
     try {
@@ -40,7 +143,6 @@ export async function getHighwayThresholdMeters() {
         if (Number.isFinite(val) && val >= 2000) {
             return val;
         }
-        // Auto-update MongoDB config to 2000 meters (2 KM)
         await FoodSystemConfig.findOneAndUpdate(
             { key: HIGHWAY_THRESHOLD_CONFIG_KEY },
             {
@@ -80,15 +182,6 @@ export async function setHighwayThresholdMeters(meters, adminId = null) {
     return val;
 }
 
-// ─── GeoJSON Bulk Import ─────────────────────────────────────────────────────
-
-/**
- * Import National Highways from a static GeoJSON FeatureCollection.
- * Groups LineString segments by NH ref and upserts one document per highway.
- *
- * @param {object} geojson - Parsed GeoJSON object
- * @returns {{ inserted, updated, skipped, total, uniqueRefs }}
- */
 export async function importHighwaysFromGeoJSON(geojson) {
     const highwayMap = parseHighwayGeoJSON(geojson);
 
@@ -117,12 +210,21 @@ export async function importHighwaysFromGeoJSON(geojson) {
         const segmentCount = segments.length;
 
         try {
-            const existing = await FoodHighway.findOne({ ref });
+            const existing = await FoodHighway.findOne({ ref }).select('_id geometryPath').lean();
+            const docId = existing?._id || new mongoose.Types.ObjectId();
+            const geometryPath = await saveHighwayGeometry({
+                docId,
+                ref,
+                name,
+                coordinates,
+                segments
+            });
+
             const payload = {
+                _id: docId,
                 name,
                 ref,
-                segments,
-                coordinates,
+                geometryPath,
                 boundingBox,
                 totalDistance,
                 nodeCount,
@@ -134,7 +236,13 @@ export async function importHighwaysFromGeoJSON(geojson) {
             };
 
             if (existing) {
-                await FoodHighway.updateOne({ ref }, { $set: payload });
+                await FoodHighway.updateOne(
+                    { _id: docId },
+                    {
+                        $set: payload,
+                        $unset: { coordinates: '', segments: '' }
+                    }
+                );
                 updated++;
             } else {
                 await FoodHighway.create(payload);
@@ -155,48 +263,20 @@ export async function importHighwaysFromGeoJSON(geojson) {
     };
 }
 
-// ─── Nearest Highway Detection ───────────────────────────────────────────────
-
-/**
- * Find geographically nearest active highway segment (ignores service threshold).
- * @returns {{ highway, distanceMeters } | null}
- */
 export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters = DEFAULT_THRESHOLD_METERS + 5000) => {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
     const paddingDeg = searchPaddingMeters / 111_000;
 
-    const candidates = await FoodHighway.aggregate([
-        {
-            $match: {
-                isActive: true,
-                'boundingBox.minLat': { $lte: lat + paddingDeg },
-                'boundingBox.maxLat': { $gte: lat - paddingDeg },
-                'boundingBox.minLng': { $lte: lng + paddingDeg },
-                'boundingBox.maxLng': { $gte: lng - paddingDeg }
-            }
-        },
-        {
-            $project: {
-                name: 1,
-                ref: 1,
-                coordinates: {
-                    $filter: {
-                        input: '$coordinates',
-                        as: 'c',
-                        cond: {
-                            $and: [
-                                { $lte: ['$$c.lat', lat + paddingDeg] },
-                                { $gte: ['$$c.lat', lat - paddingDeg] },
-                                { $lte: ['$$c.lng', lng + paddingDeg] },
-                                { $gte: ['$$c.lng', lng - paddingDeg] }
-                            ]
-                        }
-                    }
-                }
-            }
-        }
-    ]);
+    const candidates = await FoodHighway.find({
+        isActive: true,
+        'boundingBox.minLat': { $lte: lat + paddingDeg },
+        'boundingBox.maxLat': { $gte: lat - paddingDeg },
+        'boundingBox.minLng': { $lte: lng + paddingDeg },
+        'boundingBox.maxLng': { $gte: lng - paddingDeg }
+    })
+        .select('name ref geometryPath boundingBox')
+        .lean();
 
     if (!candidates.length) return null;
 
@@ -204,14 +284,15 @@ export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters 
     let nearest = null;
     let nearestDistance = Infinity;
 
-    for (const highway of candidates) {
-        const segmentList = getHighwaySegments(highway);
+    for (const candidate of candidates) {
+        const hydratedHighway = await hydrateHighwayGeometry(candidate);
+        const segmentList = await getHighwaySegments(hydratedHighway);
 
         for (const coords of segmentList) {
             if (!coords || coords.length < 2) continue;
 
             const lineCoords = coords
-                .map((c) => (Array.isArray(c) ? [Number(c[0]), Number(c[1])] : [Number(c?.lng ?? c?.longitude), Number(c?.lat ?? c?.latitude)]))
+                .map((c) => [Number(c?.lng ?? c?.longitude), Number(c?.lat ?? c?.latitude)])
                 .filter((pair) => Number.isFinite(pair[0]) && Number.isFinite(pair[1]));
             if (lineCoords.length < 2) continue;
 
@@ -229,7 +310,7 @@ export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters 
 
             if (distMeters < nearestDistance) {
                 nearestDistance = distMeters;
-                nearest = highway;
+                nearest = hydratedHighway;
             }
         }
     }
@@ -244,8 +325,6 @@ export async function findNearestHighway(lat, lng, thresholdMeters) {
     if (!result || result.distanceMeters > threshold) return null;
     return result;
 }
-
-// ─── Restaurant Assignment ───────────────────────────────────────────────────
 
 export async function assignHighwayToRestaurant(restaurantId, thresholdOverride = null) {
     try {
@@ -324,8 +403,6 @@ export async function detectHighwayAtPoint(lat, lng) {
     };
 }
 
-// ─── Bulk / Admin ────────────────────────────────────────────────────────────
-
 export async function listHighways(query = {}) {
     const limit = Math.min(Math.max(parseInt(query.limit, 10) || 200, 1), 1000);
     const page = Math.max(parseInt(query.page, 10) || 1, 1);
@@ -335,10 +412,13 @@ export async function listHighways(query = {}) {
     if (query.isActive !== undefined) filter.isActive = query.isActive === 'true' || query.isActive === true;
     if (query.ref) filter.ref = { $regex: String(query.ref), $options: 'i' };
 
+    const listProjection = 'name ref isActive importedAt source boundingBox totalDistance nodeCount segmentCount geometryPath';
+
     const [highways, total] = await Promise.all([
         FoodHighway.find(filter)
-            .select('name ref isActive importedAt source boundingBox totalDistance nodeCount segmentCount')
+            .select(listProjection)
             .sort({ ref: 1 })
+            .allowDiskUse(true)
             .skip(skip)
             .limit(limit)
             .lean(),
@@ -355,12 +435,7 @@ export async function getHighwayById(id) {
     const hw = await FoodHighway.findById(id).lean();
     if (!hw) throw new ValidationError('Highway not found');
 
-    // Stitch fragments for map display (idempotent if already merged at import)
-    if (Array.isArray(hw.segments) && hw.segments.length > 1) {
-        hw.segments = mergeConnectedSegments(hw.segments);
-    }
-
-    return hw;
+    return hydrateHighwayGeometry(hw, { mergeSegments: true });
 }
 
 export async function toggleHighwayStatus(id) {
@@ -377,8 +452,10 @@ export async function deleteHighway(id) {
     if (!mongoose.Types.ObjectId.isValid(id)) {
         throw new ValidationError('Invalid highway ID');
     }
+    const existing = await FoodHighway.findById(id).select('geometryPath').lean();
     const result = await FoodHighway.findByIdAndDelete(id);
     if (!result) throw new ValidationError('Highway not found');
+    await deleteHighwayGeometry(existing?.geometryPath).catch(() => {});
     return { deleted: true };
 }
 
@@ -396,12 +473,21 @@ export async function createHighway({ name, ref, coordinates, segments }) {
     const boundingBox = computeBoundingBoxFromSegments(segmentList);
     const totalDistance = computeTotalDistanceMeters(segmentList);
     const primaryCoords = pickLongestSegment(segmentList);
-
-    const highway = await FoodHighway.create({
+    const docId = new mongoose.Types.ObjectId();
+    const safeRef = ref || `MANUAL-${Date.now()}`;
+    const geometryPath = await saveHighwayGeometry({
+        docId,
+        ref: safeRef,
         name,
-        ref: ref || `MANUAL-${Date.now()}`,
-        segments: segmentList,
         coordinates: primaryCoords,
+        segments: segmentList
+    });
+
+    await FoodHighway.create({
+        _id: docId,
+        name,
+        ref: safeRef,
+        geometryPath,
         boundingBox,
         totalDistance,
         nodeCount: countNodes(segmentList),
@@ -410,7 +496,8 @@ export async function createHighway({ name, ref, coordinates, segments }) {
         source: 'manual',
         importedAt: new Date()
     });
-    return highway;
+
+    return getHighwayById(docId);
 }
 
 export async function updateHighway(id, { name, ref, coordinates, segments }) {
@@ -431,24 +518,37 @@ export async function updateHighway(id, { name, ref, coordinates, segments }) {
     const boundingBox = computeBoundingBoxFromSegments(segmentList);
     const totalDistance = computeTotalDistanceMeters(segmentList);
     const primaryCoords = pickLongestSegment(segmentList);
+    const existing = await FoodHighway.findById(id).select('_id geometryPath').lean();
+    if (!existing) throw new ValidationError('Highway not found');
 
-    const hw = await FoodHighway.findByIdAndUpdate(
+    const geometryPath = await saveHighwayGeometry({
+        docId: existing._id,
+        ref,
+        name,
+        coordinates: primaryCoords,
+        segments: segmentList
+    });
+
+    await FoodHighway.findByIdAndUpdate(
         id,
         {
             $set: {
                 name,
                 ref,
-                segments: segmentList,
-                coordinates: primaryCoords,
+                geometryPath,
                 boundingBox,
                 totalDistance,
                 nodeCount: countNodes(segmentList),
                 segmentCount: segmentList.length,
                 source: 'manual_edit'
+            },
+            $unset: {
+                coordinates: '',
+                segments: ''
             }
         },
         { new: true }
     );
-    if (!hw) throw new ValidationError('Highway not found');
-    return hw;
+
+    return getHighwayById(id);
 }

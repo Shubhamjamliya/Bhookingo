@@ -1,4 +1,4 @@
-import { detectHighwayAtPoint } from '../../admin/services/highway.service.js';
+import { detectHighwayAtPoint, hydrateHighwayGeometry } from '../../admin/services/highway.service.js';
 import { FoodHighway } from '../../admin/models/highway.model.js';
 
 const toFinite = (v) => {
@@ -6,10 +6,6 @@ const toFinite = (v) => {
     return Number.isFinite(n) ? n : null;
 };
 
-/**
- * GET /food/landing/highways/detect?lat=..&lng=..
- * Detect the nearest highway to a given point (replaces /zones/detect).
- */
 export const detectHighwayPublicController = async (req, res, next) => {
     try {
         const lat = toFinite(req.query.lat);
@@ -22,7 +18,6 @@ export const detectHighwayPublicController = async (req, res, next) => {
         console.log(`[Restaurant Onboarding] detectHighway API requested for lat: ${lat}, lng: ${lng}`);
         console.log(`[Restaurant Onboarding] Result: Nearest highway ${result.highwayRef}, Distance: ${result.distanceMeters}m, Threshold: ${result.thresholdMeters}m, Status: ${result.status}`);
 
-
         return res.status(200).json({
             success: true,
             message: result.status === 'IN_SERVICE' ? 'Highway detected' : 'Out of service area',
@@ -33,7 +28,6 @@ export const detectHighwayPublicController = async (req, res, next) => {
                 highwayName: result.highwayName,
                 highwayRef: result.highwayRef,
                 distanceMeters: result.distanceMeters,
-                // Legacy zone alias (kept for backward compat)
                 zoneId: result.highwayId,
                 zone: null
             }
@@ -43,11 +37,6 @@ export const detectHighwayPublicController = async (req, res, next) => {
     }
 };
 
-/**
- * GET /food/landing/highways/public
- * List all active highways (for onboarding/selects, replaces /zones/public).
- * Returns only metadata (no full coordinate arrays for size efficiency).
- */
 export const listHighwaysPublicController = async (req, res, next) => {
     try {
         const highways = await FoodHighway.find({ isActive: true })
@@ -65,11 +54,6 @@ export const listHighwaysPublicController = async (req, res, next) => {
     }
 };
 
-/**
- * GET /food/landing/highways/nearby
- * List active highways with coordinate arrays for Google Maps rendering.
- * Can be filtered by a bounding box: ?minLat=&maxLat=&minLng=&maxLng=
- */
 export const listHighwaysNearbyPublicController = async (req, res, next) => {
     try {
         const filter = { isActive: true };
@@ -87,14 +71,18 @@ export const listHighwaysNearbyPublicController = async (req, res, next) => {
         }
 
         const highways = await FoodHighway.find(filter)
-            .select('name ref coordinates segments isActive')
+            .select('name ref geometryPath isActive boundingBox totalDistance nodeCount segmentCount')
             .sort({ ref: 1 })
             .lean();
+
+        const hydratedHighways = await Promise.all(
+            highways.map((highway) => hydrateHighwayGeometry(highway, { mergeSegments: true }))
+        );
 
         return res.status(200).json({
             success: true,
             message: 'Nearby highways fetched',
-            data: { highways }
+            data: { highways: hydratedHighways }
         });
     } catch (error) {
         next(error);

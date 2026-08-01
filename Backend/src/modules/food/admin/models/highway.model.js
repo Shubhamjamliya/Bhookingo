@@ -33,18 +33,17 @@ const highwaySchema = new mongoose.Schema(
             unique: true,
             sparse: true
         },
-        /** Primary polyline for simple map display (longest segment). */
+        geometryPath: {
+            type: String,
+            trim: true,
+            default: undefined
+        },
+        /** Legacy inline polyline retained for backward-compatible migration only. */
         coordinates: {
             type: [highwayCoordinateSchema],
-            required: true,
-            validate: {
-                validator(v) {
-                    return Array.isArray(v) && v.length >= 2;
-                },
-                message: 'Highway must have at least 2 coordinates.'
-            }
+            default: undefined
         },
-        /** All road segments from GeoJSON import (array of coordinate arrays). */
+        /** Legacy inline road segments retained for backward-compatible migration only. */
         segments: {
             type: mongoose.Schema.Types.Mixed,
             default: undefined
@@ -65,7 +64,6 @@ const highwaySchema = new mongoose.Schema(
             type: Number,
             default: 0
         },
-        /** LineString count in source GeoJSON before endpoint merging. */
         rawSegmentCount: {
             type: Number,
             default: 0

@@ -3,7 +3,7 @@ import * as turf from '@turf/turf';
 import { FoodSystemConfig } from '../../admin/models/systemConfig.model.js';
 import { FoodHighway } from '../../admin/models/highway.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
-import { findNearestHighwayUnchecked } from '../../admin/services/highway.service.js';
+import { findNearestHighwayUnchecked, getHighwayById, hydrateHighwayGeometry } from '../../admin/services/highway.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { fetchDirections } from '../../orders/utils/googleMaps.js';
 
@@ -246,7 +246,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
         if (!mongoose.Types.ObjectId.isValid(highwayId)) {
             throw new ValidationError('Invalid highway ID');
         }
-        highway = await FoodHighway.findById(highwayId).lean();
+        highway = await getHighwayById(highwayId);
         if (!highway) {
             throw new ValidationError('Highway not found');
         }
@@ -367,7 +367,7 @@ export async function validateOrderDrivingRange(restaurant, userLocation) {
     }
 
     const settings = await getDrivingSettings();
-    const highway = await FoodHighway.findById(restaurant.highwayId).lean();
+    const highway = await getHighwayById(restaurant.highwayId);
     if (!highway || !Array.isArray(highway.coordinates) || highway.coordinates.length < 2) {
         return; // if highway geometry is missing, fall back to allow
     }
@@ -409,7 +409,7 @@ export async function getConnectingHighways({ startLat, startLng, endLat, endLng
         'boundingBox.minLng': { $lte: startLng + paddingDeg },
         'boundingBox.maxLng': { $gte: startLng - paddingDeg }
     };
-    const startHighways = await FoodHighway.find(startQuery).lean();
+    const startHighways = await FoodHighway.find(startQuery).select('name ref geometryPath boundingBox').lean();
 
     // 2. Find candidate highways near end location
     const endQuery = {
@@ -419,7 +419,7 @@ export async function getConnectingHighways({ startLat, startLng, endLat, endLng
         'boundingBox.minLng': { $lte: endLng + paddingDeg },
         'boundingBox.maxLng': { $gte: endLng - paddingDeg }
     };
-    const endHighways = await FoodHighway.find(endQuery).lean();
+    const endHighways = await FoodHighway.find(endQuery).select('name ref geometryPath boundingBox').lean();
 
     // 3. Find common highways (intersection)
     const endHwRefs = new Set(endHighways.map(h => h.ref).filter(Boolean));
@@ -437,7 +437,8 @@ export async function getConnectingHighways({ startLat, startLng, endLat, endLng
     const matching = [];
 
     // 4. Proximity validation using Turf + details calculation
-    for (const hw of dbHighways) {
+    for (const candidate of dbHighways) {
+        const hw = await hydrateHighwayGeometry(candidate, { mergeSegments: true });
         let line;
         if (Array.isArray(hw.segments) && hw.segments.length > 0) {
             const lines = hw.segments.map(seg => seg.map(c => [c.lng, c.lat]));

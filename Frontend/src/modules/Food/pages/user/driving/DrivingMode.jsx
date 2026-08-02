@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Compass, Loader2, Navigation, AlertTriangle, List, Map, ShieldAlert, CheckCircle, Clock, ChevronRight, ArrowLeft, Share2, Heart, Wifi, Star, Car, ShieldCheck } from "lucide-react";
+import { Compass, Loader2, Navigation, AlertTriangle, List, Map, ShieldAlert, CheckCircle, Clock, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Share2, Heart, Wifi, Star, Car, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { userAPI, restaurantAPI } from "@food/api";
 import { useProfile } from "@food/context/ProfileContext";
@@ -187,11 +187,17 @@ export default function DrivingMode() {
   }, [handleExitDriving]);
 
   const [isDrawerExpanded, setIsDrawerExpanded] = useState(false);
-  const toggleDrawer = () => setIsDrawerExpanded((prev) => !prev);
+  const suppressHandleClickRef = useRef(false);
+  const toggleDrawer = useCallback(() => {
+    if (suppressHandleClickRef.current) {
+      suppressHandleClickRef.current = false;
+      return;
+    }
+    setIsDrawerExpanded((prev) => !prev);
+  }, []);
 
   const touchStartYRef = useRef(0);
   const touchMoveYRef = useRef(0);
-
   const handleTouchStart = (e) => {
     touchStartYRef.current = e.touches ? e.touches[0].clientY : e.clientY;
     touchMoveYRef.current = touchStartYRef.current;
@@ -203,11 +209,17 @@ export default function DrivingMode() {
 
   const handleTouchEnd = () => {
     const deltaY = touchMoveYRef.current - touchStartYRef.current;
-    if (deltaY < -30) {
+    if (Math.abs(deltaY) > 10) {
+      suppressHandleClickRef.current = true;
+    }
+    if (deltaY < -18) {
       setIsDrawerExpanded(true);
-    } else if (deltaY > 30) {
+    } else if (deltaY > 18) {
       setIsDrawerExpanded(false);
     }
+    window.setTimeout(() => {
+      suppressHandleClickRef.current = false;
+    }, 120);
   };
 
   // View States
@@ -858,7 +870,7 @@ export default function DrivingMode() {
       {viewMode === "map" ? (
         <div
           style={{ height: isDrawerExpanded ? "calc(100vh - 160px)" : "220px" }}
-          className="absolute bottom-0 left-0 right-0 z-20 pointer-events-auto w-full max-w-md mx-auto bg-white dark:bg-[#111111] border-t dark:border-neutral-800/80 rounded-t-[24px] shadow-[0_-8px_30px_rgba(0,0,0,0.06)] flex flex-col transition-all duration-300 overflow-hidden"
+          className="absolute bottom-0 left-0 right-0 z-20 pointer-events-auto w-full max-w-md mx-auto bg-white dark:bg-[#111111] border-t dark:border-neutral-800/80 rounded-t-[24px] shadow-[0_-8px_30px_rgba(0,0,0,0.06)] flex flex-col transition-[height] duration-150 ease-out will-change-[height] overflow-hidden"
         >
           {/* Drag Handle Top Bar */}
           <div
@@ -869,9 +881,20 @@ export default function DrivingMode() {
             onMouseDown={handleTouchStart}
             onMouseMove={handleTouchMove}
             onMouseUp={handleTouchEnd}
-            className="w-full cursor-pointer bg-white dark:bg-[#111111] py-1 shrink-0 flex flex-col items-center select-none touch-none"
+            className="relative w-full cursor-pointer bg-white dark:bg-[#111111] py-2 shrink-0 flex flex-col items-center select-none touch-none"
           >
             <div className="w-12 h-1.5 bg-gray-200 dark:bg-neutral-800 rounded-full my-1" />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDrawerExpanded((prev) => !prev);
+              }}
+              className="absolute left-1/2 top-1/2 inline-flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition-colors duration-150 hover:bg-gray-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              aria-label={isDrawerExpanded ? "Collapse drawer" : "Expand drawer"}
+            >
+              {isDrawerExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </button>
           </div>
 
           {/* Category Filters (Fixed Header) */}
@@ -881,7 +904,7 @@ export default function DrivingMode() {
           />
 
           {/* Restaurants List Container */}
-          <div className={`flex-1 px-4 ${isDrawerExpanded ? "overflow-y-auto pb-28 filters-scroll-hide" : "pb-4 overflow-hidden"}`}>
+          <div className={`flex-1 px-4 transition-all duration-150 ease-out ${isDrawerExpanded ? "overflow-y-auto pb-28 filters-scroll-hide" : "pb-4 overflow-hidden"}`}>
             {/* Header Row */}
             <div className="flex items-center justify-between py-3 border-b dark:border-neutral-900/60 mb-3 bg-white dark:bg-[#111111] sticky top-0 z-10">
               <h3 className="font-extrabold text-sm text-gray-900 dark:text-white">

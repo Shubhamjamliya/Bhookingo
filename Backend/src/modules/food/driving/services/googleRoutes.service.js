@@ -8,9 +8,7 @@ import { decodePolyline, fetchDirections as fetchLegacyDirections } from '../../
 import { getStoredDrivingSettingsConfig } from './drivingSettings.shared.js';
 
 const GOOGLE_ROUTES_API_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
-const DEFAULT_ROUTE_CACHE_TTL_MS = 15 * 60 * 1000;
 const MAX_ROUTE_SAMPLE_POINTS = 40;
-const routeCache = new Map();
 
 const toFinite = (value) => {
     const numericValue = typeof value === 'number' ? value : Number(value);
@@ -18,38 +16,6 @@ const toFinite = (value) => {
 };
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-const buildRouteCacheKey = (origin, destination, options = {}) => {
-    const parts = [
-        origin.lat,
-        origin.lng,
-        destination.lat,
-        destination.lng
-    ].map((value) => Number(value).toFixed(5));
-    parts.push(options.includeStoredHighways ? 'withStoredHighways' : 'routeOnly');
-    parts.push(Number(options.corridorRadiusKm || 0).toFixed(2));
-    parts.push(options.includeAlternatives ? 'alternatives' : 'single');
-    return parts.join(':');
-};
-
-const getCachedRoute = (cacheKey) => {
-    const cached = routeCache.get(cacheKey);
-    if (!cached) return null;
-
-    if (Date.now() > cached.expiresAt) {
-        routeCache.delete(cacheKey);
-        return null;
-    }
-
-    return cached.value;
-};
-
-const setCachedRoute = (cacheKey, value) => {
-    routeCache.set(cacheKey, {
-        value,
-        expiresAt: Date.now() + DEFAULT_ROUTE_CACHE_TTL_MS
-    });
-};
 
 const computeBoundingBoxFromCoordinates = (coordinates = []) => {
     if (!Array.isArray(coordinates) || coordinates.length === 0) return null;
@@ -254,10 +220,13 @@ async function countRestaurantsAlongRoute(decodedCoordinates, corridorRadiusKm) 
         return 0;
     }
 
-    const paddingDeg = corridorRadiusKm / 111;
+    const effectiveCorridorRadiusKm = corridorRadiusKm;
+    const paddingDeg = effectiveCorridorRadiusKm / 111;
     const candidates = await FoodRestaurant.find({
         status: 'approved',
         isAcceptingOrders: true,
+        isHighwayRestaurant: true,
+        highwayId: { $ne: null },
         'location.latitude': { $gte: bounds.minLat - paddingDeg, $lte: bounds.maxLat + paddingDeg },
         'location.longitude': { $gte: bounds.minLng - paddingDeg, $lte: bounds.maxLng + paddingDeg }
     })
@@ -278,7 +247,7 @@ async function countRestaurantsAlongRoute(decodedCoordinates, corridorRadiusKm) 
 
         const projectedPoint = turf.nearestPointOnLine(routeLine, turf.point([lng, lat]), { units: 'kilometers' });
         const distanceKm = projectedPoint?.properties?.dist;
-        if (Number.isFinite(distanceKm) && distanceKm <= corridorRadiusKm) {
+        if (Number.isFinite(distanceKm) && distanceKm <= effectiveCorridorRadiusKm) {
             count += 1;
         }
     }
@@ -532,16 +501,6 @@ export async function getGoogleRouteHighwayOptions({
         25
     );
 
-    const cacheKey = buildRouteCacheKey(normalizedOrigin, normalizedDestination, {
-        includeStoredHighways,
-        corridorRadiusKm: effectiveCorridorRadiusKm,
-        includeAlternatives
-    });
-    const cachedRoute = getCachedRoute(cacheKey);
-    if (cachedRoute) {
-        return cachedRoute;
-    }
-
     const primaryRoutes = await fetchRoutesFromGoogleRoutesApi(normalizedOrigin, normalizedDestination, {
         includeAlternatives
     });
@@ -613,8 +572,6 @@ export async function getGoogleRouteHighwayOptions({
         recommendedRouteId: decorated.recommendedRouteId,
         routes: decorated.routes
     };
-
-    setCachedRoute(cacheKey, payload);
     return payload;
 }
 
@@ -656,3 +613,5 @@ export async function getGoogleRouteHighway({
         roadNames: recommendedRoute.roadNames
     };
 }
+
+

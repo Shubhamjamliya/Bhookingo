@@ -113,6 +113,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
 
         const lineCoords = decodedCoordinates.map(c => [c.lng, c.lat]);
         const line = turf.lineString(lineCoords);
+        // Keep driving mode strict: only roadside/highway restaurants very close to the route.
         const effectiveRoadCorridorKm = settings.googleRouteSearchRadiusKm;
 
         let minLat = Infinity;
@@ -137,6 +138,8 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
         const candidates = await FoodRestaurant.find({
             status: 'approved',
             isAcceptingOrders: true,
+            isHighwayRestaurant: true,
+            highwayId: { $ne: null },
             'location.latitude': { $gte: minLat - paddingDeg, $lte: maxLat + paddingDeg },
             'location.longitude': { $gte: minLng - paddingDeg, $lte: maxLng + paddingDeg }
         }).lean();
@@ -151,6 +154,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
                 : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
 
             if (!Number.isFinite(rlat) || !Number.isFinite(rlng)) continue;
+            if (restaurant.isHighwayRestaurant !== true || !restaurant.highwayId) continue;
 
             const rPoint = turf.point([rlng, rlat]);
             const R_proj = turf.nearestPointOnLine(line, rPoint, { units: 'kilometers' });
@@ -166,7 +170,10 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
             const isRestaurantAhead = distanceKm >= (-settings.googleRouteBackwardBufferKm);
 
             const maxDiscoveryDistance = rangeKm ? Number(rangeKm) : settings.googleRouteForwardRangeKm;
-            if (isRestaurantAhead && distanceKm <= maxDiscoveryDistance) {
+            const shouldIncludeRestaurant = settings.showAllRouteRestaurants === true
+                ? isRestaurantAhead
+                : (isRestaurantAhead && distanceKm <= maxDiscoveryDistance);
+            if (shouldIncludeRestaurant) {
                 const etaHours = distanceKm / userSpeed;
                 const etaMinutes = Math.max(1, Math.round(etaHours * 60));
                 const isBookable = distanceKm <= 50;
@@ -500,15 +507,27 @@ export async function getConnectingHighways({ startLat, startLng, endLat, endLng
     return matching;
 }
 
-export async function getGoogleRouteHighwayPreview({ startLat, startLng, endLat, endLng, corridorRadiusKm }) {
-    const googleRoute = await getGoogleRouteHighway({
+export async function getGoogleRouteHighwayPreview({
+    startLat,
+    startLng,
+    endLat,
+    endLng,
+    corridorRadiusKm,
+    includeAlternatives = true,
+    includeRestaurantCounts = false,
+    includeStoredHighways = false
+}) {
+    const routeOptions = await getGoogleRouteHighwayOptions({
         origin: { lat: startLat, lng: startLng },
         destination: { lat: endLat, lng: endLng },
-        includeStoredHighways: true,
-        corridorRadiusKm
+        includeStoredHighways,
+        corridorRadiusKm,
+        includeAlternatives,
+        includeRestaurantCounts
     });
-    if (!googleRoute) {
+    if (!routeOptions?.routes?.length) {
         throw new ValidationError('Unable to fetch route from Google Maps API');
     }
-    return googleRoute;
+    return routeOptions;
 }
+

@@ -544,6 +544,26 @@ export default function DrivingMode() {
       if (res?.data?.success) {
         const data = res.data.data;
         setResultData(data);
+
+        if (Array.isArray(data?.restaurants) && currentJourney?.destination) {
+          console.groupCollapsed(`[DrivingMode] Route restaurants (${data.restaurants.length})`);
+          console.table(
+            data.restaurants.map((restaurant, index) => ({
+              index: index + 1,
+              name: restaurant.name || restaurant.restaurantName || "-",
+              highway: restaurant.highwayRef || restaurant.highwayName || "-",
+              distanceKm: restaurant.distanceKm,
+              etaMinutes: restaurant.etaMinutes,
+              routeOffsetKm: restaurant.routeOffsetKm,
+              rating: restaurant.rating,
+              acceptingOrders: restaurant.isAcceptingOrders,
+              approved: restaurant.status === "approved",
+              city: restaurant.city || restaurant.address?.city || "-"
+            }))
+          );
+          console.log("[DrivingMode] Route restaurants payload:", data.restaurants);
+          console.groupEnd();
+        }
         if (data.status === "OUT_OF_HIGHWAY" && !currentJourney) {
           setStatus("OUTSIDE_HIGHWAY");
         } else if (!data.restaurants || data.restaurants.length === 0) {
@@ -777,7 +797,7 @@ export default function DrivingMode() {
     );
   }
 
-  if (status !== "AVAILABLE") {
+  if (status !== "AVAILABLE" && status !== "NO_RESTAURANTS") {
     return (
       <div className="min-h-screen bg-white dark:bg-[#121212] flex flex-col justify-between relative">
         <div className="flex-1 overflow-y-auto pb-4">
@@ -900,13 +920,24 @@ export default function DrivingMode() {
 
             {/* List Cards */}
             <div className="space-y-3">
-              {filteredRestaurants.map((res) => (
+              {filteredRestaurants.length > 0 ? (
+              filteredRestaurants.map((res) => (
                 <DrivingRestaurantCard
                   key={res._id}
                   restaurant={res}
                   onClick={() => setSelectedRestaurant(res)}
                 />
-              ))}
+              ))
+            ) : (
+              <div className="rounded-3xl border border-dashed border-gray-200 bg-white/90 px-4 py-6 text-center shadow-sm dark:border-neutral-800 dark:bg-neutral-900/90">
+                <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                  No restaurants found on this route right now
+                </div>
+                <div className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
+                  The map is still active. Try another route, move further ahead, or adjust driving mode settings.
+                </div>
+              </div>
+            )}
             </div>
           </div>
         )}
@@ -1280,3 +1311,6 @@ export default function DrivingMode() {
     </div>
   );
 }
+
+
+

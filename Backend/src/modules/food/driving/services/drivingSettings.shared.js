@@ -9,10 +9,11 @@ export const DEFAULT_DRIVING_SETTINGS = {
     locationRefreshIntervalMinutes: 5,
     restaurantSearchRadiusKm: 50,
     highwayEntryRadiusMeters: 2000,
-    googleRouteSearchRadiusKm: 15,
+    googleRouteSearchRadiusKm: 1,
     googleRouteForwardRangeKm: 100,
     googleRouteBackwardBufferKm: 0.5,
-    storedHighwayMatchRadiusKm: 5
+    storedHighwayMatchRadiusKm: 5,
+    showAllRouteRestaurants: false
 };
 
 const toFinite = (value) => {
@@ -60,7 +61,8 @@ export function normalizeDrivingSettings(rawSettings = {}) {
         storedHighwayMatchRadiusKm: normalizePositiveNumber(
             rawSettings.storedHighwayMatchRadiusKm,
             DEFAULT_DRIVING_SETTINGS.storedHighwayMatchRadiusKm
-        )
+        ),
+        showAllRouteRestaurants: rawSettings.showAllRouteRestaurants === true
     };
 }
 
@@ -89,7 +91,8 @@ export async function saveDrivingSettingsConfig(settings, adminId = null, option
         googleRouteSearchRadiusKm: Number(settings.googleRouteSearchRadiusKm ?? mergedSettings.googleRouteSearchRadiusKm),
         googleRouteForwardRangeKm: Number(settings.googleRouteForwardRangeKm ?? mergedSettings.googleRouteForwardRangeKm),
         googleRouteBackwardBufferKm: Number(settings.googleRouteBackwardBufferKm ?? mergedSettings.googleRouteBackwardBufferKm),
-        storedHighwayMatchRadiusKm: Number(settings.storedHighwayMatchRadiusKm ?? mergedSettings.storedHighwayMatchRadiusKm)
+        storedHighwayMatchRadiusKm: Number(settings.storedHighwayMatchRadiusKm ?? mergedSettings.storedHighwayMatchRadiusKm),
+        showAllRouteRestaurants: settings.showAllRouteRestaurants ?? mergedSettings.showAllRouteRestaurants
     };
 
     if (!Number.isFinite(payload.locationRefreshIntervalMinutes) || payload.locationRefreshIntervalMinutes <= 0) {

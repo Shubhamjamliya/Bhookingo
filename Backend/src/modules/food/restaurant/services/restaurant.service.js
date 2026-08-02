@@ -349,6 +349,23 @@ export const registerRestaurant = async (payload, files) => {
     try {
         const latNum = toFiniteNumber(latitude);
         const lngNum = toFiniteNumber(longitude);
+        const providedHighwayId = highwayId && mongoose.Types.ObjectId.isValid(String(highwayId).trim())
+            ? String(highwayId).trim()
+            : null;
+
+        const inferredHighwayResult = (latNum !== null && lngNum !== null)
+            ? await findNearestHighway(latNum, lngNum, 2000)
+            : null;
+
+        if (providedHighwayId && !inferredHighwayResult) {
+            throw new ValidationError('Selected highway is too far from the restaurant location. Move the pin closer to the roadside/highway.');
+        }
+
+        if (providedHighwayId && inferredHighwayResult && String(inferredHighwayResult.highway._id) !== providedHighwayId) {
+            throw new ValidationError('Selected highway does not match the restaurant location. Please use the nearest roadside/highway location.');
+        }
+
+        const resolvedHighway = inferredHighwayResult?.highway || null;
         const restaurant = await FoodRestaurant.create({
             restaurantName,
             restaurantNameNormalized,
@@ -360,9 +377,10 @@ export const registerRestaurant = async (payload, files) => {
             ownerPhoneLast10,
             primaryContactNumber,
             pureVegRestaurant: pureVegRestaurant === true,
-            highwayId: highwayId && mongoose.Types.ObjectId.isValid(String(highwayId).trim())
-                ? new mongoose.Types.ObjectId(String(highwayId).trim())
-                : undefined,
+            highwayId: resolvedHighway?._id || null,
+            highwayName: resolvedHighway?.name || null,
+            highwayRef: resolvedHighway?.ref || null,
+            isHighwayRestaurant: Boolean(resolvedHighway),
             locationSource: locationSource || 'google_places',
             // Store unified location object (geo + address).
             location: {
@@ -411,7 +429,7 @@ export const registerRestaurant = async (payload, files) => {
             ...images
         });
 
-        // Assign nearest highway from coordinates (replaces legacy zone tracing)
+        // Re-check nearest highway from coordinates as a safety sync for future threshold changes.
         await assignHighwayToRestaurant(restaurant._id);
 
         const refreshed = await FoodRestaurant.findById(restaurant._id).lean();

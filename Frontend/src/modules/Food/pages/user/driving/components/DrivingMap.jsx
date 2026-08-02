@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, useJsApiLoader, Polyline, Marker } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Polyline, Marker, OverlayView } from "@react-google-maps/api";
 import { Loader2, Locate } from "lucide-react";
 
 const MAP_CONTAINER_STYLE = {
@@ -9,8 +9,14 @@ const MAP_CONTAINER_STYLE = {
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
 const GOOGLE_MAPS_LIBRARIES = ["geometry", "drawing", "places"];
+const ALT_ROUTE_COLORS = ["#94a3b8", "#7c3aed", "#0f766e", "#b45309"];
 
 // High precision polyline decoder for Google Maps encoded polylines
+function getRouteMidpoint(path = []) {
+  if (!Array.isArray(path) || path.length === 0) return null;
+  return path[Math.floor(path.length / 2)] || null;
+}
+
 function decodePolyline(encoded) {
   if (!encoded) return [];
   const poly = [];
@@ -352,25 +358,73 @@ export default function DrivingMap({
         }}
       >
         {/* Alternate Routes */}
-        {alternateRoutePaths.map((routeEntry, index) => (
-          <Polyline
-            key={`alt-route-${routeEntry.routeOption?.routeId || index}`}
-            path={routeEntry.path}
-            onClick={() => {
-              if (routeEntry.routeOption && onRouteSelect) {
-                onRouteSelect(routeEntry.routeOption);
-              }
-            }}
-            options={{
-              strokeColor: "#94a3b8",
-              strokeOpacity: 0.75,
-              strokeWeight: 5,
-              geodesic: true,
-              zIndex: 1,
-              clickable: true,
-            }}
-          />
-        ))}
+        {alternateRoutePaths.map((routeEntry, index) => {
+          const routeMidpoint = getRouteMidpoint(routeEntry.path);
+          const routeColor = ALT_ROUTE_COLORS[index % ALT_ROUTE_COLORS.length];
+
+          return (
+            <React.Fragment key={`alt-route-${routeEntry.routeOption?.routeId || index}`}>
+              <Polyline
+                path={routeEntry.path}
+                onClick={() => {
+                  if (routeEntry.routeOption && onRouteSelect) {
+                    onRouteSelect(routeEntry.routeOption);
+                  }
+                }}
+                options={{
+                  strokeColor: "#ffffff",
+                  strokeOpacity: 0.01,
+                  strokeWeight: 20,
+                  geodesic: true,
+                  zIndex: 1,
+                  clickable: true,
+                }}
+              />
+              <Polyline
+                path={routeEntry.path}
+                onClick={() => {
+                  if (routeEntry.routeOption && onRouteSelect) {
+                    onRouteSelect(routeEntry.routeOption);
+                  }
+                }}
+                options={{
+                  strokeColor: routeColor,
+                  strokeOpacity: 0.86,
+                  strokeWeight: 6,
+                  geodesic: true,
+                  zIndex: 2,
+                  clickable: true,
+                  icons: [
+                    {
+                      icon: {
+                        path: "M 0,-1 0,1",
+                        strokeOpacity: 1,
+                        strokeWeight: 2.5,
+                        scale: 3
+                      },
+                      offset: "0",
+                      repeat: "18px"
+                    }
+                  ]
+                }}
+              />
+              {routeEntry.routeOption && routeMidpoint && (
+                <OverlayView
+                  position={routeMidpoint}
+                  mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onRouteSelect?.(routeEntry.routeOption)}
+                    className="pointer-events-auto rounded-full border border-white/80 bg-white/95 px-3 py-1 text-[11px] font-bold text-slate-700 shadow-lg backdrop-blur transition hover:scale-[1.02]"
+                  >
+                    {routeEntry.routeOption.durationText || routeEntry.routeOption.name || "Select route"}
+                  </button>
+                </OverlayView>
+              )}
+            </React.Fragment>
+          );
+        })}
 
         {/* Active Route Polyline */}
         {localRoutePath.length >= 2 && (

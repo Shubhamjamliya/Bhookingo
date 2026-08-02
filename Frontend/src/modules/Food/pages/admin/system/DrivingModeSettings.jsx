@@ -34,6 +34,7 @@ export default function DrivingModeSettings() {
   const [googleRouteForwardRangeKm, setGoogleRouteForwardRangeKm] = useState(100);
   const [googleRouteBackwardBufferKm, setGoogleRouteBackwardBufferKm] = useState(0.5);
   const [storedHighwayMatchRadiusKm, setStoredHighwayMatchRadiusKm] = useState(5);
+  const [showAllRouteRestaurants, setShowAllRouteRestaurants] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +53,7 @@ export default function DrivingModeSettings() {
           setGoogleRouteForwardRangeKm(Number(data.googleRouteForwardRangeKm) || 100);
           setGoogleRouteBackwardBufferKm(Number(data.googleRouteBackwardBufferKm) >= 0 ? Number(data.googleRouteBackwardBufferKm) : 0.5);
           setStoredHighwayMatchRadiusKm(Number(data.storedHighwayMatchRadiusKm) || 5);
+          setShowAllRouteRestaurants(data.showAllRouteRestaurants === true);
         }
       } catch (_error) {
         if (!cancelled && !loadToastShownRef.current) {
@@ -90,6 +92,7 @@ export default function DrivingModeSettings() {
         googleRouteForwardRangeKm,
         googleRouteBackwardBufferKm,
         storedHighwayMatchRadiusKm,
+        showAllRouteRestaurants,
       };
 
       await adminAPI.updateDrivingModeSettings(payload);
@@ -247,6 +250,20 @@ export default function DrivingModeSettings() {
               </p>
             </div>
 
+            <div className="flex items-start justify-between gap-4 p-4 border rounded-xl bg-neutral-50/50 dark:bg-neutral-900/50 dark:border-neutral-800">
+              <div className="space-y-1">
+                <Label className="text-base font-bold dark:text-neutral-200">Show All Valid Restaurants On Full Route</Label>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-snug">
+                  When enabled, trip planning shows every valid roadside restaurant ahead on the full selected route instead of limiting discovery to only the next nearby stretch.
+                </p>
+              </div>
+              <Switch
+                checked={showAllRouteRestaurants}
+                onCheckedChange={setShowAllRouteRestaurants}
+                className="scale-95 data-[state=checked]:bg-[#16a34a] data-[state=unchecked]:bg-zinc-400 shadow-sm"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label className="text-sm font-bold text-gray-700 dark:text-gray-300">Google Route Forward Search Distance (KM)</Label>
               <Input
@@ -259,7 +276,7 @@ export default function DrivingModeSettings() {
                 className="max-w-md bg-white border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 h-10 transition-all"
               />
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Maximum forward distance ahead of the user along the Google route for restaurant discovery.
+                Maximum forward distance ahead of the user along the Google route for restaurant discovery. This limit is ignored when the full-route toggle is enabled.
               </p>
             </div>
 

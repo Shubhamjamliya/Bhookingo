@@ -23,7 +23,8 @@ export const getPublicDrivingModeSettingsController = async (req, res, next) => 
                 googleRouteSearchRadiusKm: settings.googleRouteSearchRadiusKm,
                 googleRouteForwardRangeKm: settings.googleRouteForwardRangeKm,
                 googleRouteBackwardBufferKm: settings.googleRouteBackwardBufferKm,
-                storedHighwayMatchRadiusKm: settings.storedHighwayMatchRadiusKm
+                storedHighwayMatchRadiusKm: settings.storedHighwayMatchRadiusKm,
+                showAllRouteRestaurants: settings.showAllRouteRestaurants === true
             }
         });
     } catch (error) {

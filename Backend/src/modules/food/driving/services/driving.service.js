@@ -1,87 +1,28 @@
 import mongoose from 'mongoose';
 import * as turf from '@turf/turf';
-import { FoodSystemConfig } from '../../admin/models/systemConfig.model.js';
 import { FoodHighway } from '../../admin/models/highway.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { findNearestHighwayUnchecked, getHighwayById, hydrateHighwayGeometry } from '../../admin/services/highway.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
-import { fetchDirections } from '../../orders/utils/googleMaps.js';
+import { getGoogleRouteHighway } from './googleRoutes.service.js';
+import { getStoredDrivingSettingsConfig, saveDrivingSettingsConfig } from './drivingSettings.shared.js';
 
 // Constants
-const DRIVING_SETTINGS_KEY = 'driving_mode_settings';
 export const HIGHWAY_CONNECTIVITY_SEARCH_RADIUS_KM = 50;
-
-const DEFAULT_SETTINGS = {
-    enabled: true,
-    locationRefreshIntervalMinutes: 5,
-    restaurantSearchRadiusKm: 50,
-    highwayEntryRadiusMeters: 2000
-};
 
 /**
  * Retrieve Driving Mode settings.
  * Returns settings stored in FoodSystemConfig or default settings.
  */
 export async function getDrivingSettings() {
-    try {
-        const config = await FoodSystemConfig.findOne({ key: DRIVING_SETTINGS_KEY }).lean();
-        if (!config || !config.value) {
-            return { ...DEFAULT_SETTINGS };
-        }
-        return {
-            enabled: config.value.enabled !== false,
-            locationRefreshIntervalMinutes: Number(config.value.locationRefreshIntervalMinutes) || DEFAULT_SETTINGS.locationRefreshIntervalMinutes,
-            restaurantSearchRadiusKm: Number(config.value.restaurantSearchRadiusKm) || DEFAULT_SETTINGS.restaurantSearchRadiusKm,
-            highwayEntryRadiusMeters: Number(config.value.highwayEntryRadiusMeters) || DEFAULT_SETTINGS.highwayEntryRadiusMeters
-        };
-    } catch (err) {
-        console.error('[DrivingService] Failed to fetch settings:', err.message);
-        return { ...DEFAULT_SETTINGS };
-    }
+    return getStoredDrivingSettingsConfig();
 }
 
 /**
  * Update Driving Mode settings.
  */
 export async function updateDrivingSettings(settings, adminId = null) {
-    const enabled = settings.enabled !== false;
-    const locationRefreshIntervalMinutes = Number(settings.locationRefreshIntervalMinutes);
-    const restaurantSearchRadiusKm = Number(settings.restaurantSearchRadiusKm);
-    const highwayEntryRadiusMeters = Number(settings.highwayEntryRadiusMeters);
-
-    if (!Number.isFinite(locationRefreshIntervalMinutes) || locationRefreshIntervalMinutes <= 0) {
-        throw new ValidationError('Refresh interval must be a positive number');
-    }
-    if (!Number.isFinite(restaurantSearchRadiusKm) || restaurantSearchRadiusKm <= 0) {
-        throw new ValidationError('Restaurant search range must be a positive number in KM');
-    }
-    if (!Number.isFinite(highwayEntryRadiusMeters) || highwayEntryRadiusMeters <= 0) {
-        throw new ValidationError('Highway entry radius must be a positive number in meters');
-    }
-
-    const payload = {
-        enabled,
-        locationRefreshIntervalMinutes,
-        restaurantSearchRadiusKm,
-        highwayEntryRadiusMeters
-    };
-
-    await FoodSystemConfig.findOneAndUpdate(
-        { key: DRIVING_SETTINGS_KEY },
-        {
-            $set: {
-                key: DRIVING_SETTINGS_KEY,
-                value: payload,
-                description: 'Driving mode validation, search radius and map refresh configuration',
-                updatedBy: adminId
-                    ? { role: 'ADMIN', adminId: new mongoose.Types.ObjectId(adminId), at: new Date() }
-                    : undefined
-            }
-        },
-        { upsert: true, new: true }
-    );
-
-    return payload;
+    return saveDrivingSettingsConfig(settings, adminId);
 }
 
 /**
@@ -96,10 +37,14 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
 
     const userSpeed = speed && Number(speed) > 10 ? Number(speed) : 80; // default 80 km/h
 
-    // 1. New Google Maps Directions-based logic when start and destination are provided
+    // 1. New Google Routes-based logic when start and destination are provided
     if (destLat !== null && destLat !== undefined && destLng !== null && destLng !== undefined) {
-        const directions = await fetchDirections({ lat, lng }, { lat: destLat, lng: destLng });
-        if (!directions) {
+        const googleRoute = await getGoogleRouteHighway({
+            origin: { lat, lng },
+            destination: { lat: destLat, lng: destLng },
+            includeStoredHighways: false
+        });
+        if (!googleRoute) {
             return {
                 status: 'IN_SERVICE',
                 highway: {
@@ -119,7 +64,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
             };
         }
 
-        const { polyline, decodedCoordinates, distanceText, durationText, bounds } = directions;
+        const decodedCoordinates = googleRoute.highway.coordinates || [];
         if (decodedCoordinates.length < 2) {
             return {
                 status: 'IN_SERVICE',
@@ -171,14 +116,14 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
             const dist_to_route_km = R_proj.properties.dist; // distance from restaurant to route in km
 
             // Proximity threshold: is the restaurant within 15 km of the Google route corridor?
-            if (dist_to_route_km > 15) continue;
+            if (dist_to_route_km > settings.googleRouteSearchRadiusKm) continue;
 
             const distanceKm = dist_R - dist_U; // distance ahead along the route
 
             // Direction check: must be ahead of user (distanceKm >= -0.5) and within 100 km visibility radius
-            const isRestaurantAhead = distanceKm >= -0.5;
+            const isRestaurantAhead = distanceKm >= (-settings.googleRouteBackwardBufferKm);
 
-            const maxDiscoveryDistance = rangeKm ? Number(rangeKm) : 100;
+            const maxDiscoveryDistance = rangeKm ? Number(rangeKm) : settings.googleRouteForwardRangeKm;
             if (isRestaurantAhead && distanceKm <= maxDiscoveryDistance) {
                 const etaHours = distanceKm / userSpeed;
                 const etaMinutes = Math.max(1, Math.round(etaHours * 60));
@@ -210,7 +155,8 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
                 name: 'Google Maps Route',
                 ref: 'Google Maps Route',
                 coordinates: decodedCoordinates,
-                boundingBox: bounds
+                boundingBox: googleRoute.highway.boundingBox,
+                polyline: googleRoute.highway.polyline || ''
             },
             userTravel: {
                 distanceToHighway: 0,
@@ -218,6 +164,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
                 estimatedSpeed: userSpeed
             },
             settings,
+            route: googleRoute.route,
             restaurants: aheadRestaurants
         };
     }
@@ -510,3 +457,15 @@ export async function getConnectingHighways({ startLat, startLng, endLat, endLng
     return matching;
 }
 
+export async function getGoogleRouteHighwayPreview({ startLat, startLng, endLat, endLng, corridorRadiusKm }) {
+    const googleRoute = await getGoogleRouteHighway({
+        origin: { lat: startLat, lng: startLng },
+        destination: { lat: endLat, lng: endLng },
+        includeStoredHighways: true,
+        corridorRadiusKm
+    });
+    if (!googleRoute) {
+        throw new ValidationError('Unable to fetch route from Google Maps API');
+    }
+    return googleRoute;
+}

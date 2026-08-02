@@ -1,4 +1,4 @@
-import { getDrivingSettings, updateDrivingSettings, getRestaurantsAhead, getConnectingHighways } from '../services/driving.service.js';
+import { getDrivingSettings, updateDrivingSettings, getRestaurantsAhead, getConnectingHighways, getGoogleRouteHighwayPreview } from '../services/driving.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 
 const toFinite = (v) => {
@@ -18,7 +18,12 @@ export const getPublicDrivingModeSettingsController = async (req, res, next) => 
                 refreshInterval: settings.locationRefreshIntervalMinutes,
                 rangeKm: settings.restaurantSearchRadiusKm,
                 enabled: settings.enabled,
-                highwayEntryRadiusMeters: settings.highwayEntryRadiusMeters
+                highwayEntryRadiusMeters: settings.highwayEntryRadiusMeters,
+                restaurantSearchRadiusKm: settings.restaurantSearchRadiusKm,
+                googleRouteSearchRadiusKm: settings.googleRouteSearchRadiusKm,
+                googleRouteForwardRangeKm: settings.googleRouteForwardRangeKm,
+                googleRouteBackwardBufferKm: settings.googleRouteBackwardBufferKm,
+                storedHighwayMatchRadiusKm: settings.storedHighwayMatchRadiusKm
             }
         });
     } catch (error) {
@@ -129,6 +134,44 @@ export const getConnectingHighwaysController = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             data: highways
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+/**
+ * GET /food/driving-mode/google-route-highway
+ */
+export const getGoogleRouteHighwayController = async (req, res, next) => {
+    try {
+        const startLat = toFinite(req.query.startLat);
+        const startLng = toFinite(req.query.startLng);
+        const endLat = toFinite(req.query.endLat);
+        const endLng = toFinite(req.query.endLng);
+        const corridorRadiusKm = req.query.corridorRadiusKm !== undefined
+            ? toFinite(req.query.corridorRadiusKm)
+            : null;
+
+        if (startLat === null || startLng === null || endLat === null || endLng === null) {
+            return res.status(400).json({
+                success: false,
+                message: 'startLat, startLng, endLat, and endLng are required'
+            });
+        }
+
+        const route = await getGoogleRouteHighwayPreview({
+            startLat,
+            startLng,
+            endLat,
+            endLng,
+            corridorRadiusKm: corridorRadiusKm !== null ? corridorRadiusKm : undefined
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: route
         });
     } catch (error) {
         next(error);

@@ -516,7 +516,7 @@ export const adminAPI = {
       { isActive: isActive !== false },
       { contextModule: "admin" },
     ),
-  /** Orders (admin) – list, get by id, manage orders */
+  /** Orders (admin) ? list, get by id, manage orders */
   getOrders: (params = {}) =>
     apiClient.get("/food/admin/orders", {
       params: { limit: 50, page: 1, ...params },
@@ -538,7 +538,7 @@ export const adminAPI = {
     apiClient.patch(`/food/admin/orders/${String(orderId)}/reject`, { reason }, {
       contextModule: "admin",
     }),
-  /** Dispatch settings – auto vs manual assign (global) */
+  /** Dispatch settings ? auto vs manual assign (global) */
   /** Create restaurant (admin). Single API: POST /food/admin/restaurants. Body: JSON with image URLs. */
   createRestaurant: (body) =>
     apiClient.post("/food/admin/restaurants", body ?? {}, {
@@ -549,7 +549,7 @@ export const adminAPI = {
       contextModule: "admin",
     }),
 
-  // ── Highway APIs (replaces Zone APIs) ────────────────────────────────────
+  // ?? Highway APIs (replaces Zone APIs) ????????????????????????????????????
   /** List all cached national highways. */
   getHighways: (params = {}) =>
     apiClient.get("/food/admin/highways", {
@@ -1280,7 +1280,7 @@ export const restaurantAPI = {
   /** Public: list approved restaurants for user app */
   getRestaurants: (params = {}, config = {}) =>
     getPublicRestaurantsOnce(params, config),
-  /** Public: list restaurants with dishes under ₹250 */
+  /** Public: list restaurants with dishes under ?250 */
   getRestaurantsUnder250: (params = {}, config = {}) =>
     getPublicRestaurantsUnder250Once(params, config),
   /** Public: get single approved restaurant by id or slug */
@@ -1529,6 +1529,8 @@ export const userAPI = {
     apiClient.get("/food/driving-mode/restaurants", { params, contextModule: "user", ...config }),
   getConnectingHighways: (params) =>
     apiClient.get("/food/driving-mode/connecting-highways", { params, contextModule: "user" }),
+  getGoogleRouteHighway: (params) =>
+    apiClient.get("/food/driving-mode/google-route-highway", { params, contextModule: "user" }),
   /** Get current user profile (Bearer USER). */
   getProfile: () =>
     getUserMeOnce().then((res) => {
@@ -1694,7 +1696,7 @@ export const userAPI = {
     apiClient.delete("/food/user/account", { contextModule: "user" }),
 };
 export const locationAPI = createStubAPI();
-/** Highway API – replaces the zone-based service area detection. */
+/** Highway API ? replaces the zone-based service area detection. */
 export const highwayAPI = {
   /** Detect nearest highway for a lat/lng point. Replaces detectZone. */
   detectHighway: (lat, lng) =>
@@ -1779,7 +1781,7 @@ export const uploadAPI = {
     return uploadRequestWithFallback(["/uploads/video"], formData);
   },
 };
-/** Order API (user app – Bearer USER token). Minimal calls: single create/verify, list/details cached by caller. */
+/** Order API (user app ? Bearer USER token). Minimal calls: single create/verify, list/details cached by caller. */
 export const orderAPI = {
   calculateOrder: (payload) =>
     apiClient.post("/food/orders/calculate", payload ?? {}, {

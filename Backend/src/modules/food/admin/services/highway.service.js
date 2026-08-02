@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 import * as turf from '@turf/turf';
 import { FoodHighway } from '../models/highway.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
-import { FoodSystemConfig } from '../models/systemConfig.model.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import {
     parseHighwayGeoJSON,
@@ -17,9 +16,8 @@ import {
     readHighwayGeometry,
     deleteHighwayGeometry
 } from '../utils/highwayGeometryStorage.js';
+import { getStoredDrivingSettingsConfig, saveDrivingSettingsConfig } from '../../driving/services/drivingSettings.shared.js';
 
-const DEFAULT_THRESHOLD_METERS = 2000;
-const HIGHWAY_THRESHOLD_CONFIG_KEY = 'highway_threshold_meters';
 
 const cloneCoordinate = (coord) => ({ lat: Number(coord?.lat), lng: Number(coord?.lng) });
 const cloneSegment = (segment = []) => segment.map(cloneCoordinate);
@@ -137,49 +135,15 @@ const getHighwaySegments = async (highway) => {
 };
 
 export async function getHighwayThresholdMeters() {
-    try {
-        const configDoc = await FoodSystemConfig.findOne({ key: HIGHWAY_THRESHOLD_CONFIG_KEY }).lean();
-        const val = Number(configDoc?.value);
-        if (Number.isFinite(val) && val >= 2000) {
-            return val;
-        }
-        await FoodSystemConfig.findOneAndUpdate(
-            { key: HIGHWAY_THRESHOLD_CONFIG_KEY },
-            {
-                $set: {
-                    key: HIGHWAY_THRESHOLD_CONFIG_KEY,
-                    value: 2000,
-                    description: 'Distance threshold (meters) for restaurant-to-highway proximity assignment'
-                }
-            },
-            { upsert: true }
-        ).catch(() => {});
-        return DEFAULT_THRESHOLD_METERS;
-    } catch {
-        return DEFAULT_THRESHOLD_METERS;
-    }
+    const settings = await getStoredDrivingSettingsConfig();
+    return settings.highwayEntryRadiusMeters;
 }
 
 export async function setHighwayThresholdMeters(meters, adminId = null) {
-    const val = Number(meters);
-    if (!Number.isFinite(val) || val <= 0) {
-        throw new ValidationError('Threshold must be a positive number in meters');
-    }
-    await FoodSystemConfig.findOneAndUpdate(
-        { key: HIGHWAY_THRESHOLD_CONFIG_KEY },
-        {
-            $set: {
-                key: HIGHWAY_THRESHOLD_CONFIG_KEY,
-                value: val,
-                description: 'Distance threshold (meters) for restaurant-to-highway proximity assignment',
-                updatedBy: adminId
-                    ? { role: 'ADMIN', adminId: new mongoose.Types.ObjectId(adminId), at: new Date() }
-                    : undefined
-            }
-        },
-        { upsert: true, new: true }
-    );
-    return val;
+    const updated = await saveDrivingSettingsConfig({
+        highwayEntryRadiusMeters: Number(meters)
+    }, adminId, { partial: true });
+    return updated.highwayEntryRadiusMeters;
 }
 
 export async function importHighwaysFromGeoJSON(geojson) {
@@ -263,7 +227,7 @@ export async function importHighwaysFromGeoJSON(geojson) {
     };
 }
 
-export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters = DEFAULT_THRESHOLD_METERS + 5000) => {
+export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters = 7000) => {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
     const paddingDeg = searchPaddingMeters / 111_000;
@@ -320,7 +284,7 @@ export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters 
 };
 
 export async function findNearestHighway(lat, lng, thresholdMeters) {
-    const threshold = thresholdMeters || DEFAULT_THRESHOLD_METERS;
+    const threshold = thresholdMeters || await getHighwayThresholdMeters();
     const result = await findNearestHighwayUnchecked(lat, lng, threshold + 5000);
     if (!result || result.distanceMeters > threshold) return null;
     return result;

@@ -9,6 +9,7 @@ export default function DrivingModeFallback({
   requiredDistanceMeters,
   onRetry,
   onEnableLocation,
+  onGoBack,
   errorMessage
 }) {
   const navigate = useNavigate();
@@ -66,11 +67,11 @@ export default function DrivingModeFallback({
           </Button>
           <Button
             variant="outline"
-            onClick={handleGoHome}
+            onClick={onGoBack || handleGoHome}
             className="w-full h-11 border-gray-200 dark:border-neutral-800 text-gray-700 dark:text-neutral-300 font-bold rounded-xl flex items-center justify-center gap-2"
           >
             <Home className="w-4 h-4" />
-            Go Home
+            Go Back
           </Button>
         </div>
       </div>
@@ -120,11 +121,11 @@ export default function DrivingModeFallback({
           </Button>
           <Button
             variant="outline"
-            onClick={handleGoHome}
+            onClick={onGoBack || handleGoHome}
             className="w-full h-11 border-gray-200 dark:border-neutral-800 text-gray-700 dark:text-neutral-300 font-bold rounded-xl flex items-center justify-center gap-2"
           >
             <Home className="w-4 h-4" />
-            Go Home
+            Go Back
           </Button>
         </div>
       </div>
@@ -157,11 +158,11 @@ export default function DrivingModeFallback({
           </Button>
           <Button
             variant="outline"
-            onClick={handleGoHome}
+            onClick={onGoBack || handleGoHome}
             className="w-full h-11 border-gray-200 dark:border-neutral-800 text-gray-700 dark:text-neutral-300 font-bold rounded-xl flex items-center justify-center gap-2"
           >
             <Home className="w-4 h-4" />
-            Go Home
+            Go Back
           </Button>
         </div>
       </div>

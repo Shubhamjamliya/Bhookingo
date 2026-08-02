@@ -262,7 +262,28 @@ export default function JourneyPlanner({
     setDestinationCoords(tempCoords);
   };
 
-  const handleContinue = () => {
+  const mapGoogleRouteOption = (route, index) => ({
+    _id: route.routeId,
+    routeId: route.routeId,
+    routeIndex: index + 1,
+    name: route.name || `Route ${index + 1}`,
+    ref: route.summary || route.name || `Route ${index + 1}`,
+    approxDistanceKm: route.route?.distanceKm ?? null,
+    approxTravelTimeMinutes: route.route?.durationMinutes ?? null,
+    distanceText: route.route?.distanceText || "",
+    durationText: route.route?.durationText || "",
+    restaurantCount: route.restaurantCount || 0,
+    storedHighwayCount: route.storedHighwayCount || 0,
+    badges: Array.isArray(route.badges) ? route.badges : [],
+    polyline: route.highway?.polyline || "",
+    coordinates: Array.isArray(route.highway?.coordinates) ? route.highway.coordinates : [],
+    boundingBox: route.highway?.boundingBox || null,
+    storedHighways: Array.isArray(route.storedHighways) ? route.storedHighways : [],
+    viaRoute: route.summary || route.name || `Route ${index + 1}`,
+    roadNames: Array.isArray(route.roadNames) ? route.roadNames : []
+  });
+
+  const handleContinue = async () => {
     if (!originCoords) {
       toast.error("Please enter a valid starting location.");
       return;
@@ -272,15 +293,42 @@ export default function JourneyPlanner({
       return;
     }
 
-    onJourneyPlanSelected({
-      origin: originCoords,
-      destination: destinationCoords,
-      highway: {
-        _id: "custom_google_route",
-        name: `${originInput.split(',')[0]} to ${destinationInput.split(',')[0]}`,
-        ref: `${originInput.split(',')[0]} to ${destinationInput.split(',')[0]}`
+    try {
+      setLoadingHighways(true);
+      const res = await userAPI.getGoogleRouteHighway({
+        startLat: originCoords.lat,
+        startLng: originCoords.lng,
+        endLat: destinationCoords.lat,
+        endLng: destinationCoords.lng,
+        includeAlternatives: true,
+        includeRestaurantCounts: false
+      });
+
+      const routes = Array.isArray(res?.data?.data?.routes) ? res.data.data.routes : [];
+      if (!routes.length) {
+        toast.error("We could not find a driving route for this trip.");
+        return;
       }
-    });
+
+      const mappedRoutes = routes.map(mapGoogleRouteOption);
+      const recommendedRouteId = res?.data?.data?.recommendedRouteId;
+      const recommendedRoute = mappedRoutes.find((route) => route.routeId === recommendedRouteId) || mappedRoutes[0];
+
+      setAvailableHighways(mappedRoutes);
+      setSelectedHighway(recommendedRoute);
+      setShowHighwaySelection(false);
+      onJourneyPlanSelected({
+        origin: originCoords,
+        destination: destinationCoords,
+        highway: recommendedRoute,
+        availableRoutes: mappedRoutes
+      });
+    } catch (error) {
+      console.error("[JourneyPlanner] Failed to fetch route options:", error);
+      toast.error("Unable to fetch route options right now.");
+    } finally {
+      setLoadingHighways(false);
+    }
   };
 
   const handleSelectHighwayFromOverlay = (hw) => {
@@ -293,7 +341,8 @@ export default function JourneyPlanner({
     onJourneyPlanSelected({
       origin: originCoords,
       destination: destinationCoords,
-      highway: selectedHighway
+      highway: selectedHighway,
+      availableRoutes: availableHighways.length ? availableHighways : [selectedHighway]
     });
   };
 
@@ -581,7 +630,7 @@ export default function JourneyPlanner({
                     onClick={() => setShowHighwaySelection(true)}
                     className="text-[10px] font-bold text-orange-600 hover:text-orange-700 transition-colors uppercase tracking-wider bg-orange-50 dark:bg-orange-950/40 px-2.5 py-1 rounded-xl"
                   >
-                    Change Highway
+                    Change Route
                   </button>
                 )}
                 <button 
@@ -630,8 +679,8 @@ export default function JourneyPlanner({
                 NH
               </div>
               <div className="min-w-0 flex-1">
-                <span className="block text-[9px] text-gray-400 dark:text-neutral-500 uppercase font-bold tracking-wider leading-none mb-0.5">Active Highway Route</span>
-                <span className="font-bold text-sm text-gray-900 dark:text-gray-100 uppercase truncate block">
+                <span className="block text-[9px] text-gray-400 dark:text-neutral-500 uppercase font-bold tracking-wider leading-none mb-0.5">Active Route</span>
+                <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate block">
                   {selectedHighway.ref || selectedHighway.name}
                 </span>
               </div>
@@ -878,7 +927,11 @@ export default function JourneyPlanner({
       {showHighwaySelection && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-end justify-center animate-fade-in" 
-          onClick={() => setShowHighwaySelection(false)}
+          onClick={() => {
+            if (selectedHighway) {
+              setShowHighwaySelection(false);
+            }
+          }}
         >
           <div 
             className="bg-white dark:bg-[#1a1a1a] w-full max-w-md rounded-t-3xl p-6 space-y-4 max-h-[85vh] overflow-y-auto shadow-2xl border-t border-gray-100 dark:border-neutral-800 animate-slide-up"
@@ -888,9 +941,9 @@ export default function JourneyPlanner({
             <div className="w-12 h-1.5 bg-gray-200 dark:bg-neutral-700 rounded-full mx-auto mb-2" />
             
             <div className="text-center">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Choose Highway Route</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Choose Route Option</h3>
               <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1 leading-normal">
-                Multiple highway connections found between your cities. Select your preferred route:
+                After choosing source and destination, select the route you want to follow. We are showing the via route and road names here.
               </p>
             </div>
 
@@ -901,20 +954,26 @@ export default function JourneyPlanner({
                   onClick={() => handleSelectHighwayFromOverlay(hw)}
                   className="w-full p-4 border border-gray-200 dark:border-neutral-800 rounded-2xl hover:border-orange-500 dark:hover:border-orange-500 flex flex-col text-left transition-all bg-gray-50 dark:bg-[#181818] hover:bg-orange-50/20 relative overflow-hidden group shadow-sm"
                 >
-                  {index === 0 && (
+                  {hw.badges?.[0] && (
                     <span className="absolute top-0 right-0 bg-orange-600 text-white text-[9px] font-bold uppercase px-2.5 py-0.5 rounded-bl-lg tracking-wider">
-                      Recommended
+                      {hw.badges[0]}
                     </span>
                   )}
                   
                   <div className="flex items-center gap-2 mb-2">
                     <Route className="w-4 h-4 text-orange-600 shrink-0" />
-                    <span className="font-bold text-sm text-gray-900 dark:text-white uppercase">
-                      {hw.ref || hw.name}
-                    </span>
-                    <span className="text-[10px] text-gray-400 font-medium dark:text-gray-500 truncate max-w-[150px] ml-1">
+                    <span className="font-bold text-sm text-gray-900 dark:text-white">
                       {hw.name}
                     </span>
+                  </div>
+
+                  <div className="rounded-2xl border border-orange-100 bg-white/70 px-3 py-2 text-xs dark:border-neutral-800 dark:bg-neutral-900/70">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600">Via Route</div>
+                    <div className="mt-1 font-semibold text-gray-900 dark:text-white">{hw.viaRoute || hw.ref || hw.name}</div>
+                    <div className="mt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-neutral-500">Road Names</div>
+                    <div className="mt-1 text-[11px] font-medium text-gray-600 dark:text-neutral-300">
+                      {hw.roadNames?.length ? hw.roadNames.join(', ') : (hw.ref || hw.name)}
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2 border-t border-gray-200/60 dark:border-neutral-800/80 pt-2 text-[10px] font-medium text-gray-500 dark:text-gray-400">
@@ -937,10 +996,15 @@ export default function JourneyPlanner({
 
             <Button
               variant="outline"
-              onClick={() => setShowHighwaySelection(false)}
-              className="w-full h-12 border-gray-200 dark:border-neutral-800 text-gray-700 dark:text-neutral-300 font-bold rounded-2xl mt-2"
+              onClick={() => {
+                if (selectedHighway) {
+                  setShowHighwaySelection(false);
+                }
+              }}
+              disabled={!selectedHighway}
+              className="w-full h-12 border-gray-200 dark:border-neutral-800 text-gray-700 dark:text-neutral-300 font-bold rounded-2xl mt-2 disabled:opacity-50"
             >
-              Cancel
+              {selectedHighway ? 'Close' : 'Select a Route First'}
             </Button>
           </div>
         </div>

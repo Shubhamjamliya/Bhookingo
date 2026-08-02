@@ -44,6 +44,9 @@ export const getRestaurantsAheadController = async (req, res, next) => {
         const rangeKm = req.query.rangeKm !== undefined ? toFinite(req.query.rangeKm) : null;
         const destLat = req.query.destLat !== undefined ? toFinite(req.query.destLat) : null;
         const destLng = req.query.destLng !== undefined ? toFinite(req.query.destLng) : null;
+        const routePolyline = typeof req.query.routePolyline === 'string' && req.query.routePolyline.trim()
+            ? req.query.routePolyline.trim()
+            : null;
 
         if (lat === null || lng === null) {
             return res.status(400).json({
@@ -60,7 +63,8 @@ export const getRestaurantsAheadController = async (req, res, next) => {
             rangeKm,
             speed,
             destLat,
-            destLng
+            destLng,
+            routePolyline
         });
 
         return res.status(200).json({
@@ -153,6 +157,8 @@ export const getGoogleRouteHighwayController = async (req, res, next) => {
         const corridorRadiusKm = req.query.corridorRadiusKm !== undefined
             ? toFinite(req.query.corridorRadiusKm)
             : null;
+        const includeAlternatives = req.query.includeAlternatives === 'true' || req.query.includeAlternatives === '1';
+        const includeRestaurantCounts = !(req.query.includeRestaurantCounts === 'false' || req.query.includeRestaurantCounts === '0');
 
         if (startLat === null || startLng === null || endLat === null || endLng === null) {
             return res.status(400).json({
@@ -166,7 +172,9 @@ export const getGoogleRouteHighwayController = async (req, res, next) => {
             startLng,
             endLat,
             endLng,
-            corridorRadiusKm: corridorRadiusKm !== null ? corridorRadiusKm : undefined
+            corridorRadiusKm: corridorRadiusKm !== null ? corridorRadiusKm : undefined,
+            includeAlternatives,
+            includeRestaurantCounts
         });
 
         return res.status(200).json({

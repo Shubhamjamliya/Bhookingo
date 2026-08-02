@@ -526,6 +526,10 @@ export default function DrivingMode() {
         queryParams.destLng = currentJourney.destination.lng;
       }
 
+      if (currentJourney?.selectedHighway?.polyline) {
+        queryParams.routePolyline = currentJourney.selectedHighway.polyline;
+      }
+
       if (currentJourney?.selectedHighway?._id) {
         queryParams.highwayId = currentJourney.selectedHighway._id;
       }
@@ -609,6 +613,15 @@ export default function DrivingMode() {
     handleEnableLocation();
   };
 
+  const handleBackToPlanner = useCallback(() => {
+    sessionStorage.removeItem("bh_active_journey");
+    setResultData(null);
+    setSelectedRestaurant(null);
+    setStatus("AVAILABLE");
+    hasFetchedInitial.current = false;
+    setJourney(null);
+  }, []);
+
   const handleEnableLocation = () => {
     setStatus("CHECKING_LOCATION");
     setErrorMessage(null);
@@ -647,6 +660,24 @@ export default function DrivingMode() {
     setSelectedRestaurant(null);
     navigate(`/user/restaurants/${restaurant.restaurantSlug || restaurant._id}`);
   };
+
+  const handleSelectRouteOption = useCallback((routeOption) => {
+    if (!routeOption || !journey) return;
+
+    const updatedJourney = {
+      ...journey,
+      selectedHighway: routeOption,
+      selectedRouteId: routeOption.routeId || routeOption._id || null,
+      routePolyline: Array.isArray(routeOption.coordinates) ? routeOption.coordinates : [],
+      estimatedDistance: routeOption.distanceText || journey.estimatedDistance || "",
+      estimatedDuration: routeOption.durationText || journey.estimatedDuration || "",
+      routeBounds: routeOption.boundingBox || journey.routeBounds || null
+    };
+
+    setJourney(updatedJourney);
+    setSelectedRestaurant(null);
+    fetchRestaurantsAhead(false, updatedJourney);
+  }, [fetchRestaurantsAhead, journey]);
 
   // Filter & Sort Logic
   const filteredRestaurants = React.useMemo(() => {
@@ -719,10 +750,12 @@ export default function DrivingMode() {
                 origin: plan.origin,
                 destination: plan.destination,
                 selectedHighway: plan.highway,
-                routePolyline: [],
-                estimatedDistance: "",
-                estimatedDuration: "",
-                routeBounds: null,
+                selectedRouteId: plan.highway?.routeId || plan.highway?._id || null,
+                availableRoutes: Array.isArray(plan.availableRoutes) ? plan.availableRoutes : (plan.highway ? [plan.highway] : []),
+                routePolyline: Array.isArray(plan.highway?.coordinates) ? plan.highway.coordinates : [],
+                estimatedDistance: plan.highway?.distanceText || "",
+                estimatedDuration: plan.highway?.durationText || "",
+                routeBounds: plan.highway?.boundingBox || null,
                 createdAt: new Date().toISOString(),
                 mode: "PLANNED"
               };
@@ -754,6 +787,7 @@ export default function DrivingMode() {
             requiredDistanceMeters={settings?.highwayEntryRadiusMeters}
             onRetry={handleRetry}
             onEnableLocation={handleEnableLocation}
+            onGoBack={status === "NO_RESTAURANTS" ? handleBackToPlanner : undefined}
             errorMessage={errorMessage}
           />
         </div>
@@ -765,21 +799,55 @@ export default function DrivingMode() {
   }
 
   const nextStop = filteredRestaurants[0] || null;
+  const hasMultipleRoutes = Array.isArray(journey?.availableRoutes) && journey.availableRoutes.length > 1;
   const rangeLimit = settings?.restaurantSearchRadiusKm || 50;
 
   return (
     <div className="relative w-full h-screen bg-gray-50 dark:bg-[#0a0a0a] overflow-hidden flex flex-col justify-between">
 
       {/* View Toggle Bar (Floating Header) */}
-      <div className="absolute top-4 left-4 right-4 z-20 flex justify-between gap-4 pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-md">
+      <div className="absolute top-4 left-4 right-4 z-20 flex justify-center pointer-events-none">
+        <div className="pointer-events-auto w-full max-w-md space-y-3">
           <DrivingSummaryCard
-            highwayRef={resultData?.highway?.ref || journey?.selectedHighway?.ref}
+            highwayRef={journey?.selectedHighway?.name || resultData?.highway?.ref || journey?.selectedHighway?.ref}
             distanceAhead={nextStop?.distanceKm ?? null}
             nextStopEta={nextStop?.etaMinutes ?? null}
             restaurantCount={filteredRestaurants.length}
             onExit={handleExitDriving}
           />
+
+          {hasMultipleRoutes && (
+            <div className="flex gap-2 overflow-x-auto pb-1 pr-1 filters-scroll-hide">
+              {journey.availableRoutes.map((routeOption) => {
+                const isActiveRoute = (journey?.selectedRouteId || journey?.selectedHighway?._id) === (routeOption.routeId || routeOption._id);
+                return (
+                  <button
+                    key={routeOption.routeId || routeOption._id}
+                    type="button"
+                    onClick={() => handleSelectRouteOption(routeOption)}
+                    className={`min-w-[150px] rounded-2xl border px-3 py-2 text-left shadow-sm transition-all ${isActiveRoute
+                      ? "border-orange-500 bg-white text-gray-900 shadow-lg shadow-orange-100"
+                      : "border-white/70 bg-white/95 text-gray-700"
+                      }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-black uppercase tracking-[0.12em] text-orange-600">{routeOption.name || "Route"}</span>
+                      {routeOption.badges?.[0] && (
+                        <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[9px] font-bold uppercase text-orange-700">
+                          {routeOption.badges[0]}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 truncate text-xs font-semibold text-gray-900">{routeOption.ref || routeOption.name}</div>
+                    <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-gray-500">
+                      <span>{routeOption.distanceText || `${routeOption.approxDistanceKm || "-"} km`}</span>
+                      <span>{routeOption.durationText || ""}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -795,10 +863,11 @@ export default function DrivingMode() {
             highway={resultData?.highway}
             restaurants={filteredRestaurants}
             onRestaurantClick={setSelectedRestaurant}
+            onRouteSelect={handleSelectRouteOption}
             recenterBottomOffset={isDrawerExpanded ? "hidden" : "bottom-[230px]"}
           />
         ) : (
-          <div className="w-full h-full overflow-y-auto px-4 pb-20 space-y-4 pt-40 bg-gray-50/50 dark:bg-[#0a0a0a] pb-[calc(100px+env(safe-area-inset-bottom))]">
+          <div className={`w-full h-full overflow-y-auto px-4 pb-20 space-y-4 ${hasMultipleRoutes ? "pt-56" : "pt-40"} bg-gray-50/50 dark:bg-[#0a0a0a] pb-[calc(100px+env(safe-area-inset-bottom))]`}>
             {/* Top Search distance filter & sorting */}
             <div className="flex items-center justify-between gap-4 pb-2">
               {/* Range Filters */}

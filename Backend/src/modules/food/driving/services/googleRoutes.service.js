@@ -2,6 +2,7 @@ import * as turf from '@turf/turf';
 import { config } from '../../../../config/env.js';
 import { logger } from '../../../../utils/logger.js';
 import { FoodHighway } from '../../admin/models/highway.model.js';
+import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { hydrateHighwayGeometry } from '../../admin/services/highway.service.js';
 import { decodePolyline, fetchDirections as fetchLegacyDirections } from '../../orders/utils/googleMaps.js';
 import { getStoredDrivingSettingsConfig } from './drivingSettings.shared.js';
@@ -27,6 +28,7 @@ const buildRouteCacheKey = (origin, destination, options = {}) => {
     ].map((value) => Number(value).toFixed(5));
     parts.push(options.includeStoredHighways ? 'withStoredHighways' : 'routeOnly');
     parts.push(Number(options.corridorRadiusKm || 0).toFixed(2));
+    parts.push(options.includeAlternatives ? 'alternatives' : 'single');
     return parts.join(':');
 };
 
@@ -208,7 +210,6 @@ async function matchStoredHighwaysAlongRoute(decodedCoordinates, corridorRadiusK
             }
         }
 
-        // Also check the inverse direction so short highway overlaps are not missed.
         const startHighwayPoint = highwayCoordinates[0];
         const endHighwayPoint = highwayCoordinates[highwayCoordinates.length - 1];
         const edgePoints = [startHighwayPoint, endHighwayPoint].filter(Boolean);
@@ -243,7 +244,49 @@ async function matchStoredHighwaysAlongRoute(decodedCoordinates, corridorRadiusK
     return matchingHighways;
 }
 
-async function fetchRouteFromGoogleRoutesApi(origin, destination) {
+async function countRestaurantsAlongRoute(decodedCoordinates, corridorRadiusKm) {
+    if (!Array.isArray(decodedCoordinates) || decodedCoordinates.length < 2) {
+        return 0;
+    }
+
+    const bounds = computeBoundingBoxFromCoordinates(decodedCoordinates);
+    if (!bounds) {
+        return 0;
+    }
+
+    const paddingDeg = corridorRadiusKm / 111;
+    const candidates = await FoodRestaurant.find({
+        status: 'approved',
+        isAcceptingOrders: true,
+        'location.latitude': { $gte: bounds.minLat - paddingDeg, $lte: bounds.maxLat + paddingDeg },
+        'location.longitude': { $gte: bounds.minLng - paddingDeg, $lte: bounds.maxLng + paddingDeg }
+    })
+        .select('location')
+        .lean();
+
+    if (!candidates.length) {
+        return 0;
+    }
+
+    const routeLine = turf.lineString(decodedCoordinates.map((coordinate) => [coordinate.lng, coordinate.lat]));
+    let count = 0;
+
+    for (const restaurant of candidates) {
+        const lat = toFinite(restaurant?.location?.latitude) ?? toFinite(restaurant?.location?.coordinates?.[1]);
+        const lng = toFinite(restaurant?.location?.longitude) ?? toFinite(restaurant?.location?.coordinates?.[0]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+        const projectedPoint = turf.nearestPointOnLine(routeLine, turf.point([lng, lat]), { units: 'kilometers' });
+        const distanceKm = projectedPoint?.properties?.dist;
+        if (Number.isFinite(distanceKm) && distanceKm <= corridorRadiusKm) {
+            count += 1;
+        }
+    }
+
+    return count;
+}
+
+async function fetchRoutesFromGoogleRoutesApi(origin, destination, { includeAlternatives = false } = {}) {
     const apiKey = config.googleMapsApiKey;
     if (!apiKey) {
         logger.warn('Google Maps API key missing. Google Routes API fetch skipped.');
@@ -269,7 +312,7 @@ async function fetchRouteFromGoogleRoutesApi(origin, destination) {
         },
         travelMode: 'DRIVE',
         routingPreference: 'TRAFFIC_AWARE',
-        computeAlternativeRoutes: false,
+        computeAlternativeRoutes: includeAlternatives,
         languageCode: 'en-IN',
         units: 'METRIC',
         polylineEncoding: 'ENCODED_POLYLINE'
@@ -303,27 +346,31 @@ async function fetchRouteFromGoogleRoutesApi(origin, destination) {
             return null;
         }
 
-        const route = responseBody?.routes?.[0];
-        const encodedPolyline = route?.polyline?.encodedPolyline || '';
-        const decodedCoordinates = encodedPolyline ? decodePolyline(encodedPolyline) : [];
-        const distanceMeters = toFinite(route?.distanceMeters);
-        const durationSeconds = parseDurationSeconds(route?.duration);
+        const routes = Array.isArray(responseBody?.routes) ? responseBody.routes : [];
+        return routes
+            .map((route) => {
+                const encodedPolyline = route?.polyline?.encodedPolyline || '';
+                const decodedCoordinates = encodedPolyline ? decodePolyline(encodedPolyline) : [];
+                const distanceMeters = toFinite(route?.distanceMeters);
+                const durationSeconds = parseDurationSeconds(route?.duration);
 
-        return normalizeRouteResponse({
-            polyline: encodedPolyline,
-            decodedCoordinates,
-            distanceMeters,
-            durationSeconds,
-            bounds: route?.viewport
-                ? {
-                    minLat: toFinite(route.viewport?.low?.latitude),
-                    maxLat: toFinite(route.viewport?.high?.latitude),
-                    minLng: toFinite(route.viewport?.low?.longitude),
-                    maxLng: toFinite(route.viewport?.high?.longitude)
-                }
-                : null,
-            provider: 'google_routes_api'
-        });
+                return normalizeRouteResponse({
+                    polyline: encodedPolyline,
+                    decodedCoordinates,
+                    distanceMeters,
+                    durationSeconds,
+                    bounds: route?.viewport
+                        ? {
+                            minLat: toFinite(route.viewport?.low?.latitude),
+                            maxLat: toFinite(route.viewport?.high?.latitude),
+                            minLng: toFinite(route.viewport?.low?.longitude),
+                            maxLng: toFinite(route.viewport?.high?.longitude)
+                        }
+                        : null,
+                    provider: 'google_routes_api'
+                });
+            })
+            .filter((route) => Array.isArray(route.decodedCoordinates) && route.decodedCoordinates.length >= 2);
     } catch (error) {
         logger.warn(`Google Routes API fetch failed: ${error.message}`);
         return null;
@@ -332,11 +379,144 @@ async function fetchRouteFromGoogleRoutesApi(origin, destination) {
     }
 }
 
-export async function getGoogleRouteHighway({
+async function fetchRoutesFromDirectionsApi(origin, destination, { includeAlternatives = false } = {}) {
+    const apiKey = config.googleMapsApiKey;
+    if (!apiKey) {
+        return [];
+    }
+
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 7000);
+        const originStr = `${origin.lat},${origin.lng}`;
+        const destStr = `${destination.lat},${destination.lng}`;
+        const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${originStr}&destination=${destStr}&alternatives=${includeAlternatives ? 'true' : 'false'}&key=${apiKey}`;
+
+        const headers = {
+            Referer: config.baseUrl || 'https://bhookingo.in/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Bhookingo/1.0'
+        };
+
+        const response = await fetch(url, { signal: controller.signal, headers });
+        clearTimeout(timeout);
+        const data = await response.json();
+
+        if (data.status !== 'OK' || !Array.isArray(data.routes)) {
+            return [];
+        }
+
+        return data.routes
+            .map((route) => {
+                const encodedPolyline = route?.overview_polyline?.points || '';
+                const decodedCoordinates = encodedPolyline ? decodePolyline(encodedPolyline) : [];
+                const leg = route?.legs?.[0];
+                const distanceMeters = toFinite(leg?.distance?.value);
+                const durationSeconds = toFinite(leg?.duration?.value);
+
+                return normalizeRouteResponse({
+                    polyline: encodedPolyline,
+                    decodedCoordinates,
+                    distanceMeters,
+                    distanceText: leg?.distance?.text || '',
+                    durationSeconds,
+                    durationText: leg?.duration?.text || '',
+                    bounds: route?.bounds || null,
+                    provider: 'google_directions_api'
+                });
+            })
+            .filter((route) => Array.isArray(route.decodedCoordinates) && route.decodedCoordinates.length >= 2);
+    } catch (error) {
+        logger.warn(`Google Directions alternatives fetch failed: ${error.message}`);
+        return [];
+    }
+}
+
+function mergeUniqueRoutes(primaryRoutes = [], fallbackRoutes = []) {
+    const merged = [];
+    const seen = new Set();
+
+    for (const route of [...primaryRoutes, ...fallbackRoutes]) {
+        const key = route?.polyline || `${route?.distanceText || ''}:${route?.durationText || ''}:${route?.decodedCoordinates?.length || 0}`;
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        merged.push(route);
+    }
+
+    return merged;
+}
+
+function decorateRouteOptions(routeOptions, { includeRestaurantCounts = true } = {}) {
+    if (!Array.isArray(routeOptions) || routeOptions.length === 0) {
+        return { recommendedRouteId: null, routes: [] };
+    }
+
+    const durationValues = routeOptions.map((route) => Number(route.route.durationSeconds) || Infinity);
+    const distanceValues = routeOptions.map((route) => Number(route.route.distanceMeters) || Infinity);
+    const restaurantValues = routeOptions.map((route) => Number(route.restaurantCount) || 0);
+    const highwayValues = routeOptions.map((route) => Number(route.storedHighwayCount) || 0);
+
+    const fastestDuration = Math.min(...durationValues);
+    const shortestDistance = Math.min(...distanceValues);
+    const maxRestaurants = Math.max(...restaurantValues);
+    const maxCoverage = Math.max(...highwayValues);
+
+    const scoredRoutes = routeOptions.map((route, index) => {
+        const durationSeconds = Number(route.route.durationSeconds) || Infinity;
+        const distanceMeters = Number(route.route.distanceMeters) || Infinity;
+        const restaurantCount = Number(route.restaurantCount) || 0;
+        const storedHighwayCount = Number(route.storedHighwayCount) || 0;
+
+        const score =
+            (durationSeconds === fastestDuration ? 55 : 0) +
+            (distanceMeters === shortestDistance ? 20 : 0) +
+            (restaurantCount * 3) +
+            (storedHighwayCount * 12) -
+            Math.round(durationSeconds / 1800) -
+            Math.round(distanceMeters / 25000);
+
+        const badges = [];
+        if (durationSeconds === fastestDuration) badges.push('Fastest');
+        if (includeRestaurantCounts && restaurantCount === maxRestaurants && restaurantCount > 0) badges.push('Best for Food Stops');
+        if (storedHighwayCount === maxCoverage && storedHighwayCount > 0) badges.push('Best Highway Coverage');
+
+        const routeName = `Route ${index + 1}`;
+        const roadNames = route.storedHighways.length
+            ? route.storedHighways.slice(0, 5).map((highway) => highway.ref || highway.name).filter(Boolean)
+            : [];
+        const summary = roadNames.length
+            ? roadNames.slice(0, 3).join(' -> ')
+            : route.route.distanceText || routeName;
+
+        return {
+            ...route,
+            name: routeName,
+            summary,
+            roadNames,
+            badges,
+            score
+        };
+    });
+
+    scoredRoutes.sort((a, b) => b.score - a.score);
+
+    const recommendedRouteId = scoredRoutes[0]?.routeId || null;
+    const finalRoutes = scoredRoutes.map((route) => ({
+        ...route,
+        badges: route.routeId === recommendedRouteId
+            ? ['Recommended', ...route.badges.filter((badge) => badge !== 'Recommended')]
+            : route.badges
+    }));
+
+    return { recommendedRouteId, routes: finalRoutes };
+}
+
+export async function getGoogleRouteHighwayOptions({
     origin,
     destination,
     includeStoredHighways = true,
-    corridorRadiusKm
+    corridorRadiusKm,
+    includeAlternatives = true,
+    includeRestaurantCounts = true
 }) {
     const normalizedOrigin = normalizeLatLng(origin);
     const normalizedDestination = normalizeLatLng(destination);
@@ -354,57 +534,125 @@ export async function getGoogleRouteHighway({
 
     const cacheKey = buildRouteCacheKey(normalizedOrigin, normalizedDestination, {
         includeStoredHighways,
-        corridorRadiusKm: effectiveCorridorRadiusKm
+        corridorRadiusKm: effectiveCorridorRadiusKm,
+        includeAlternatives
     });
     const cachedRoute = getCachedRoute(cacheKey);
     if (cachedRoute) {
         return cachedRoute;
     }
 
-    const primaryRoute = await fetchRouteFromGoogleRoutesApi(normalizedOrigin, normalizedDestination);
-    const fallbackRoute = primaryRoute || await fetchLegacyDirections(normalizedOrigin, normalizedDestination);
+    const primaryRoutes = await fetchRoutesFromGoogleRoutesApi(normalizedOrigin, normalizedDestination, {
+        includeAlternatives
+    });
+    const directionsRoutes = includeAlternatives
+        ? await fetchRoutesFromDirectionsApi(normalizedOrigin, normalizedDestination, { includeAlternatives: true })
+        : [];
 
-    if (!fallbackRoute || !Array.isArray(fallbackRoute.decodedCoordinates) || fallbackRoute.decodedCoordinates.length < 2) {
-        return null;
-    }
+    const fallbackRoute = (!primaryRoutes || !primaryRoutes.length) && !directionsRoutes.length
+        ? await fetchLegacyDirections(normalizedOrigin, normalizedDestination)
+        : null;
 
-    const normalizedRoute = primaryRoute
-        ? primaryRoute
-        : normalizeRouteResponse({
+    let normalizedRoutes = mergeUniqueRoutes(
+        Array.isArray(primaryRoutes) ? primaryRoutes : [],
+        Array.isArray(directionsRoutes) ? directionsRoutes : []
+    );
+
+    if (!normalizedRoutes.length && fallbackRoute && Array.isArray(fallbackRoute.decodedCoordinates) && fallbackRoute.decodedCoordinates.length >= 2) {
+        normalizedRoutes = [normalizeRouteResponse({
             polyline: fallbackRoute.polyline || '',
             decodedCoordinates: fallbackRoute.decodedCoordinates || [],
             distanceText: fallbackRoute.distanceText || '',
             durationText: fallbackRoute.durationText || '',
             bounds: fallbackRoute.bounds || null,
             provider: fallbackRoute.polyline ? 'google_directions_api' : 'interpolated_route_fallback'
-        });
+        })];
+    }
 
-    const storedHighways = includeStoredHighways
-        ? await matchStoredHighwaysAlongRoute(
-            normalizedRoute.decodedCoordinates,
-            effectiveCorridorRadiusKm
-        )
-        : [];
+    if (!normalizedRoutes.length) {
+        return null;
+    }
 
+    const rawRoutes = await Promise.all(normalizedRoutes.map(async (normalizedRoute, index) => {
+        const [storedHighways, restaurantCount] = await Promise.all([
+            includeStoredHighways
+                ? matchStoredHighwaysAlongRoute(normalizedRoute.decodedCoordinates, effectiveCorridorRadiusKm)
+                : Promise.resolve([]),
+            includeRestaurantCounts
+                ? countRestaurantsAlongRoute(normalizedRoute.decodedCoordinates, effectiveCorridorRadiusKm)
+                : Promise.resolve(0)
+        ]);
+
+        return {
+            routeId: `google_route_${index + 1}`,
+            restaurantCount,
+            storedHighwayCount: storedHighways.length,
+            storedHighways,
+            highway: {
+                id: 'custom_google_route',
+                name: 'Google Maps Route',
+                ref: 'Google Maps Route',
+                polyline: normalizedRoute.polyline,
+                coordinates: normalizedRoute.decodedCoordinates,
+                boundingBox: normalizedRoute.bounds || computeBoundingBoxFromCoordinates(normalizedRoute.decodedCoordinates)
+            },
+            route: {
+                distanceMeters: normalizedRoute.distanceMeters,
+                distanceKm: Number.isFinite(normalizedRoute.distanceMeters) ? Number((normalizedRoute.distanceMeters / 1000).toFixed(1)) : null,
+                distanceText: normalizedRoute.distanceText,
+                durationSeconds: normalizedRoute.durationSeconds,
+                durationMinutes: Number.isFinite(normalizedRoute.durationSeconds) ? Math.max(1, Math.round(normalizedRoute.durationSeconds / 60)) : null,
+                durationText: normalizedRoute.durationText
+            }
+        };
+    }));
+
+    const decorated = decorateRouteOptions(rawRoutes, { includeRestaurantCounts });
     const payload = {
-        source: normalizedRoute.provider,
-        highway: {
-            id: 'custom_google_route',
-            name: 'Google Maps Route',
-            ref: 'Google Maps Route',
-            polyline: normalizedRoute.polyline,
-            coordinates: normalizedRoute.decodedCoordinates,
-            boundingBox: normalizedRoute.bounds || computeBoundingBoxFromCoordinates(normalizedRoute.decodedCoordinates)
-        },
-        route: {
-            distanceMeters: normalizedRoute.distanceMeters,
-            distanceText: normalizedRoute.distanceText,
-            durationSeconds: normalizedRoute.durationSeconds,
-            durationText: normalizedRoute.durationText
-        },
-        storedHighways
+        source: normalizedRoutes[0]?.provider || 'google_routes_api',
+        recommendedRouteId: decorated.recommendedRouteId,
+        routes: decorated.routes
     };
 
     setCachedRoute(cacheKey, payload);
     return payload;
+}
+
+export async function getGoogleRouteHighway({
+    origin,
+    destination,
+    includeStoredHighways = true,
+    corridorRadiusKm
+}) {
+    const routeOptions = await getGoogleRouteHighwayOptions({
+        origin,
+        destination,
+        includeStoredHighways,
+        corridorRadiusKm,
+        includeAlternatives: true,
+        includeRestaurantCounts: true
+    });
+
+    if (!routeOptions?.routes?.length) {
+        return null;
+    }
+
+    const recommendedRoute = routeOptions.routes.find((route) => route.routeId === routeOptions.recommendedRouteId)
+        || routeOptions.routes[0];
+
+    return {
+        source: routeOptions.source,
+        recommendedRouteId: routeOptions.recommendedRouteId,
+        routes: routeOptions.routes,
+        highway: recommendedRoute.highway,
+        route: recommendedRoute.route,
+        storedHighways: recommendedRoute.storedHighways,
+        routeId: recommendedRoute.routeId,
+        restaurantCount: recommendedRoute.restaurantCount,
+        storedHighwayCount: recommendedRoute.storedHighwayCount,
+        badges: recommendedRoute.badges,
+        name: recommendedRoute.name,
+        summary: recommendedRoute.summary,
+        roadNames: recommendedRoute.roadNames
+    };
 }

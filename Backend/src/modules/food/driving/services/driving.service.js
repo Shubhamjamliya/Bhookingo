@@ -4,8 +4,9 @@ import { FoodHighway } from '../../admin/models/highway.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { findNearestHighwayUnchecked, getHighwayById, hydrateHighwayGeometry } from '../../admin/services/highway.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
-import { getGoogleRouteHighway } from './googleRoutes.service.js';
+import { getGoogleRouteHighway, getGoogleRouteHighwayOptions } from './googleRoutes.service.js';
 import { getStoredDrivingSettingsConfig, saveDrivingSettingsConfig } from './drivingSettings.shared.js';
+import { decodePolyline } from '../../orders/utils/googleMaps.js';
 
 // Constants
 export const HIGHWAY_CONNECTIVITY_SEARCH_RADIUS_KM = 50;
@@ -28,7 +29,7 @@ export async function updateDrivingSettings(settings, adminId = null) {
 /**
  * Find restaurants ahead of user on their current highway route.
  */
-export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeKm, speed, destLat, destLng }) {
+export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeKm, speed, destLat, destLng, routePolyline }) {
     const settings = await getDrivingSettings();
 
     if (!settings.enabled) {
@@ -39,11 +40,36 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
 
     // 1. New Google Routes-based logic when start and destination are provided
     if (destLat !== null && destLat !== undefined && destLng !== null && destLng !== undefined) {
-        const googleRoute = await getGoogleRouteHighway({
-            origin: { lat, lng },
-            destination: { lat: destLat, lng: destLng },
-            includeStoredHighways: false
-        });
+        let googleRoute = null;
+
+        if (routePolyline) {
+            const decodedCoordinates = decodePolyline(routePolyline);
+            googleRoute = {
+                highway: {
+                    id: 'custom_google_route',
+                    name: 'Google Maps Route',
+                    ref: 'Google Maps Route',
+                    polyline: routePolyline,
+                    coordinates: decodedCoordinates,
+                    boundingBox: null
+                },
+                route: {
+                    distanceMeters: null,
+                    distanceKm: null,
+                    distanceText: '',
+                    durationSeconds: null,
+                    durationMinutes: null,
+                    durationText: ''
+                }
+            };
+        } else {
+            googleRoute = await getGoogleRouteHighway({
+                origin: { lat, lng },
+                destination: { lat: destLat, lng: destLng },
+                includeStoredHighways: false
+            });
+        }
+
         if (!googleRoute) {
             return {
                 status: 'IN_SERVICE',
@@ -87,16 +113,32 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
 
         const lineCoords = decodedCoordinates.map(c => [c.lng, c.lat]);
         const line = turf.lineString(lineCoords);
+        const effectiveRoadCorridorKm = settings.googleRouteSearchRadiusKm;
+
+        let minLat = Infinity;
+        let maxLat = -Infinity;
+        let minLng = Infinity;
+        let maxLng = -Infinity;
+        for (const coordinate of decodedCoordinates) {
+            if (!Number.isFinite(coordinate?.lat) || !Number.isFinite(coordinate?.lng)) continue;
+            minLat = Math.min(minLat, coordinate.lat);
+            maxLat = Math.max(maxLat, coordinate.lat);
+            minLng = Math.min(minLng, coordinate.lng);
+            maxLng = Math.max(maxLng, coordinate.lng);
+        }
+        const paddingDeg = effectiveRoadCorridorKm / 111;
 
         // Project user onto the Google route
         const userPoint = turf.point([lng, lat]);
         const U_proj = turf.nearestPointOnLine(line, userPoint, { units: 'kilometers' });
         const dist_U = U_proj.properties.location; // distance from start of route in km
 
-        // Fetch all candidate restaurants (approved and accepting orders)
+        // Fetch only restaurants near the visible road corridor instead of a broad global scan.
         const candidates = await FoodRestaurant.find({
             status: 'approved',
-            isAcceptingOrders: true
+            isAcceptingOrders: true,
+            'location.latitude': { $gte: minLat - paddingDeg, $lte: maxLat + paddingDeg },
+            'location.longitude': { $gte: minLng - paddingDeg, $lte: maxLng + paddingDeg }
         }).lean();
 
         const aheadRestaurants = [];
@@ -115,8 +157,8 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
             const dist_R = R_proj.properties.location;
             const dist_to_route_km = R_proj.properties.dist; // distance from restaurant to route in km
 
-            // Proximity threshold: is the restaurant within 15 km of the Google route corridor?
-            if (dist_to_route_km > settings.googleRouteSearchRadiusKm) continue;
+            // Keep only restaurants that are very close to the selected road itself.
+            if (dist_to_route_km > effectiveRoadCorridorKm) continue;
 
             const distanceKm = dist_R - dist_U; // distance ahead along the route
 
@@ -140,7 +182,8 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
                     distanceKm: Number(Math.max(0, distanceKm).toFixed(1)),
                     etaMinutes,
                     isBookable,
-                    highwayRef
+                    highwayRef,
+                    routeOffsetKm: Number(dist_to_route_km.toFixed(2))
                 });
             }
         }

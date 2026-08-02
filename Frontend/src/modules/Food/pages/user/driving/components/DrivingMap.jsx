@@ -55,10 +55,12 @@ export default function DrivingMap({
   highway,
   restaurants,
   onRestaurantClick,
+  onRouteSelect,
   recenterBottomOffset
 }) {
   const mapRef = useRef(null);
   const [localRoutePath, setLocalRoutePath] = useState([]);
+  const [alternateRoutePaths, setAlternateRoutePaths] = useState([]);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -82,6 +84,14 @@ export default function DrivingMap({
 
   const prevBoundsKeyRef = useRef("");
   const routeRequestedRef = useRef("");
+
+  const selectedRouteIndex = useMemo(() => {
+    const routeId = journey?.selectedRouteId || journey?.selectedHighway?.routeId || journey?.selectedHighway?._id;
+    const match = typeof routeId === "string" ? routeId.match(/google_route_(\d+)/) : null;
+    if (!match) return 0;
+    const parsedIndex = Number(match[1]) - 1;
+    return Number.isFinite(parsedIndex) && parsedIndex >= 0 ? parsedIndex : 0;
+  }, [journey?.selectedRouteId, journey?.selectedHighway?.routeId, journey?.selectedHighway?._id]);
 
   // Fit bounds to cover user location, destination, and all restaurants ahead
   const fitMapBounds = useCallback(() => {
@@ -156,20 +166,15 @@ export default function DrivingMap({
     }
   }, [hasUserLocation, userLat, userLng]);
 
-  // Fetch navigation path via Google Directions Service (cached & high precision)
+  // Fetch navigation path via Google Directions Service so the visible route follows actual roads.
   useEffect(() => {
     if (!isLoaded || !hasUserLocation || !hasDestLocation || !window.google) {
       setLocalRoutePath([]);
+      setAlternateRoutePaths([]);
       return;
     }
 
-    // Only reuse cached route if valid route points exist
-    if (journey?.routePolyline && Array.isArray(journey.routePolyline) && journey.routePolyline.length >= 2) {
-      setLocalRoutePath(journey.routePolyline);
-      return;
-    }
-
-    const routeKey = `${userLat.toFixed(3)}_${userLng.toFixed(3)}_${destLat.toFixed(3)}_${destLng.toFixed(3)}`;
+    const routeKey = `${userLat.toFixed(3)}_${userLng.toFixed(3)}_${destLat.toFixed(3)}_${destLng.toFixed(3)}_${selectedRouteIndex}`;
     if (routeRequestedRef.current === routeKey) {
       return;
     }
@@ -181,81 +186,133 @@ export default function DrivingMap({
         origin: { lat: userLat, lng: userLng },
         destination: { lat: destLat, lng: destLng },
         travelMode: window.google.maps.TravelMode.DRIVING,
+        provideRouteAlternatives: true
       },
       (result, status) => {
         if (status === window.google.maps.DirectionsStatus.OK) {
-          const route = result.routes[0];
-          let detailedPath = [];
+          const availableRoutes = Array.isArray(result?.routes) ? result.routes : [];
+          const decodedRoutePaths = availableRoutes.map((routeItem) => {
+            let routePath = [];
 
-          // Primary: Decode and merge every step's polyline from all legs for maximum road fidelity
-          if (route?.legs && route.legs.length > 0) {
-            route.legs.forEach(leg => {
-              if (leg?.steps && leg.steps.length > 0) {
-                leg.steps.forEach(step => {
-                  let stepPts = [];
-                  const rawPoly = step.polyline?.points || (typeof step.polyline === "string" ? step.polyline : null);
-                  if (rawPoly) {
-                    stepPts = decodePolyline(rawPoly);
-                  } else if (step.path && Array.isArray(step.path)) {
-                    stepPts = step.path.map(p => ({
-                      lat: typeof p.lat === "function" ? p.lat() : p.lat,
-                      lng: typeof p.lng === "function" ? p.lng() : p.lng
-                    }));
-                  } else if (step.lat_lngs && Array.isArray(step.lat_lngs)) {
-                    stepPts = step.lat_lngs.map(p => ({
-                      lat: typeof p.lat === "function" ? p.lat() : p.lat,
-                      lng: typeof p.lng === "function" ? p.lng() : p.lng
-                    }));
-                  }
-
-                  stepPts.forEach(pt => {
-                    if (detailedPath.length === 0) {
-                      detailedPath.push(pt);
-                    } else {
-                      const prev = detailedPath[detailedPath.length - 1];
-                      if (Math.abs(prev.lat - pt.lat) > 1e-7 || Math.abs(prev.lng - pt.lng) > 1e-7) {
-                        detailedPath.push(pt);
-                      }
+            if (routeItem?.legs && routeItem.legs.length > 0) {
+              routeItem.legs.forEach((leg) => {
+                if (leg?.steps && leg.steps.length > 0) {
+                  leg.steps.forEach((step) => {
+                    let stepPts = [];
+                    const rawPoly = step.polyline?.points || (typeof step.polyline === "string" ? step.polyline : null);
+                    if (rawPoly) {
+                      stepPts = decodePolyline(rawPoly);
+                    } else if (step.path && Array.isArray(step.path)) {
+                      stepPts = step.path.map((p) => ({
+                        lat: typeof p.lat === "function" ? p.lat() : p.lat,
+                        lng: typeof p.lng === "function" ? p.lng() : p.lng
+                      }));
+                    } else if (step.lat_lngs && Array.isArray(step.lat_lngs)) {
+                      stepPts = step.lat_lngs.map((p) => ({
+                        lat: typeof p.lat === "function" ? p.lat() : p.lat,
+                        lng: typeof p.lng === "function" ? p.lng() : p.lng
+                      }));
                     }
+
+                    stepPts.forEach((pt) => {
+                      if (routePath.length === 0) {
+                        routePath.push(pt);
+                      } else {
+                        const prev = routePath[routePath.length - 1];
+                        if (Math.abs(prev.lat - pt.lat) > 1e-7 || Math.abs(prev.lng - pt.lng) > 1e-7) {
+                          routePath.push(pt);
+                        }
+                      }
+                    });
                   });
-                });
-              }
-            });
-          }
-
-          // Fallback to overview polyline ONLY if step-by-step extraction produced no points
-          if (detailedPath.length === 0) {
-            const overviewRaw = route?.overview_polyline?.points || (typeof route?.overview_polyline === "string" ? route.overview_polyline : null);
-            if (overviewRaw) {
-              detailedPath = decodePolyline(overviewRaw);
-            } else if (route?.overview_path && Array.isArray(route.overview_path)) {
-              detailedPath = route.overview_path.map(p => ({
-                lat: typeof p.lat === "function" ? p.lat() : p.lat,
-                lng: typeof p.lng === "function" ? p.lng() : p.lng
-              }));
+                }
+              });
             }
+
+            if (routePath.length === 0) {
+              const overviewRaw = routeItem?.overview_polyline?.points || (typeof routeItem?.overview_polyline === "string" ? routeItem.overview_polyline : null);
+              if (overviewRaw) {
+                routePath = decodePolyline(overviewRaw);
+              } else if (routeItem?.overview_path && Array.isArray(routeItem.overview_path)) {
+                routePath = routeItem.overview_path.map((p) => ({
+                  lat: typeof p.lat === "function" ? p.lat() : p.lat,
+                  lng: typeof p.lng === "function" ? p.lng() : p.lng
+                }));
+              }
+            }
+
+            return routePath;
+          }).filter((routePath) => Array.isArray(routePath) && routePath.length >= 2);
+
+          const route = availableRoutes[selectedRouteIndex] || availableRoutes[0];
+          const detailedPath = decodedRoutePaths[selectedRouteIndex] || decodedRoutePaths[0] || [];
+
+
+          if (detailedPath.length >= 2) {
+            const routePolyline = detailedPath;
+            const estimatedDistance = route?.legs?.[0]?.distance?.text || "";
+            const estimatedDuration = route?.legs?.[0]?.duration?.text || "";
+
+            setLocalRoutePath(routePolyline);
+            setAlternateRoutePaths(
+              decodedRoutePaths
+                .map((path, index) => ({
+                  path,
+                  routeOption: Array.isArray(journey?.availableRoutes) ? journey.availableRoutes[index] : null,
+                  routeIndex: index
+                }))
+                .filter((routeEntry) => routeEntry.routeIndex !== selectedRouteIndex && Array.isArray(routeEntry.path) && routeEntry.path.length >= 2)
+            );
+
+            if (onRouteCalculated) {
+              onRouteCalculated({
+                routePolyline,
+                estimatedDistance,
+                estimatedDuration,
+                routeBounds: route?.bounds || null
+              });
+            }
+            return;
           }
-
-          const routePolyline = detailedPath;
-          const estimatedDistance = result.routes[0]?.legs[0]?.distance?.text || "";
-          const estimatedDuration = result.routes[0]?.legs[0]?.duration?.text || "";
-
-          setLocalRoutePath(routePolyline);
-
-          if (onRouteCalculated) {
-            onRouteCalculated({
-              routePolyline,
-              estimatedDistance,
-              estimatedDuration,
-              routeBounds: result.routes[0]?.bounds || null
-            });
-          }
-        } else {
-          console.warn("Directions request failed:", status);
         }
+
+        if (Array.isArray(journey?.availableRoutes) && journey.availableRoutes.length > 1) {
+          const fallbackPaths = journey.availableRoutes
+            .map((routeOption) => Array.isArray(routeOption.coordinates) ? routeOption.coordinates : [])
+            .filter((routePath) => routePath.length >= 2);
+          const activeFallbackPath = fallbackPaths[selectedRouteIndex] || fallbackPaths[0] || [];
+          setLocalRoutePath(activeFallbackPath);
+          setAlternateRoutePaths(
+            fallbackPaths
+              .map((path, index) => ({
+                path,
+                routeOption: Array.isArray(journey?.availableRoutes) ? journey.availableRoutes[index] : null,
+                routeIndex: index
+              }))
+              .filter((routeEntry) => routeEntry.routeIndex !== selectedRouteIndex && Array.isArray(routeEntry.path) && routeEntry.path.length >= 2)
+          );
+        } else if (journey?.routePolyline && Array.isArray(journey.routePolyline) && journey.routePolyline.length >= 2) {
+          setLocalRoutePath(journey.routePolyline);
+          setAlternateRoutePaths([]);
+        } else {
+          setLocalRoutePath([]);
+          setAlternateRoutePaths([]);
+        }
+        console.warn("Directions request failed:", status);
       }
     );
-  }, [isLoaded, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, journey?.routePolyline, onRouteCalculated]);
+  }, [
+    isLoaded,
+    hasUserLocation,
+    userLat,
+    userLng,
+    hasDestLocation,
+    destLat,
+    destLng,
+    selectedRouteIndex,
+    journey?.routePolyline,
+    onRouteCalculated
+  ]);
 
   // Fit bounds ONLY when destination or restaurants length actually changes (prevents continuous GetViewportInfo loops)
   useEffect(() => {
@@ -294,15 +351,37 @@ export default function DrivingMap({
           zoomControl: true,
         }}
       >
-        {/* Journey Route Polyline (Google Maps Detailed Directions) */}
+        {/* Alternate Routes */}
+        {alternateRoutePaths.map((routeEntry, index) => (
+          <Polyline
+            key={`alt-route-${routeEntry.routeOption?.routeId || index}`}
+            path={routeEntry.path}
+            onClick={() => {
+              if (routeEntry.routeOption && onRouteSelect) {
+                onRouteSelect(routeEntry.routeOption);
+              }
+            }}
+            options={{
+              strokeColor: "#94a3b8",
+              strokeOpacity: 0.75,
+              strokeWeight: 5,
+              geodesic: true,
+              zIndex: 1,
+              clickable: true,
+            }}
+          />
+        ))}
+
+        {/* Active Route Polyline */}
         {localRoutePath.length >= 2 && (
           <Polyline
             path={localRoutePath}
             options={{
-              strokeColor: "#0284c7", // Google Maps navigation blue
-              strokeOpacity: 0.9,
+              strokeColor: "#0284c7",
+              strokeOpacity: 0.95,
               strokeWeight: 6,
               geodesic: true,
+              zIndex: 2,
             }}
           />
         )}

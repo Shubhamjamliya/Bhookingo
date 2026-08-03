@@ -1,13 +1,21 @@
 import React from "react";
-import { Compass, Flag } from "lucide-react";
+import { ArrowLeft, Compass, Flag } from "lucide-react";
 
 export default function DrivingSummaryCard({ highwayRef, distanceAhead, nextStopEta, restaurantCount, onExit }) {
   return (
-    <div className="w-full bg-white dark:bg-[#1a1a1a] shadow-[0_4px_20px_rgba(0,0,0,0.08)] rounded-2xl overflow-hidden border border-gray-100 dark:border-neutral-800 p-4 animate-fade-in relative z-10">
+    <div className="w-full overflow-hidden rounded-b-[28px] border-b border-orange-400 bg-white px-3 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.06)] animate-fade-in relative dark:border-orange-500 dark:bg-[#0a0a0a]">
       
       {/* Top Section */}
       <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-neutral-800 mb-3.5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onExit}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition hover:bg-gray-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
           <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
             <Compass className="w-4 h-4 text-orange-600" />
           </div>
@@ -16,17 +24,7 @@ export default function DrivingSummaryCard({ highwayRef, distanceAhead, nextStop
             <span className="text-[10px] font-bold text-gray-400 dark:text-neutral-500 mt-1 block">Food stops along your journey</span>
           </div>
         </div>
-        {/* Exit button */}
-        <button
-          type="button"
-          onClick={onExit}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 dark:bg-red-950/40 border border-red-200/60 dark:border-red-800/40 text-red-600 dark:text-red-400 text-[10px] font-black tracking-wide uppercase hover:bg-red-100 dark:hover:bg-red-900/40 active:scale-95 transition-all"
-        >
-          <svg width={10} height={10} viewBox="0 0 24 24" className="fill-current shrink-0">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-          </svg>
-          Exit
-        </button>
+        <div className="w-9 shrink-0" />
       </div>
 
       {/* Grid Stats */}

@@ -23,14 +23,19 @@ function normalizeError(err) {
   return err;
 }
 
-// Prefer explicit env. If not set, default to /api/v1 so the Vite proxy can forward to backend.
-// This avoids hardcoding ports like 5000 that may conflict with local setups.
-const baseURL =
+// Prefer explicit env. In local browser dev, force the relative proxy path so requests stay same-origin
+// even if VITE_API_BASE_URL points at localhost:5000 directly.
+const envBaseUrl =
   typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL
     ? String(import.meta.env.VITE_API_BASE_URL).replace(/\/$/, "")
-    : "/api/v1";
+    : "";
 
-    console.log(baseURL)
+const shouldUseRelativeProxy =
+  typeof window !== "undefined" &&
+  /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname) &&
+  /^https?:\/\/(localhost|127\.0\.0\.1):5000\/api\/v1$/i.test(envBaseUrl);
+
+const baseURL = shouldUseRelativeProxy ? "/api/v1" : envBaseUrl || "/api/v1";
 
 const apiClient = axios.create({
   baseURL: baseURL || undefined,

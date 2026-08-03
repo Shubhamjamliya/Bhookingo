@@ -91,13 +91,14 @@ export default function DrivingMap({
   const prevBoundsKeyRef = useRef("");
   const routeRequestedRef = useRef("");
 
+  const selectedRouteId = journey?.selectedRouteId || journey?.selectedHighway?.routeId || journey?.selectedHighway?._id;
+
   const selectedRouteIndex = useMemo(() => {
-    const routeId = journey?.selectedRouteId || journey?.selectedHighway?.routeId || journey?.selectedHighway?._id;
-    const match = typeof routeId === "string" ? routeId.match(/google_route_(\d+)/) : null;
+    const match = typeof selectedRouteId === "string" ? selectedRouteId.match(/google_route_(\d+)/) : null;
     if (!match) return 0;
     const parsedIndex = Number(match[1]) - 1;
     return Number.isFinite(parsedIndex) && parsedIndex >= 0 ? parsedIndex : 0;
-  }, [journey?.selectedRouteId, journey?.selectedHighway?.routeId, journey?.selectedHighway?._id]);
+  }, [selectedRouteId]);
 
   // Fit bounds to cover user location, destination, and all restaurants ahead
   const fitMapBounds = useCallback(() => {
@@ -181,6 +182,28 @@ export default function DrivingMap({
     }
 
     const routeKey = `${userLat.toFixed(3)}_${userLng.toFixed(3)}_${destLat.toFixed(3)}_${destLng.toFixed(3)}_${selectedRouteIndex}`;
+    const cachedActivePath = selectedRouteId ? journey?.routeGeometryCache?.[selectedRouteId]?.activePath : null;
+    if (Array.isArray(cachedActivePath) && cachedActivePath.length >= 2) {
+      setLocalRoutePath(cachedActivePath);
+      if (Array.isArray(journey?.availableRoutes) && journey.availableRoutes.length > 1) {
+        const fallbackPaths = journey.availableRoutes
+          .map((routeOption) => Array.isArray(routeOption.coordinates) ? routeOption.coordinates : [])
+          .filter((routePath) => routePath.length >= 2);
+        setAlternateRoutePaths(
+          fallbackPaths
+            .map((path, index) => ({
+              path,
+              routeOption: Array.isArray(journey?.availableRoutes) ? journey.availableRoutes[index] : null,
+              routeIndex: index
+            }))
+            .filter((routeEntry) => routeEntry.routeIndex !== selectedRouteIndex && Array.isArray(routeEntry.path) && routeEntry.path.length >= 2)
+        );
+      } else {
+        setAlternateRoutePaths([]);
+      }
+      routeRequestedRef.current = routeKey;
+      return;
+    }
     if (routeRequestedRef.current === routeKey) {
       return;
     }
@@ -275,7 +298,11 @@ export default function DrivingMap({
                 routePolyline,
                 estimatedDistance,
                 estimatedDuration,
-                routeBounds: route?.bounds || null
+                routeBounds: route?.bounds || null,
+                routeGeometryCacheEntry: {
+                  routeId: selectedRouteId,
+                  activePath: routePolyline
+                }
               });
             }
             return;
@@ -317,6 +344,9 @@ export default function DrivingMap({
     destLng,
     selectedRouteIndex,
     journey?.routePolyline,
+    journey?.routeGeometryCache,
+    journey?.availableRoutes,
+    selectedRouteId,
     onRouteCalculated
   ]);
 

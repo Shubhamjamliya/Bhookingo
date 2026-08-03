@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Compass, Loader2, Navigation, AlertTriangle, List, Map, ShieldAlert, CheckCircle, Clock, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Share2, Heart, Wifi, Star, Car, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { userAPI, restaurantAPI } from "@food/api";
@@ -17,6 +17,35 @@ import { extractImages } from "@food/utils/common";
 import JourneyPlanner from "./components/JourneyPlanner";
 import { FACILITIES_CONFIG } from "../../../utils/facilitiesConfig";
 import { DrivingModeSkeleton } from "@food/components/ui/loading-skeletons";
+
+const readSessionJson = (key, fallback = null) => {
+  try {
+    const stored = sessionStorage.getItem(key);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const DRIVING_JOURNEY_KEY = "bh_active_journey";
+const DRIVING_RESULT_KEY = "bh_driving_result_data";
+const DRIVING_STATUS_KEY = "bh_driving_status";
+const DRIVING_ROUTE_RESULTS_KEY = "bh_driving_route_results";
+
+const buildRouteCacheKey = (journeyLike) => {
+  if (!journeyLike) return "";
+  const origin = journeyLike.origin || {};
+  const destination = journeyLike.destination || {};
+  const routeId = journeyLike.selectedRouteId || journeyLike.selectedHighway?.routeId || journeyLike.selectedHighway?._id || "route";
+  return [routeId, origin.lat ?? "", origin.lng ?? "", destination.lat ?? "", destination.lng ?? ""].join(":");
+};
+
+const clearDrivingCache = () => {
+  sessionStorage.removeItem(DRIVING_JOURNEY_KEY);
+  sessionStorage.removeItem(DRIVING_RESULT_KEY);
+  sessionStorage.removeItem(DRIVING_STATUS_KEY);
+  sessionStorage.removeItem(DRIVING_ROUTE_RESULTS_KEY);
+};
 
 // Food/menu images carousel component for the details card
 function RestaurantImageCarousel({ restaurant }) {
@@ -104,11 +133,14 @@ export default function DrivingMode() {
   const [speed, setSpeed] = useState(null);
   const [locationError, setLocationError] = useState(null);
 
+  const restoredJourney = readSessionJson(DRIVING_JOURNEY_KEY, null);
+  const restoredResultData = readSessionJson(DRIVING_RESULT_KEY, null);
+  const restoredStatus = typeof window !== "undefined" ? sessionStorage.getItem(DRIVING_STATUS_KEY) : null;
+
   // Unified Journey State (Restored from sessionStorage)
   const [journey, setJourney] = useState(() => {
     try {
-      const stored = sessionStorage.getItem("bh_active_journey");
-      return stored ? JSON.parse(stored) : null;
+      return restoredJourney;
     } catch {
       return null;
     }
@@ -117,9 +149,9 @@ export default function DrivingMode() {
   // Sync active journey to sessionStorage
   useEffect(() => {
     if (journey) {
-      sessionStorage.setItem("bh_active_journey", JSON.stringify(journey));
+      sessionStorage.setItem(DRIVING_JOURNEY_KEY, JSON.stringify(journey));
     } else {
-      sessionStorage.removeItem("bh_active_journey");
+      sessionStorage.removeItem(DRIVING_JOURNEY_KEY);
     }
   }, [journey]);
 
@@ -134,7 +166,7 @@ export default function DrivingMode() {
         newPath.includes("/restaurants") ||
         newPath.includes("/checkout");
 
-      if (!isStillInDrivingOrRestaurant && !sessionStorage.getItem("bh_active_journey")) {
+      if (!isStillInDrivingOrRestaurant && !sessionStorage.getItem(DRIVING_JOURNEY_KEY)) {
         sessionStorage.removeItem("bh_origin_input");
         sessionStorage.removeItem("bh_origin_coords");
         sessionStorage.removeItem("bh_destination_input");
@@ -145,31 +177,53 @@ export default function DrivingMode() {
   }, []);
 
   // Restaurant Query States
-  const [resultData, setResultData] = useState(null);
+  const [resultData, setResultData] = useState(() => restoredResultData);
   const [loadingRestaurants, setLoadingRestaurants] = useState(false);
-  const hasFetchedInitial = useRef(false);
+  const hasFetchedInitial = useRef(Boolean(restoredJourney && restoredResultData));
 
   // Unified State Machine
   // "CHECKING_LOCATION" | "CHECKING_HIGHWAY" | "LOADING_RESTAURANTS" | "AVAILABLE" | "OUTSIDE_HIGHWAY" | "NO_RESTAURANTS" | "AUTH_ERROR" | "ERROR" | "location_denied" | "PERMISSION_REQUIRED" | "disabled"
-  const [status, setStatus] = useState("CHECKING_LOCATION");
+  const [status, setStatus] = useState(() => (restoredJourney && restoredResultData ? (restoredStatus || "AVAILABLE") : "CHECKING_LOCATION"));
   const [errorMessage, setErrorMessage] = useState(null);
 
-  const handleRouteCalculated = useCallback(({ routePolyline, estimatedDistance, estimatedDuration, routeBounds }) => {
+  const handleRouteCalculated = useCallback(({ routePolyline, estimatedDistance, estimatedDuration, routeBounds, routeGeometryCacheEntry }) => {
     setJourney(prev => {
       if (!prev) return null;
+      const nextRouteGeometryCache = { ...(prev.routeGeometryCache || {}) };
+      if (routeGeometryCacheEntry?.routeId && Array.isArray(routeGeometryCacheEntry.activePath) && routeGeometryCacheEntry.activePath.length >= 2) {
+        nextRouteGeometryCache[routeGeometryCacheEntry.routeId] = {
+          activePath: routeGeometryCacheEntry.activePath
+        };
+      }
       return {
         ...prev,
         routePolyline,
         estimatedDistance,
         estimatedDuration,
-        routeBounds
+        routeBounds,
+        routeGeometryCache: nextRouteGeometryCache
       };
     });
   }, []);
 
+  useEffect(() => {
+    if (resultData) {
+      sessionStorage.setItem(DRIVING_RESULT_KEY, JSON.stringify(resultData));
+    } else {
+      sessionStorage.removeItem(DRIVING_RESULT_KEY);
+    }
+  }, [resultData]);
+
+  useEffect(() => {
+    if (status) {
+      sessionStorage.setItem(DRIVING_STATUS_KEY, status);
+    }
+  }, [status]);
+
   // Exit driving mode — clears journey and returns to start page
   const handleExitDriving = useCallback(() => {
-    sessionStorage.removeItem("bh_active_journey");
+    sessionStorage.removeItem(DRIVING_JOURNEY_KEY);
+    clearDrivingCache();
     sessionStorage.removeItem("bh_origin_input");
     sessionStorage.removeItem("bh_origin_coords");
     sessionStorage.removeItem("bh_destination_input");
@@ -231,6 +285,7 @@ export default function DrivingMode() {
   // Details Modal State
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [restaurantOffers, setRestaurantOffers] = useState([]);
+  const [isRoutePickerOpen, setIsRoutePickerOpen] = useState(false);
 
   const profileContext = useProfile?.() || {};
   const { isFavorite, addFavorite, removeFavorite } = profileContext;
@@ -480,6 +535,20 @@ export default function DrivingMode() {
       return;
     }
 
+    const routeCacheKey = buildRouteCacheKey(currentJourney);
+    const shouldUseCachedRouteResult = Boolean(currentJourney && routeCacheKey && (isInitial || activeJourney));
+    if (shouldUseCachedRouteResult) {
+      const cachedRouteResults = readSessionJson(DRIVING_ROUTE_RESULTS_KEY, {});
+      const cachedEntry = cachedRouteResults?.[routeCacheKey];
+      if (cachedEntry?.data) {
+        setResultData(cachedEntry.data);
+        setStatus(cachedEntry.status || (cachedEntry.data?.restaurants?.length ? "AVAILABLE" : "NO_RESTAURANTS"));
+        setLoadingRestaurants(false);
+        hasFetchedInitial.current = true;
+        return;
+      }
+    }
+
     // Cancel any in-flight requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -544,6 +613,16 @@ export default function DrivingMode() {
       if (res?.data?.success) {
         const data = res.data.data;
         setResultData(data);
+        if (routeCacheKey) {
+          const cachedRouteResults = readSessionJson(DRIVING_ROUTE_RESULTS_KEY, {});
+          cachedRouteResults[routeCacheKey] = {
+            data,
+            status: data.status === "OUT_OF_HIGHWAY" && !currentJourney
+              ? "OUTSIDE_HIGHWAY"
+              : ((!data.restaurants || data.restaurants.length === 0) ? "NO_RESTAURANTS" : "AVAILABLE")
+          };
+          sessionStorage.setItem(DRIVING_ROUTE_RESULTS_KEY, JSON.stringify(cachedRouteResults));
+        }
 
         if (Array.isArray(data?.restaurants) && currentJourney?.destination) {
           console.groupCollapsed(`[DrivingMode] Route restaurants (${data.restaurants.length})`);
@@ -624,6 +703,7 @@ export default function DrivingMode() {
     setLocationError(null);
     setResultData(null);
     setErrorMessage(null);
+    clearDrivingCache();
     setJourney(null);
     hasFetchedInitial.current = false;
 
@@ -634,7 +714,7 @@ export default function DrivingMode() {
   };
 
   const handleBackToPlanner = useCallback(() => {
-    sessionStorage.removeItem("bh_active_journey");
+    clearDrivingCache();
     setResultData(null);
     setSelectedRestaurant(null);
     setStatus("AVAILABLE");
@@ -696,6 +776,7 @@ export default function DrivingMode() {
 
     setJourney(updatedJourney);
     setSelectedRestaurant(null);
+    setIsRoutePickerOpen(false);
     fetchRestaurantsAhead(false, updatedJourney);
   }, [fetchRestaurantsAhead, journey]);
 
@@ -760,41 +841,7 @@ export default function DrivingMode() {
 
   // If no active trip exists, show the Journey Planner immediately.
   if (!journey) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-[#121212] flex flex-col justify-between relative">
-        <div className="flex-1 overflow-y-auto pb-4 animate-fade-in">
-          <JourneyPlanner
-            currentLocation={currentLocation}
-            onJourneyPlanSelected={(plan) => {
-              const initialJourney = {
-                origin: plan.origin,
-                destination: plan.destination,
-                selectedHighway: plan.highway,
-                selectedRouteId: plan.highway?.routeId || plan.highway?._id || null,
-                availableRoutes: Array.isArray(plan.availableRoutes) ? plan.availableRoutes : (plan.highway ? [plan.highway] : []),
-                routePolyline: Array.isArray(plan.highway?.coordinates) ? plan.highway.coordinates : [],
-                estimatedDistance: plan.highway?.distanceText || "",
-                estimatedDuration: plan.highway?.durationText || "",
-                routeBounds: plan.highway?.boundingBox || null,
-                createdAt: new Date().toISOString(),
-                mode: "PLANNED"
-              };
-              setJourney(initialJourney);
-              // Trigger reload of restaurants for this plan immediately
-              fetchRestaurantsAhead(true, initialJourney);
-            }}
-            onGoHome={() => {
-              setJourney(null);
-              sessionStorage.removeItem("bh_active_journey");
-              navigate("/food/user/restaurants");
-            }}
-          />
-        </div>
-        <div className="pb-[env(safe-area-inset-bottom)] bg-white dark:bg-[#1a1a1a]">
-          <BottomNavigation />
-        </div>
-      </div>
-    );
+    return <Navigate to="/food/user/driving" replace />;
   }
 
   if (status !== "AVAILABLE" && status !== "NO_RESTAURANTS") {
@@ -819,15 +866,25 @@ export default function DrivingMode() {
   }
 
   const nextStop = filteredRestaurants[0] || null;
-  const hasMultipleRoutes = Array.isArray(journey?.availableRoutes) && journey.availableRoutes.length > 1;
+  const visibleRouteOptions = Array.isArray(journey?.availableRoutes)
+    ? journey.availableRoutes.filter((routeOption, index, routes) => {
+      const routeKey = routeOption?.routeId || routeOption?._id;
+      const hasGeometry = Boolean(routeOption?.polyline) || (Array.isArray(routeOption?.coordinates) && routeOption.coordinates.length > 1);
+      const looksLikeMapRoute = typeof routeKey === "string" && routeKey.startsWith("google_route_");
+      if (!routeKey || !hasGeometry || !looksLikeMapRoute) return false;
+
+      return routes.findIndex((candidate) => (candidate?.routeId || candidate?._id) === routeKey) === index;
+    })
+    : [];
+  const hasMultipleRoutes = visibleRouteOptions.length > 1;
   const rangeLimit = settings?.restaurantSearchRadiusKm || 50;
 
   return (
-    <div className="relative w-full h-screen bg-gray-50 dark:bg-[#0a0a0a] overflow-hidden flex flex-col justify-between">
+    <div className="relative w-full h-screen bg-gray-50 dark:bg-[#0a0a0a] overflow-hidden flex flex-col">
 
-      {/* View Toggle Bar (Floating Header) */}
-      <div className="absolute top-4 left-4 right-4 z-20 flex justify-center pointer-events-none">
-        <div className="pointer-events-auto w-full max-w-md space-y-3">
+      {/* Top Summary Section */}
+      <div className="absolute top-0 left-0 right-0 z-20 flex justify-center px-0 pt-[env(safe-area-inset-top)] pointer-events-none">
+        <div className="w-full max-w-md pointer-events-auto">
           <DrivingSummaryCard
             highwayRef={journey?.selectedHighway?.name || resultData?.highway?.ref || journey?.selectedHighway?.ref}
             distanceAhead={nextStop?.distanceKm ?? null}
@@ -835,44 +892,66 @@ export default function DrivingMode() {
             restaurantCount={filteredRestaurants.length}
             onExit={handleExitDriving}
           />
-
-          {hasMultipleRoutes && (
-            <div className="flex gap-2 overflow-x-auto pb-1 pr-1 filters-scroll-hide">
-              {journey.availableRoutes.map((routeOption) => {
-                const isActiveRoute = (journey?.selectedRouteId || journey?.selectedHighway?._id) === (routeOption.routeId || routeOption._id);
-                return (
-                  <button
-                    key={routeOption.routeId || routeOption._id}
-                    type="button"
-                    onClick={() => handleSelectRouteOption(routeOption)}
-                    className={`min-w-[150px] rounded-2xl border px-3 py-2 text-left shadow-sm transition-all ${isActiveRoute
-                      ? "border-orange-500 bg-white text-gray-900 shadow-lg shadow-orange-100"
-                      : "border-white/70 bg-white/95 text-gray-700"
-                      }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-black uppercase tracking-[0.12em] text-orange-600">{routeOption.name || "Route"}</span>
-                      {routeOption.badges?.[0] && (
-                        <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[9px] font-bold uppercase text-orange-700">
-                          {routeOption.badges[0]}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 truncate text-xs font-semibold text-gray-900">{routeOption.ref || routeOption.name}</div>
-                    <div className="mt-1 flex items-center gap-2 text-[11px] font-medium text-gray-500">
-                      <span>{routeOption.distanceText || `${routeOption.approxDistanceKm || "-"} km`}</span>
-                      <span>{routeOption.durationText || ""}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
       </div>
 
+      {hasMultipleRoutes && (
+        <div className="absolute top-[calc(env(safe-area-inset-top)+196px)] left-0 right-0 z-20 flex justify-center px-3 pointer-events-none">
+          <div className="flex w-full max-w-md justify-end pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => setIsRoutePickerOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white px-3.5 py-2 text-xs font-black uppercase tracking-[0.12em] text-gray-800 shadow-sm transition hover:border-orange-200 hover:text-orange-600 dark:border-neutral-800 dark:bg-[#151515] dark:text-white"
+            >
+              Route
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <Dialog open={isRoutePickerOpen} onOpenChange={setIsRoutePickerOpen}>
+        <DialogContent className="max-w-sm w-[calc(100vw-32px)] rounded-3xl border-none bg-white p-0 shadow-2xl dark:bg-[#111111]">
+          <div className="border-b border-gray-100 px-5 py-4 dark:border-neutral-800">
+            <h3 className="text-base font-black text-gray-900 dark:text-white">Select Route</h3>
+            <p className="mt-1 text-xs font-medium text-gray-500 dark:text-neutral-400">Choose the route you want to follow for this trip.</p>
+          </div>
+
+          <div className="max-h-[60vh] space-y-3 overflow-y-auto px-4 py-4">
+            {visibleRouteOptions.map((routeOption) => {
+              const isActiveRoute = (journey?.selectedRouteId || journey?.selectedHighway?._id) === (routeOption.routeId || routeOption._id);
+              return (
+                <button
+                  key={routeOption.routeId || routeOption._id}
+                  type="button"
+                  onClick={() => handleSelectRouteOption(routeOption)}
+                  className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${isActiveRoute
+                    ? "border-orange-500 bg-orange-50/80 shadow-sm dark:bg-orange-950/20"
+                    : "border-gray-200 bg-white hover:border-orange-200 dark:border-neutral-800 dark:bg-neutral-950"
+                    }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-black uppercase tracking-[0.12em] text-orange-600">{routeOption.name || "Route"}</span>
+                    {routeOption.badges?.[0] && (
+                      <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[9px] font-bold uppercase text-orange-700 dark:bg-orange-950/40 dark:text-orange-300">
+                        {routeOption.badges[0]}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 truncate text-sm font-bold text-gray-900 dark:text-white">{routeOption.ref || routeOption.name}</div>
+                  <div className="mt-2 flex items-center gap-3 text-[11px] font-medium text-gray-500 dark:text-neutral-400">
+                    <span>{routeOption.distanceText || `${routeOption.approxDistanceKm || "-"} km`}</span>
+                    <span>{routeOption.durationText || ""}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Main Map or List Container */}
-      <div className="flex-1 w-full relative">
+      <div className="flex-1 w-full relative min-h-0">
         {viewMode === "map" ? (
           <DrivingMap
             userLocation={journey?.origin ? { latitude: journey.origin.lat, longitude: journey.origin.lng } : currentLocation}
@@ -887,7 +966,7 @@ export default function DrivingMode() {
             recenterBottomOffset={isDrawerExpanded ? "hidden" : "bottom-[230px]"}
           />
         ) : (
-          <div className={`w-full h-full overflow-y-auto px-4 pb-20 space-y-4 ${hasMultipleRoutes ? "pt-56" : "pt-40"} bg-gray-50/50 dark:bg-[#0a0a0a] pb-[calc(100px+env(safe-area-inset-bottom))]`}>
+          <div className="w-full h-full overflow-y-auto px-4 pb-20 pt-4 space-y-4 bg-gray-50/50 dark:bg-[#0a0a0a] pb-[calc(100px+env(safe-area-inset-bottom))]">
             {/* Top Search distance filter & sorting */}
             <div className="flex items-center justify-between gap-4 pb-2">
               {/* Range Filters */}
@@ -949,7 +1028,13 @@ export default function DrivingMode() {
         : (isDrawerExpanded ? "bottom-[calc(100vh-140px)] opacity-0 scale-0 pointer-events-none" : "bottom-[230px] opacity-100 scale-100")
         }`}>
         <Button
-          onClick={() => setViewMode(viewMode === "map" ? "list" : "map")}
+          onClick={() => {
+            if (viewMode === "map") {
+              setIsDrawerExpanded(true);
+              return;
+            }
+            setViewMode("map");
+          }}
           className="pointer-events-auto flex items-center gap-2 px-6 py-2.5 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white font-bold shadow-xl border border-white/10 shrink-0"
         >
           {viewMode === "map" ? (

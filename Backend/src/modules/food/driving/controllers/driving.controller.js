@@ -33,20 +33,21 @@ export const getPublicDrivingModeSettingsController = async (req, res, next) => 
 };
 
 /**
- * GET /food/driving-mode/restaurants (User endpoint)
+ * GET/POST /food/driving-mode/restaurants (User endpoint)
  */
 export const getRestaurantsAheadController = async (req, res, next) => {
     try {
-        const lat = toFinite(req.query.lat);
-        const lng = toFinite(req.query.lng);
-        const heading = req.query.heading !== undefined ? toFinite(req.query.heading) : null;
-        const speed = req.query.speed !== undefined ? toFinite(req.query.speed) : null;
-        const highwayId = req.query.highwayId || null;
-        const rangeKm = req.query.rangeKm !== undefined ? toFinite(req.query.rangeKm) : null;
-        const destLat = req.query.destLat !== undefined ? toFinite(req.query.destLat) : null;
-        const destLng = req.query.destLng !== undefined ? toFinite(req.query.destLng) : null;
-        const routePolyline = typeof req.query.routePolyline === 'string' && req.query.routePolyline.trim()
-            ? req.query.routePolyline.trim()
+        const source = req.method === 'POST' ? (req.body || {}) : (req.query || {});
+        const lat = toFinite(source.lat);
+        const lng = toFinite(source.lng);
+        const heading = source.heading !== undefined ? toFinite(source.heading) : null;
+        const speed = source.speed !== undefined ? toFinite(source.speed) : null;
+        const highwayId = source.highwayId || null;
+        const rangeKm = source.rangeKm !== undefined ? toFinite(source.rangeKm) : null;
+        const destLat = source.destLat !== undefined ? toFinite(source.destLat) : null;
+        const destLng = source.destLng !== undefined ? toFinite(source.destLng) : null;
+        const routePolyline = typeof source.routePolyline === 'string' && source.routePolyline.trim()
+            ? source.routePolyline.trim()
             : null;
 
         if (lat === null || lng === null) {

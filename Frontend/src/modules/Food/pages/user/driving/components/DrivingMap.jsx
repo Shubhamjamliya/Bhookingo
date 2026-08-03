@@ -9,7 +9,7 @@ const MAP_CONTAINER_STYLE = {
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
 const GOOGLE_MAPS_LIBRARIES = ["geometry", "drawing", "places"];
-const ALT_ROUTE_STROKE = "#111111";
+const ALT_ROUTE_STROKE = "#9ca3af";
 
 // High precision polyline decoder for Google Maps encoded polylines
 function getRouteMidpoint(path = []) {

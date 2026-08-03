@@ -1526,7 +1526,11 @@ export const userAPI = {
   getDrivingModeSettings: () =>
     apiClient.get("/food/driving-mode/settings", { contextModule: "user" }),
   getRestaurantsAhead: (params, config = {}) =>
-    apiClient.post("/food/driving-mode/restaurants", params ?? {}, { contextModule: "user", ...config }),
+    apiClient.post("/food/driving-mode/restaurants", params ?? {}, {
+      contextModule: "user",
+      timeout: 45000,
+      ...config,
+    }),
   getConnectingHighways: (params) =>
     apiClient.get("/food/driving-mode/connecting-highways", { params, contextModule: "user" }),
   getGoogleRouteHighway: (params) =>

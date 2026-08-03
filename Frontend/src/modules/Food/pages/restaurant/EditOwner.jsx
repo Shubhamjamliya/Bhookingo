@@ -17,6 +17,9 @@ import {
   Calendar as CalendarIcon,
   Sparkles,
   MapPin,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
@@ -28,10 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@food/components/ui/select"
-import { restaurantAPI, uploadAPI } from "@food/api"
+import { restaurantAPI, uploadAPI, highwayAPI } from "@food/api"
 import OptimizedImage from "@food/components/OptimizedImage"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
+import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { toast } from "sonner"
 import { MobileTimePicker } from "@mui/x-date-pickers/MobileTimePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
@@ -158,6 +162,57 @@ const formatNameToCapital = (str) => {
     .join(" ")
 }
 
+const parseGoogleAddressComponents = (components = []) => {
+  const get = (types) =>
+    components.find((component) => types.some((type) => component.types?.includes(type)))?.long_name || ""
+
+  const route = get(["route"])
+  const streetNumber = get(["street_number"])
+  const roadName = [streetNumber, route].filter(Boolean).join(" ").trim() || route || ""
+
+  return {
+    area: get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"]),
+    city: get(["locality"]) || get(["administrative_area_level_2"]),
+    state: get(["administrative_area_level_1"]) || get(["administrative_area_level_2"]),
+    pincode: get(["postal_code"]),
+    roadName,
+  }
+}
+
+async function loadGooglePlaces() {
+  if (window.google?.maps?.places?.Autocomplete) return true
+  const apiKey = await getGoogleMapsApiKey()
+  if (!apiKey) return false
+
+  window.gm_authFailure = () => {}
+
+  const existing = document.getElementById("restaurant-owner-google-maps-script")
+  if (existing) {
+    await new Promise((resolve, reject) => {
+      if (window.google?.maps?.places?.Autocomplete) {
+        resolve()
+        return
+      }
+      existing.addEventListener("load", resolve, { once: true })
+      existing.addEventListener("error", reject, { once: true })
+    })
+    return !!window.google?.maps?.places?.Autocomplete
+  }
+
+  await new Promise((resolve, reject) => {
+    const script = document.createElement("script")
+    script.id = "restaurant-owner-google-maps-script"
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`
+    script.async = true
+    script.defer = true
+    script.onload = resolve
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+
+  return !!window.google?.maps?.places?.Autocomplete
+}
+
 export default function EditOwner() {
   const navigate = useNavigate()
   const routerLocation = useLocation()
@@ -186,6 +241,7 @@ export default function EditOwner() {
     primaryContactNumber: "",
 
     location: {
+      placeId: "",
       formattedAddress: "",
       addressLine1: "",
       addressLine2: "",
@@ -194,6 +250,7 @@ export default function EditOwner() {
       state: "Madhya Pradesh",
       pincode: "",
       landmark: "",
+      roadName: "",
       latitude: "",
       longitude: "",
     },
@@ -233,6 +290,25 @@ export default function EditOwner() {
   const [isPhotoPickerOpen, setIsPhotoPickerOpen] = useState(false)
   const [activeImageField, setActiveImageField] = useState(null)
   const fileInputRef = useRef(null)
+  const [locationError, setLocationError] = useState("")
+  const [highwayInfo, setHighwayInfo] = useState({
+    loading: false,
+    status: null,
+    highwayId: null,
+    highwayName: null,
+    highwayRef: null,
+    distanceMeters: null,
+    thresholdMeters: null,
+  })
+  const [isRoadNameDirty, setIsRoadNameDirty] = useState(false)
+  const [isMapsSdkReady, setIsMapsSdkReady] = useState(() => Boolean(window.google?.maps))
+  const locationSearchInputRef = useRef(null)
+  const placesAutocompleteRef = useRef(null)
+  const pinMapContainerRef = useRef(null)
+  const pinMapRef = useRef(null)
+  const pinMarkerRef = useRef(null)
+  const pinGeocoderRef = useRef(null)
+  const lastAutoRoadNameRef = useRef("")
 
   // Lenis smooth scrolling
   useEffect(() => {
@@ -291,6 +367,7 @@ export default function EditOwner() {
             primaryContactNumber: (apiData.primaryContactNumber || "").replace(/\D/g, "").slice(-10),
 
             location: {
+              placeId: loc.placeId || "",
               formattedAddress: loc.formattedAddress || loc.address || "",
               addressLine1: loc.addressLine1 || "",
               addressLine2: loc.addressLine2 || "",
@@ -299,6 +376,7 @@ export default function EditOwner() {
               state: loc.state || "Madhya Pradesh",
               pincode: loc.pincode || "",
               landmark: loc.landmark || "",
+              roadName: loc.roadName || "",
               latitude: loc.latitude ?? (Array.isArray(loc.coordinates) ? loc.coordinates[1] : ""),
               longitude: loc.longitude ?? (Array.isArray(loc.coordinates) ? loc.coordinates[0] : ""),
             },
@@ -344,6 +422,264 @@ export default function EditOwner() {
 
     fetchRestaurantData()
   }, [])
+
+  useEffect(() => {
+    if (!locationSearchInputRef.current) return
+    if (placesAutocompleteRef.current) return
+
+    let cancelled = false
+    const init = async () => {
+      setLocationError("")
+      try {
+        const loaded = await loadGooglePlaces()
+        if (cancelled) return
+        if (!loaded || !window.google?.maps?.places?.Autocomplete) {
+          setLocationError("Unable to load Google Places Autocomplete.")
+          return
+        }
+        setIsMapsSdkReady(true)
+
+        placesAutocompleteRef.current = new window.google.maps.places.Autocomplete(
+          locationSearchInputRef.current,
+          {
+            fields: ["formatted_address", "address_components", "geometry", "place_id"],
+            componentRestrictions: { country: "in" },
+          }
+        )
+
+        placesAutocompleteRef.current.addListener("place_changed", () => {
+          const place = placesAutocompleteRef.current.getPlace()
+          const formattedAddress = place?.formatted_address || ""
+          const parsedAddress = parseGoogleAddressComponents(place?.address_components || [])
+          const lat = place?.geometry?.location?.lat?.()
+          const lng = place?.geometry?.location?.lng?.()
+
+          setFormData((prev) => ({
+            ...prev,
+            location: {
+              ...prev.location,
+              formattedAddress: formattedAddress || prev.location.formattedAddress,
+              addressLine1: formattedAddress || prev.location.addressLine1,
+              area: parsedAddress.area || prev.location.area,
+              city: parsedAddress.city || prev.location.city,
+              state: parsedAddress.state || prev.location.state,
+              pincode: parsedAddress.pincode || prev.location.pincode,
+              roadName: parsedAddress.roadName || prev.location.roadName || "",
+              placeId: place?.place_id || prev.location.placeId || "",
+              latitude: Number.isFinite(lat) ? Number(lat.toFixed(6)) : prev.location.latitude,
+              longitude: Number.isFinite(lng) ? Number(lng.toFixed(6)) : prev.location.longitude,
+            },
+          }))
+          setIsRoadNameDirty(false)
+        })
+      } catch {
+        if (!cancelled) {
+          setLocationError("Unable to load Google Places Autocomplete.")
+        }
+      }
+    }
+
+    requestAnimationFrame(init)
+    return () => {
+      cancelled = true
+      placesAutocompleteRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    if (window.google?.maps && !isMapsSdkReady) {
+      setIsMapsSdkReady(true)
+    }
+  }, [isMapsSdkReady])
+
+  useEffect(() => {
+    const lat = Number(formData.location?.latitude)
+    const lng = Number(formData.location?.longitude)
+    const address = formData.location?.formattedAddress || formData.location?.addressLine1 || ""
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !address.trim()) {
+      setHighwayInfo({
+        loading: false,
+        status: null,
+        highwayId: null,
+        highwayName: null,
+        highwayRef: null,
+        distanceMeters: null,
+        thresholdMeters: null,
+      })
+      return
+    }
+
+    let cancelled = false
+    const run = async () => {
+      setHighwayInfo((prev) => ({ ...prev, loading: true }))
+      try {
+        const res = await highwayAPI.detectHighway(lat, lng)
+        const data = res?.data?.data
+        if (cancelled) return
+        if (res?.data?.success && data) {
+          setHighwayInfo({
+            loading: false,
+            status: data.status,
+            highwayId: data.highwayId || null,
+            highwayName: data.highwayName || null,
+            highwayRef: data.highwayRef || null,
+            distanceMeters: data.distanceMeters ?? null,
+            thresholdMeters: data.thresholdMeters ?? null,
+          })
+        } else {
+          setHighwayInfo({
+            loading: false,
+            status: "OUT_OF_SERVICE",
+            highwayId: null,
+            highwayName: null,
+            highwayRef: null,
+            distanceMeters: null,
+            thresholdMeters: null,
+          })
+        }
+      } catch {
+        if (!cancelled) {
+          setHighwayInfo({
+            loading: false,
+            status: "OUT_OF_SERVICE",
+            highwayId: null,
+            highwayName: null,
+            highwayRef: null,
+            distanceMeters: null,
+            thresholdMeters: null,
+          })
+        }
+      }
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [formData.location?.latitude, formData.location?.longitude, formData.location?.formattedAddress, formData.location?.addressLine1])
+
+  const autoDetectedRoadLabel = (() => {
+    if (highwayInfo.highwayRef) {
+      return `${highwayInfo.highwayRef}${highwayInfo.highwayName ? ` - ${highwayInfo.highwayName}` : ""}`
+    }
+    if (highwayInfo.highwayName) {
+      return String(highwayInfo.highwayName)
+    }
+    return ""
+  })()
+
+  useEffect(() => {
+    if (!autoDetectedRoadLabel) return
+    setFormData((prev) => {
+      const currentRoadName = String(prev.location?.roadName || "")
+      if (isRoadNameDirty && currentRoadName && currentRoadName !== lastAutoRoadNameRef.current) return prev
+      if (currentRoadName === autoDetectedRoadLabel) {
+        lastAutoRoadNameRef.current = autoDetectedRoadLabel
+        return prev
+      }
+      lastAutoRoadNameRef.current = autoDetectedRoadLabel
+      return {
+        ...prev,
+        location: {
+          ...prev.location,
+          roadName: autoDetectedRoadLabel,
+        },
+      }
+    })
+  }, [autoDetectedRoadLabel, isRoadNameDirty])
+
+  const reverseGeocodePinnedLocation = async (lat, lng) => {
+    if (!window.google?.maps?.Geocoder) return null
+    if (!pinGeocoderRef.current) {
+      pinGeocoderRef.current = new window.google.maps.Geocoder()
+    }
+
+    return new Promise((resolve) => {
+      pinGeocoderRef.current.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status !== "OK" || !results?.[0]) {
+          resolve(null)
+          return
+        }
+        const place = results[0]
+        const parsed = parseGoogleAddressComponents(place.address_components || [])
+        resolve({
+          formattedAddress: place.formatted_address || "",
+          placeId: place.place_id || "",
+          ...parsed,
+        })
+      })
+    })
+  }
+
+  const syncPinnedLocation = async (lat, lng) => {
+    const roundedLat = Number(Number(lat).toFixed(6))
+    const roundedLng = Number(Number(lng).toFixed(6))
+    if (!Number.isFinite(roundedLat) || !Number.isFinite(roundedLng)) return
+
+    const geoDetails = await reverseGeocodePinnedLocation(roundedLat, roundedLng)
+    setFormData((prev) => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        formattedAddress: geoDetails?.formattedAddress || prev.location.formattedAddress || `${roundedLat}, ${roundedLng}`,
+        addressLine1: geoDetails?.formattedAddress || prev.location.addressLine1 || `${roundedLat}, ${roundedLng}`,
+        area: geoDetails?.area || prev.location.area,
+        city: geoDetails?.city || prev.location.city,
+        state: geoDetails?.state || prev.location.state,
+        pincode: geoDetails?.pincode || prev.location.pincode,
+        latitude: roundedLat,
+        longitude: roundedLng,
+        placeId: geoDetails?.placeId || prev.location.placeId || "",
+        roadName: geoDetails?.roadName || prev.location.roadName || prev.location.area || "",
+      },
+    }))
+    setIsRoadNameDirty(false)
+  }
+
+  useEffect(() => {
+    const lat = Number(formData.location?.latitude)
+    const lng = Number(formData.location?.longitude)
+    if (!isMapsSdkReady || !Number.isFinite(lat) || !Number.isFinite(lng) || !pinMapContainerRef.current || !window.google?.maps) {
+      return undefined
+    }
+
+    const center = { lat, lng }
+    if (!pinMapRef.current) {
+      pinMapRef.current = new window.google.maps.Map(pinMapContainerRef.current, {
+        center,
+        zoom: 16,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false,
+        gestureHandling: "greedy",
+      })
+      pinMarkerRef.current = new window.google.maps.Marker({
+        map: pinMapRef.current,
+        position: center,
+        draggable: true,
+        title: "Restaurant Pin",
+        animation: window.google.maps.Animation?.DROP,
+      })
+      pinMarkerRef.current.addListener("dragend", async (event) => {
+        await syncPinnedLocation(event?.latLng?.lat?.(), event?.latLng?.lng?.())
+      })
+      pinMapRef.current.addListener("click", async (event) => {
+        const nextLat = event?.latLng?.lat?.()
+        const nextLng = event?.latLng?.lng?.()
+        if (pinMarkerRef.current && Number.isFinite(nextLat) && Number.isFinite(nextLng)) {
+          pinMarkerRef.current.setPosition({ lat: nextLat, lng: nextLng })
+        }
+        await syncPinnedLocation(nextLat, nextLng)
+      })
+    } else {
+      pinMapRef.current.setCenter(center)
+      pinMarkerRef.current?.setPosition(center)
+      pinMarkerRef.current?.setDraggable(true)
+    }
+
+    return undefined
+  }, [formData.location?.latitude, formData.location?.longitude, isMapsSdkReady])
 
   // Check for unsaved changes
   const hasChanges = initialData ? JSON.stringify(formData) !== JSON.stringify(initialData) : false
@@ -523,6 +859,10 @@ export default function EditOwner() {
       errors.push({ tab: "restaurant", field: "pincode", message: "Pincode must be exactly 6 digits" })
     }
 
+    if (!formData.location?.roadName?.trim()) {
+      errors.push({ tab: "restaurant", field: "roadName", message: "Road / Highway name is required" })
+    }
+
     if (!formData.openingTime || !formData.closingTime) {
       errors.push({ tab: "restaurant", field: "timings", message: "Opening & closing timings are required" })
     }
@@ -676,6 +1016,7 @@ export default function EditOwner() {
         primaryContactNumber: formData.primaryContactNumber.trim(),
 
         location: {
+          placeId: formData.location.placeId || "",
           formattedAddress: formData.location.formattedAddress || "",
           addressLine1: formData.location.addressLine1.trim(),
           addressLine2: formData.location.addressLine2.trim(),
@@ -684,8 +1025,12 @@ export default function EditOwner() {
           state: formData.location.state.trim(),
           pincode: formData.location.pincode.trim(),
           landmark: formData.location.landmark.trim(),
+          roadName: formData.location.roadName.trim(),
           latitude: formData.location.latitude ? parseFloat(formData.location.latitude) : null,
           longitude: formData.location.longitude ? parseFloat(formData.location.longitude) : null,
+          ...(highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId
+            ? { highwayId: String(highwayInfo.highwayId) }
+            : {}),
         },
         cuisines: formData.cuisines,
         openingTime: formData.openingTime,
@@ -973,6 +1318,27 @@ export default function EditOwner() {
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
+                    Search Address From Map
+                  </label>
+                  <Input
+                    ref={locationSearchInputRef}
+                    type="text"
+                    placeholder="Search restaurant address, road or highway"
+                    value={formData.location?.formattedAddress || ""}
+                    onChange={(e) => handleLocationChange("formattedAddress", e.target.value)}
+                    className="w-full text-sm h-11"
+                  />
+                  {locationError ? (
+                    <p className="text-[11px] text-amber-700 mt-2">{locationError}</p>
+                  ) : (
+                    <p className="text-[11px] text-gray-500 mt-2">
+                      Search a location, then fine-tune the exact point by dragging the pin on the map.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
                     Full Address (line 1)*
                   </label>
                   <Input
@@ -1009,6 +1375,90 @@ export default function EditOwner() {
                     className="w-full text-sm h-11"
                   />
                 </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
+                    Road / Highway Name*
+                  </label>
+                  <Input
+                    type="text"
+                    value={formData.location?.roadName || ""}
+                    onChange={(e) => {
+                      setIsRoadNameDirty(true)
+                      handleLocationChange("roadName", e.target.value)
+                    }}
+                    placeholder="NH-52, AB Road, service road, etc."
+                    className="w-full text-sm h-11"
+                  />
+                </div>
+
+                {(highwayInfo.loading || highwayInfo.status) && (
+                  <div
+                    className={`rounded-2xl border p-4 ${
+                      highwayInfo.loading
+                        ? "border-amber-200 bg-amber-50"
+                        : highwayInfo.status === "IN_SERVICE"
+                          ? "border-emerald-200 bg-emerald-50"
+                          : "border-slate-200 bg-slate-50"
+                    }`}
+                  >
+                    {highwayInfo.loading ? (
+                      <div className="flex items-start gap-3 text-amber-800">
+                        <Loader2 className="h-4 w-4 mt-0.5 animate-spin" />
+                        <div>
+                          <p className="text-sm font-semibold">Detecting nearby highway</p>
+                          <p className="text-xs mt-1">Checking whether this restaurant falls on a serviceable route.</p>
+                        </div>
+                      </div>
+                    ) : highwayInfo.status === "IN_SERVICE" ? (
+                      <div className="flex items-start gap-3 text-emerald-900">
+                        <CheckCircle2 className="h-4 w-4 mt-0.5" />
+                        <div className="space-y-1 text-xs">
+                          <p className="text-sm font-semibold">Highway detected successfully</p>
+                          <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                          {highwayInfo.highwayName && (
+                            <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
+                          )}
+                          {highwayInfo.highwayId && (
+                            <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
+                          )}
+                          {Number.isFinite(Number(highwayInfo.distanceMeters)) && (
+                            <p>Distance: <span className="font-medium text-slate-900">{(Number(highwayInfo.distanceMeters) / 1000).toFixed(1)} KM</span></p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-3 text-slate-700">
+                        <AlertCircle className="h-4 w-4 mt-0.5" />
+                        <div className="space-y-1 text-xs">
+                          <p className="text-sm font-semibold">No mapped highway found nearby</p>
+                          {highwayInfo.highwayRef && (
+                            <p>Nearest match: <span className="font-medium text-slate-900">{highwayInfo.highwayRef}</span></p>
+                          )}
+                          <p>Move the map pin closer to the road used by travellers if this restaurant should appear during route discovery.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {Number.isFinite(Number(formData.location?.latitude)) && Number.isFinite(Number(formData.location?.longitude)) && (
+                  <div className="overflow-hidden rounded-2xl border border-[#f3c9ba] bg-[#fff7f4]">
+                    <div className="flex items-center justify-between border-b border-[#f3c9ba] px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-[#B80B3D]" />
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">Pin restaurant on map</p>
+                          <p className="text-[11px] text-slate-500">Tap map or drag the marker to store exact road-side coordinates.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div ref={pinMapContainerRef} className="h-[220px] w-full" />
+                    <div className="border-t border-[#f3c9ba] bg-white/80 px-4 py-3 text-xs text-slate-600">
+                      Coordinates saved: <span className="font-semibold text-gray-900">{Number(formData.location?.latitude).toFixed(6)}, {Number(formData.location?.longitude).toFixed(6)}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">

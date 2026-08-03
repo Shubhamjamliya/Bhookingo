@@ -160,7 +160,32 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
         const dist_U = U_proj.properties.location;
         const maxDiscoveryDistance = rangeKm ? Number(rangeKm) : settings.googleRouteForwardRangeKm;
 
-        const candidates = await FoodRestaurant.find(candidateFilter).lean();
+        const candidates = await FoodRestaurant.find(candidateFilter)
+            .select({
+                name: 1,
+                restaurantName: 1,
+                restaurantSlug: 1,
+                profileImage: 1,
+                profileImageUrl: 1,
+                coverImages: 1,
+                menuImages: 1,
+                cuisines: 1,
+                facilities: 1,
+                pureVegRestaurant: 1,
+                rating: 1,
+                status: 1,
+                isAcceptingOrders: 1,
+                isHighwayRestaurant: 1,
+                highwayId: 1,
+                highwayName: 1,
+                highwayRef: 1,
+                roadName: 1,
+                location: 1,
+                city: 1,
+                address: 1,
+                offer: 1,
+            })
+            .lean();
         const aheadRestaurants = [];
 
         for (const restaurant of candidates) {

@@ -132,8 +132,11 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
         }
         const paddingDeg = effectiveRoadCorridorKm / 111;
 
+        const shouldMatchStoredHighways = !routePolyline;
         const [matchedStoredHighways, userPoint] = await Promise.all([
-            matchStoredHighwaysAlongRoute(decodedCoordinates, effectiveStoredHighwayMatchRadiusKm),
+            shouldMatchStoredHighways
+                ? matchStoredHighwaysAlongRoute(decodedCoordinates, effectiveStoredHighwayMatchRadiusKm)
+                : Promise.resolve([]),
             Promise.resolve(turf.point([lng, lat]))
         ]);
         const matchedHighwayIds = matchedStoredHighways

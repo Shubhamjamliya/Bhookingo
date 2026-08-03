@@ -40,7 +40,23 @@ app.use(helmet({
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 const localhostPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
-const allowedOrigins = new Set(config.corsOrigins);
+
+const normalizeOrigin = (value) => {
+    if (!value || typeof value !== 'string') return '';
+    return value.trim().replace(/\/$/, '').toLowerCase();
+};
+
+const derivedAllowedOrigins = [
+    ...config.corsOrigins,
+    config.baseUrl,
+    process.env.FRONTEND_URL,
+    'https://bhookingo.in',
+    'https://www.bhookingo.in'
+]
+    .map(normalizeOrigin)
+    .filter(Boolean);
+
+const allowedOrigins = new Set(derivedAllowedOrigins);
 
 app.use(cors({
     origin(origin, callback) {
@@ -48,7 +64,8 @@ app.use(cors({
             return callback(null, true);
         }
 
-        if (allowedOrigins.has(origin) || localhostPattern.test(origin)) {
+        const normalizedOrigin = normalizeOrigin(origin);
+        if (allowedOrigins.has(normalizedOrigin) || localhostPattern.test(origin)) {
             return callback(null, true);
         }
 

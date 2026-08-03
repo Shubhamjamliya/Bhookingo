@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { 
   MapPin, 
   Navigation, 
@@ -16,6 +16,29 @@ import {
 import { Button } from "@food/components/ui/button";
 import { toast } from "sonner";
 import { userAPI } from "@food/api";
+
+const GEOCODE_SEARCH_CACHE_KEY = "bh_geocode_search_cache";
+const REVERSE_GEOCODE_CACHE_KEY = "bh_reverse_geocode_cache";
+const DRIVING_ROUTE_OPTIONS_CACHE_KEY = "bh_driving_route_options_cache";
+
+const readSessionJson = (key, fallback = {}) => {
+  try {
+    const stored = sessionStorage.getItem(key);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const writeSessionJson = (key, value) => {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+};
+
+const normalizeLocationQuery = (value = "") => String(value).trim().replace(/\s+/g, " ").toLowerCase();
+
+const buildLatLngKey = (lat, lng) => `${Number(lat).toFixed(4)},${Number(lng).toFixed(4)}`;
 
 export default function JourneyPlanner({ 
   currentLocation, 
@@ -91,10 +114,125 @@ export default function JourneyPlanner({
 
   const [destinationSuggestions, setDestinationSuggestions] = useState([]);
   const [searchingDestination, setSearchingDestination] = useState(false);
+  const [highlightedOriginIndex, setHighlightedOriginIndex] = useState(0);
+  const [highlightedDestinationIndex, setHighlightedDestinationIndex] = useState(0);
+
+  const plannerCardRef = useRef(null);
+  const blurTimeoutRef = useRef(null);
+  const originSearchAbortRef = useRef(null);
+  const destinationSearchAbortRef = useRef(null);
+  const reverseGeocodeAbortRef = useRef(null);
 
   const [loadingHighways, setLoadingHighways] = useState(false);
   const [availableHighways, setAvailableHighways] = useState([]);
   const [showHighwaySelection, setShowHighwaySelection] = useState(false);
+
+  const clearActiveDropdown = useCallback(() => {
+    if (blurTimeoutRef.current) {
+      window.clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
+    setActiveInput(null);
+    setHighlightedOriginIndex(0);
+    setHighlightedDestinationIndex(0);
+  }, []);
+
+  const scheduleDropdownClose = useCallback(() => {
+    if (blurTimeoutRef.current) {
+      window.clearTimeout(blurTimeoutRef.current);
+    }
+    blurTimeoutRef.current = window.setTimeout(() => {
+      setActiveInput(null);
+    }, 140);
+  }, []);
+
+  const cancelScheduledDropdownClose = useCallback(() => {
+    if (blurTimeoutRef.current) {
+      window.clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
+  }, []);
+
+  const resetRouteSelection = useCallback(() => {
+    setSelectedHighway(null);
+    setAvailableHighways([]);
+    setShowHighwaySelection(false);
+    sessionStorage.removeItem("bh_selected_highway");
+  }, []);
+
+  const searchPlaces = useCallback(async (query, signal) => {
+    const normalizedQuery = normalizeLocationQuery(query);
+    if (!normalizedQuery) return [];
+
+    const cache = readSessionJson(GEOCODE_SEARCH_CACHE_KEY, {});
+    if (Array.isArray(cache[normalizedQuery]) && cache[normalizedQuery].length > 0) {
+      return cache[normalizedQuery];
+    }
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(query)}`;
+    const res = await fetch(url, {
+      signal,
+      headers: {
+        Accept: "application/json"
+      }
+    });
+    const json = await res.json();
+    const mapped = (Array.isArray(json) ? json : []).map((r) => ({
+      id: r.place_id || r.osm_id,
+      display: r.display_name || "",
+      lat: Number(r.lat),
+      lng: Number(r.lon)
+    })).filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng));
+
+    cache[normalizedQuery] = mapped;
+    writeSessionJson(GEOCODE_SEARCH_CACHE_KEY, cache);
+    return mapped;
+  }, []);
+
+  const reverseGeocodeLocation = useCallback(async (lat, lng, signal) => {
+    const cacheKey = buildLatLngKey(lat, lng);
+    const cache = readSessionJson(REVERSE_GEOCODE_CACHE_KEY, {});
+    if (cache[cacheKey]) {
+      return cache[cacheKey];
+    }
+
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`, { signal });
+    const json = await res.json();
+    const address = json.address || {};
+    const cityName = address.city || address.town || address.village || address.municipality || address.county || json.display_name?.split(",")[0] || "Detected City";
+    cache[cacheKey] = cityName;
+    writeSessionJson(REVERSE_GEOCODE_CACHE_KEY, cache);
+    return cityName;
+  }, []);
+
+  const shouldShowOriginSuggestions = activeInput === "origin" && (originSuggestions.length > 0 || searchingOrigin);
+  const shouldShowDestinationSuggestions = activeInput === "destination" && (destinationSuggestions.length > 0 || searchingDestination);
+
+  const resolveLocationInput = useCallback(async (inputValue, fallbackCoords = null) => {
+    const normalizedQuery = normalizeLocationQuery(inputValue);
+    if (!normalizedQuery) {
+      return fallbackCoords;
+    }
+
+    const results = await searchPlaces(inputValue);
+    const firstMatch = Array.isArray(results) ? results[0] : null;
+    if (firstMatch) {
+      return { lat: firstMatch.lat, lng: firstMatch.lng, label: firstMatch.display.split(",")[0] };
+    }
+
+    return fallbackCoords;
+  }, [searchPlaces]);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!plannerCardRef.current?.contains(event.target)) {
+        clearActiveDropdown();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [clearActiveDropdown]);
 
   // Sync to Session Storage
   useEffect(() => {
@@ -131,88 +269,97 @@ export default function JourneyPlanner({
 
   // Pre-fill current location if GPS coordinates exist and no inputs are present
   useEffect(() => {
-    if (currentLocation && !originCoords && !originInput && !sessionStorage.getItem("bh_origin_coords") && !sessionStorage.getItem("bh_origin_input") && !preventAutoDetect) {
-      const lat = currentLocation.latitude;
-      const lng = currentLocation.longitude;
-      setOriginCoords({ lat, lng });
-      setOriginInput("Locating...");
-      
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`)
-        .then((res) => res.json())
-        .then((json) => {
-          const address = json.address || {};
-          const cityName = address.city || address.town || address.village || address.municipality || address.county || json.display_name?.split(",")[0] || "Detected City";
-          setOriginInput(cityName);
-        })
-        .catch(() => {
-          setOriginInput("Detected City");
-        });
+    if (!currentLocation || originCoords || originInput || sessionStorage.getItem("bh_origin_coords") || sessionStorage.getItem("bh_origin_input") || preventAutoDetect) {
+      return;
     }
-  }, [currentLocation, preventAutoDetect]);
+
+    const lat = currentLocation.latitude;
+    const lng = currentLocation.longitude;
+    setOriginCoords({ lat, lng });
+    setOriginInput("Current Location");
+
+    reverseGeocodeAbortRef.current?.abort();
+    const controller = new AbortController();
+    reverseGeocodeAbortRef.current = controller;
+
+    reverseGeocodeLocation(lat, lng, controller.signal)
+      .then((label) => {
+        if (label) setOriginInput(label);
+      })
+      .catch(() => {
+        setOriginInput("Current Location");
+      });
+  }, [currentLocation, originCoords, originInput, preventAutoDetect, reverseGeocodeLocation]);
 
   // Origin suggestion search
   useEffect(() => {
-    if (activeInput !== "origin") return;
+    if (activeInput !== "origin") return undefined;
     const q = String(originInput || "").trim();
     if (q.length < 3) {
       setOriginSuggestions([]);
-      return;
+      setSearchingOrigin(false);
+      originSearchAbortRef.current?.abort();
+      return undefined;
     }
 
     const t = setTimeout(async () => {
       try {
+        originSearchAbortRef.current?.abort();
+        const controller = new AbortController();
+        originSearchAbortRef.current = controller;
         setSearchingOrigin(true);
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(q)}`;
-        const res = await fetch(url, { headers: { Accept: "application/json" } });
-        const json = await res.json();
-        const mapped = (Array.isArray(json) ? json : []).map(r => ({
-          id: r.place_id || r.osm_id,
-          display: r.display_name || "",
-          lat: Number(r.lat),
-          lng: Number(r.lon),
-        })).filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lng));
+        const mapped = await searchPlaces(q, controller.signal);
         setOriginSuggestions(mapped);
       } catch (e) {
-        setOriginSuggestions([]);
+        if (e?.name !== "AbortError") {
+          setOriginSuggestions([]);
+        }
       } finally {
         setSearchingOrigin(false);
       }
-    }, 400);
+    }, 180);
 
     return () => clearTimeout(t);
-  }, [originInput, activeInput]);
+  }, [originInput, activeInput, searchPlaces]);
+
+  useEffect(() => {
+    setHighlightedOriginIndex(0);
+  }, [originSuggestions]);
 
   // Destination suggestion search
   useEffect(() => {
-    if (activeInput !== "destination") return;
+    if (activeInput !== "destination") return undefined;
     const q = String(destinationInput || "").trim();
     if (q.length < 3) {
       setDestinationSuggestions([]);
-      return;
+      setSearchingDestination(false);
+      destinationSearchAbortRef.current?.abort();
+      return undefined;
     }
 
     const t = setTimeout(async () => {
       try {
+        destinationSearchAbortRef.current?.abort();
+        const controller = new AbortController();
+        destinationSearchAbortRef.current = controller;
         setSearchingDestination(true);
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(q)}`;
-        const res = await fetch(url, { headers: { Accept: "application/json" } });
-        const json = await res.json();
-        const mapped = (Array.isArray(json) ? json : []).map(r => ({
-          id: r.place_id || r.osm_id,
-          display: r.display_name || "",
-          lat: Number(r.lat),
-          lng: Number(r.lon),
-        })).filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lng));
+        const mapped = await searchPlaces(q, controller.signal);
         setDestinationSuggestions(mapped);
       } catch (e) {
-        setDestinationSuggestions([]);
+        if (e?.name !== "AbortError") {
+          setDestinationSuggestions([]);
+        }
       } finally {
         setSearchingDestination(false);
       }
-    }, 400);
+    }, 180);
 
     return () => clearTimeout(t);
-  }, [destinationInput, activeInput]);
+  }, [destinationInput, activeInput, searchPlaces]);
+
+  useEffect(() => {
+    setHighlightedDestinationIndex(0);
+  }, [destinationSuggestions]);
 
   const handleUseCurrentGPS = () => {
     setPreventAutoDetect(false);
@@ -220,18 +367,21 @@ export default function JourneyPlanner({
       const lat = currentLocation.latitude;
       const lng = currentLocation.longitude;
       setOriginCoords({ lat, lng });
-      setOriginInput("Locating...");
+      setOriginInput("Current Location");
       setOriginSuggestions([]);
-      
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`)
-        .then((res) => res.json())
-        .then((json) => {
-          const address = json.address || {};
-          const cityName = address.city || address.town || address.village || address.municipality || address.county || json.display_name?.split(",")[0] || "Detected City";
-          setOriginInput(cityName);
+      cancelScheduledDropdownClose();
+      resetRouteSelection();
+
+      reverseGeocodeAbortRef.current?.abort();
+      const controller = new AbortController();
+      reverseGeocodeAbortRef.current = controller;
+
+      reverseGeocodeLocation(lat, lng, controller.signal)
+        .then((label) => {
+          if (label) setOriginInput(label);
         })
         .catch(() => {
-          setOriginInput("Detected City");
+          setOriginInput("Current Location");
         });
     } else {
       toast.error("GPS location not available. Please allow location access.");
@@ -241,16 +391,22 @@ export default function JourneyPlanner({
   const handleSelectOrigin = (s) => {
     setOriginCoords({ lat: s.lat, lng: s.lng });
     setOriginInput(s.display.split(",")[0]);
+    cancelScheduledDropdownClose();
     setOriginSuggestions([]);
     setActiveInput(null);
+    setHighlightedOriginIndex(0);
     setPreventAutoDetect(true);
+    resetRouteSelection();
   };
 
   const handleSelectDestination = (s) => {
     setDestinationCoords({ lat: s.lat, lng: s.lng });
     setDestinationInput(s.display.split(",")[0]);
+    cancelScheduledDropdownClose();
     setDestinationSuggestions([]);
     setActiveInput(null);
+    setHighlightedDestinationIndex(0);
+    resetRouteSelection();
   };
 
   const handleSwap = () => {
@@ -260,6 +416,7 @@ export default function JourneyPlanner({
     setOriginCoords(destinationCoords);
     setDestinationInput(tempInput);
     setDestinationCoords(tempCoords);
+    resetRouteSelection();
   };
 
   const mapGoogleRouteOption = (route, index) => ({
@@ -284,22 +441,67 @@ export default function JourneyPlanner({
   });
 
   const handleContinue = async () => {
-    if (!originCoords) {
+    const originText = String(originInput || "").trim();
+    const destinationText = String(destinationInput || "").trim();
+
+    if (!originText) {
       toast.error("Please enter a valid starting location.");
       return;
     }
-    if (!destinationCoords) {
+    if (!destinationText) {
       toast.error("Please enter a valid destination.");
       return;
     }
 
     try {
       setLoadingHighways(true);
+
+      let resolvedOrigin = originCoords;
+      let resolvedDestination = destinationCoords;
+
+      if (!resolvedOrigin) {
+        const originMatch = await resolveLocationInput(originText, originCoords);
+        if (!originMatch?.lat || !originMatch?.lng) {
+          toast.error("Please choose a valid starting location.");
+          return;
+        }
+        resolvedOrigin = { lat: originMatch.lat, lng: originMatch.lng };
+        setOriginCoords(resolvedOrigin);
+        if (originMatch.label) setOriginInput(originMatch.label);
+      }
+
+      if (!resolvedDestination) {
+        const destinationMatch = await resolveLocationInput(destinationText, destinationCoords);
+        if (!destinationMatch?.lat || !destinationMatch?.lng) {
+          toast.error("Please choose a valid destination.");
+          return;
+        }
+        resolvedDestination = { lat: destinationMatch.lat, lng: destinationMatch.lng };
+        setDestinationCoords(resolvedDestination);
+        if (destinationMatch.label) setDestinationInput(destinationMatch.label);
+      }
+
+      const nextRouteCacheKey = [resolvedOrigin.lat, resolvedOrigin.lng, resolvedDestination.lat, resolvedDestination.lng].map((value) => Number(value).toFixed(4)).join(":");
+      const routeCache = readSessionJson(DRIVING_ROUTE_OPTIONS_CACHE_KEY, {});
+      const cachedRouteEntry = routeCache[nextRouteCacheKey];
+      if (Array.isArray(cachedRouteEntry?.availableRoutes) && cachedRouteEntry.availableRoutes.length > 0) {
+        setAvailableHighways(cachedRouteEntry.availableRoutes);
+        setSelectedHighway(cachedRouteEntry.selectedHighway || cachedRouteEntry.availableRoutes[0]);
+        setShowHighwaySelection(false);
+        onJourneyPlanSelected({
+          origin: resolvedOrigin,
+          destination: resolvedDestination,
+          highway: cachedRouteEntry.selectedHighway || cachedRouteEntry.availableRoutes[0],
+          availableRoutes: cachedRouteEntry.availableRoutes
+        });
+        return;
+      }
+
       const res = await userAPI.getGoogleRouteHighway({
-        startLat: originCoords.lat,
-        startLng: originCoords.lng,
-        endLat: destinationCoords.lat,
-        endLng: destinationCoords.lng,
+        startLat: resolvedOrigin.lat,
+        startLng: resolvedOrigin.lng,
+        endLat: resolvedDestination.lat,
+        endLng: resolvedDestination.lng,
         includeAlternatives: true,
         includeRestaurantCounts: false
       });
@@ -314,12 +516,19 @@ export default function JourneyPlanner({
       const recommendedRouteId = res?.data?.data?.recommendedRouteId;
       const recommendedRoute = mappedRoutes.find((route) => route.routeId === recommendedRouteId) || mappedRoutes[0];
 
+      routeCache[nextRouteCacheKey] = {
+        availableRoutes: mappedRoutes,
+        selectedHighway: recommendedRoute,
+        savedAt: Date.now()
+      };
+      writeSessionJson(DRIVING_ROUTE_OPTIONS_CACHE_KEY, routeCache);
+
       setAvailableHighways(mappedRoutes);
       setSelectedHighway(recommendedRoute);
       setShowHighwaySelection(false);
       onJourneyPlanSelected({
-        origin: originCoords,
-        destination: destinationCoords,
+        origin: resolvedOrigin,
+        destination: resolvedDestination,
         highway: recommendedRoute,
         availableRoutes: mappedRoutes
       });
@@ -350,12 +559,79 @@ export default function JourneyPlanner({
     setSelectedHighway(null);
   };
 
+  const canStartJourney = Boolean(String(originInput || "").trim() && String(destinationInput || "").trim() && !loadingHighways);
+
+  const handleOriginFocus = useCallback(() => {
+    cancelScheduledDropdownClose();
+    setActiveInput("origin");
+    setPreventAutoDetect(true);
+  }, [cancelScheduledDropdownClose]);
+
+  const handleDestinationFocus = useCallback(() => {
+    cancelScheduledDropdownClose();
+    setActiveInput("destination");
+  }, [cancelScheduledDropdownClose]);
+
+  const handleOriginKeyDown = useCallback((e) => {
+    if (e.key === "ArrowDown" && originSuggestions.length > 0) {
+      e.preventDefault();
+      setHighlightedOriginIndex((prev) => Math.min(prev + 1, originSuggestions.length - 1));
+      return;
+    }
+    if (e.key === "ArrowUp" && originSuggestions.length > 0) {
+      e.preventDefault();
+      setHighlightedOriginIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      clearActiveDropdown();
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeInput === "origin" && originSuggestions[highlightedOriginIndex]) {
+        handleSelectOrigin(originSuggestions[highlightedOriginIndex]);
+        return;
+      }
+      handleContinue();
+    }
+  }, [originSuggestions, highlightedOriginIndex, activeInput, handleContinue, clearActiveDropdown]);
+
+  const handleDestinationKeyDown = useCallback((e) => {
+    if (e.key === "ArrowDown" && destinationSuggestions.length > 0) {
+      e.preventDefault();
+      setHighlightedDestinationIndex((prev) => Math.min(prev + 1, destinationSuggestions.length - 1));
+      return;
+    }
+    if (e.key === "ArrowUp" && destinationSuggestions.length > 0) {
+      e.preventDefault();
+      setHighlightedDestinationIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      clearActiveDropdown();
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeInput === "destination" && destinationSuggestions[highlightedDestinationIndex]) {
+        handleSelectDestination(destinationSuggestions[highlightedDestinationIndex]);
+        return;
+      }
+      handleContinue();
+    }
+  }, [destinationSuggestions, highlightedDestinationIndex, activeInput, handleContinue, clearActiveDropdown]);
+
   const handleReset = () => {
     setOriginInput("");
     setOriginCoords(null);
     setDestinationInput("");
     setDestinationCoords(null);
     setSelectedHighway(null);
+    setAvailableHighways([]);
+    setShowHighwaySelection(false);
     sessionStorage.removeItem("bh_origin_input");
     sessionStorage.removeItem("bh_origin_coords");
     sessionStorage.removeItem("bh_destination_input");
@@ -367,6 +643,17 @@ export default function JourneyPlanner({
     handleReset();
     onGoHome();
   };
+
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) {
+        window.clearTimeout(blurTimeoutRef.current);
+      }
+      originSearchAbortRef.current?.abort();
+      destinationSearchAbortRef.current?.abort();
+      reverseGeocodeAbortRef.current?.abort();
+    };
+  }, []);
 
   const formatDuration = (mins) => {
     if (!mins) return "—";
@@ -714,7 +1001,7 @@ export default function JourneyPlanner({
           </div>
         ) : (
           /* Input Mode Card (Exact Match to Reference Image Card) */
-          <div className="bg-white dark:bg-[#181818] border border-gray-100 dark:border-neutral-800 rounded-3xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.06)] relative animate-slide-in mt-2 space-y-4">
+          <div ref={plannerCardRef} className="bg-white dark:bg-[#181818] border border-gray-100 dark:border-neutral-800 rounded-3xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.06)] relative animate-slide-in mt-2 space-y-4">
             
             {/* Input Fields Wrapper */}
             <div className="relative space-y-3">
@@ -740,12 +1027,12 @@ export default function JourneyPlanner({
                       setOriginInput(val);
                       setOriginCoords(null);
                       setPreventAutoDetect(true);
+                      resetRouteSelection();
                     }}
-                    onFocus={() => {
-                      setActiveInput("origin");
-                      setPreventAutoDetect(true);
-                    }}
+                    onFocus={handleOriginFocus}
+                    onBlur={scheduleDropdownClose}
                     placeholder="Current Location"
+                    onKeyDown={handleOriginKeyDown}
                     className="w-full bg-transparent border-none p-0 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none placeholder:text-gray-400 placeholder:font-normal"
                   />
                 </div>
@@ -760,13 +1047,23 @@ export default function JourneyPlanner({
                 </button>
 
                 {/* Origin Suggestions Popover */}
-                {activeInput === "origin" && originSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#1c1c1c] border border-gray-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden divide-y divide-gray-100 dark:divide-neutral-800 z-50">
-                    {originSuggestions.map((s) => (
+                {shouldShowOriginSuggestions && (
+                  <div
+                    className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#1c1c1c] border border-gray-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden divide-y divide-gray-100 dark:divide-neutral-800 z-50 animate-fade-in"
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    {searchingOrigin && originSuggestions.length === 0 && (
+                      <div className="p-3 flex items-center justify-center gap-2 text-xs text-gray-500">
+                        <Loader2 className="animate-spin h-4 w-4 text-orange-600" />
+                        Searching cities...
+                      </div>
+                    )}
+                    {originSuggestions.map((s, index) => (
                       <button
                         key={s.id}
                         onClick={() => handleSelectOrigin(s)}
-                        className="w-full px-4 py-3 flex items-start gap-3 hover:bg-orange-50 dark:hover:bg-neutral-800 transition-colors text-left"
+                        onMouseEnter={() => setHighlightedOriginIndex(index)}
+                        className={`w-full px-4 py-3 flex items-start gap-3 transition-colors text-left ${highlightedOriginIndex === index ? "bg-orange-50 dark:bg-neutral-800" : "hover:bg-orange-50 dark:hover:bg-neutral-800"}`}
                       >
                         <MapPin className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
@@ -782,12 +1079,7 @@ export default function JourneyPlanner({
                   </div>
                 )}
 
-                {activeInput === "origin" && searchingOrigin && (
-                  <div className="absolute left-0 right-0 top-full mt-2 p-3 flex items-center justify-center gap-2 text-xs text-gray-500 bg-white dark:bg-[#1c1c1c] rounded-2xl border border-gray-200 dark:border-neutral-800 z-50 shadow-lg">
-                    <Loader2 className="animate-spin h-4 w-4 text-orange-600" />
-                    Searching cities...
-                  </div>
-                )}
+
 
               </div>
 
@@ -819,9 +1111,12 @@ export default function JourneyPlanner({
                     onChange={(e) => {
                       setDestinationInput(e.target.value);
                       setDestinationCoords(null);
+                      resetRouteSelection();
                     }}
-                    onFocus={() => setActiveInput("destination")}
+                    onFocus={handleDestinationFocus}
+                    onBlur={scheduleDropdownClose}
                     placeholder="Where are you headed?"
+                    onKeyDown={handleDestinationKeyDown}
                     className="w-full bg-transparent border-none p-0 text-sm font-semibold text-gray-900 dark:text-white focus:outline-none placeholder:text-gray-400 placeholder:font-normal"
                   />
                 </div>
@@ -836,13 +1131,23 @@ export default function JourneyPlanner({
                 </button>
 
                 {/* Destination Suggestions Popover */}
-                {activeInput === "destination" && destinationSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#1c1c1c] border border-gray-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden divide-y divide-gray-100 dark:divide-neutral-800 z-50">
-                    {destinationSuggestions.map((s) => (
+                {shouldShowDestinationSuggestions && (
+                  <div
+                    className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-[#1c1c1c] border border-gray-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden divide-y divide-gray-100 dark:divide-neutral-800 z-50 animate-fade-in"
+                    onMouseDown={(e) => e.preventDefault()}
+                  >
+                    {searchingDestination && destinationSuggestions.length === 0 && (
+                      <div className="p-3 flex items-center justify-center gap-2 text-xs text-gray-500">
+                        <Loader2 className="animate-spin h-4 w-4 text-orange-600" />
+                        Searching cities...
+                      </div>
+                    )}
+                    {destinationSuggestions.map((s, index) => (
                       <button
                         key={s.id}
                         onClick={() => handleSelectDestination(s)}
-                        className="w-full px-4 py-3 flex items-start gap-3 hover:bg-orange-50 dark:hover:bg-neutral-800 transition-colors text-left"
+                        onMouseEnter={() => setHighlightedDestinationIndex(index)}
+                        className={`w-full px-4 py-3 flex items-start gap-3 transition-colors text-left ${highlightedDestinationIndex === index ? "bg-orange-50 dark:bg-neutral-800" : "hover:bg-orange-50 dark:hover:bg-neutral-800"}`}
                       >
                         <MapPin className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
@@ -858,12 +1163,7 @@ export default function JourneyPlanner({
                   </div>
                 )}
 
-                {activeInput === "destination" && searchingDestination && (
-                  <div className="absolute left-0 right-0 top-full mt-2 p-3 flex items-center justify-center gap-2 text-xs text-gray-500 bg-white dark:bg-[#1c1c1c] rounded-2xl border border-gray-200 dark:border-neutral-800 z-50 shadow-lg">
-                    <Loader2 className="animate-spin h-4 w-4 text-orange-600" />
-                    Searching cities...
-                  </div>
-                )}
+
 
               </div>
 
@@ -873,13 +1173,13 @@ export default function JourneyPlanner({
             <div className="pt-2">
               <Button
                 onClick={handleContinue}
-                disabled={loadingHighways || !originCoords || !destinationCoords}
+                disabled={!canStartJourney}
                 className="w-full h-14 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-200 dark:disabled:bg-neutral-800 disabled:opacity-50 active:scale-[0.99] text-white font-bold text-base rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20 transition-all cursor-pointer border-none"
               >
                 {loadingHighways ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Finding Routes...
+                    Finding route instantly...
                   </>
                 ) : (
                   <>

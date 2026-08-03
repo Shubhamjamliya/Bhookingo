@@ -36,6 +36,7 @@ const geoPointSchema = new mongoose.Schema(
     state: { type: String, trim: true },
     pincode: { type: String, trim: true },
     landmark: { type: String, trim: true },
+    roadName: { type: String, trim: true },
     placeId: { type: String, trim: true },
   },
   { _id: false },

@@ -183,6 +183,28 @@ const normalizePhoneDigits = (value) => {
 
 const normalizePincode = (value) => String(value || "").replace(/\D/g, "").slice(0, 6)
 
+const parseGoogleAddressComponents = (components = []) => {
+  const comps = Array.isArray(components) ? components : []
+  const get = (types) => comps.find((c) => types.some((t) => c.types?.includes(t)))?.long_name || ""
+  const route = get(["route"])
+  const streetNumber = get(["street_number"])
+  const area = get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"])
+  const city = get(["locality"]) || get(["administrative_area_level_2"])
+  const state = get(["administrative_area_level_1"]) || get(["administrative_area_level_2"])
+  const pincode = get(["postal_code"])
+  const country = get(["country"])
+  const roadName = [streetNumber, route].filter(Boolean).join(" ").trim() || route || ""
+
+  return {
+    roadName,
+    area,
+    city,
+    state,
+    country,
+    postalCode: pincode,
+    pincode,
+  }
+}
 
 const getVerifiedPhoneFromStoredRestaurant = () => {
   try {
@@ -709,6 +731,7 @@ export default function RestaurantOnboarding() {
       state: "",
       pincode: "",
       landmark: "",
+      roadName: "",
       latitude: "",
       longitude: "",
       placeId: "",
@@ -749,6 +772,10 @@ export default function RestaurantOnboarding() {
   const locationSearchInputRef = useRef(null)
   const placesAutocompleteRef = useRef(null)
   const mapsScriptLoadedRef = useRef(false)
+  const pinMapContainerRef = useRef(null)
+  const pinMapRef = useRef(null)
+  const pinMarkerRef = useRef(null)
+  const pinGeocoderRef = useRef(null)
   const menuImagesInputRef = useRef(null)
   const profileImageInputRef = useRef(null)
   const panImageInputRef = useRef(null)
@@ -780,7 +807,11 @@ export default function RestaurantOnboarding() {
     highwayRef: null,
     distanceMeters: null,
   })
+  const [selectedHighwayId, setSelectedHighwayId] = useState("")
+  const [isRoadNameDirty, setIsRoadNameDirty] = useState(false)
+  const [isMapsSdkReady, setIsMapsSdkReady] = useState(() => Boolean(window.google?.maps))
   const highwayDetectTimerRef = useRef(null)
+  const lastAutoRoadNameRef = useRef("")
 
   const handleMapsLinkChange = async (e) => {
     const value = e.target.value;
@@ -847,6 +878,7 @@ export default function RestaurantOnboarding() {
             },
             locationSource: "google_maps_link",
           };
+          updated.location.roadName = locDetails.roadName || prev.location.roadName || "";
           if (extractedPlaceName) {
             updated.restaurantName = extractedPlaceName;
           }
@@ -854,6 +886,7 @@ export default function RestaurantOnboarding() {
         });
 
         setLocationSearchValue(locDetails.placeName || locDetails.formattedAddress || "");
+        setIsRoadNameDirty(false);
         toast.success("Location details populated from Google Maps link!");
       };
 
@@ -864,20 +897,15 @@ export default function RestaurantOnboarding() {
         geocoder.geocode({ location: { lat, lng } }, (results, status) => {
           if (status === "OK" && results[0]) {
             const place = results[0];
-            const comps = Array.isArray(place?.address_components) ? place.address_components : [];
-            const get = (types) => comps.find((c) => types.some((t) => c.types?.includes(t)))?.long_name || "";
-
-            const area = get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"]);
-            const city = get(["locality"]) || get(["administrative_area_level_2"]);
-            const state = get(["administrative_area_level_1"]) || get(["administrative_area_level_2"]);
-            const pincode = get(["postal_code"]);
+            const parsedAddress = parseGoogleAddressComponents(place?.address_components);
 
             applyLocationData({
               formattedAddress: place.formatted_address,
-              area,
-              city,
-              state,
-              pincode,
+              area: parsedAddress.area,
+              city: parsedAddress.city,
+              state: parsedAddress.state,
+              pincode: parsedAddress.pincode,
+              roadName: parsedAddress.roadName,
               placeId: place.place_id
             });
           } else {
@@ -1151,6 +1179,7 @@ export default function RestaurantOnboarding() {
               state: loc.state || apiData.state || "",
               pincode: loc.pincode || apiData.pincode || "",
               landmark: loc.landmark || "",
+              roadName: loc.roadName || "",
               latitude: loc.latitude || "",
               longitude: loc.longitude || "",
               placeId: loc.placeId || "",
@@ -1302,6 +1331,62 @@ export default function RestaurantOnboarding() {
     }
   }, [])
 
+  const reverseGeocodePinnedLocation = useCallback((lat, lng) => {
+    return new Promise((resolve) => {
+      if (!window.google?.maps?.Geocoder) {
+        resolve(null)
+        return
+      }
+
+      if (!pinGeocoderRef.current) {
+        pinGeocoderRef.current = new window.google.maps.Geocoder()
+      }
+
+      pinGeocoderRef.current.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === "OK" && results?.[0]) {
+          const place = results[0]
+          const parsed = parseGoogleAddressComponents(place.address_components)
+          resolve({
+            formattedAddress: place.formatted_address || "",
+            placeId: place.place_id || "",
+            ...parsed,
+          })
+          return
+        }
+        resolve(null)
+      })
+    })
+  }, [])
+
+  const syncPinnedLocation = useCallback(async (lat, lng) => {
+    const roundedLat = Number(Number(lat).toFixed(6))
+    const roundedLng = Number(Number(lng).toFixed(6))
+    if (!Number.isFinite(roundedLat) || !Number.isFinite(roundedLng)) return
+
+    const geoDetails = await reverseGeocodePinnedLocation(roundedLat, roundedLng)
+    setStep1((prev) => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        formattedAddress: geoDetails?.formattedAddress || prev.location.formattedAddress || `${roundedLat}, ${roundedLng}`,
+        addressLine1: geoDetails?.formattedAddress || prev.location.addressLine1 || `${roundedLat}, ${roundedLng}`,
+        area: geoDetails?.area || prev.location.area,
+        city: geoDetails?.city || prev.location.city,
+        state: geoDetails?.state || prev.location.state,
+        pincode: geoDetails?.pincode || prev.location.pincode,
+        latitude: roundedLat,
+        longitude: roundedLng,
+        placeId: geoDetails?.placeId || prev.location.placeId || "",
+        roadName: geoDetails?.roadName || prev.location.roadName || prev.location.area || "",
+      },
+    }))
+
+    if (geoDetails?.formattedAddress) {
+      setLocationSearchValue(geoDetails.formattedAddress)
+    }
+    setIsRoadNameDirty(false)
+  }, [reverseGeocodePinnedLocation])
+
   const detectHighwayForLocation = useCallback(async (lat, lng) => {
     const latNum = Number(lat)
     const lngNum = Number(lng)
@@ -1332,6 +1417,7 @@ export default function RestaurantOnboarding() {
           highwayRef: data.highwayRef || null,
           distanceMeters: data.distanceMeters ?? null,
         })
+        setSelectedHighwayId(data.highwayId ? String(data.highwayId) : "")
       } else {
         setHighwayInfo({
           loading: false,
@@ -1342,13 +1428,13 @@ export default function RestaurantOnboarding() {
           highwayRef: null,
           distanceMeters: null,
         })
+        setSelectedHighwayId("")
       }
     } catch {
       setHighwayInfo((prev) => ({ ...prev, loading: false }))
     }
   }, [])
 
-  // Detect nearest national highway when restaurant location coordinates change
   useEffect(() => {
     if (step !== 1) return
 
@@ -1364,10 +1450,12 @@ export default function RestaurantOnboarding() {
         highwayRef: null,
         distanceMeters: null,
       })
+      setSelectedHighwayId("")
       return
     }
 
     if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
+
     highwayDetectTimerRef.current = setTimeout(() => {
       detectHighwayForLocation(lat, lng)
     }, 400)
@@ -1376,6 +1464,149 @@ export default function RestaurantOnboarding() {
       if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
     }
   }, [step, step1.location?.latitude, step1.location?.longitude, detectHighwayForLocation])
+
+  const autoDetectedRoadLabel = (() => {
+    if (highwayInfo.highwayRef) {
+      return `${highwayInfo.highwayRef}${highwayInfo.highwayName ? ` - ${highwayInfo.highwayName}` : ""}`
+    }
+    if (highwayInfo.highwayName) {
+      return String(highwayInfo.highwayName)
+    }
+    return ""
+  })()
+
+  useEffect(() => {
+    if (!autoDetectedRoadLabel) return
+    setStep1((prev) => {
+      const currentRoadName = String(prev.location?.roadName || "")
+      if (isRoadNameDirty && currentRoadName && currentRoadName !== lastAutoRoadNameRef.current) {
+        return prev
+      }
+      if (currentRoadName === autoDetectedRoadLabel) {
+        lastAutoRoadNameRef.current = autoDetectedRoadLabel
+        return prev
+      }
+      lastAutoRoadNameRef.current = autoDetectedRoadLabel
+      return {
+        ...prev,
+        location: {
+          ...prev.location,
+          roadName: autoDetectedRoadLabel,
+        },
+      }
+    })
+  }, [autoDetectedRoadLabel, isRoadNameDirty])
+
+  useEffect(() => {
+    if (step !== 1) return undefined
+
+    const lat = Number(step1.location?.latitude)
+    const lng = Number(step1.location?.longitude)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return undefined
+
+    if (window.google?.maps) {
+      if (!isMapsSdkReady) setIsMapsSdkReady(true)
+      return undefined
+    }
+
+    let cancelled = false
+
+    const loadMapsForPin = async () => {
+      const apiKey = await getGoogleMapsApiKey()
+      if (!apiKey || cancelled) return
+
+      const waitForMapSdk = async () => {
+        for (let i = 0; i < 60; i++) {
+          if (cancelled) return false
+          if (window.google?.maps) {
+            setIsMapsSdkReady(true)
+            return true
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100))
+        }
+        return false
+      }
+
+      const existingScript = document.getElementById("google-maps-sdk")
+      if (existingScript) {
+        await waitForMapSdk()
+        return
+      }
+
+      const script = document.createElement("script")
+      script.id = "google-maps-sdk"
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`
+      script.async = true
+      script.defer = true
+      script.onload = async () => {
+        await waitForMapSdk()
+      }
+      script.onerror = () => {
+        if (!cancelled) {
+          setIsMapsSdkReady(false)
+        }
+      }
+      document.head.appendChild(script)
+    }
+
+    loadMapsForPin()
+
+    return () => {
+      cancelled = true
+    }
+  }, [step, step1.location?.latitude, step1.location?.longitude, isMapsSdkReady])
+
+  useEffect(() => {
+    if (step !== 1) return undefined
+    const lat = Number(step1.location?.latitude)
+    const lng = Number(step1.location?.longitude)
+    if (!isMapsSdkReady || !Number.isFinite(lat) || !Number.isFinite(lng) || !pinMapContainerRef.current || !window.google?.maps) {
+      return undefined
+    }
+
+    const center = { lat, lng }
+
+    if (!pinMapRef.current) {
+      pinMapRef.current = new window.google.maps.Map(pinMapContainerRef.current, {
+        center,
+        zoom: 16,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false,
+        gestureHandling: "greedy",
+      })
+
+      pinMarkerRef.current = new window.google.maps.Marker({
+        map: pinMapRef.current,
+        position: center,
+        draggable: Boolean(isEditing),
+        title: "Restaurant Pin",
+        animation: window.google.maps.Animation?.DROP,
+      })
+
+      pinMarkerRef.current.addListener("dragend", async (event) => {
+        const nextLat = event?.latLng?.lat?.()
+        const nextLng = event?.latLng?.lng?.()
+        await syncPinnedLocation(nextLat, nextLng)
+      })
+
+      pinMapRef.current.addListener("click", async (event) => {
+        if (!isEditing) return
+        const nextLat = event?.latLng?.lat?.()
+        const nextLng = event?.latLng?.lng?.()
+        if (pinMarkerRef.current && Number.isFinite(nextLat) && Number.isFinite(nextLng)) {
+          pinMarkerRef.current.setPosition({ lat: nextLat, lng: nextLng })
+        }
+        await syncPinnedLocation(nextLat, nextLng)
+      })
+    } else {
+      pinMapRef.current.setCenter(center)
+      pinMarkerRef.current?.setPosition(center)
+      pinMarkerRef.current?.setDraggable(Boolean(isEditing))
+    }
+
+    return undefined
+  }, [step, step1.location?.latitude, step1.location?.longitude, isEditing, isMapsSdkReady, syncPinnedLocation])
 
   // Save to localStorage whenever step data changes
   useEffect(() => {
@@ -1490,6 +1721,9 @@ export default function RestaurantOnboarding() {
       errors.push("Pincode is required")
     } else if (!/^\d{6}$/.test(normalizePincode(step1.location.pincode))) {
       errors.push("Pincode must be exactly 6 digits")
+    }
+    if (!step1.location?.roadName?.trim()) {
+      errors.push("Road / Highway name is required")
     }
 
     const lat = Number(step1.location?.latitude)
@@ -1739,13 +1973,14 @@ export default function RestaurantOnboarding() {
               state: step1.location?.state || "",
               pincode: step1.location?.pincode || "",
               landmark: step1.location?.landmark || "",
+              roadName: step1.location?.roadName || "",
               latitude: step1.location?.latitude || "",
               longitude: step1.location?.longitude || "",
               placeId: step1.location?.placeId || "",
             },
             locationSource: step1.locationSource || "google_places",
-            ...(highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId
-              ? { highwayId: String(highwayInfo.highwayId) }
+            ...(highwayInfo.status === "IN_SERVICE" && (selectedHighwayId || highwayInfo.highwayId)
+              ? { highwayId: String(selectedHighwayId || highwayInfo.highwayId) }
               : {}),
             cuisines: Array.isArray(step2.cuisines) ? step2.cuisines : [],
             openingTime: normalizeTimeValue(step2.openingTime) || "",
@@ -1819,13 +2054,14 @@ export default function RestaurantOnboarding() {
         formData.append("state", step1.location?.state || "")
         formData.append("pincode", step1.location?.pincode || "")
         formData.append("landmark", step1.location?.landmark || "")
+        formData.append("roadName", step1.location?.roadName || "")
         formData.append("formattedAddress", step1.location?.formattedAddress || "")
         formData.append("latitude", String(step1.location?.latitude || ""))
         formData.append("longitude", String(step1.location?.longitude || ""))
         formData.append("locationSource", step1.locationSource || "google_places")
         formData.append("placeId", step1.location?.placeId || "")
-        if (highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId) {
-          formData.append("highwayId", String(highwayInfo.highwayId))
+        if (highwayInfo.status === "IN_SERVICE" && (selectedHighwayId || highwayInfo.highwayId)) {
+          formData.append("highwayId", String(selectedHighwayId || highwayInfo.highwayId))
         }
 
         // Step 2
@@ -2181,6 +2417,7 @@ export default function RestaurantOnboarding() {
                       const city = addr.city || addr.town || addr.village || ""
                       const state = addr.state || ""
                       const pincode = addr.postcode || ""
+                      const roadName = [addr.house_number, addr.road].filter(Boolean).join(" ").trim() || addr.road || ""
 
                       isPlaceSelectedRef.current = true
 
@@ -2197,9 +2434,11 @@ export default function RestaurantOnboarding() {
                           latitude: lat,
                           longitude: lng,
                           placeId: s.place_id || "",
+                          roadName: roadName || prev.location.roadName || "",
                         },
                         locationSource: "google_places",
                       }))
+                      setIsRoadNameDirty(false)
                       setMapsLinkValue("")
                       setLocationSearchValue(display)
                       setLocationSuggestions([])
@@ -2262,49 +2501,6 @@ export default function RestaurantOnboarding() {
             </div>
           )}
 
-          {/* Premium Highway Proximity Validation Box */}
-          {(highwayInfo.loading || highwayInfo.status) && (
-            <div
-              className={`rounded-xl border px-4 py-3 text-sm ${
-                highwayInfo.loading
-                  ? "bg-slate-50 border-slate-200 text-slate-600"
-                  : highwayInfo.status === "IN_SERVICE"
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                    : "bg-rose-50 border-rose-200 text-rose-800"
-              }`}
-            >
-              {highwayInfo.loading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                  <span>Checking highway proximity...</span>
-                </div>
-              ) : highwayInfo.status === "IN_SERVICE" ? (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Restaurant location verified. Located within highway range.</span>
-                  </div>
-                  <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                    <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef}</span></p>
-                    <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <AlertCircle className="w-4 h-4 text-rose-600" />
-                    <span>Restaurant must be within 2 KM of a highway.</span>
-                  </div>
-                  {highwayInfo.highwayRef && (
-                    <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                      <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef}</span></p>
-                      <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
           <Input
             value={step1.location?.addressLine1 || ""}
             onChange={(e) =>
@@ -2403,6 +2599,124 @@ export default function RestaurantOnboarding() {
 
           <p className="text-[11px] text-gray-500 mt-1">
             Please ensure that this address is the same as mentioned on your FSSAI license.
+          </p>
+        </div>
+      </section>
+
+      <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-black">Road Selection</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            We auto-detect the nearest highway from the selected address. You can point the location on the map and edit the road name if needed.
+          </p>
+        </div>
+
+        {(highwayInfo.loading || highwayInfo.status) && (
+          <div
+            className={`rounded-xl border px-4 py-3 text-sm ${
+              highwayInfo.loading
+                ? "bg-slate-50 border-slate-200 text-slate-600"
+                : highwayInfo.status === "IN_SERVICE"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                  : "bg-rose-50 border-rose-200 text-rose-800"
+            }`}
+          >
+            {highwayInfo.loading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                <span>Checking highway proximity...</span>
+              </div>
+            ) : highwayInfo.status === "IN_SERVICE" ? (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Restaurant location verified. Located within highway range.</span>
+                </div>
+                <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
+                  <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                  {highwayInfo.highwayName && (
+                    <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
+                  )}
+                  {highwayInfo.highwayId && (
+                    <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
+                  )}
+                  <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 font-semibold">
+                  <AlertCircle className="w-4 h-4 text-rose-600" />
+                  <span>Restaurant must be within 2 KM of a highway.</span>
+                </div>
+                {highwayInfo.highwayRef && (
+                  <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
+                    <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                    {highwayInfo.highwayName && (
+                      <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
+                    )}
+                    {highwayInfo.highwayId && (
+                      <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
+                    )}
+                    <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {Number.isFinite(Number(step1.location?.latitude)) && Number.isFinite(Number(step1.location?.longitude)) && (
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-2.5">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Pin preview</p>
+                <p className="text-[11px] text-gray-500">Tap on the map or drag the pin to save the exact restaurant coordinates.</p>
+              </div>
+              <MapPin className="h-4 w-4 text-[#B80B3D]" />
+            </div>
+            {isMapsSdkReady ? (
+              <div ref={pinMapContainerRef} className="h-[220px] w-full" />
+            ) : (
+              <iframe
+                src={`https://www.google.com/maps?q=${step1.location?.latitude},${step1.location?.longitude}&hl=en&z=16&output=embed`}
+                width="100%"
+                height="220"
+                style={{ border: 0 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Restaurant road preview map fallback"
+                className="w-full"
+              />
+            )}
+            <div className="border-t border-gray-200 bg-white px-4 py-2 text-[11px] text-gray-600 space-y-1">
+              <div>
+                Coordinates saved: <span className="font-semibold text-gray-900">{Number(step1.location?.latitude).toFixed(6)}, {Number(step1.location?.longitude).toFixed(6)}</span>
+              </div>
+              {!isMapsSdkReady && (
+                <div className="text-gray-500">Interactive pin is loading. You can still see the selected location, and the coordinates will be saved.</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <Label className="text-xs text-gray-700">Road / Highway name*</Label>
+          <Input
+            value={step1.location?.roadName || ""}
+            onChange={(e) => {
+              setIsRoadNameDirty(true)
+              setStep1({
+                ...step1,
+                location: { ...step1.location, roadName: e.target.value },
+              })
+            }}
+            className="mt-1 bg-white text-sm"
+            placeholder="Auto-detected road / highway"
+            disabled={!isEditing}
+          />
+          <p className="text-[11px] text-gray-500 mt-1">
+            This is auto-filled from the detected NH / SH and you can still edit it to match the exact road shown on the pin.
           </p>
         </div>
       </section>
@@ -2632,6 +2946,7 @@ export default function RestaurantOnboarding() {
         // 1. If already available with places, return true
         if (window.google?.maps?.places?.Autocomplete) {
           mapsScriptLoadedRef.current = true
+          setIsMapsSdkReady(true)
           return true
         }
 
@@ -2647,6 +2962,7 @@ export default function RestaurantOnboarding() {
         window.gm_authFailure = () => {
           debugError("Google Maps authentication failed.")
           setIsGoogleMapsValid(false)
+          setIsMapsSdkReady(false)
         }
 
         // 4. Check for existing script and force libraries=places if needed
@@ -2676,6 +2992,7 @@ export default function RestaurantOnboarding() {
             setTimeout(() => {
               const ok = !!window.google?.maps?.places?.Autocomplete
               mapsScriptLoadedRef.current = ok
+              setIsMapsSdkReady(Boolean(window.google?.maps))
               if (!ok) {
                 setIsGoogleMapsValid(false)
               }
@@ -2684,6 +3001,7 @@ export default function RestaurantOnboarding() {
           }
           script.onerror = () => {
             setIsGoogleMapsValid(false)
+            setIsMapsSdkReady(false)
             resolve(false)
           }
           document.head.appendChild(script)
@@ -2692,25 +3010,13 @@ export default function RestaurantOnboarding() {
 
       const parsePlace = (place) => {
         const formattedAddress = place?.formatted_address || ""
-        const comps = Array.isArray(place?.address_components) ? place.address_components : []
-        const get = (types) => comps.find((c) => types.some((t) => c.types?.includes(t)))?.long_name || ""
-
-        const area = get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"])
-        const city = get(["locality"]) || get(["administrative_area_level_2"])
-        const state = get(["administrative_area_level_1"]) || get(["administrative_area_level_2"])
-        const pincode = get(["postal_code"])
-        const country = get(["country"])
+        const parsedAddress = parseGoogleAddressComponents(place?.address_components)
         const lat = place?.geometry?.location?.lat?.()
         const lng = place?.geometry?.location?.lng?.()
 
         return {
           formattedAddress,
-          area,
-          city,
-          state,
-          country,
-          postalCode: pincode,
-          pincode,
+          ...parsedAddress,
           latitude: typeof lat === "number" ? Number(lat.toFixed(6)) : "",
           longitude: typeof lng === "number" ? Number(lng.toFixed(6)) : "",
           placeId: place?.place_id || "",
@@ -2759,9 +3065,11 @@ export default function RestaurantOnboarding() {
               latitude: parsed.latitude !== "" ? parsed.latitude : prev.location.latitude,
               longitude: parsed.longitude !== "" ? parsed.longitude : prev.location.longitude,
               placeId: parsed.placeId || prev.location.placeId || "",
+              roadName: parsed.roadName || prev.location.roadName || "",
             },
             locationSource: "google_places",
           }))
+          setIsRoadNameDirty(false)
           
           setMapsLinkValue("")
           setLocationSearchValue(parsed.formattedAddress || "")
@@ -3765,6 +4073,12 @@ export default function RestaurantOnboarding() {
     </LocalizationProvider>
   )
 }
+
+
+
+
+
+
 
 
 

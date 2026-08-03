@@ -360,7 +360,7 @@ export async function detectHighwayAtPoint(lat, lng) {
     return {
         status: 'OUT_OF_SERVICE',
         thresholdMeters: threshold,
-        highwayId: null,
+        highwayId: nearest.highway._id,
         highwayName: nearest.highway.name,
         highwayRef: nearest.highway.ref,
         distanceMeters

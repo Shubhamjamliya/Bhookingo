@@ -123,7 +123,7 @@ const getSampledRoutePoints = (coordinates = []) => {
     return sampled;
 };
 
-async function matchStoredHighwaysAlongRoute(decodedCoordinates, corridorRadiusKm) {
+export async function matchStoredHighwaysAlongRoute(decodedCoordinates, corridorRadiusKm) {
     if (!Array.isArray(decodedCoordinates) || decodedCoordinates.length < 2) {
         return [];
     }

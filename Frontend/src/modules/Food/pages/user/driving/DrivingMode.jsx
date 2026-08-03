@@ -31,6 +31,9 @@ const DRIVING_JOURNEY_KEY = "bh_active_journey";
 const DRIVING_RESULT_KEY = "bh_driving_result_data";
 const DRIVING_STATUS_KEY = "bh_driving_status";
 const DRIVING_ROUTE_RESULTS_KEY = "bh_driving_route_results";
+const GEOLOCATION_TIMEOUT_MS = 30000;
+const RESTAURANT_QUERY_TIMEOUT_MS = 35000;
+const GEOLOCATION_MAX_AGE_MS = 15000;
 
 const buildRouteCacheKey = (journeyLike) => {
   if (!journeyLike) return "";
@@ -393,6 +396,8 @@ export default function DrivingMode() {
   const headingRef = useRef(null);
   const speedRef = useRef(null);
   const geoWatchIdRef = useRef(null);
+  const statusRef = useRef(restoredStatus || "CHECKING_LOCATION");
+  const resultDataRef = useRef(restoredResultData || null);
 
   // Abort handling & query timeout references
   const abortControllerRef = useRef(null);
@@ -402,7 +407,9 @@ export default function DrivingMode() {
     locationRef.current = currentLocation;
     headingRef.current = heading;
     speedRef.current = speed;
-  }, [currentLocation, heading, speed]);
+    statusRef.current = status;
+    resultDataRef.current = resultData;
+  }, [currentLocation, heading, speed, status, resultData]);
 
   // Clean up abort controller and timeout on unmount
   useEffect(() => {
@@ -418,20 +425,20 @@ export default function DrivingMode() {
 
   // React-side Safety Timeout for Location Acquisition
   useEffect(() => {
-    if (status !== "CHECKING_LOCATION") {
+    if (status !== "CHECKING_LOCATION" || journey?.origin) {
       return;
     }
 
     const timer = setTimeout(() => {
-      if (status === "CHECKING_LOCATION") {
-        console.warn("[DrivingMode] Geolocation acquisition timed out on React side (15s)");
-        setErrorMessage("Unable to get your location. Please check GPS permission and try again.");
+      if (statusRef.current === "CHECKING_LOCATION" && !locationRef.current) {
+        console.warn(`[DrivingMode] Geolocation acquisition timed out on React side (${GEOLOCATION_TIMEOUT_MS / 1000}s)`);
+        setErrorMessage("Getting live GPS is taking longer than expected. Please keep location on and try again.");
         setStatus("ERROR");
       }
-    }, 15000);
+    }, GEOLOCATION_TIMEOUT_MS);
 
     return () => clearTimeout(timer);
-  }, [status]);
+  }, [journey?.origin, status]);
 
   // Fetch settings from API
   const fetchSettings = async (isRetry = false) => {
@@ -470,7 +477,7 @@ export default function DrivingMode() {
 
   // Watch GPS Location
   useEffect(() => {
-    if (settingsError || loadingSettings || settings?.enabled === false) return;
+    if (settingsError || loadingSettings || settings?.enabled === false || journey?.origin) return;
 
     if (!navigator.geolocation) {
       setLocationError("location_denied");
@@ -494,7 +501,7 @@ export default function DrivingMode() {
           setLocationError("location_denied");
           setStatus("location_denied");
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: GEOLOCATION_MAX_AGE_MS }
       );
     };
 
@@ -532,7 +539,7 @@ export default function DrivingMode() {
         geoWatchIdRef.current = null;
       }
     };
-  }, [settingsError, loadingSettings, settings]);
+  }, [settingsError, loadingSettings, settings, journey?.origin]);
 
   // Restaurants Query Logic with AbortController and 20s loading timeout
   const fetchRestaurantsAhead = useCallback(async (isInitial = false, activeJourney = null) => {
@@ -587,13 +594,26 @@ export default function DrivingMode() {
       }
     }
 
-    // Start 20-second timeout guard
     timeoutIdRef.current = setTimeout(() => {
       controller.abort();
       setLoadingRestaurants(false);
-      setStatus("ERROR");
-      console.warn("[DrivingMode] Restaurant ahead query timed out (20s reached)");
-    }, 20000);
+
+      const cachedRouteResults = routeCacheKey ? readSessionJson(DRIVING_ROUTE_RESULTS_KEY, {}) : null;
+      const cachedEntry = routeCacheKey ? cachedRouteResults?.[routeCacheKey] : null;
+      if (cachedEntry?.data) {
+        setResultData(cachedEntry.data);
+        setStatus(cachedEntry.status || (cachedEntry.data?.restaurants?.length ? "AVAILABLE" : "NO_RESTAURANTS"));
+        setErrorMessage("Showing cached route restaurants while live sync is slow.");
+      } else if (resultDataRef.current?.restaurants?.length) {
+        setStatus("AVAILABLE");
+        setErrorMessage("Showing previous route restaurants while live refresh is slow.");
+      } else {
+        setStatus("ERROR");
+        setErrorMessage("Fetching restaurants is taking longer than expected. Please try again.");
+      }
+
+      console.warn(`[DrivingMode] Restaurant ahead query timed out (${RESTAURANT_QUERY_TIMEOUT_MS / 1000}s reached)`);
+    }, RESTAURANT_QUERY_TIMEOUT_MS);
 
     try {
       const queryParams = {
@@ -762,7 +782,7 @@ export default function DrivingMode() {
             setStatus("location_denied");
           }
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: GEOLOCATION_MAX_AGE_MS }
       );
     }
   };

@@ -122,6 +122,7 @@ const toRestaurantProfile = (doc) => {
                 state: loc?.state || doc.state || '',
                 pincode: loc?.pincode || doc.pincode || '',
                 landmark: loc?.landmark || doc.landmark || '',
+                roadName: loc?.roadName || '',
                 placeId: loc?.placeId || ''
             }
             : null;
@@ -270,6 +271,7 @@ export const registerRestaurant = async (payload, files) => {
         state,
         pincode,
         landmark,
+        roadName,
         formattedAddress,
         latitude,
         longitude,
@@ -397,6 +399,7 @@ export const registerRestaurant = async (payload, files) => {
                 state: state || '',
                 pincode: pincode || '',
                 landmark: landmark || '',
+                roadName: roadName || '',
                 placeId: placeId || ''
             },
             cuisines: cuisines || [],
@@ -956,6 +959,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             state: toStr(loc.state),
             pincode: toStr(loc.pincode),
             landmark: toStr(loc.landmark),
+            roadName: toStr(loc.roadName),
             placeId: toStr(loc.placeId)
         };
     }

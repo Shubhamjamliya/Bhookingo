@@ -67,6 +67,7 @@ const restaurantRegisterSchema = z.object({
     state: z.string().optional(),
     pincode: z.string().optional(),
     landmark: z.string().optional(),
+    roadName: z.string().optional(),
     formattedAddress: z.string().optional(),
     latitude: z.string().optional(),
     longitude: z.string().optional(),

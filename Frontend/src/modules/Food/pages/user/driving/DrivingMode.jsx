@@ -916,7 +916,7 @@ export default function DrivingMode() {
     <div className="relative w-full h-screen bg-gray-50 dark:bg-[#0a0a0a] overflow-hidden flex flex-col">
 
       {/* Top Summary Section */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex justify-center px-0 pt-[env(safe-area-inset-top)] pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 z-20 flex justify-center px-0 pointer-events-none">
         <div className="w-full max-w-md pointer-events-auto">
           <DrivingSummaryCard
             highwayRef={journey?.selectedHighway?.name || resultData?.highway?.ref || journey?.selectedHighway?.ref}

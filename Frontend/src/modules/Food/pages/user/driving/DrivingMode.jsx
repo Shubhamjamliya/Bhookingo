@@ -190,11 +190,24 @@ export default function DrivingMode() {
     setJourney(prev => {
       if (!prev) return null;
       const nextRouteGeometryCache = { ...(prev.routeGeometryCache || {}) };
+
       if (routeGeometryCacheEntry?.routeId && Array.isArray(routeGeometryCacheEntry.activePath) && routeGeometryCacheEntry.activePath.length >= 2) {
         nextRouteGeometryCache[routeGeometryCacheEntry.routeId] = {
+          ...(nextRouteGeometryCache[routeGeometryCacheEntry.routeId] || {}),
           activePath: routeGeometryCacheEntry.activePath
         };
       }
+
+      if (routeGeometryCacheEntry?.allRoutes && typeof routeGeometryCacheEntry.allRoutes === "object") {
+        Object.entries(routeGeometryCacheEntry.allRoutes).forEach(([routeId, routeCache]) => {
+          if (!routeId || !Array.isArray(routeCache?.activePath) || routeCache.activePath.length < 2) return;
+          nextRouteGeometryCache[routeId] = {
+            ...(nextRouteGeometryCache[routeId] || {}),
+            activePath: routeCache.activePath
+          };
+        });
+      }
+
       return {
         ...prev,
         routePolyline,
@@ -1030,7 +1043,9 @@ export default function DrivingMode() {
         <Button
           onClick={() => {
             if (viewMode === "map") {
-              setIsDrawerExpanded(true);
+              window.requestAnimationFrame(() => {
+                setIsDrawerExpanded(true);
+              });
               return;
             }
             setViewMode("map");
@@ -1055,7 +1070,7 @@ export default function DrivingMode() {
       {viewMode === "map" ? (
         <div
           style={{ height: isDrawerExpanded ? "calc(100vh - 160px)" : "220px" }}
-          className="absolute bottom-0 left-0 right-0 z-20 pointer-events-auto w-full max-w-md mx-auto bg-white dark:bg-[#111111] border-t dark:border-neutral-800/80 rounded-t-[24px] shadow-[0_-8px_30px_rgba(0,0,0,0.06)] flex flex-col transition-[height] duration-150 ease-out will-change-[height] overflow-hidden"
+          className="absolute bottom-0 left-0 right-0 z-20 pointer-events-auto w-full max-w-md mx-auto bg-white dark:bg-[#111111] border-t dark:border-neutral-800/80 rounded-t-[24px] shadow-[0_-8px_30px_rgba(0,0,0,0.06)] flex flex-col transition-[height,transform,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[height] overflow-hidden"
         >
           {/* Drag Handle Top Bar */}
           <div
@@ -1089,7 +1104,7 @@ export default function DrivingMode() {
           />
 
           {/* Restaurants List Container */}
-          <div className={`flex-1 px-4 transition-all duration-150 ease-out ${isDrawerExpanded ? "overflow-y-auto pb-28 filters-scroll-hide" : "pb-4 overflow-hidden"}`}>
+          <div className={`flex-1 px-4 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerExpanded ? "overflow-y-auto pb-28 filters-scroll-hide" : "pb-4 overflow-hidden"}`}>
             {/* Header Row */}
             <div className="flex items-center justify-between py-3 border-b dark:border-neutral-900/60 mb-3 bg-white dark:bg-[#111111] sticky top-0 z-10">
               <h3 className="font-extrabold text-sm text-gray-900 dark:text-white">

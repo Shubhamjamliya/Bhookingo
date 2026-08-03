@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, useJsApiLoader, Polyline, Marker, OverlayView } from "@react-google-maps/api";
-import { Loader2, Locate } from "lucide-react";
+import { Compass, Loader2, Pause, Play } from "lucide-react";
 
 const MAP_CONTAINER_STYLE = {
   width: "100%",
@@ -9,7 +9,7 @@ const MAP_CONTAINER_STYLE = {
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
 const GOOGLE_MAPS_LIBRARIES = ["geometry", "drawing", "places"];
-const ALT_ROUTE_COLORS = ["#94a3b8", "#7c3aed", "#0f766e", "#b45309"];
+const ALT_ROUTE_STROKE = "#111111";
 
 // High precision polyline decoder for Google Maps encoded polylines
 function getRouteMidpoint(path = []) {
@@ -52,6 +52,17 @@ function decodePolyline(encoded) {
   return poly;
 }
 
+function getBearing(from, to) {
+  if (!from || !to) return 0;
+  const lat1 = (from.lat * Math.PI) / 180;
+  const lat2 = (to.lat * Math.PI) / 180;
+  const deltaLng = ((to.lng - from.lng) * Math.PI) / 180;
+  const y = Math.sin(deltaLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
+  const bearing = (Math.atan2(y, x) * 180) / Math.PI;
+  return (bearing + 360) % 360;
+}
+
 export default function DrivingMap({
   userLocation,
   destinationLocation,
@@ -67,6 +78,9 @@ export default function DrivingMap({
   const mapRef = useRef(null);
   const [localRoutePath, setLocalRoutePath] = useState([]);
   const [alternateRoutePaths, setAlternateRoutePaths] = useState([]);
+  const [isRotationEnabled, setIsRotationEnabled] = useState(false);
+  const [isSimulationRunning, setIsSimulationRunning] = useState(false);
+  const [simulationIndex, setSimulationIndex] = useState(0);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -82,11 +96,24 @@ export default function DrivingMap({
   const destLng = Number(destinationLocation?.longitude ?? destinationLocation?.lng);
   const hasDestLocation = Number.isFinite(destLat) && Number.isFinite(destLng);
 
+  const simulationPosition = useMemo(() => {
+    if (!isSimulationRunning || !Array.isArray(localRoutePath) || localRoutePath.length < 2) return null;
+    return localRoutePath[Math.min(simulationIndex, localRoutePath.length - 1)] || null;
+  }, [isSimulationRunning, localRoutePath, simulationIndex]);
+
+  const effectiveUserPosition = simulationPosition || (hasUserLocation ? { lat: userLat, lng: userLng } : null);
+  const effectiveHeading = useMemo(() => {
+    if (simulationPosition && localRoutePath.length >= 2) {
+      const currentPoint = localRoutePath[Math.min(simulationIndex, localRoutePath.length - 2)] || simulationPosition;
+      const nextPoint = localRoutePath[Math.min(simulationIndex + 1, localRoutePath.length - 1)] || simulationPosition;
+      return getBearing(currentPoint, nextPoint);
+    }
+    return typeof heading === "number" && !Number.isNaN(heading) ? heading : 0;
+  }, [simulationPosition, localRoutePath, simulationIndex, heading]);
+
   const center = useMemo(() => {
-    return hasUserLocation
-      ? { lat: userLat, lng: userLng }
-      : DEFAULT_CENTER;
-  }, [hasUserLocation, userLat, userLng]);
+    return effectiveUserPosition || DEFAULT_CENTER;
+  }, [effectiveUserPosition]);
 
   const prevBoundsKeyRef = useRef("");
   const routeRequestedRef = useRef("");
@@ -107,8 +134,8 @@ export default function DrivingMap({
     const bounds = new window.google.maps.LatLngBounds();
     let count = 0;
 
-    if (hasUserLocation) {
-      bounds.extend({ lat: userLat, lng: userLng });
+    if (effectiveUserPosition) {
+      bounds.extend(effectiveUserPosition);
       count++;
     }
 
@@ -132,11 +159,11 @@ export default function DrivingMap({
 
     if (count >= 2) {
       mapRef.current.fitBounds(bounds, 80); // padding of 80px
-    } else if (hasUserLocation) {
+    } else if (effectiveUserPosition) {
       mapRef.current.setCenter(center);
       mapRef.current.setZoom(14);
     }
-  }, [hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, (restaurants || []).length, center]);
+  }, [effectiveUserPosition, hasDestLocation, destLat, destLng, (restaurants || []).length, center]);
 
   const onLoad = useCallback((map) => {
     mapRef.current = map;
@@ -153,8 +180,8 @@ export default function DrivingMap({
     }
 
     if (mapRef.current) {
-      if (hasUserLocation) {
-        mapRef.current.panTo({ lat: userLat, lng: userLng });
+      if (effectiveUserPosition) {
+        mapRef.current.panTo(effectiveUserPosition);
         mapRef.current.setZoom(16);
       }
     }
@@ -171,7 +198,7 @@ export default function DrivingMap({
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     }
-  }, [hasUserLocation, userLat, userLng]);
+  }, [effectiveUserPosition]);
 
   // Fetch navigation path via Google Directions Service so the visible route follows actual roads.
   useEffect(() => {
@@ -294,6 +321,14 @@ export default function DrivingMap({
             );
 
             if (onRouteCalculated) {
+              const allRoutes = {};
+              decodedRoutePaths.forEach((path, index) => {
+                const routeOption = Array.isArray(journey?.availableRoutes) ? journey.availableRoutes[index] : null;
+                const routeId = routeOption?.routeId || routeOption?._id;
+                if (!routeId || !Array.isArray(path) || path.length < 2) return;
+                allRoutes[routeId] = { activePath: path };
+              });
+
               onRouteCalculated({
                 routePolyline,
                 estimatedDistance,
@@ -301,7 +336,8 @@ export default function DrivingMap({
                 routeBounds: route?.bounds || null,
                 routeGeometryCacheEntry: {
                   routeId: selectedRouteId,
-                  activePath: routePolyline
+                  activePath: routePolyline,
+                  allRoutes
                 }
               });
             }
@@ -361,6 +397,70 @@ export default function DrivingMap({
   }, [isLoaded, destLat, destLng, restaurants?.length, fitMapBounds]);
 
 
+  useEffect(() => {
+    if (!Array.isArray(localRoutePath) || localRoutePath.length < 2) {
+      setIsSimulationRunning(false);
+      setSimulationIndex(0);
+      return;
+    }
+    setSimulationIndex((prev) => Math.min(prev, localRoutePath.length - 1));
+  }, [localRoutePath]);
+
+  useEffect(() => {
+    if (!isSimulationRunning || localRoutePath.length < 2) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      setSimulationIndex((prev) => {
+        const nextIndex = prev + 1;
+        if (nextIndex >= localRoutePath.length - 1) {
+          window.clearInterval(intervalId);
+          setIsSimulationRunning(false);
+          return localRoutePath.length - 1;
+        }
+        return nextIndex;
+      });
+    }, 900);
+
+    return () => window.clearInterval(intervalId);
+  }, [isSimulationRunning, localRoutePath]);
+
+  useEffect(() => {
+    if (!mapRef.current || !isRotationEnabled) return;
+    mapRef.current.setHeading(effectiveHeading || 0);
+    mapRef.current.setTilt(45);
+  }, [isRotationEnabled, effectiveHeading]);
+
+  useEffect(() => {
+    if (!mapRef.current || !simulationPosition) return;
+    mapRef.current.panTo(simulationPosition);
+    if (isRotationEnabled) {
+      mapRef.current.setHeading(effectiveHeading || 0);
+      mapRef.current.setTilt(45);
+    }
+  }, [simulationPosition, isRotationEnabled, effectiveHeading]);
+
+  const handleToggleRotation = useCallback(() => {
+    setIsRotationEnabled((prev) => {
+      const next = !prev;
+      if (mapRef.current) {
+        mapRef.current.setHeading(next ? (effectiveHeading || 0) : 0);
+        mapRef.current.setTilt(next ? 45 : 0);
+      }
+      return next;
+    });
+  }, [effectiveHeading]);
+
+  const handleToggleSimulation = useCallback(() => {
+    if (localRoutePath.length < 2) return;
+    setSimulationIndex((prev) => {
+      if (!isSimulationRunning && prev >= localRoutePath.length - 1) {
+        return 0;
+      }
+      return prev;
+    });
+    setIsSimulationRunning((prev) => !prev);
+  }, [isSimulationRunning, localRoutePath]);
+
   if (!isLoaded) {
     return (
       <div className="w-full h-full bg-gray-50 flex items-center justify-center">
@@ -390,7 +490,6 @@ export default function DrivingMap({
         {/* Alternate Routes */}
         {alternateRoutePaths.map((routeEntry, index) => {
           const routeMidpoint = getRouteMidpoint(routeEntry.path);
-          const routeColor = ALT_ROUTE_COLORS[index % ALT_ROUTE_COLORS.length];
 
           return (
             <React.Fragment key={`alt-route-${routeEntry.routeOption?.routeId || index}`}>
@@ -418,8 +517,8 @@ export default function DrivingMap({
                   }
                 }}
                 options={{
-                  strokeColor: routeColor,
-                  strokeOpacity: 0.86,
+                  strokeColor: ALT_ROUTE_STROKE,
+                  strokeOpacity: 0.38,
                   strokeWeight: 6,
                   geodesic: true,
                   zIndex: 2,
@@ -448,7 +547,7 @@ export default function DrivingMap({
                     onClick={() => onRouteSelect?.(routeEntry.routeOption)}
                     className="pointer-events-auto rounded-full border border-white/80 bg-white/95 px-3 py-1 text-[11px] font-bold text-slate-700 shadow-lg backdrop-blur transition hover:scale-[1.02]"
                   >
-                    {routeEntry.routeOption.durationText || routeEntry.routeOption.name || "Select route"}
+                    {routeEntry.routeOption?.name || `Route ${routeEntry.routeIndex + 1}`}
                   </button>
                 </OverlayView>
               )}
@@ -471,9 +570,9 @@ export default function DrivingMap({
         )}
 
         {/* User Location Halo (Round White Circle around cursor like Google Maps) */}
-        {hasUserLocation && (
+        {effectiveUserPosition && (
           <Marker
-            position={{ lat: userLat, lng: userLng }}
+            position={effectiveUserPosition}
             options={{
               icon: {
                 path: window.google?.maps?.SymbolPath?.CIRCLE,
@@ -490,9 +589,9 @@ export default function DrivingMap({
         )}
 
         {/* User Location Marker (Navigation Arrow with GPS Heading Rotation) */}
-        {hasUserLocation && (
+        {effectiveUserPosition && (
           <Marker
-            position={{ lat: userLat, lng: userLng }}
+            position={effectiveUserPosition}
             options={{
               icon: {
                 path: "M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z",
@@ -501,7 +600,7 @@ export default function DrivingMap({
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
                 strokeWeight: 1.5,
-                rotation: typeof heading === "number" && !isNaN(heading) ? heading : 0,
+                rotation: effectiveHeading || 0,
                 anchor: window.google?.maps ? new window.google.maps.Point(12, 12) : null,
               },
               title: "Your Location",
@@ -580,6 +679,32 @@ export default function DrivingMap({
           });
         })()}
       </GoogleMap>
+
+      <div className="absolute right-4 z-30 flex flex-col gap-3 pointer-events-none bottom-[368px]">
+        <button
+          type="button"
+          onClick={handleToggleRotation}
+          className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border shadow-xl transition-all ${isRotationEnabled
+            ? "border-orange-300 bg-orange-500 text-white"
+            : "border-gray-200/80 bg-white text-gray-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white"
+            }`}
+          title="Rotate map"
+        >
+          <Compass className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={handleToggleSimulation}
+          disabled={localRoutePath.length < 2}
+          className={`pointer-events-auto flex h-11 min-w-[44px] items-center justify-center rounded-full border px-3 shadow-xl transition-all ${isSimulationRunning
+            ? "border-sky-300 bg-sky-500 text-white"
+            : "border-gray-200/80 bg-white text-gray-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white"
+            } ${localRoutePath.length < 2 ? "cursor-not-allowed opacity-50" : ""}`}
+          title="Simulate route"
+        >
+          {isSimulationRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        </button>
+      </div>
 
       {/* Floating Recenter GPS Button */}
       <button

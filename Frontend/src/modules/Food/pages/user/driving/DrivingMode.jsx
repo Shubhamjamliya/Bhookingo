@@ -36,6 +36,8 @@ const RESTAURANT_QUERY_TIMEOUT_MS = 35000;
 const GEOLOCATION_MAX_AGE_MS = 15000;
 const NEXT_STOP_ALERT_DISTANCE_KM = 2.5;
 const NEXT_STOP_ALERT_COOLDOWN_MS = 90000;
+const PASSED_RESTAURANT_BUFFER_KM = 0.18;
+const ROUTE_SNAP_MAX_DISTANCE_KM = 3;
 
 const buildRouteCacheKey = (journeyLike) => {
   if (!journeyLike) return "";
@@ -78,6 +80,103 @@ const getDistanceBetweenKm = (from, to) => {
       Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return earthRadiusKm * c;
+};
+
+const normalizeLatLng = (point) => {
+  if (!point) return null;
+
+  if (Array.isArray(point) && point.length >= 2) {
+    const lng = Number(point[0]);
+    const lat = Number(point[1]);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  }
+
+  const lat = Number(point.lat ?? point.latitude);
+  const lng = Number(point.lng ?? point.longitude);
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+};
+
+const getJourneyActivePath = (journeyLike) => {
+  if (!journeyLike) return [];
+
+  const selectedRouteKey = journeyLike.selectedRouteId || journeyLike.selectedHighway?._id || journeyLike.selectedHighway?.routeId;
+  const cachedPath = selectedRouteKey ? journeyLike.routeGeometryCache?.[selectedRouteKey]?.activePath : null;
+  if (Array.isArray(cachedPath) && cachedPath.length > 1) {
+    return cachedPath.map(normalizeLatLng).filter(Boolean);
+  }
+
+  const selectedCoordinates = journeyLike.selectedHighway?.coordinates;
+  if (Array.isArray(selectedCoordinates) && selectedCoordinates.length > 1) {
+    return selectedCoordinates.map(normalizeLatLng).filter(Boolean);
+  }
+
+  const routePolyline = journeyLike.routePolyline;
+  if (Array.isArray(routePolyline) && routePolyline.length > 1) {
+    return routePolyline.map(normalizeLatLng).filter(Boolean);
+  }
+
+  return [];
+};
+
+const buildRoutePathMetrics = (path = []) => {
+  if (!Array.isArray(path) || path.length < 2) return null;
+
+  const normalizedPath = path.map(normalizeLatLng).filter(Boolean);
+  if (normalizedPath.length < 2) return null;
+
+  const cumulativeKm = [0];
+  for (let index = 1; index < normalizedPath.length; index += 1) {
+    const stepKm = getDistanceBetweenKm(normalizedPath[index - 1], normalizedPath[index]) ?? 0;
+    cumulativeKm[index] = cumulativeKm[index - 1] + stepKm;
+  }
+
+  return {
+    path: normalizedPath,
+    cumulativeKm,
+    totalKm: cumulativeKm[cumulativeKm.length - 1] || 0
+  };
+};
+
+const getRouteProgressSnapshot = (routeMetrics, point) => {
+  const normalizedPoint = normalizeLatLng(point);
+  if (!routeMetrics?.path || routeMetrics.path.length < 2 || !normalizedPoint) return null;
+
+  const lngScale = Math.max(0.000001, Math.cos((normalizedPoint.lat * Math.PI) / 180));
+  const px = normalizedPoint.lng * lngScale;
+  const py = normalizedPoint.lat;
+  let best = null;
+
+  for (let index = 0; index < routeMetrics.path.length - 1; index += 1) {
+    const start = routeMetrics.path[index];
+    const end = routeMetrics.path[index + 1];
+    const ax = start.lng * lngScale;
+    const ay = start.lat;
+    const bx = end.lng * lngScale;
+    const by = end.lat;
+    const abx = bx - ax;
+    const aby = by - ay;
+    const segmentLengthSq = (abx * abx) + (aby * aby);
+    const rawT = segmentLengthSq <= 0 ? 0 : (((px - ax) * abx) + ((py - ay) * aby)) / segmentLengthSq;
+    const t = Math.max(0, Math.min(1, rawT));
+    const snappedPoint = {
+      lat: ay + (aby * t),
+      lng: (ax + (abx * t)) / lngScale
+    };
+    const lateralDistanceKm = getDistanceBetweenKm(normalizedPoint, snappedPoint);
+    const segmentDistanceKm = getDistanceBetweenKm(start, end) ?? 0;
+    const distanceAlongKm = (routeMetrics.cumulativeKm[index] ?? 0) + (segmentDistanceKm * t);
+
+    if (!best || lateralDistanceKm < best.lateralDistanceKm) {
+      best = {
+        snappedPoint,
+        lateralDistanceKm,
+        distanceAlongKm,
+        segmentIndex: index
+      };
+    }
+  }
+
+  return best;
 };
 
 // Food/menu images carousel component for the details card
@@ -945,9 +1044,44 @@ export default function DrivingMode() {
     return list;
   }, [resultData?.restaurants, activeFacilityFilter, sortBy]);
 
-  const nextStop = filteredRestaurants[0] || null;
-  const nextStopId = nextStop?._id || nextStop?.id || nextStop?.restaurantSlug || null;
   const effectiveTravelPosition = React.useMemo(() => liveTravelPosition || (journey?.origin ? { lat: journey.origin.lat, lng: journey.origin.lng } : currentLocation), [liveTravelPosition, journey?.origin?.lat, journey?.origin?.lng, currentLocation]);
+  const activeRouteMetrics = React.useMemo(() => buildRoutePathMetrics(getJourneyActivePath(journey)), [journey]);
+  const nextStop = React.useMemo(() => {
+    if (!filteredRestaurants.length) return null;
+    if (!activeRouteMetrics || !effectiveTravelPosition) return filteredRestaurants[0] || null;
+
+    const userProgress = getRouteProgressSnapshot(activeRouteMetrics, effectiveTravelPosition);
+    if (!userProgress) return filteredRestaurants[0] || null;
+
+    const rankedStops = filteredRestaurants
+      .map((restaurant) => {
+        const restaurantLocation = getRestaurantLatLng(restaurant);
+        const routeProgress = getRouteProgressSnapshot(activeRouteMetrics, restaurantLocation);
+        const liveDistanceKm = getDistanceBetweenKm(effectiveTravelPosition, restaurantLocation);
+        return {
+          restaurant,
+          routeProgress,
+          liveDistanceKm: Number.isFinite(liveDistanceKm) ? liveDistanceKm : Number.POSITIVE_INFINITY
+        };
+      })
+      .filter(({ routeProgress }) => routeProgress && routeProgress.lateralDistanceKm <= ROUTE_SNAP_MAX_DISTANCE_KM)
+      .sort((a, b) => {
+        const progressDeltaA = a.routeProgress.distanceAlongKm - userProgress.distanceAlongKm;
+        const progressDeltaB = b.routeProgress.distanceAlongKm - userProgress.distanceAlongKm;
+        const aIsAhead = progressDeltaA >= -PASSED_RESTAURANT_BUFFER_KM;
+        const bIsAhead = progressDeltaB >= -PASSED_RESTAURANT_BUFFER_KM;
+
+        if (aIsAhead !== bIsAhead) return aIsAhead ? -1 : 1;
+        if (aIsAhead && bIsAhead) return progressDeltaA - progressDeltaB;
+        return a.liveDistanceKm - b.liveDistanceKm;
+      });
+
+    const firstAheadStop = rankedStops.find(({ routeProgress }) => (routeProgress.distanceAlongKm - userProgress.distanceAlongKm) >= -PASSED_RESTAURANT_BUFFER_KM);
+    if (firstAheadStop) return firstAheadStop.restaurant;
+
+    return rankedStops[0]?.restaurant || filteredRestaurants[0] || null;
+  }, [filteredRestaurants, activeRouteMetrics, effectiveTravelPosition]);
+  const nextStopId = nextStop?._id || nextStop?.id || nextStop?.restaurantSlug || null;
   const nextStopLiveDistanceKm = getDistanceBetweenKm(effectiveTravelPosition, getRestaurantLatLng(nextStop));
   const nextStopLiveEtaMinutes = React.useMemo(() => {
     if (!nextStop) return null;

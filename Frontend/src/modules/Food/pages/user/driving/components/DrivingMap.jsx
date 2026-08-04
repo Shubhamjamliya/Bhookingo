@@ -164,8 +164,8 @@ function getNavigationCameraCenter(point, headingDeg = 0) {
   if (!point) return point;
 
   const cameraHeading = Number.isFinite(headingDeg) ? headingDeg : 0;
-  const aheadPoint = offsetLatLng(point, cameraHeading, 240);
-  return offsetLatLng(aheadPoint, cameraHeading + 90, 110);
+  const aheadPoint = offsetLatLng(point, cameraHeading, 280);
+  return offsetLatLng(aheadPoint, cameraHeading + 90, 145);
 }
 
 function pointsAlmostEqual(a, b, tolerance = 0.000001) {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { Compass, Loader2, Navigation, AlertTriangle, List, Map, ShieldAlert, CheckCircle, Clock, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Share2, Heart, Wifi, Star, Car, ShieldCheck } from "lucide-react";
+import { Compass, Loader2, Navigation, AlertTriangle, List, Map, ShieldAlert, CheckCircle, Clock, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Share2, Heart, Wifi, Star, Car, ShieldCheck, BellRing, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { userAPI, restaurantAPI } from "@food/api";
 import { useProfile } from "@food/context/ProfileContext";
@@ -48,6 +48,34 @@ const clearDrivingCache = () => {
   sessionStorage.removeItem(DRIVING_RESULT_KEY);
   sessionStorage.removeItem(DRIVING_STATUS_KEY);
   sessionStorage.removeItem(DRIVING_ROUTE_RESULTS_KEY);
+};
+
+const getRestaurantLatLng = (restaurant) => {
+  const loc = restaurant?.location || {};
+  const lat = Number(loc?.latitude ?? loc?.lat ?? (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null));
+  const lng = Number(loc?.longitude ?? loc?.lng ?? (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null));
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+};
+
+const getDistanceBetweenKm = (from, to) => {
+  if (!from || !to) return null;
+  const lat1 = Number(from.lat ?? from.latitude);
+  const lng1 = Number(from.lng ?? from.longitude);
+  const lat2 = Number(to.lat ?? to.latitude);
+  const lng2 = Number(to.lng ?? to.longitude);
+  if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) return null;
+
+  const earthRadiusKm = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
 };
 
 // Food/menu images carousel component for the details card
@@ -132,6 +160,8 @@ export default function DrivingMode() {
 
   // Geolocation States
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [liveTravelPosition, setLiveTravelPosition] = useState(null);
+  const [isNextStopAlertOpen, setIsNextStopAlertOpen] = useState(false);
   const [heading, setHeading] = useState(null);
   const [speed, setSpeed] = useState(null);
   const [locationError, setLocationError] = useState(null);
@@ -794,6 +824,24 @@ export default function DrivingMode() {
     navigate(`/user/restaurants/${restaurant.restaurantSlug || restaurant._id}`);
   };
 
+  const handleLiveTravelPositionChange = useCallback((nextPosition) => {
+    setLiveTravelPosition((prev) => {
+      if (!nextPosition) {
+        return prev ? null : prev;
+      }
+
+      if (
+        prev &&
+        Math.abs((prev.lat ?? prev.latitude ?? 0) - nextPosition.lat) <= 0.0000004 &&
+        Math.abs((prev.lng ?? prev.longitude ?? 0) - nextPosition.lng) <= 0.0000004
+      ) {
+        return prev;
+      }
+
+      return nextPosition;
+    });
+  }, []);
+
   const handleSelectRouteOption = useCallback((routeOption) => {
     if (!routeOption || !journey) return;
 
@@ -899,6 +947,8 @@ export default function DrivingMode() {
   }
 
   const nextStop = filteredRestaurants[0] || null;
+  const effectiveTravelPosition = React.useMemo(() => liveTravelPosition || (journey?.origin ? { lat: journey.origin.lat, lng: journey.origin.lng } : currentLocation), [liveTravelPosition, journey?.origin?.lat, journey?.origin?.lng, currentLocation]);
+  const nextStopLiveDistanceKm = getDistanceBetweenKm(effectiveTravelPosition, getRestaurantLatLng(nextStop));
   const visibleRouteOptions = Array.isArray(journey?.availableRoutes)
     ? journey.availableRoutes.filter((routeOption, index, routes) => {
       const routeKey = routeOption?.routeId || routeOption?._id;
@@ -928,9 +978,9 @@ export default function DrivingMode() {
         </div>
       </div>
 
-      {hasMultipleRoutes && (
-        <div className="absolute top-[calc(env(safe-area-inset-top)+196px)] left-0 right-0 z-20 flex justify-center px-3 pointer-events-none">
-          <div className="flex w-full max-w-md justify-end pointer-events-auto">
+      <div className="absolute top-[calc(env(safe-area-inset-top)+196px)] left-0 right-0 z-20 flex justify-center px-3 pointer-events-none">
+        <div className="flex w-full max-w-md flex-col items-end gap-2 pointer-events-auto">
+          {hasMultipleRoutes && (
             <button
               type="button"
               onClick={() => setIsRoutePickerOpen(true)}
@@ -939,9 +989,38 @@ export default function DrivingMode() {
               Route
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
+          )}
+
+          <div className="flex items-end justify-end gap-2">
+            <div className={`overflow-hidden rounded-2xl border border-orange-200 bg-white/95 shadow-lg backdrop-blur transition-all duration-300 dark:border-orange-900/60 dark:bg-[#151515]/95 ${isNextStopAlertOpen ? "max-w-[240px] translate-x-0 opacity-100" : "max-w-0 translate-x-6 opacity-0"}`}>
+              <div className="flex min-w-[210px] items-center gap-2 px-3 py-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-950/40 dark:text-orange-300">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] font-black uppercase tracking-[0.12em] text-orange-600">Next Restaurant</div>
+                  <div className="truncate text-xs font-bold text-gray-900 dark:text-white">
+                    {nextStop?.restaurantName || nextStop?.name || "No stop ahead"}
+                  </div>
+                  <div className="text-[11px] font-medium text-gray-500 dark:text-neutral-400">
+                    {nextStop
+                      ? `is ${Number.isFinite(nextStopLiveDistanceKm) ? nextStopLiveDistanceKm.toFixed(nextStopLiveDistanceKm >= 10 ? 0 : 1) : nextStop?.distanceKm ?? "-"} km from current location`
+                      : "No nearby restaurant on this route"}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsNextStopAlertOpen((prev) => !prev)}
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-sm transition ${isNextStopAlertOpen ? "border-orange-300 bg-orange-500 text-white" : "border-white/80 bg-white text-gray-800 hover:border-orange-200 hover:text-orange-600 dark:border-neutral-800 dark:bg-[#151515] dark:text-white"}`}
+              title="Next restaurant alert"
+            >
+              <BellRing className="h-4 w-4" />
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
       <Dialog open={isRoutePickerOpen} onOpenChange={setIsRoutePickerOpen}>
         <DialogContent className="max-w-sm w-[calc(100vw-32px)] rounded-3xl border-none bg-white p-0 shadow-2xl dark:bg-[#111111]">
@@ -996,6 +1075,7 @@ export default function DrivingMode() {
             restaurants={filteredRestaurants}
             onRestaurantClick={setSelectedRestaurant}
             onRouteSelect={handleSelectRouteOption}
+            onUserPositionChange={handleLiveTravelPositionChange}
             recenterBottomOffset={isDrawerExpanded ? "hidden" : "bottom-[230px]"}
           />
         ) : (

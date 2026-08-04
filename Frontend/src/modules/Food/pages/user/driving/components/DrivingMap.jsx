@@ -63,6 +63,115 @@ function getBearing(from, to) {
   return (bearing + 360) % 360;
 }
 
+function offsetLatLng(point, headingDeg = 0, distanceMeters = 0) {
+  if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng) || !Number.isFinite(distanceMeters)) {
+    return point;
+  }
+
+  const earthRadiusMeters = 6378137;
+  const angularDistance = distanceMeters / earthRadiusMeters;
+  const bearingRad = (headingDeg * Math.PI) / 180;
+  const lat1 = (point.lat * Math.PI) / 180;
+  const lng1 = (point.lng * Math.PI) / 180;
+
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(angularDistance) +
+    Math.cos(lat1) * Math.sin(angularDistance) * Math.cos(bearingRad)
+  );
+  const lng2 = lng1 + Math.atan2(
+    Math.sin(bearingRad) * Math.sin(angularDistance) * Math.cos(lat1),
+    Math.cos(angularDistance) - Math.sin(lat1) * Math.sin(lat2)
+  );
+
+  return {
+    lat: (lat2 * 180) / Math.PI,
+    lng: (lng2 * 180) / Math.PI,
+  };
+}
+
+function getNavigationCameraCenter(point, headingDeg = 0) {
+  if (!point) return point;
+  const cameraHeading = Number.isFinite(headingDeg) ? headingDeg : 0;
+  return offsetLatLng(point, (cameraHeading + 180) % 360, 110);
+}
+
+function pointsAlmostEqual(a, b, tolerance = 0.000001) {
+  if (!a || !b) return false;
+  return Math.abs(a.lat - b.lat) <= tolerance && Math.abs(a.lng - b.lng) <= tolerance;
+}
+
+function getApproxDistanceMeters(from, to) {
+  if (!from || !to) return Number.POSITIVE_INFINITY;
+  const avgLatRad = (((from.lat + to.lat) / 2) * Math.PI) / 180;
+  const latMeters = (to.lat - from.lat) * 111320;
+  const lngMeters = (to.lng - from.lng) * 111320 * Math.cos(avgLatRad);
+  return Math.sqrt((latMeters * latMeters) + (lngMeters * lngMeters));
+}
+
+function getPathSnapInfo(path = [], point) {
+  if (!Array.isArray(path) || path.length === 0 || !point) return null;
+  if (path.length === 1) {
+    return {
+      point: path[0],
+      segmentIndex: 0,
+      distanceMeters: getApproxDistanceMeters(path[0], point)
+    };
+  }
+
+  const lngScale = Math.max(0.000001, Math.cos((point.lat * Math.PI) / 180));
+  const px = point.lng * lngScale;
+  const py = point.lat;
+  let best = null;
+
+  for (let index = 0; index < path.length - 1; index += 1) {
+    const start = path[index];
+    const end = path[index + 1];
+    if (!start || !end) continue;
+
+    const ax = start.lng * lngScale;
+    const ay = start.lat;
+    const bx = end.lng * lngScale;
+    const by = end.lat;
+    const abx = bx - ax;
+    const aby = by - ay;
+    const lengthSq = (abx * abx) + (aby * aby);
+    const rawT = lengthSq <= 0 ? 0 : (((px - ax) * abx) + ((py - ay) * aby)) / lengthSq;
+    const t = Math.max(0, Math.min(1, rawT));
+    const snappedPoint = {
+      lat: ay + (aby * t),
+      lng: (ax + (abx * t)) / lngScale,
+    };
+    const distanceMeters = getApproxDistanceMeters(point, snappedPoint);
+
+    if (!best || distanceMeters < best.distanceMeters) {
+      best = {
+        point: snappedPoint,
+        segmentIndex: index,
+        distanceMeters,
+      };
+    }
+  }
+
+  return best;
+}
+
+function buildRemainingRoutePath(path = [], snapInfo) {
+  if (!Array.isArray(path) || path.length === 0) return [];
+  if (!snapInfo?.point) return path;
+
+  const nextIndex = Math.min((snapInfo.segmentIndex ?? 0) + 1, path.length - 1);
+  const remainingPath = [snapInfo.point];
+
+  for (let index = nextIndex; index < path.length; index += 1) {
+    const routePoint = path[index];
+    if (!pointsAlmostEqual(remainingPath[remainingPath.length - 1], routePoint, 0.0000001)) {
+      remainingPath.push(routePoint);
+    }
+  }
+
+  return remainingPath;
+}
+
 export default function DrivingMap({
   userLocation,
   destinationLocation,
@@ -73,14 +182,26 @@ export default function DrivingMap({
   restaurants,
   onRestaurantClick,
   onRouteSelect,
+  onUserPositionChange,
   recenterBottomOffset
 }) {
   const mapRef = useRef(null);
+  const markerAnimationFrameRef = useRef(null);
+  const headingAnimationFrameRef = useRef(null);
+  const mapFollowAnimationFrameRef = useRef(null);
+  const displayedUserPositionRef = useRef(null);
+  const displayedHeadingRef = useRef(0);
+  const lastEmittedUserPositionRef = useRef(null);
+  const mapCenterRef = useRef(DEFAULT_CENTER);
+  const hasAutoFittedBoundsRef = useRef(false);
   const [localRoutePath, setLocalRoutePath] = useState([]);
   const [alternateRoutePaths, setAlternateRoutePaths] = useState([]);
-  const [isRotationEnabled, setIsRotationEnabled] = useState(false);
+  const [isRotationEnabled, setIsRotationEnabled] = useState(true);
   const [isSimulationRunning, setIsSimulationRunning] = useState(false);
   const [simulationIndex, setSimulationIndex] = useState(0);
+  const [isFollowingUser, setIsFollowingUser] = useState(true);
+  const [displayedUserPosition, setDisplayedUserPosition] = useState(null);
+  const [displayedHeading, setDisplayedHeading] = useState(0);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -101,19 +222,181 @@ export default function DrivingMap({
     return localRoutePath[Math.min(simulationIndex, localRoutePath.length - 1)] || null;
   }, [isSimulationRunning, localRoutePath, simulationIndex]);
 
-  const effectiveUserPosition = simulationPosition || (hasUserLocation ? { lat: userLat, lng: userLng } : null);
+  const effectiveUserPosition = useMemo(() => {
+    if (simulationPosition && Number.isFinite(simulationPosition.lat) && Number.isFinite(simulationPosition.lng)) {
+      return { lat: simulationPosition.lat, lng: simulationPosition.lng };
+    }
+    if (hasUserLocation) {
+      return { lat: userLat, lng: userLng };
+    }
+    return null;
+  }, [simulationPosition?.lat, simulationPosition?.lng, hasUserLocation, userLat, userLng]);
+
+  const navigationTargetInfo = useMemo(() => {
+    if (!effectiveUserPosition) return null;
+
+    if (simulationPosition && Array.isArray(localRoutePath) && localRoutePath.length >= 2) {
+      const currentIndex = Math.min(simulationIndex, localRoutePath.length - 1);
+      return {
+        point: localRoutePath[currentIndex] || effectiveUserPosition,
+        segmentIndex: Math.max(0, currentIndex - 1),
+        distanceMeters: 0,
+      };
+    }
+
+    return getPathSnapInfo(localRoutePath, effectiveUserPosition);
+  }, [effectiveUserPosition, simulationPosition, simulationIndex, localRoutePath]);
+
+  const navigationTargetPosition = useMemo(() => {
+    return navigationTargetInfo?.point || effectiveUserPosition || null;
+  }, [navigationTargetInfo, effectiveUserPosition]);
+
+  const visibleRoutePath = useMemo(() => {
+    return buildRemainingRoutePath(localRoutePath, navigationTargetInfo);
+  }, [localRoutePath, navigationTargetInfo]);
+
   const effectiveHeading = useMemo(() => {
     if (simulationPosition && localRoutePath.length >= 2) {
       const currentPoint = localRoutePath[Math.min(simulationIndex, localRoutePath.length - 2)] || simulationPosition;
       const nextPoint = localRoutePath[Math.min(simulationIndex + 1, localRoutePath.length - 1)] || simulationPosition;
       return getBearing(currentPoint, nextPoint);
     }
-    return typeof heading === "number" && !Number.isNaN(heading) ? heading : 0;
-  }, [simulationPosition, localRoutePath, simulationIndex, heading]);
 
-  const center = useMemo(() => {
-    return effectiveUserPosition || DEFAULT_CENTER;
-  }, [effectiveUserPosition]);
+    if (navigationTargetInfo && localRoutePath.length >= 2) {
+      const startPoint = localRoutePath[navigationTargetInfo.segmentIndex] || navigationTargetPosition;
+      const endPoint = localRoutePath[Math.min((navigationTargetInfo.segmentIndex ?? 0) + 1, localRoutePath.length - 1)] || navigationTargetPosition;
+      return getBearing(startPoint, endPoint);
+    }
+
+    return typeof heading === "number" && !Number.isNaN(heading) ? heading : 0;
+  }, [simulationPosition, localRoutePath, simulationIndex, heading, navigationTargetInfo, navigationTargetPosition]);
+
+  const preferredCenter = useMemo(() => {
+    return displayedUserPosition || navigationTargetPosition || DEFAULT_CENTER;
+  }, [displayedUserPosition, navigationTargetPosition]);
+
+  useEffect(() => {
+    if (!navigationTargetPosition) {
+      displayedUserPositionRef.current = null;
+      setDisplayedUserPosition((prev) => (prev ? null : prev));
+      return undefined;
+    }
+
+    if (markerAnimationFrameRef.current) {
+      window.cancelAnimationFrame(markerAnimationFrameRef.current);
+      markerAnimationFrameRef.current = null;
+    }
+
+    const start = displayedUserPositionRef.current || navigationTargetPosition;
+    const target = navigationTargetPosition;
+
+    if (!displayedUserPositionRef.current) {
+      displayedUserPositionRef.current = target;
+      setDisplayedUserPosition(target);
+      return undefined;
+    }
+
+    if (pointsAlmostEqual(start, target)) {
+      displayedUserPositionRef.current = target;
+      setDisplayedUserPosition((prev) => (pointsAlmostEqual(prev, target) ? prev : target));
+      return undefined;
+    }
+
+    let cancelled = false;
+    const startTime = performance.now();
+    const durationMs = simulationPosition ? 650 : 900;
+
+    const animate = (now) => {
+      if (cancelled) return;
+      const progress = Math.min(1, (now - startTime) / durationMs);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const nextPosition = {
+        lat: start.lat + (target.lat - start.lat) * eased,
+        lng: start.lng + (target.lng - start.lng) * eased,
+      };
+      displayedUserPositionRef.current = nextPosition;
+      setDisplayedUserPosition(nextPosition);
+      if (progress < 1) {
+        markerAnimationFrameRef.current = window.requestAnimationFrame(animate);
+      } else {
+        markerAnimationFrameRef.current = null;
+      }
+    };
+
+    markerAnimationFrameRef.current = window.requestAnimationFrame(animate);
+    return () => {
+      cancelled = true;
+      if (markerAnimationFrameRef.current) {
+        window.cancelAnimationFrame(markerAnimationFrameRef.current);
+        markerAnimationFrameRef.current = null;
+      }
+    };
+  }, [navigationTargetPosition, simulationPosition]);
+
+  useEffect(() => {
+    if (headingAnimationFrameRef.current) {
+      window.cancelAnimationFrame(headingAnimationFrameRef.current);
+      headingAnimationFrameRef.current = null;
+    }
+
+    const targetHeading = Number.isFinite(effectiveHeading) ? effectiveHeading : 0;
+    const startHeading = displayedHeadingRef.current;
+    const normalizeDelta = ((targetHeading - startHeading + 540) % 360) - 180;
+
+    if (Math.abs(normalizeDelta) < 0.5) {
+      displayedHeadingRef.current = targetHeading;
+      setDisplayedHeading(targetHeading);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const startTime = performance.now();
+    const durationMs = 500;
+
+    const animateHeading = (now) => {
+      if (cancelled) return;
+      const progress = Math.min(1, (now - startTime) / durationMs);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const nextHeading = (startHeading + normalizeDelta * eased + 360) % 360;
+      displayedHeadingRef.current = nextHeading;
+      setDisplayedHeading(nextHeading);
+      if (progress < 1) {
+        headingAnimationFrameRef.current = window.requestAnimationFrame(animateHeading);
+      } else {
+        headingAnimationFrameRef.current = null;
+      }
+    };
+
+    headingAnimationFrameRef.current = window.requestAnimationFrame(animateHeading);
+    return () => {
+      cancelled = true;
+      if (headingAnimationFrameRef.current) {
+        window.cancelAnimationFrame(headingAnimationFrameRef.current);
+        headingAnimationFrameRef.current = null;
+      }
+    };
+  }, [effectiveHeading]);
+
+  useEffect(() => {
+    if (typeof onUserPositionChange !== "function") return;
+    if (!displayedUserPosition) {
+      lastEmittedUserPositionRef.current = null;
+      onUserPositionChange(null);
+      return;
+    }
+    if (pointsAlmostEqual(lastEmittedUserPositionRef.current, displayedUserPosition, 0.0000004)) {
+      return;
+    }
+
+    const nextPosition = {
+      lat: displayedUserPosition.lat,
+      lng: displayedUserPosition.lng,
+      latitude: displayedUserPosition.lat,
+      longitude: displayedUserPosition.lng,
+    };
+    lastEmittedUserPositionRef.current = nextPosition;
+    onUserPositionChange(nextPosition);
+  }, [displayedUserPosition, onUserPositionChange]);
 
   const prevBoundsKeyRef = useRef("");
   const routeRequestedRef = useRef("");
@@ -127,43 +410,25 @@ export default function DrivingMap({
     return Number.isFinite(parsedIndex) && parsedIndex >= 0 ? parsedIndex : 0;
   }, [selectedRouteId]);
 
-  // Fit bounds to cover user location, destination, and all restaurants ahead
+  // Keep navigation view road-focused instead of zooming out to full route bounds.
   const fitMapBounds = useCallback(() => {
-    if (!mapRef.current || !window.google?.maps) return;
+    if (!mapRef.current) return;
 
-    const bounds = new window.google.maps.LatLngBounds();
-    let count = 0;
-
-    if (effectiveUserPosition) {
-      bounds.extend(effectiveUserPosition);
-      count++;
+    if (displayedUserPosition || navigationTargetPosition) {
+      const focusCenter = getNavigationCameraCenter(displayedUserPosition || navigationTargetPosition, displayedHeadingRef.current);
+      mapCenterRef.current = focusCenter;
+      mapRef.current.setCenter(focusCenter);
+      mapRef.current.setZoom(16);
+      return;
     }
 
     if (hasDestLocation) {
-      bounds.extend({ lat: destLat, lng: destLng });
-      count++;
-    }
-
-    (restaurants || []).forEach((r) => {
-      const loc = r.location;
-      const rlat = typeof loc?.latitude === "number" ? loc.latitude
-        : (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null);
-      const rlng = typeof loc?.longitude === "number" ? loc.longitude
-        : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
-
-      if (rlat && rlng) {
-        bounds.extend({ lat: rlat, lng: rlng });
-        count++;
-      }
-    });
-
-    if (count >= 2) {
-      mapRef.current.fitBounds(bounds, 80); // padding of 80px
-    } else if (effectiveUserPosition) {
-      mapRef.current.setCenter(center);
+      const destinationCenter = { lat: destLat, lng: destLng };
+      mapCenterRef.current = destinationCenter;
+      mapRef.current.setCenter(destinationCenter);
       mapRef.current.setZoom(14);
     }
-  }, [effectiveUserPosition, hasDestLocation, destLat, destLng, (restaurants || []).length, center]);
+  }, [displayedUserPosition, navigationTargetPosition, hasDestLocation, destLat, destLng]);
 
   const onLoad = useCallback((map) => {
     mapRef.current = map;
@@ -171,6 +436,19 @@ export default function DrivingMap({
   }, [fitMapBounds]);
 
   const onUnmount = useCallback(() => {
+    if (markerAnimationFrameRef.current) {
+      window.cancelAnimationFrame(markerAnimationFrameRef.current);
+      markerAnimationFrameRef.current = null;
+    }
+    if (headingAnimationFrameRef.current) {
+      window.cancelAnimationFrame(headingAnimationFrameRef.current);
+      headingAnimationFrameRef.current = null;
+    }
+    if (mapFollowAnimationFrameRef.current) {
+      window.cancelAnimationFrame(mapFollowAnimationFrameRef.current);
+      mapFollowAnimationFrameRef.current = null;
+    }
+    displayedUserPositionRef.current = null;
     mapRef.current = null;
   }, []);
 
@@ -179,9 +457,13 @@ export default function DrivingMap({
       if (e.stopPropagation) e.stopPropagation();
     }
 
+    setIsFollowingUser(true);
+
     if (mapRef.current) {
-      if (effectiveUserPosition) {
-        mapRef.current.panTo(effectiveUserPosition);
+      if (displayedUserPosition || navigationTargetPosition) {
+        const nextCenter = getNavigationCameraCenter(displayedUserPosition || navigationTargetPosition, displayedHeadingRef.current);
+        mapCenterRef.current = nextCenter;
+        mapRef.current.setCenter(nextCenter);
         mapRef.current.setZoom(16);
       }
     }
@@ -190,7 +472,9 @@ export default function DrivingMap({
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           if (pos?.coords && mapRef.current) {
-            mapRef.current.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            const gpsCenter = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            mapCenterRef.current = gpsCenter;
+            mapRef.current.setCenter(gpsCenter);
             mapRef.current.setZoom(16);
           }
         },
@@ -198,7 +482,7 @@ export default function DrivingMap({
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     }
-  }, [effectiveUserPosition]);
+  }, [displayedUserPosition, navigationTargetPosition]);
 
   // Fetch navigation path via Google Directions Service so the visible route follows actual roads.
   useEffect(() => {
@@ -386,15 +670,16 @@ export default function DrivingMap({
     onRouteCalculated
   ]);
 
-  // Fit bounds ONLY when destination or restaurants length actually changes (prevents continuous GetViewportInfo loops)
+  // Fit bounds when route context changes, not on every user position update.
   useEffect(() => {
     if (!isLoaded || !mapRef.current) return;
-    const currentKey = `${destLat || ""}_${destLng || ""}_${(restaurants || []).length}`;
+    const currentKey = `${destLat || ""}_${destLng || ""}_${(restaurants || []).length}_${selectedRouteId || ""}`;
     if (currentKey !== prevBoundsKeyRef.current) {
       prevBoundsKeyRef.current = currentKey;
+      hasAutoFittedBoundsRef.current = true;
       fitMapBounds();
     }
-  }, [isLoaded, destLat, destLng, restaurants?.length, fitMapBounds]);
+  }, [isLoaded, destLat, destLng, restaurants?.length, fitMapBounds, selectedRouteId]);
 
 
   useEffect(() => {
@@ -426,18 +711,75 @@ export default function DrivingMap({
 
   useEffect(() => {
     if (!mapRef.current || !isRotationEnabled) return;
-    mapRef.current.setHeading(effectiveHeading || 0);
+    mapRef.current.setHeading(displayedHeading || 0);
     mapRef.current.setTilt(45);
-  }, [isRotationEnabled, effectiveHeading]);
+  }, [isRotationEnabled, displayedHeading]);
 
   useEffect(() => {
-    if (!mapRef.current || !simulationPosition) return;
-    mapRef.current.panTo(simulationPosition);
+    if (!mapRef.current) return undefined;
+
+    if (mapFollowAnimationFrameRef.current) {
+      window.cancelAnimationFrame(mapFollowAnimationFrameRef.current);
+      mapFollowAnimationFrameRef.current = null;
+    }
+
+    if (!isFollowingUser || !navigationTargetPosition) {
+      if (isRotationEnabled) {
+        mapRef.current.setHeading(displayedHeadingRef.current || 0);
+        mapRef.current.setTilt(45);
+      }
+      return undefined;
+    }
+
+    const startCenter = mapCenterRef.current || getNavigationCameraCenter(navigationTargetPosition, displayedHeadingRef.current);
+    const targetCenter = getNavigationCameraCenter(navigationTargetPosition, displayedHeadingRef.current);
+
+    if (pointsAlmostEqual(startCenter, targetCenter)) {
+      mapCenterRef.current = targetCenter;
+      mapRef.current.setCenter(targetCenter);
+      if (isRotationEnabled) {
+        mapRef.current.setHeading(displayedHeadingRef.current || 0);
+        mapRef.current.setTilt(45);
+      }
+      return undefined;
+    }
+
+    let cancelled = false;
+    const startTime = performance.now();
+    const durationMs = simulationPosition ? 1200 : 950;
+
+    const animateMap = (now) => {
+      if (cancelled || !mapRef.current) return;
+      const progress = Math.min(1, (now - startTime) / durationMs);
+      const eased = 1 - Math.pow(1 - progress, 2.1);
+      const nextCenter = {
+        lat: startCenter.lat + (targetCenter.lat - startCenter.lat) * eased,
+        lng: startCenter.lng + (targetCenter.lng - startCenter.lng) * eased,
+      };
+      mapCenterRef.current = nextCenter;
+      mapRef.current.setCenter(nextCenter);
+      if (progress < 1) {
+        mapFollowAnimationFrameRef.current = window.requestAnimationFrame(animateMap);
+      } else {
+        mapFollowAnimationFrameRef.current = null;
+      }
+    };
+
+    mapFollowAnimationFrameRef.current = window.requestAnimationFrame(animateMap);
+
     if (isRotationEnabled) {
-      mapRef.current.setHeading(effectiveHeading || 0);
+      mapRef.current.setHeading(displayedHeadingRef.current || 0);
       mapRef.current.setTilt(45);
     }
-  }, [simulationPosition, isRotationEnabled, effectiveHeading]);
+
+    return () => {
+      cancelled = true;
+      if (mapFollowAnimationFrameRef.current) {
+        window.cancelAnimationFrame(mapFollowAnimationFrameRef.current);
+        mapFollowAnimationFrameRef.current = null;
+      }
+    };
+  }, [navigationTargetPosition, simulationPosition, isFollowingUser, isRotationEnabled]);
 
   const handleToggleRotation = useCallback(() => {
     setIsRotationEnabled((prev) => {
@@ -458,6 +800,10 @@ export default function DrivingMap({
       }
       return prev;
     });
+    if (!isSimulationRunning) {
+      setIsFollowingUser(true);
+      setIsRotationEnabled(true);
+    }
     setIsSimulationRunning((prev) => !prev);
   }, [isSimulationRunning, localRoutePath]);
 
@@ -476,10 +822,11 @@ export default function DrivingMap({
     <div className="relative w-full h-full">
       <GoogleMap
         mapContainerStyle={MAP_CONTAINER_STYLE}
-        center={center}
+        defaultCenter={DEFAULT_CENTER}
         zoom={14}
         onLoad={onLoad}
         onUnmount={onUnmount}
+        onDragStart={() => setIsFollowingUser(false)}
         options={{
           streetViewControl: false,
           mapTypeControl: false,
@@ -556,9 +903,9 @@ export default function DrivingMap({
         })}
 
         {/* Active Route Polyline */}
-        {localRoutePath.length >= 2 && (
+        {visibleRoutePath.length >= 2 && (
           <Polyline
-            path={localRoutePath}
+            path={visibleRoutePath}
             options={{
               strokeColor: "#0284c7",
               strokeOpacity: 0.95,
@@ -570,28 +917,28 @@ export default function DrivingMap({
         )}
 
         {/* User Location Halo (Round White Circle around cursor like Google Maps) */}
-        {effectiveUserPosition && (
+        {(displayedUserPosition || navigationTargetPosition) && (
           <Marker
-            position={effectiveUserPosition}
+            position={displayedUserPosition || navigationTargetPosition}
             options={{
               icon: {
                 path: window.google?.maps?.SymbolPath?.CIRCLE,
-                scale: 18,
+                scale: 20,
                 fillColor: "#ffffff",
-                fillOpacity: 0.95,
-                strokeColor: "#0284c7",
-                strokeWeight: 2.5,
+                fillOpacity: 0.22,
+                strokeColor: "#0ea5e9",
+                strokeWeight: 1.5,
               },
               clickable: false,
-              zIndex: 99,
+              zIndex: 98,
             }}
           />
         )}
 
-        {/* User Location Marker (Navigation Arrow with GPS Heading Rotation) */}
-        {effectiveUserPosition && (
+        {/* User Location Marker (Navigation Arrow with smooth rotation) */}
+        {(displayedUserPosition || navigationTargetPosition) && (
           <Marker
-            position={effectiveUserPosition}
+            position={displayedUserPosition || navigationTargetPosition}
             options={{
               icon: {
                 path: "M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z",
@@ -600,7 +947,7 @@ export default function DrivingMap({
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
                 strokeWeight: 1.5,
-                rotation: effectiveHeading || 0,
+                rotation: displayedHeading || 0,
                 anchor: window.google?.maps ? new window.google.maps.Point(12, 12) : null,
               },
               title: "Your Location",

@@ -10,6 +10,7 @@ const MAP_CONTAINER_STYLE = {
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
 const GOOGLE_MAPS_LIBRARIES = ["geometry", "drawing", "places"];
 const ALT_ROUTE_STROKE = "#9ca3af";
+const NAVIGATION_ZOOM = 12;
 const MUTED_MAP_STYLES = [
   {
     featureType: "all",
@@ -240,6 +241,30 @@ function buildRemainingRoutePath(path = [], snapInfo) {
   }
 
   return remainingPath;
+}
+
+function fitFullRouteOverview(map, path = [], fallbackPoints = []) {
+  if (!map || !window.google?.maps?.LatLngBounds) return false;
+
+  const bounds = new window.google.maps.LatLngBounds();
+  let pointCount = 0;
+
+  path.forEach((point) => {
+    if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
+    bounds.extend(point);
+    pointCount += 1;
+  });
+
+  fallbackPoints.forEach((point) => {
+    if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
+    bounds.extend(point);
+    pointCount += 1;
+  });
+
+  if (!pointCount) return false;
+
+  map.fitBounds(bounds, 96);
+  return true;
 }
 
 export default function DrivingMap({
@@ -491,25 +516,39 @@ export default function DrivingMap({
     return Number.isFinite(parsedIndex) && parsedIndex >= 0 ? parsedIndex : 0;
   }, [selectedRouteId]);
 
-  // Keep navigation view road-focused instead of zooming out to full route bounds.
+  // Switch between follow-camera navigation and full trip overview.
   const fitMapBounds = useCallback(() => {
     if (!mapRef.current) return;
 
-    if (displayedUserPosition || navigationTargetPosition) {
+    if (isFollowingUser && (displayedUserPosition || navigationTargetPosition)) {
       const focusCenter = getNavigationCameraCenter(displayedUserPosition || navigationTargetPosition, displayedHeadingRef.current);
       mapCenterRef.current = focusCenter;
       mapRef.current.setCenter(focusCenter);
-      mapRef.current.setZoom(16);
+      mapRef.current.setZoom(NAVIGATION_ZOOM);
+      mapRef.current.setHeading(displayedHeadingRef.current || 0);
+      mapRef.current.setTilt(0);
       return;
     }
 
+    const fallbackPoints = [];
+    if (hasUserLocation) {
+      fallbackPoints.push({ lat: userLat, lng: userLng });
+    }
     if (hasDestLocation) {
+      fallbackPoints.push({ lat: destLat, lng: destLng });
+    }
+
+    const overviewApplied = fitFullRouteOverview(mapRef.current, localRoutePath, fallbackPoints);
+    if (!overviewApplied && hasDestLocation) {
       const destinationCenter = { lat: destLat, lng: destLng };
       mapCenterRef.current = destinationCenter;
       mapRef.current.setCenter(destinationCenter);
-      mapRef.current.setZoom(14);
+      mapRef.current.setZoom(9);
     }
-  }, [displayedUserPosition, navigationTargetPosition, hasDestLocation, destLat, destLng]);
+
+    mapRef.current.setHeading(0);
+    mapRef.current.setTilt(0);
+  }, [isFollowingUser, displayedUserPosition, navigationTargetPosition, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, localRoutePath]);
 
   const onLoad = useCallback((map) => {
     mapRef.current = map;
@@ -546,7 +585,7 @@ export default function DrivingMap({
         const nextCenter = getNavigationCameraCenter(displayedUserPosition || navigationTargetPosition, displayedHeadingRef.current);
         mapCenterRef.current = nextCenter;
         mapRef.current.setCenter(nextCenter);
-        mapRef.current.setZoom(16);
+        mapRef.current.setZoom(NAVIGATION_ZOOM);
       }
     }
 
@@ -557,7 +596,7 @@ export default function DrivingMap({
             const gpsCenter = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             mapCenterRef.current = gpsCenter;
             mapRef.current.setCenter(gpsCenter);
-            mapRef.current.setZoom(16);
+            mapRef.current.setZoom(NAVIGATION_ZOOM);
           }
         },
         (err) => console.warn("GPS locate error:", err),
@@ -864,23 +903,45 @@ export default function DrivingMap({
   }, [navigationTargetPosition, simulationPosition, isFollowingUser, isRotationEnabled]);
 
   const handleToggleNavigationMode = useCallback(() => {
-    setIsFollowingUser(true);
-    setIsRotationEnabled(true);
+    const nextMode = !isFollowingUser;
+    setIsFollowingUser(nextMode);
+    setIsRotationEnabled(nextMode);
 
     if (!mapRef.current) return;
 
-    const focusPoint = displayedUserPositionRef.current || navigationTargetPosition;
-    const focusHeading = displayedHeadingRef.current || effectiveHeading || 0;
-    if (focusPoint) {
-      const nextCenter = getNavigationCameraCenter(focusPoint, focusHeading);
-      mapCenterRef.current = nextCenter;
-      mapRef.current.setCenter(nextCenter);
-      mapRef.current.setZoom(16);
+    if (nextMode) {
+      const focusPoint = displayedUserPositionRef.current || displayedUserPosition || navigationTargetPosition;
+      const focusHeading = displayedHeadingRef.current || effectiveHeading || 0;
+      if (focusPoint) {
+        const nextCenter = getNavigationCameraCenter(focusPoint, focusHeading);
+        mapCenterRef.current = nextCenter;
+        mapRef.current.setCenter(nextCenter);
+        mapRef.current.setZoom(NAVIGATION_ZOOM);
+      }
+      mapRef.current.setHeading(focusHeading);
+      mapRef.current.setTilt(0);
+      return;
     }
 
-    mapRef.current.setHeading(focusHeading);
+    const fallbackPoints = [];
+    if (hasUserLocation) {
+      fallbackPoints.push({ lat: userLat, lng: userLng });
+    }
+    if (hasDestLocation) {
+      fallbackPoints.push({ lat: destLat, lng: destLng });
+    }
+
+    const overviewApplied = fitFullRouteOverview(mapRef.current, localRoutePath, fallbackPoints);
+    if (!overviewApplied && hasDestLocation) {
+      const destinationCenter = { lat: destLat, lng: destLng };
+      mapCenterRef.current = destinationCenter;
+      mapRef.current.setCenter(destinationCenter);
+      mapRef.current.setZoom(9);
+    }
+
+    mapRef.current.setHeading(0);
     mapRef.current.setTilt(0);
-  }, [navigationTargetPosition, effectiveHeading]);
+  }, [isFollowingUser, displayedUserPosition, navigationTargetPosition, effectiveHeading, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, localRoutePath]);
 
   const handleToggleSimulation = useCallback(() => {
     if (localRoutePath.length < 2) return;
@@ -916,7 +977,7 @@ export default function DrivingMap({
         zoom={14}
         onLoad={onLoad}
         onUnmount={onUnmount}
-        onDragStart={() => { setIsFollowingUser(false); setIsRotationEnabled(false); }}
+
         options={{
           streetViewControl: false,
           mapTypeControl: false,
@@ -1126,7 +1187,7 @@ export default function DrivingMap({
             ? "border-orange-300 bg-orange-500 text-white"
             : "border-gray-200/80 bg-white text-gray-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white"
             }`}
-          title="Recenter navigation"
+          title={isFollowingUser ? "Navigation on" : "Navigation off"}
         >
           <Navigation className="h-4 w-4" />
         </button>

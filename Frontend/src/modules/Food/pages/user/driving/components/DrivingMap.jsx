@@ -10,7 +10,7 @@ const MAP_CONTAINER_STYLE = {
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
 const GOOGLE_MAPS_LIBRARIES = ["geometry", "drawing", "places"];
 const ALT_ROUTE_STROKE = "#9ca3af";
-const NAVIGATION_ZOOM = 12;
+const NAVIGATION_ZOOM = 11;
 const MUTED_MAP_STYLES = [
   {
     featureType: "all",
@@ -162,8 +162,10 @@ function offsetLatLng(point, headingDeg = 0, distanceMeters = 0) {
 
 function getNavigationCameraCenter(point, headingDeg = 0) {
   if (!point) return point;
+
   const cameraHeading = Number.isFinite(headingDeg) ? headingDeg : 0;
-  return offsetLatLng(point, cameraHeading, 180);
+  const aheadPoint = offsetLatLng(point, cameraHeading, 240);
+  return offsetLatLng(aheadPoint, cameraHeading + 90, 110);
 }
 
 function pointsAlmostEqual(a, b, tolerance = 0.000001) {

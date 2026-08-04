@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import useRestaurantBackNavigation from "@food/hooks/useRestaurantBackNavigation"
 import Lenis from "lenis"
@@ -121,6 +121,69 @@ const ACCOUNT_HOLDER_NAME_REGEX = /^[A-Za-z ]+$/
 const GST_LEGAL_NAME_REGEX = /^[A-Za-z ]+$/
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const normalizePincode = (value) => String(value || "").replace(/\D/g, "").slice(0, 6)
+
+const isGoogleMapsUrl = (urlString = "") => {
+  try {
+    const url = new URL(urlString)
+    const host = url.hostname.replace(/^www\./, "")
+    const path = url.pathname || ""
+    return (
+      host === "google.com" ||
+      host.endsWith("google.com") ||
+      host === "maps.app.goo.gl" ||
+      (host === "goo.gl" && path.startsWith("/maps"))
+    )
+  } catch {
+    return false
+  }
+}
+
+const extractCoordsFromUrl = (url) => {
+  const atMatch = url.match(/@(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/)
+  if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
+
+  const match3d = url.match(/!3d(-?\d+\.\d+)/)
+  const match4d = url.match(/!4d(-?\d+\.\d+)/)
+  const match2d = url.match(/!2d(-?\d+\.\d+)/)
+  if (match3d && (match4d || match2d)) {
+    return { lat: parseFloat(match3d[1]), lng: parseFloat(match4d ? match4d[1] : match2d[1]) }
+  }
+
+  try {
+    const urlObj = new URL(url)
+    const q = urlObj.searchParams.get("q") || urlObj.searchParams.get("query")
+    if (q) {
+      const qMatch = q.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/)
+      if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) }
+    }
+  } catch {}
+
+  const generalMatch = url.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/)
+  if (generalMatch) {
+    const lat = parseFloat(generalMatch[1])
+    const lng = parseFloat(generalMatch[2])
+    if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return { lat, lng }
+  }
+
+  return null
+}
+
+const extractPlaceNameFromUrl = (url) => {
+  const placeNameMatch = url.match(/\/place\/([^/]+)/)
+  if (placeNameMatch && placeNameMatch[1]) {
+    const segment = placeNameMatch[1]
+    if (!segment.match(/^-?\d+\.\d+,\s*-?\d+\.\d+$/)) {
+      try {
+        return decodeURIComponent(segment.replace(/\+/g, " "))
+      } catch {
+        return segment.replace(/\+/g, " ")
+      }
+    }
+  }
+  return ""
+}
+
 const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 const ALL_CUISINES = [
@@ -179,6 +242,23 @@ const parseGoogleAddressComponents = (components = []) => {
   }
 }
 
+
+const buildFallbackAddress = (location = {}, apiData = {}) => {
+  const parts = [
+    location.addressLine1,
+    location.addressLine2,
+    location.area || apiData.area,
+    location.city || apiData.city,
+    location.state || apiData.state,
+    location.pincode || apiData.pincode,
+    location.landmark,
+  ]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+
+  return parts.join(", ")
+}
+
 async function loadGooglePlaces() {
   if (window.google?.maps?.places?.Autocomplete) return true
   const apiKey = await getGoogleMapsApiKey()
@@ -222,6 +302,7 @@ export default function EditOwner() {
   const TABS = [
     { id: "owner", label: "Owner Details", icon: User },
     { id: "restaurant", label: "Restaurant Info", icon: Building },
+    { id: "address", label: "Address", icon: MapPin },
     { id: "kyc", label: "Bank & KYC", icon: CreditCard },
     { id: "docs", label: "FSSAI & Docs", icon: FileText },
   ]
@@ -239,6 +320,7 @@ export default function EditOwner() {
     restaurantName: "",
     pureVegRestaurant: false,
     primaryContactNumber: "",
+    locationSource: "google_places",
 
     location: {
       placeId: "",
@@ -302,8 +384,17 @@ export default function EditOwner() {
   })
   const [isRoadNameDirty, setIsRoadNameDirty] = useState(false)
   const [isMapsSdkReady, setIsMapsSdkReady] = useState(() => Boolean(window.google?.maps))
+  const [locationSearchValue, setLocationSearchValue] = useState("")
+  const [locationPredictions, setLocationPredictions] = useState([])
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false)
+  const [mapsLinkValue, setMapsLinkValue] = useState("")
+  const [isProcessingLink, setIsProcessingLink] = useState(false)
+  const [isGoogleMapsValid, setIsGoogleMapsValid] = useState(true)
   const locationSearchInputRef = useRef(null)
   const placesAutocompleteRef = useRef(null)
+  const autocompleteServiceRef = useRef(null)
+  const placesServiceRef = useRef(null)
+  const isPlaceSelectedRef = useRef(false)
   const pinMapContainerRef = useRef(null)
   const pinMapRef = useRef(null)
   const pinMarkerRef = useRef(null)
@@ -340,8 +431,14 @@ export default function EditOwner() {
         const apiData = response?.data?.data?.restaurant || response?.data?.restaurant
 
         if (apiData) {
-          // Backend returns flat fields via toRestaurantProfile() mapper
-          const loc = apiData.location || {}
+          // Backend can return location in flat profile fields or onboarding step data.
+          const onboardingLocation = apiData.onboarding?.step1?.location || {}
+          const originalLocation = apiData.originalData?.location || {}
+          const loc = apiData.location || onboardingLocation || originalLocation || {}
+          const fallbackFormattedAddress = loc.formattedAddress || loc.address || apiData.address || buildFallbackAddress(loc, apiData) || buildFallbackAddress(onboardingLocation, apiData) || ""
+          const fallbackAddressLine1 = loc.addressLine1 || onboardingLocation.addressLine1 || originalLocation.addressLine1 || fallbackFormattedAddress || apiData.addressLine1 || apiData.address || ""
+          const fallbackLatitude = loc.latitude ?? onboardingLocation.latitude ?? originalLocation.latitude ?? (Array.isArray(loc.coordinates) ? loc.coordinates[1] : "")
+          const fallbackLongitude = loc.longitude ?? onboardingLocation.longitude ?? originalLocation.longitude ?? (Array.isArray(loc.coordinates) ? loc.coordinates[0] : "")
 
           // Helper to extract URL from image field (can be string URL or {url, publicId} object)
           const toImgUrl = (field) => {
@@ -365,20 +462,21 @@ export default function EditOwner() {
             restaurantName: apiData.restaurantName || apiData.name || "",
             pureVegRestaurant: Boolean(apiData.pureVegRestaurant),
             primaryContactNumber: (apiData.primaryContactNumber || "").replace(/\D/g, "").slice(-10),
+            locationSource: apiData.locationSource || "google_places",
 
             location: {
-              placeId: loc.placeId || "",
-              formattedAddress: loc.formattedAddress || loc.address || "",
-              addressLine1: loc.addressLine1 || "",
-              addressLine2: loc.addressLine2 || "",
-              area: loc.area || "",
-              city: loc.city || "Indore",
-              state: loc.state || "Madhya Pradesh",
-              pincode: loc.pincode || "",
-              landmark: loc.landmark || "",
-              roadName: loc.roadName || "",
-              latitude: loc.latitude ?? (Array.isArray(loc.coordinates) ? loc.coordinates[1] : ""),
-              longitude: loc.longitude ?? (Array.isArray(loc.coordinates) ? loc.coordinates[0] : ""),
+              placeId: loc.placeId || onboardingLocation.placeId || originalLocation.placeId || "",
+              formattedAddress: fallbackFormattedAddress,
+              addressLine1: fallbackAddressLine1,
+              addressLine2: loc.addressLine2 || onboardingLocation.addressLine2 || originalLocation.addressLine2 || "",
+              area: loc.area || onboardingLocation.area || originalLocation.area || apiData.area || "",
+              city: loc.city || onboardingLocation.city || originalLocation.city || apiData.city || "Indore",
+              state: loc.state || onboardingLocation.state || originalLocation.state || apiData.state || "Madhya Pradesh",
+              pincode: loc.pincode || onboardingLocation.pincode || originalLocation.pincode || apiData.pincode || "",
+              landmark: loc.landmark || onboardingLocation.landmark || originalLocation.landmark || "",
+              roadName: loc.roadName || onboardingLocation.roadName || originalLocation.roadName || "",
+              latitude: fallbackLatitude,
+              longitude: fallbackLongitude,
             },
             cuisines: Array.isArray(apiData.cuisines) 
               ? apiData.cuisines.flatMap(c => typeof c === "string" ? c.split(",").map(s => s.trim()) : c).map(c => ALL_CUISINES.find(ac => ac.toLowerCase() === String(c).toLowerCase()) || c) 
@@ -410,6 +508,7 @@ export default function EditOwner() {
           }
 
           setFormData(mappedData)
+          setLocationSearchValue(fallbackFormattedAddress || fallbackAddressLine1 || "")
           setInitialData(JSON.parse(JSON.stringify(mappedData))) // deep copy
         }
       } catch (err) {
@@ -424,54 +523,28 @@ export default function EditOwner() {
   }, [])
 
   useEffect(() => {
-    if (!locationSearchInputRef.current) return
-    if (placesAutocompleteRef.current) return
-
     let cancelled = false
+
     const init = async () => {
       setLocationError("")
       try {
         const loaded = await loadGooglePlaces()
         if (cancelled) return
-        if (!loaded || !window.google?.maps?.places?.Autocomplete) {
+        if (!loaded || !window.google?.maps?.places) {
           setLocationError("Unable to load Google Places Autocomplete.")
           return
         }
+
         setIsMapsSdkReady(true)
 
-        placesAutocompleteRef.current = new window.google.maps.places.Autocomplete(
-          locationSearchInputRef.current,
-          {
-            fields: ["formatted_address", "address_components", "geometry", "place_id"],
-            componentRestrictions: { country: "in" },
-          }
-        )
+        if (!autocompleteServiceRef.current && window.google?.maps?.places?.AutocompleteService) {
+          autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService()
+        }
 
-        placesAutocompleteRef.current.addListener("place_changed", () => {
-          const place = placesAutocompleteRef.current.getPlace()
-          const formattedAddress = place?.formatted_address || ""
-          const parsedAddress = parseGoogleAddressComponents(place?.address_components || [])
-          const lat = place?.geometry?.location?.lat?.()
-          const lng = place?.geometry?.location?.lng?.()
-
-          setFormData((prev) => ({
-            ...prev,
-            location: {
-              ...prev.location,
-              formattedAddress: formattedAddress || prev.location.formattedAddress,
-              addressLine1: formattedAddress || prev.location.addressLine1,
-              area: parsedAddress.area || prev.location.area,
-              city: parsedAddress.city || prev.location.city,
-              state: parsedAddress.state || prev.location.state,
-              pincode: parsedAddress.pincode || prev.location.pincode,
-              roadName: parsedAddress.roadName || prev.location.roadName || "",
-              placeId: place?.place_id || prev.location.placeId || "",
-              latitude: Number.isFinite(lat) ? Number(lat.toFixed(6)) : prev.location.latitude,
-              longitude: Number.isFinite(lng) ? Number(lng.toFixed(6)) : prev.location.longitude,
-            },
-          }))
-          setIsRoadNameDirty(false)
-        })
+        if (!placesServiceRef.current && window.google?.maps?.places?.PlacesService) {
+          const serviceHost = document.createElement("div")
+          placesServiceRef.current = new window.google.maps.places.PlacesService(serviceHost)
+        }
       } catch {
         if (!cancelled) {
           setLocationError("Unable to load Google Places Autocomplete.")
@@ -479,12 +552,62 @@ export default function EditOwner() {
       }
     }
 
-    requestAnimationFrame(init)
+    init().catch(() => {})
+
     return () => {
       cancelled = true
-      placesAutocompleteRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    if (!isMapsSdkReady || !autocompleteServiceRef.current) {
+      setLocationPredictions([])
+      setIsSearchingLocation(false)
+      return
+    }
+
+    if (isPlaceSelectedRef.current) {
+      setLocationPredictions([])
+      setIsSearchingLocation(false)
+      return
+    }
+
+    const query = String(locationSearchValue || "").trim()
+    if (query.length < 3) {
+      setLocationPredictions([])
+      setIsSearchingLocation(false)
+      return
+    }
+
+    let cancelled = false
+    setIsSearchingLocation(true)
+
+    const timerId = window.setTimeout(() => {
+      autocompleteServiceRef.current?.getPlacePredictions(
+        {
+          input: query,
+          componentRestrictions: { country: "in" },
+          types: ["geocode", "establishment"],
+        },
+        (predictions, status) => {
+          if (cancelled) return
+
+          const okStatus = window.google?.maps?.places?.PlacesServiceStatus?.OK
+          if (status === okStatus && Array.isArray(predictions)) {
+            setLocationPredictions(predictions.slice(0, 5))
+          } else {
+            setLocationPredictions([])
+          }
+          setIsSearchingLocation(false)
+        }
+      )
+    }, 180)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timerId)
+    }
+  }, [locationSearchValue, isMapsSdkReady])
 
   useEffect(() => {
     if (window.google?.maps && !isMapsSdkReady) {
@@ -495,9 +618,8 @@ export default function EditOwner() {
   useEffect(() => {
     const lat = Number(formData.location?.latitude)
     const lng = Number(formData.location?.longitude)
-    const address = formData.location?.formattedAddress || formData.location?.addressLine1 || ""
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !address.trim()) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       setHighwayInfo({
         loading: false,
         status: null,
@@ -557,7 +679,7 @@ export default function EditOwner() {
     return () => {
       cancelled = true
     }
-  }, [formData.location?.latitude, formData.location?.longitude, formData.location?.formattedAddress, formData.location?.addressLine1])
+  }, [formData.location?.latitude, formData.location?.longitude])
 
   const autoDetectedRoadLabel = (() => {
     if (highwayInfo.highwayRef) {
@@ -682,7 +804,7 @@ export default function EditOwner() {
   }, [formData.location?.latitude, formData.location?.longitude, isMapsSdkReady])
 
   // Check for unsaved changes
-  const hasChanges = initialData ? JSON.stringify(formData) !== JSON.stringify(initialData) : false
+  const hasChanges = useMemo(() => (initialData ? JSON.stringify(formData) !== JSON.stringify(initialData) : false), [formData, initialData])
 
   // Field change helpers
   const handleInputChange = (field, value) => {
@@ -700,6 +822,170 @@ export default function EditOwner() {
         [field]: value,
       },
     }))
+  }
+
+  const handleLocationPredictionSelect = (prediction) => {
+    if (!prediction?.place_id || !placesServiceRef.current) return
+
+    isPlaceSelectedRef.current = true
+    setLocationSearchValue(prediction.description || "")
+    setLocationPredictions([])
+    setIsSearchingLocation(false)
+
+    placesServiceRef.current.getDetails(
+      {
+        placeId: prediction.place_id,
+        fields: ["formatted_address", "address_components", "geometry", "place_id"],
+      },
+      (place, status) => {
+        const okStatus = window.google?.maps?.places?.PlacesServiceStatus?.OK
+        if (status !== okStatus || !place?.geometry) {
+          return
+        }
+
+        const formattedAddress = place?.formatted_address || prediction.description || ""
+        const parsedAddress = parseGoogleAddressComponents(place?.address_components || [])
+        const lat = place?.geometry?.location?.lat?.()
+        const lng = place?.geometry?.location?.lng?.()
+
+        setFormData((prev) => ({
+          ...prev,
+          location: {
+            ...prev.location,
+            formattedAddress: formattedAddress || prev.location.formattedAddress,
+            addressLine1: formattedAddress || prev.location.addressLine1,
+            area: parsedAddress.area || prev.location.area,
+            city: parsedAddress.city || prev.location.city,
+            state: parsedAddress.state || prev.location.state,
+            pincode: parsedAddress.pincode || prev.location.pincode,
+            roadName: parsedAddress.roadName || prev.location.roadName || "",
+            placeId: place?.place_id || prev.location.placeId || "",
+            latitude: Number.isFinite(lat) ? Number(lat.toFixed(6)) : prev.location.latitude,
+            longitude: Number.isFinite(lng) ? Number(lng.toFixed(6)) : prev.location.longitude,
+          },
+        }))
+        setIsRoadNameDirty(false)
+      }
+    )
+  }
+
+  const handleMapsLinkChange = async (e) => {
+    const value = e.target.value
+    setMapsLinkValue(value)
+    if (!value.trim()) return
+
+    let urlStr = value.trim()
+    if (!/^https?:\/\//i.test(urlStr)) {
+      urlStr = `https://${urlStr}`
+    }
+
+    if (!isGoogleMapsUrl(urlStr)) {
+      toast.error("Invalid Google Maps link. Please enter a valid Google Maps URL.")
+      return
+    }
+
+    setIsProcessingLink(true)
+    try {
+      let resolvedUrl = urlStr
+      let backendData = null
+      const response = await restaurantAPI.resolveMapsLink({ url: urlStr, link: urlStr })
+      if (response?.data?.success) {
+        if (response?.data?.url) resolvedUrl = response.data.url
+        if (response?.data?.data) backendData = response.data.data
+      }
+
+      let lat = backendData?.lat || backendData?.latitude
+      let lng = backendData?.lng || backendData?.longitude
+
+      if (!lat || !lng) {
+        const coords = extractCoordsFromUrl(resolvedUrl)
+        if (coords) {
+          lat = coords.lat
+          lng = coords.lng
+        }
+      }
+
+      if (!lat || !lng) {
+        toast.error("Unable to detect location from this link.")
+        return
+      }
+
+      const applyLocationData = (locDetails) => {
+        const extractedPlaceName = extractPlaceNameFromUrl(resolvedUrl)
+        setFormData((prev) => ({
+          ...prev,
+          restaurantName: extractedPlaceName || prev.restaurantName,
+          locationSource: "google_maps_link",
+          location: {
+            ...prev.location,
+            formattedAddress: locDetails.formattedAddress || prev.location.formattedAddress,
+            addressLine1: locDetails.formattedAddress || prev.location.addressLine1 || "",
+            area: locDetails.area || prev.location.area,
+            city: locDetails.city || prev.location.city,
+            state: locDetails.state || prev.location.state,
+            pincode: locDetails.pincode || prev.location.pincode,
+            roadName: locDetails.roadName || prev.location.roadName || "",
+            latitude: lat,
+            longitude: lng,
+            placeId: locDetails.placeId || prev.location.placeId || "",
+          },
+        }))
+
+        setLocationSearchValue(locDetails.formattedAddress || "")
+        setIsRoadNameDirty(false)
+        toast.success("Location details populated from Google Maps link")
+      }
+
+      if (backendData?.formattedAddress) {
+        applyLocationData(backendData)
+      } else if (window.google?.maps?.Geocoder) {
+        const geocoder = new window.google.maps.Geocoder()
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          if (status === "OK" && results?.[0]) {
+            const place = results[0]
+            const parsedAddress = parseGoogleAddressComponents(place?.address_components || [])
+            applyLocationData({
+              formattedAddress: place.formatted_address || "",
+              area: parsedAddress.area,
+              city: parsedAddress.city,
+              state: parsedAddress.state,
+              pincode: parsedAddress.pincode,
+              roadName: parsedAddress.roadName,
+              placeId: place.place_id || "",
+            })
+          } else {
+            applyLocationData({ formattedAddress: `${lat.toFixed(4)}, ${lng.toFixed(4)}` })
+          }
+        })
+      } else {
+        applyLocationData({ formattedAddress: `${lat.toFixed(4)}, ${lng.toFixed(4)}` })
+      }
+    } catch (error) {
+      toast.error(error?.message || "Unable to process Google Maps link")
+    } finally {
+      setIsProcessingLink(false)
+    }
+  }
+
+  const handleLocationSearchBlur = () => {
+    window.setTimeout(() => {
+      setLocationPredictions([])
+    }, 120)
+
+    const trimmedValue = String(locationSearchValue || "").trim()
+    if (!trimmedValue) return
+
+    setFormData((prev) => {
+      if (prev.location?.formattedAddress === trimmedValue) return prev
+      return {
+        ...prev,
+        location: {
+          ...prev.location,
+          formattedAddress: trimmedValue,
+          addressLine1: prev.location?.addressLine1 || trimmedValue,
+        },
+      }
+    })
   }
 
   // Cuisines helper
@@ -1014,6 +1300,7 @@ export default function EditOwner() {
         restaurantName: formData.restaurantName.trim(),
         pureVegRestaurant: formData.pureVegRestaurant,
         primaryContactNumber: formData.primaryContactNumber.trim(),
+        locationSource: formData.locationSource || "google_places",
 
         location: {
           placeId: formData.location.placeId || "",
@@ -1302,208 +1589,6 @@ export default function EditOwner() {
 
               </div>
 
-              {/* Address details */}
-              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-                <div className="flex items-center justify-between border-b pb-2">
-                  <h3 className="text-sm font-bold text-gray-900">Address & Location</h3>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/food/restaurant/edit-address", { state: { from: routerLocation.pathname } })}
-                    className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#B80B3D] hover:bg-red-50 px-2 py-1 rounded-md transition-colors"
-                  >
-                    <MapPin className="w-3.5 h-3.5" />
-                    Select from map
-                  </button>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
-                    Search Address From Map
-                  </label>
-                  <Input
-                    ref={locationSearchInputRef}
-                    type="text"
-                    placeholder="Search restaurant address, road or highway"
-                    value={formData.location?.formattedAddress || ""}
-                    onChange={(e) => handleLocationChange("formattedAddress", e.target.value)}
-                    className="w-full text-sm h-11"
-                  />
-                  {locationError ? (
-                    <p className="text-[11px] text-amber-700 mt-2">{locationError}</p>
-                  ) : (
-                    <p className="text-[11px] text-gray-500 mt-2">
-                      Search a location, then fine-tune the exact point by dragging the pin on the map.
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
-                    Full Address (line 1)*
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.location?.addressLine1 || ""}
-                    onChange={(e) => handleLocationChange("addressLine1", e.target.value)}
-                    placeholder="Building / Shop / Street number"
-                    className="w-full text-sm h-11"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
-                    Address Line 2 (optional)
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.location?.addressLine2 || ""}
-                    onChange={(e) => handleLocationChange("addressLine2", e.target.value)}
-                    placeholder="Floor, wing, suite info"
-                    className="w-full text-sm h-11"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
-                    Area / Locality*
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.location?.area || ""}
-                    onChange={(e) => handleLocationChange("area", e.target.value)}
-                    placeholder="Area / Sector / Colony"
-                    className="w-full text-sm h-11"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
-                    Road / Highway Name*
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.location?.roadName || ""}
-                    onChange={(e) => {
-                      setIsRoadNameDirty(true)
-                      handleLocationChange("roadName", e.target.value)
-                    }}
-                    placeholder="NH-52, AB Road, service road, etc."
-                    className="w-full text-sm h-11"
-                  />
-                </div>
-
-                {(highwayInfo.loading || highwayInfo.status) && (
-                  <div
-                    className={`rounded-2xl border p-4 ${
-                      highwayInfo.loading
-                        ? "border-amber-200 bg-amber-50"
-                        : highwayInfo.status === "IN_SERVICE"
-                          ? "border-emerald-200 bg-emerald-50"
-                          : "border-slate-200 bg-slate-50"
-                    }`}
-                  >
-                    {highwayInfo.loading ? (
-                      <div className="flex items-start gap-3 text-amber-800">
-                        <Loader2 className="h-4 w-4 mt-0.5 animate-spin" />
-                        <div>
-                          <p className="text-sm font-semibold">Detecting nearby highway</p>
-                          <p className="text-xs mt-1">Checking whether this restaurant falls on a serviceable route.</p>
-                        </div>
-                      </div>
-                    ) : highwayInfo.status === "IN_SERVICE" ? (
-                      <div className="flex items-start gap-3 text-emerald-900">
-                        <CheckCircle2 className="h-4 w-4 mt-0.5" />
-                        <div className="space-y-1 text-xs">
-                          <p className="text-sm font-semibold">Highway detected successfully</p>
-                          <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                          {highwayInfo.highwayName && (
-                            <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
-                          )}
-                          {highwayInfo.highwayId && (
-                            <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
-                          )}
-                          {Number.isFinite(Number(highwayInfo.distanceMeters)) && (
-                            <p>Distance: <span className="font-medium text-slate-900">{(Number(highwayInfo.distanceMeters) / 1000).toFixed(1)} KM</span></p>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start gap-3 text-slate-700">
-                        <AlertCircle className="h-4 w-4 mt-0.5" />
-                        <div className="space-y-1 text-xs">
-                          <p className="text-sm font-semibold">No mapped highway found nearby</p>
-                          {highwayInfo.highwayRef && (
-                            <p>Nearest match: <span className="font-medium text-slate-900">{highwayInfo.highwayRef}</span></p>
-                          )}
-                          <p>Move the map pin closer to the road used by travellers if this restaurant should appear during route discovery.</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {Number.isFinite(Number(formData.location?.latitude)) && Number.isFinite(Number(formData.location?.longitude)) && (
-                  <div className="overflow-hidden rounded-2xl border border-[#f3c9ba] bg-[#fff7f4]">
-                    <div className="flex items-center justify-between border-b border-[#f3c9ba] px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-[#B80B3D]" />
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">Pin restaurant on map</p>
-                          <p className="text-[11px] text-slate-500">Tap map or drag the marker to store exact road-side coordinates.</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div ref={pinMapContainerRef} className="h-[220px] w-full" />
-                    <div className="border-t border-[#f3c9ba] bg-white/80 px-4 py-3 text-xs text-slate-600">
-                      Coordinates saved: <span className="font-semibold text-gray-900">{Number(formData.location?.latitude).toFixed(6)}, {Number(formData.location?.longitude).toFixed(6)}</span>
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
-                    Landmark (optional)
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.location?.landmark || ""}
-                    onChange={(e) => handleLocationChange("landmark", e.target.value)}
-                    placeholder="Nearby landmark"
-                    className="w-full text-sm h-11"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
-                      City
-                    </label>
-                    <Input
-                      type="text"
-                      value={formData.location?.city || "Indore"}
-                      onChange={(e) => handleLocationChange("city", e.target.value)}
-                      placeholder="City"
-                      className="w-full text-sm h-11"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-gray-700 block mb-1.5 uppercase tracking-wide">
-                      Pincode
-                    </label>
-                    <Input
-                      type="text"
-                      value={formData.location?.pincode || ""}
-                      onChange={(e) =>
-                        handleLocationChange("pincode", e.target.value.replace(/\D/g, ""))
-                      }
-                      placeholder="6-digit PIN"
-                      className="w-full text-sm h-11"
-                    />
-                  </div>
-                </div>
-
-              </div>
-
               {/* Operational details */}
               <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
                 <h3 className="text-sm font-bold text-gray-900 border-b pb-2">Operation & Timings</h3>
@@ -1677,6 +1762,262 @@ export default function EditOwner() {
                   })}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 3: ADDRESS */}
+          {activeTab === "address" && (
+            <div className="space-y-6">
+              <section className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Address Details</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Use the same address selection flow as onboarding so route discovery can place the restaurant correctly on travel roads.
+                  </p>
+                </div>
+
+                <div className="relative">
+                  <Label className="text-xs text-gray-700">Search location</Label>
+                  <div className="relative mt-1">
+                    <Input
+                      ref={locationSearchInputRef}
+                      value={locationSearchValue}
+                      onChange={(e) => {
+                        isPlaceSelectedRef.current = false
+                        setFormData((prev) => ({ ...prev, locationSource: "google_places" }))
+                        setLocationSearchValue(e.target.value)
+                      }}
+                      onBlur={handleLocationSearchBlur}
+                      className="bg-white text-sm"
+                      placeholder="Search and select restaurant address..."
+                      autoComplete="off"
+                    />
+                    {isSearchingLocation && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                      </div>
+                    )}
+                  </div>
+
+                  {locationPredictions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-xl z-[999999] overflow-hidden max-h-60 overflow-y-auto">
+                      {locationPredictions.map((prediction) => (
+                        <button
+                          key={prediction.place_id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            handleLocationPredictionSelect(prediction)
+                          }}
+                          className="w-full px-4 py-2 text-left text-[13px] font-medium text-gray-700 hover:bg-orange-50 border-b border-gray-100 last:border-none"
+                        >
+                          <span className="block truncate">{prediction.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    Search to auto-fill Area, City, State, Pincode and coordinates.
+                  </p>
+                </div>
+
+                <div className="flex items-center my-2">
+                  <hr className="flex-grow border-t border-gray-200" />
+                  <span className="px-3 text-xs font-semibold text-gray-400 tracking-wider uppercase">OR</span>
+                  <hr className="flex-grow border-t border-gray-200" />
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-700">Google Maps Location Link (Optional)</Label>
+                  <div className="relative mt-1">
+                    <Input
+                      value={mapsLinkValue}
+                      onChange={handleMapsLinkChange}
+                      className="bg-white text-sm pr-10"
+                      placeholder="Paste Google Maps URL here"
+                      disabled={isProcessingLink}
+                    />
+                    {isProcessingLink && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader2 className="h-4 w-4 animate-spin text-[#B80B3D]" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    You can either search the restaurant above or paste a Google Maps location link.
+                  </p>
+                </div>
+
+                {formData.locationSource && (
+                  <div className="mt-1 text-xs flex items-center gap-1.5 font-medium text-slate-600 bg-slate-50/70 border border-slate-100 rounded px-2.5 py-1.5 w-fit">
+                    <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Location Source:</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      formData.locationSource === "google_maps_link"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-orange-100 text-orange-700"
+                    }`}>
+                      {formData.locationSource === "google_maps_link" ? "Google Maps Link" : "Google Search"}
+                    </span>
+                  </div>
+                )}
+
+                <Input
+                  value={formData.location?.addressLine1 || ""}
+                  onChange={(e) => handleLocationChange("addressLine1", e.target.value)}
+                  className="bg-white text-sm"
+                  placeholder="Shop no. / building no. (optional)"
+                />
+                <Input
+                  value={formData.location?.addressLine2 || ""}
+                  onChange={(e) => handleLocationChange("addressLine2", e.target.value)}
+                  className="bg-white text-sm"
+                  placeholder="Floor / tower (optional)"
+                />
+                <Input
+                  value={formData.location?.landmark || ""}
+                  onChange={(e) => handleLocationChange("landmark", e.target.value)}
+                  className="bg-white text-sm"
+                  placeholder="Nearby landmark (optional)"
+                />
+                <Input
+                  value={formData.location?.area || ""}
+                  onChange={(e) => handleLocationChange("area", e.target.value)}
+                  className="bg-white text-sm"
+                  placeholder="Area / Sector / Locality*"
+                />
+                <Select
+                  value={formData.location?.city || ""}
+                  onValueChange={(value) => handleLocationChange("city", value)}
+                >
+                  <SelectTrigger className="bg-white text-sm text-gray-700">
+                    <SelectValue placeholder="Select City*" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Indore">Indore</SelectItem>
+                    <SelectItem value="Bhopal">Bhopal</SelectItem>
+                    <SelectItem value="Gwalior">Gwalior</SelectItem>
+                    <SelectItem value="Jabalpur">Jabalpur</SelectItem>
+                    <SelectItem value="Mumbai">Mumbai</SelectItem>
+                    <SelectItem value="Pune">Pune</SelectItem>
+                    <SelectItem value="Delhi">Delhi</SelectItem>
+                    <SelectItem value="Bangalore">Bangalore</SelectItem>
+                    <SelectItem value="Ahmedabad">Ahmedabad</SelectItem>
+                    <SelectItem value="Hyderabad">Hyderabad</SelectItem>
+                    <SelectItem value="Chennai">Chennai</SelectItem>
+                    <SelectItem value="Kolkata">Kolkata</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    value={formData.location?.state || ""}
+                    onChange={(e) => handleLocationChange("state", e.target.value)}
+                    className="bg-white text-sm"
+                    placeholder="State"
+                  />
+                  <Input
+                    value={formData.location?.pincode || ""}
+                    onChange={(e) => handleLocationChange("pincode", normalizePincode(e.target.value))}
+                    className="bg-white text-sm"
+                    placeholder="Pincode"
+                  />
+                </div>
+
+                <p className="text-[11px] text-gray-500 mt-1">
+                  Please ensure that this address is the same as mentioned on your FSSAI license.
+                </p>
+              </section>
+
+              <section className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Road Selection</h3>
+                  <p className="mt-1 text-sm text-gray-600">
+                    We auto-detect the nearest highway from the selected address. You can point the location on the map and edit the road name if needed.
+                  </p>
+                </div>
+
+                {(highwayInfo.loading || highwayInfo.status) && (
+                  <div
+                    className={`rounded-xl border px-4 py-3 text-sm ${
+                      highwayInfo.loading
+                        ? "bg-slate-50 border-slate-200 text-slate-600"
+                        : highwayInfo.status === "IN_SERVICE"
+                          ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                          : "bg-rose-50 border-rose-200 text-rose-800"
+                    }`}
+                  >
+                    {highwayInfo.loading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                        <span>Checking highway proximity...</span>
+                      </div>
+                    ) : highwayInfo.status === "IN_SERVICE" ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 font-semibold">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <span>Restaurant location verified. Located within highway range.</span>
+                        </div>
+                        <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
+                          <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                          {highwayInfo.highwayName && <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                          {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
+                          {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{(Number(highwayInfo.distanceMeters) / 1000).toFixed(1)} KM</span></p>}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 font-semibold">
+                          <AlertCircle className="w-4 h-4 text-rose-600" />
+                          <span>Restaurant should be close to the mapped highway route.</span>
+                        </div>
+                        {highwayInfo.highwayRef && (
+                          <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
+                            <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                            {highwayInfo.highwayName && <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                            {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
+                            {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{(Number(highwayInfo.distanceMeters) / 1000).toFixed(1)} KM</span></p>}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {Number.isFinite(Number(formData.location?.latitude)) && Number.isFinite(Number(formData.location?.longitude)) && (
+                  <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                    <div className="flex items-center justify-between border-b border-gray-200 px-4 py-2.5">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Pin preview</p>
+                        <p className="text-[11px] text-gray-500">Tap on the map or drag the pin to save the exact restaurant coordinates.</p>
+                      </div>
+                      <MapPin className="h-4 w-4 text-[#B80B3D]" />
+                    </div>
+                    <div ref={pinMapContainerRef} className="h-[220px] w-full" />
+                    <div className="border-t border-gray-200 bg-white px-4 py-2 text-[11px] text-gray-600 space-y-1">
+                      <div>
+                        Coordinates saved: <span className="font-semibold text-gray-900">{Number(formData.location?.latitude).toFixed(6)}, {Number(formData.location?.longitude).toFixed(6)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <Label className="text-xs text-gray-700">Road / Highway name*</Label>
+                  <Input
+                    value={formData.location?.roadName || ""}
+                    onChange={(e) => {
+                      setIsRoadNameDirty(true)
+                      handleLocationChange("roadName", e.target.value)
+                    }}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Auto-detected road / highway"
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    This is auto-filled from the detected NH / SH and you can still edit it to match the exact road shown on the pin.
+                  </p>
+                </div>
+              </section>
             </div>
           )}
 

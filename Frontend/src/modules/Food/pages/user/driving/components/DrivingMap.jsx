@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, useJsApiLoader, Polyline, Marker, OverlayView } from "@react-google-maps/api";
-import { Compass, Loader2, Pause, Play } from "lucide-react";
+import { Loader2, Navigation, Pause, Play } from "lucide-react";
 
 const MAP_CONTAINER_STYLE = {
   width: "100%",
@@ -162,7 +162,7 @@ function offsetLatLng(point, headingDeg = 0, distanceMeters = 0) {
 function getNavigationCameraCenter(point, headingDeg = 0) {
   if (!point) return point;
   const cameraHeading = Number.isFinite(headingDeg) ? headingDeg : 0;
-  return offsetLatLng(point, (cameraHeading + 180) % 360, 110);
+  return offsetLatLng(point, cameraHeading, 180);
 }
 
 function pointsAlmostEqual(a, b, tolerance = 0.000001) {
@@ -321,9 +321,20 @@ export default function DrivingMap({
     return navigationTargetInfo?.point || effectiveUserPosition || null;
   }, [navigationTargetInfo, effectiveUserPosition]);
 
+  const visibleRouteSnapInfo = useMemo(() => {
+    if (simulationPosition && navigationTargetInfo) {
+      return navigationTargetInfo;
+    }
+
+    const routeAnchorPoint = displayedUserPosition || navigationTargetPosition;
+    if (!routeAnchorPoint) return navigationTargetInfo;
+
+    return getPathSnapInfo(localRoutePath, routeAnchorPoint) || navigationTargetInfo;
+  }, [simulationPosition, navigationTargetInfo, displayedUserPosition, navigationTargetPosition, localRoutePath]);
+
   const visibleRoutePath = useMemo(() => {
-    return buildRemainingRoutePath(localRoutePath, navigationTargetInfo);
-  }, [localRoutePath, navigationTargetInfo]);
+    return buildRemainingRoutePath(localRoutePath, visibleRouteSnapInfo);
+  }, [localRoutePath, visibleRouteSnapInfo]);
 
   const effectiveHeading = useMemo(() => {
     if (simulationPosition && localRoutePath.length >= 2) {
@@ -528,6 +539,7 @@ export default function DrivingMap({
     }
 
     setIsFollowingUser(true);
+    setIsRotationEnabled(true);
 
     if (mapRef.current) {
       if (displayedUserPosition || navigationTargetPosition) {
@@ -782,7 +794,7 @@ export default function DrivingMap({
   useEffect(() => {
     if (!mapRef.current || !isRotationEnabled) return;
     mapRef.current.setHeading(displayedHeading || 0);
-    mapRef.current.setTilt(45);
+    mapRef.current.setTilt(0);
   }, [isRotationEnabled, displayedHeading]);
 
   useEffect(() => {
@@ -796,7 +808,7 @@ export default function DrivingMap({
     if (!isFollowingUser || !navigationTargetPosition) {
       if (isRotationEnabled) {
         mapRef.current.setHeading(displayedHeadingRef.current || 0);
-        mapRef.current.setTilt(45);
+        mapRef.current.setTilt(0);
       }
       return undefined;
     }
@@ -809,7 +821,7 @@ export default function DrivingMap({
       mapRef.current.setCenter(targetCenter);
       if (isRotationEnabled) {
         mapRef.current.setHeading(displayedHeadingRef.current || 0);
-        mapRef.current.setTilt(45);
+        mapRef.current.setTilt(0);
       }
       return undefined;
     }
@@ -839,7 +851,7 @@ export default function DrivingMap({
 
     if (isRotationEnabled) {
       mapRef.current.setHeading(displayedHeadingRef.current || 0);
-      mapRef.current.setTilt(45);
+      mapRef.current.setTilt(0);
     }
 
     return () => {
@@ -851,16 +863,24 @@ export default function DrivingMap({
     };
   }, [navigationTargetPosition, simulationPosition, isFollowingUser, isRotationEnabled]);
 
-  const handleToggleRotation = useCallback(() => {
-    setIsRotationEnabled((prev) => {
-      const next = !prev;
-      if (mapRef.current) {
-        mapRef.current.setHeading(next ? (effectiveHeading || 0) : 0);
-        mapRef.current.setTilt(next ? 45 : 0);
-      }
-      return next;
-    });
-  }, [effectiveHeading]);
+  const handleToggleNavigationMode = useCallback(() => {
+    setIsFollowingUser(true);
+    setIsRotationEnabled(true);
+
+    if (!mapRef.current) return;
+
+    const focusPoint = displayedUserPositionRef.current || navigationTargetPosition;
+    const focusHeading = displayedHeadingRef.current || effectiveHeading || 0;
+    if (focusPoint) {
+      const nextCenter = getNavigationCameraCenter(focusPoint, focusHeading);
+      mapCenterRef.current = nextCenter;
+      mapRef.current.setCenter(nextCenter);
+      mapRef.current.setZoom(16);
+    }
+
+    mapRef.current.setHeading(focusHeading);
+    mapRef.current.setTilt(0);
+  }, [navigationTargetPosition, effectiveHeading]);
 
   const handleToggleSimulation = useCallback(() => {
     if (localRoutePath.length < 2) return;
@@ -896,7 +916,7 @@ export default function DrivingMap({
         zoom={14}
         onLoad={onLoad}
         onUnmount={onUnmount}
-        onDragStart={() => setIsFollowingUser(false)}
+        onDragStart={() => { setIsFollowingUser(false); setIsRotationEnabled(false); }}
         options={{
           streetViewControl: false,
           mapTypeControl: false,
@@ -1101,14 +1121,14 @@ export default function DrivingMap({
       <div className="absolute right-4 z-30 flex flex-col gap-3 pointer-events-none bottom-[368px]">
         <button
           type="button"
-          onClick={handleToggleRotation}
-          className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border shadow-xl transition-all ${isRotationEnabled
+          onClick={handleToggleNavigationMode}
+          className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border shadow-xl transition-all ${isFollowingUser
             ? "border-orange-300 bg-orange-500 text-white"
             : "border-gray-200/80 bg-white text-gray-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white"
             }`}
-          title="Rotate map"
+          title="Recenter navigation"
         >
-          <Compass className="h-5 w-5" />
+          <Navigation className="h-4 w-4" />
         </button>
         <button
           type="button"

@@ -633,8 +633,9 @@ export default function DrivingMode() {
     const loc = locationRef.current;
 
     // Use journey origin if specified (e.g. planned route / Dev Mode mock origin), else use live GPS location
-    const startLat = currentJourney?.origin?.lat ?? loc?.latitude;
-    const startLng = currentJourney?.origin?.lng ?? loc?.longitude;
+    const useLiveRefreshLocation = !isInitial && Number.isFinite(loc?.latitude) && Number.isFinite(loc?.longitude);
+    const startLat = useLiveRefreshLocation ? loc.latitude : (currentJourney?.origin?.lat ?? loc?.latitude);
+    const startLng = useLiveRefreshLocation ? loc.longitude : (currentJourney?.origin?.lng ?? loc?.longitude);
 
     if (startLat === undefined || startLng === undefined || startLat === null || startLng === null) {
       setStatus("CHECKING_LOCATION");
@@ -948,6 +949,21 @@ export default function DrivingMode() {
   const nextStopId = nextStop?._id || nextStop?.id || nextStop?.restaurantSlug || null;
   const effectiveTravelPosition = React.useMemo(() => liveTravelPosition || (journey?.origin ? { lat: journey.origin.lat, lng: journey.origin.lng } : currentLocation), [liveTravelPosition, journey?.origin?.lat, journey?.origin?.lng, currentLocation]);
   const nextStopLiveDistanceKm = getDistanceBetweenKm(effectiveTravelPosition, getRestaurantLatLng(nextStop));
+  const nextStopLiveEtaMinutes = React.useMemo(() => {
+    if (!nextStop) return null;
+    if (Number.isFinite(nextStopLiveDistanceKm)) {
+      const speedKmh = Number.isFinite(speed) && speed > 0 ? speed * 3.6 : null;
+      if (speedKmh && speedKmh > 3) {
+        return Math.max(0, Math.round((nextStopLiveDistanceKm / speedKmh) * 60));
+      }
+      const baseDistanceKm = Number(nextStop?.distanceKm);
+      const baseEtaMinutes = Number(nextStop?.etaMinutes);
+      if (Number.isFinite(baseDistanceKm) && baseDistanceKm > 0 && Number.isFinite(baseEtaMinutes) && baseEtaMinutes >= 0) {
+        return Math.max(0, Math.round((nextStopLiveDistanceKm / baseDistanceKm) * baseEtaMinutes));
+      }
+    }
+    return Number.isFinite(Number(nextStop?.etaMinutes)) ? Number(nextStop.etaMinutes) : null;
+  }, [nextStop, nextStopLiveDistanceKm, speed]);
   const visibleRouteOptions = React.useMemo(() => (Array.isArray(journey?.availableRoutes)
     ? journey.availableRoutes.filter((routeOption, index, routes) => {
       const routeKey = routeOption?.routeId || routeOption?._id;
@@ -960,6 +976,14 @@ export default function DrivingMode() {
     : []), [journey?.availableRoutes]);
   const hasMultipleRoutes = visibleRouteOptions.length > 1;
   const rangeLimit = settings?.restaurantSearchRadiusKm || 50;
+
+  useEffect(() => {
+    if (!journey || status !== "AVAILABLE") return undefined;
+    const intervalId = window.setInterval(() => {
+      fetchRestaurantsAhead(false, journey);
+    }, 15000);
+    return () => window.clearInterval(intervalId);
+  }, [journey, status, fetchRestaurantsAhead]);
 
   useEffect(() => {
     if (!nextStopId || !Number.isFinite(nextStopLiveDistanceKm) || nextStopLiveDistanceKm > NEXT_STOP_ALERT_DISTANCE_KM) {
@@ -1047,8 +1071,8 @@ export default function DrivingMode() {
         <div className="w-full max-w-md pointer-events-auto">
           <DrivingSummaryCard
             highwayRef={journey?.selectedHighway?.name || resultData?.highway?.ref || journey?.selectedHighway?.ref}
-            distanceAhead={nextStop?.distanceKm ?? null}
-            nextStopEta={nextStop?.etaMinutes ?? null}
+            distanceAhead={Number.isFinite(nextStopLiveDistanceKm) ? Number(nextStopLiveDistanceKm.toFixed(nextStopLiveDistanceKm >= 10 ? 0 : 1)) : (nextStop?.distanceKm ?? null)}
+            nextStopEta={nextStopLiveEtaMinutes}
             restaurantCount={filteredRestaurants.length}
             onExit={handleExitDriving}
           />

@@ -34,6 +34,8 @@ const DRIVING_ROUTE_RESULTS_KEY = "bh_driving_route_results";
 const GEOLOCATION_TIMEOUT_MS = 30000;
 const RESTAURANT_QUERY_TIMEOUT_MS = 35000;
 const GEOLOCATION_MAX_AGE_MS = 15000;
+const NEXT_STOP_ALERT_DISTANCE_KM = 2.5;
+const NEXT_STOP_ALERT_COOLDOWN_MS = 90000;
 
 const buildRouteCacheKey = (journeyLike) => {
   if (!journeyLike) return "";
@@ -162,6 +164,7 @@ export default function DrivingMode() {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [liveTravelPosition, setLiveTravelPosition] = useState(null);
   const [isNextStopAlertOpen, setIsNextStopAlertOpen] = useState(false);
+  const [nextStopAlertMessage, setNextStopAlertMessage] = useState("");
   const [heading, setHeading] = useState(null);
   const [speed, setSpeed] = useState(null);
   const [locationError, setLocationError] = useState(null);
@@ -266,7 +269,7 @@ export default function DrivingMode() {
     }
   }, [status]);
 
-  // Exit driving mode — clears journey and returns to start page
+  // Exit driving mode Ã¢â‚¬â€ clears journey and returns to start page
   const handleExitDriving = useCallback(() => {
     sessionStorage.removeItem(DRIVING_JOURNEY_KEY);
     clearDrivingCache();
@@ -279,7 +282,7 @@ export default function DrivingMode() {
     navigate("/food/user/driving", { replace: true });
   }, [navigate]);
 
-  // Intercept browser back button — go to driving start instead of history
+  // Intercept browser back button Ã¢â‚¬â€ go to driving start instead of history
   useEffect(() => {
     const onPopState = () => handleExitDriving();
     window.addEventListener("popstate", onPopState);
@@ -432,6 +435,59 @@ export default function DrivingMode() {
   // Abort handling & query timeout references
   const abortControllerRef = useRef(null);
   const timeoutIdRef = useRef(null);
+  const lastNextStopAlertRef = useRef({
+    restaurantId: null,
+    announcedAt: 0
+  });
+
+  const playNextStopAlert = useCallback((restaurantName, distanceKm) => {
+    const safeName = restaurantName || "restaurant";
+    const safeDistance = Number.isFinite(distanceKm)
+      ? distanceKm.toFixed(distanceKm >= 10 ? 0 : 1)
+      : null;
+    const spokenMessage = safeDistance
+      ? `Nearby restaurant alert. ${safeName} is ${safeDistance} kilometers ahead.`
+      : `Nearby restaurant alert. ${safeName} is ahead on your route.`;
+
+    setNextStopAlertMessage(spokenMessage);
+    setIsNextStopAlertOpen(true);
+
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        const audioContext = new AudioContextClass();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(660, audioContext.currentTime + 0.18);
+        gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.12, audioContext.currentTime + 0.03);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.32);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.34);
+        window.setTimeout(() => {
+          audioContext.close().catch(() => {});
+        }, 500);
+      }
+    } catch {
+      // Ignore browser audio restrictions.
+    }
+
+    try {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(spokenMessage);
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch {
+      // Ignore speech synthesis issues.
+    }
+  }, []);
 
   useEffect(() => {
     locationRef.current = currentLocation;
@@ -888,6 +944,43 @@ export default function DrivingMode() {
     return list;
   }, [resultData?.restaurants, activeFacilityFilter, sortBy]);
 
+  const nextStop = filteredRestaurants[0] || null;
+  const nextStopId = nextStop?._id || nextStop?.id || nextStop?.restaurantSlug || null;
+  const effectiveTravelPosition = React.useMemo(() => liveTravelPosition || (journey?.origin ? { lat: journey.origin.lat, lng: journey.origin.lng } : currentLocation), [liveTravelPosition, journey?.origin?.lat, journey?.origin?.lng, currentLocation]);
+  const nextStopLiveDistanceKm = getDistanceBetweenKm(effectiveTravelPosition, getRestaurantLatLng(nextStop));
+  const visibleRouteOptions = React.useMemo(() => (Array.isArray(journey?.availableRoutes)
+    ? journey.availableRoutes.filter((routeOption, index, routes) => {
+      const routeKey = routeOption?.routeId || routeOption?._id;
+      const hasGeometry = Boolean(routeOption?.polyline) || (Array.isArray(routeOption?.coordinates) && routeOption.coordinates.length > 1);
+      const looksLikeMapRoute = typeof routeKey === "string" && routeKey.startsWith("google_route_");
+      if (!routeKey || !hasGeometry || !looksLikeMapRoute) return false;
+
+      return routes.findIndex((candidate) => (candidate?.routeId || candidate?._id) === routeKey) === index;
+    })
+    : []), [journey?.availableRoutes]);
+  const hasMultipleRoutes = visibleRouteOptions.length > 1;
+  const rangeLimit = settings?.restaurantSearchRadiusKm || 50;
+
+  useEffect(() => {
+    if (!nextStopId || !Number.isFinite(nextStopLiveDistanceKm) || nextStopLiveDistanceKm > NEXT_STOP_ALERT_DISTANCE_KM) {
+      return;
+    }
+
+    const lastAlert = lastNextStopAlertRef.current;
+    const now = Date.now();
+    if (lastAlert.restaurantId === nextStopId && (now - lastAlert.announcedAt) < NEXT_STOP_ALERT_COOLDOWN_MS) {
+      return;
+    }
+
+    lastNextStopAlertRef.current = {
+      restaurantId: nextStopId,
+      announcedAt: now
+    };
+
+    playNextStopAlert(nextStop?.restaurantName || nextStop?.name, nextStopLiveDistanceKm);
+  }, [nextStopId, nextStopLiveDistanceKm, nextStop?.restaurantName, nextStop?.name, playNextStopAlert]);
+
+
 
 
   // Render Loader UI for intermediate loading states, wrapped with BottomNavigation
@@ -946,22 +1039,6 @@ export default function DrivingMode() {
     );
   }
 
-  const nextStop = filteredRestaurants[0] || null;
-  const effectiveTravelPosition = React.useMemo(() => liveTravelPosition || (journey?.origin ? { lat: journey.origin.lat, lng: journey.origin.lng } : currentLocation), [liveTravelPosition, journey?.origin?.lat, journey?.origin?.lng, currentLocation]);
-  const nextStopLiveDistanceKm = getDistanceBetweenKm(effectiveTravelPosition, getRestaurantLatLng(nextStop));
-  const visibleRouteOptions = Array.isArray(journey?.availableRoutes)
-    ? journey.availableRoutes.filter((routeOption, index, routes) => {
-      const routeKey = routeOption?.routeId || routeOption?._id;
-      const hasGeometry = Boolean(routeOption?.polyline) || (Array.isArray(routeOption?.coordinates) && routeOption.coordinates.length > 1);
-      const looksLikeMapRoute = typeof routeKey === "string" && routeKey.startsWith("google_route_");
-      if (!routeKey || !hasGeometry || !looksLikeMapRoute) return false;
-
-      return routes.findIndex((candidate) => (candidate?.routeId || candidate?._id) === routeKey) === index;
-    })
-    : [];
-  const hasMultipleRoutes = visibleRouteOptions.length > 1;
-  const rangeLimit = settings?.restaurantSearchRadiusKm || 50;
-
   return (
     <div className="relative w-full h-screen bg-gray-50 dark:bg-[#0a0a0a] overflow-hidden flex flex-col">
 
@@ -1003,9 +1080,9 @@ export default function DrivingMode() {
                     {nextStop?.restaurantName || nextStop?.name || "No stop ahead"}
                   </div>
                   <div className="text-[11px] font-medium text-gray-500 dark:text-neutral-400">
-                    {nextStop
+                    {nextStopAlertMessage || (nextStop
                       ? `is ${Number.isFinite(nextStopLiveDistanceKm) ? nextStopLiveDistanceKm.toFixed(nextStopLiveDistanceKm >= 10 ? 0 : 1) : nextStop?.distanceKm ?? "-"} km from current location`
-                      : "No nearby restaurant on this route"}
+                      : "No nearby restaurant on this route")}
                   </div>
                 </div>
               </div>
@@ -1322,15 +1399,15 @@ export default function DrivingMode() {
                     {selectedRestaurant.totalRatings && (
                       <span className="text-gray-400 dark:text-neutral-500">({selectedRestaurant.totalRatings} Ratings)</span>
                     )}
-                    <span className="text-gray-300 dark:text-neutral-800">•</span>
+                    <span className="text-gray-300 dark:text-neutral-800">Ã¢â‚¬Â¢</span>
                   </>
                 ) : null}
                 <span className="truncate max-w-[120px]">{selectedRestaurant.cuisines?.length ? selectedRestaurant.cuisines.join(", ") : "North Indian, Punjabi"}</span>
-                <span className="text-gray-300 dark:text-neutral-800">•</span>
-                <span>₹₹</span>
+                <span className="text-gray-300 dark:text-neutral-800">Ã¢â‚¬Â¢</span>
+                <span>Ã¢â€šÂ¹Ã¢â€šÂ¹</span>
                 {selectedRestaurant.facilities?.familyFriendly && (
                   <>
-                    <span className="text-gray-300 dark:text-neutral-800">•</span>
+                    <span className="text-gray-300 dark:text-neutral-800">Ã¢â‚¬Â¢</span>
                     <span className="text-orange-600 dark:text-orange-400 font-extrabold flex items-center gap-1">
                       <img src="/icons/familyfriendly.png" alt="Family Friendly" className="w-3.5 h-3.5 object-contain inline-block rounded-full" />
                       Family Friendly
@@ -1470,13 +1547,13 @@ export default function DrivingMode() {
                       <div key={offer._id || offer.id || idx} className="p-3 rounded-xl border border-orange-100 dark:border-neutral-900 bg-orange-50/20 dark:bg-neutral-950/20 flex flex-col justify-between min-h-[88px]">
                         <div>
                           <h5 className="text-xs font-black text-orange-600">
-                            {offer.discountType === 'percentage' ? `${offer.discountValue}% OFF` : `₹${offer.discountValue} OFF`}
+                            {offer.discountType === 'percentage' ? `${offer.discountValue}% OFF` : `Ã¢â€šÂ¹${offer.discountValue} OFF`}
                           </h5>
                           <p className="text-[10px] font-extrabold text-gray-800 dark:text-neutral-300 mt-0.5">
-                            {offer.maxDiscount ? `Up to ₹${offer.maxDiscount}` : (offer.title || offer.couponCode)}
+                            {offer.maxDiscount ? `Up to Ã¢â€šÂ¹${offer.maxDiscount}` : (offer.title || offer.couponCode)}
                           </p>
                           {offer.minOrderValue ? (
-                            <p className="text-[8px] font-bold text-gray-400 mt-1">Min order ₹{offer.minOrderValue}</p>
+                            <p className="text-[8px] font-bold text-gray-400 mt-1">Min order Ã¢â€šÂ¹{offer.minOrderValue}</p>
                           ) : null}
                         </div>
                         <div className="mt-2 text-[9px] font-extrabold text-orange-600 bg-orange-100/50 dark:bg-orange-950/40 px-2 py-0.5 rounded text-center tracking-wider uppercase">

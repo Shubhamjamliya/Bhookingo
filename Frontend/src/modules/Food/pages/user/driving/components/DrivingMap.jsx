@@ -10,6 +10,76 @@ const MAP_CONTAINER_STYLE = {
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
 const GOOGLE_MAPS_LIBRARIES = ["geometry", "drawing", "places"];
 const ALT_ROUTE_STROKE = "#9ca3af";
+const MUTED_MAP_STYLES = [
+  {
+    featureType: "all",
+    elementType: "labels.text.fill",
+    stylers: [{ color: "#5b6472" }]
+  },
+  {
+    featureType: "all",
+    elementType: "labels.text.stroke",
+    stylers: [{ color: "#f7f7f5" }]
+  },
+  {
+    featureType: "administrative",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#d9dde3" }]
+  },
+  {
+    featureType: "poi",
+    elementType: "geometry",
+    stylers: [{ color: "#eceae4" }]
+  },
+  {
+    featureType: "poi",
+    elementType: "labels.icon",
+    stylers: [{ visibility: "off" }]
+  },
+  {
+    featureType: "poi.business",
+    stylers: [{ visibility: "off" }]
+  },
+  {
+    featureType: "road",
+    elementType: "geometry",
+    stylers: [{ color: "#ffffff" }]
+  },
+  {
+    featureType: "road.arterial",
+    elementType: "geometry",
+    stylers: [{ color: "#f4f1ea" }]
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry",
+    stylers: [{ color: "#ebe6db" }]
+  },
+  {
+    featureType: "road.highway",
+    elementType: "geometry.stroke",
+    stylers: [{ color: "#ddd4c4" }]
+  },
+  {
+    featureType: "road.local",
+    elementType: "geometry",
+    stylers: [{ color: "#fbfbfa" }]
+  },
+  {
+    featureType: "transit",
+    stylers: [{ visibility: "off" }]
+  },
+  {
+    featureType: "water",
+    elementType: "geometry",
+    stylers: [{ color: "#dfe7ef" }]
+  },
+  {
+    featureType: "landscape.natural",
+    elementType: "geometry",
+    stylers: [{ color: "#edf2e6" }]
+  }
+];
 
 // High precision polyline decoder for Google Maps encoded polylines
 function getRouteMidpoint(path = []) {
@@ -832,6 +902,7 @@ export default function DrivingMap({
           mapTypeControl: false,
           fullscreenControl: false,
           zoomControl: true,
+          styles: MUTED_MAP_STYLES,
         }}
       >
         {/* Alternate Routes */}

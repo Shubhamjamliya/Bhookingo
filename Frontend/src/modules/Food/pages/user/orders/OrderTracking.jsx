@@ -23,6 +23,7 @@ import {
   Clock,
   Calendar,
   Compass,
+  Navigation,
   Car,
   Wifi,
   Users,
@@ -973,9 +974,13 @@ export default function OrderTracking() {
     return null;
   }, [order]);
 
+  const customerCoordsResolved = useMemo(() => {
+    return fallbackCustomerCoords;
+  }, [fallbackCustomerCoords]);
+
   const activeUserCoords = useMemo(() => {
-    return userLiveCoords || fallbackCustomerCoords;
-  }, [userLiveCoords, fallbackCustomerCoords]);
+    return userLiveCoords || customerCoordsResolved;
+  }, [userLiveCoords, customerCoordsResolved]);
 
   const handleDirectionsCalculated = useCallback(({ distanceText, durationText, durationValue }) => {
     if (distanceText) {
@@ -1412,7 +1417,7 @@ export default function OrderTracking() {
       </div>
 
       {/* 2. Floating Status Card */}
-      <div className="absolute top-20 left-4 right-4 z-30 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-gray-100/60 dark:border-neutral-800/50 space-y-2">
+      <div className="absolute top-24 left-4 right-4 z-30 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-gray-100/60 dark:border-neutral-800/50 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-ping" />
@@ -1484,11 +1489,14 @@ export default function OrderTracking() {
           </div>
         ) : (
           <MapErrorBoundary>
-            {activeUserCoords && restaurantCoordsResolved ? (
+            {customerCoordsResolved && restaurantCoordsResolved ? (
               <OrderTrackingMap
-                userLocation={activeUserCoords}
-                restaurantLocation={restaurantCoordsResolved}
+                routeOriginLocation={restaurantCoordsResolved}
+                routeDestinationLocation={customerCoordsResolved}
+                liveCursorLocation={activeUserCoords}
+                liveHeading={liveHeading}
                 restaurantName={order.restaurant || "Restaurant"}
+                destinationName={order?.address?.formattedAddress || order?.address?.city || "Delivery Location"}
                 restaurantsAhead={restaurantsAhead}
                 orderType={order.orderType || "TAKEAWAY"}
                 onDirectionsCalculated={handleDirectionsCalculated}
@@ -1503,10 +1511,10 @@ export default function OrderTracking() {
         )}
 
         {/* Floating Map Action Buttons & Dashboard Metrics */}
-        {activeUserCoords && restaurantCoordsResolved && !order?.isForSomeoneElse && order?.polylineEnabled !== false && (
-          <div className="absolute bottom-32 left-4 right-4 z-20 flex flex-col gap-3">
+        {customerCoordsResolved && restaurantCoordsResolved && !order?.isForSomeoneElse && order?.polylineEnabled !== false && (
+          <div className="absolute inset-y-0 right-4 z-20 flex items-center">
             {/* Real-time Dashboard metrics floating on the map */}
-            <div className="bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-3 border border-gray-100/60 dark:border-neutral-800/50 shadow-xl flex items-center justify-between text-left">
+            <div className="absolute bottom-28 right-0 w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-auto order-2 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md rounded-2xl p-3 border border-gray-100/60 dark:border-neutral-800/50 shadow-xl flex items-center justify-between text-left">
               <div className="flex-1 border-r border-gray-100 dark:border-neutral-800 pr-2">
                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Distance</span>
                 <span className="text-sm font-black text-gray-900 dark:text-gray-100">{remainingDistance || "Calculating..."}</span>
@@ -1536,39 +1544,39 @@ export default function OrderTracking() {
             </div>
 
             {/* Quick map action buttons */}
-            <div className="flex justify-between items-center">
-              <button
-                onClick={() => {
-                  if (activeUserCoords) {
-                    window.dispatchEvent(new CustomEvent("recenter-map", { detail: activeUserCoords }));
-                  }
-                }}
-                className="w-12 h-12 rounded-full bg-white dark:bg-[#121212] shadow-xl flex items-center justify-center text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-neutral-800 hover:scale-105 active:scale-95 transition-all"
-                title="My Location"
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600 dark:text-orange-400">
-                  <circle cx="12" cy="12" r="6" />
-                  <circle cx="12" cy="12" r="2.5" fill="currentColor" />
-                  <line x1="12" y1="2" x2="12" y2="5" />
-                  <line x1="12" y1="19" x2="12" y2="22" />
-                  <line x1="2" y1="12" x2="5" y2="12" />
-                  <line x1="19" y1="12" x2="22" y2="12" />
-                </svg>
-              </button>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={handleNavigate}
-                  className="flex items-center gap-2 h-12 px-5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-orange-500/25 hover:from-orange-600 hover:to-amber-600 active:scale-95 transition-all"
-                >
-                  <Compass className="w-4 h-4 text-white" />
-                  Navigate
-                </button>
+            <div className="order-1 flex justify-end">
+              <div className="flex flex-col items-end gap-2">
                 <button
                   onClick={handleCallRestaurant}
-                  className="w-12 h-12 rounded-full bg-white dark:bg-[#121212] border border-gray-100 dark:border-neutral-800 shadow-xl flex items-center justify-center text-orange-600 dark:text-orange-400 hover:scale-105 active:scale-95 transition-all"
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-[#121212] border border-gray-100 dark:border-neutral-800 shadow-xl text-orange-600 dark:text-orange-400 hover:scale-105 active:scale-95 transition-all"
+                  title="Call"
                 >
                   <Phone className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleNavigate}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25 hover:from-orange-600 hover:to-amber-600 active:scale-95 transition-all"
+                  title="Navigate"
+                >
+                  <Navigation className="w-5 h-5 text-white" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (activeUserCoords) {
+                      window.dispatchEvent(new CustomEvent("recenter-map", { detail: activeUserCoords }));
+                    }
+                  }}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-[#121212] shadow-xl border border-gray-100 dark:border-neutral-800 text-gray-700 dark:text-gray-200 hover:scale-105 active:scale-95 transition-all"
+                  title="Focus"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600 dark:text-orange-400">
+                    <circle cx="12" cy="12" r="6" />
+                    <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+                    <line x1="12" y1="2" x2="12" y2="5" />
+                    <line x1="12" y1="19" x2="12" y2="22" />
+                    <line x1="2" y1="12" x2="5" y2="12" />
+                    <line x1="19" y1="12" x2="22" y2="12" />
+                  </svg>
                 </button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from "@react-google-maps/api";
-import { Loader2, Compass } from "lucide-react";
+import { GoogleMap, useJsApiLoader, Marker, Polyline } from "@react-google-maps/api";
+import { Loader2 } from "lucide-react";
 
 const MAP_CONTAINER_STYLE = {
   width: "100%",
@@ -9,172 +9,297 @@ const MAP_CONTAINER_STYLE = {
 
 const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
 const GOOGLE_MAPS_LIBRARIES = ["geometry", "drawing", "places"];
+const ROUTE_CACHE_PREFIX = "bh_order_tracking_route_v2";
 
 function getDistanceMeters(p1, p2) {
   if (!p1 || !p2) return 0;
-  const R = 6371000; // meters
-  const dLat = (p2.lat - p1.lat) * Math.PI / 180;
-  const dLng = (p2.lng - p1.lng) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
-            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const earthRadius = 6371000;
+  const dLat = ((p2.lat - p1.lat) * Math.PI) / 180;
+  const dLng = ((p2.lng - p1.lng) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((p1.lat * Math.PI) / 180) *
+      Math.cos((p2.lat * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  return earthRadius * c;
+}
+
+function pointsAlmostEqual(a, b, tolerance = 0.000001) {
+  if (!a || !b) return false;
+  return Math.abs(a.lat - b.lat) <= tolerance && Math.abs(a.lng - b.lng) <= tolerance;
+}
+
+function interpolatePoint(from, to, progress) {
+  if (!from) return to || null;
+  if (!to) return from;
+  const nextProgress = Math.max(0, Math.min(1, progress));
+  return {
+    lat: from.lat + ((to.lat - from.lat) * nextProgress),
+    lng: from.lng + ((to.lng - from.lng) * nextProgress),
+  };
+}
+
+function buildRouteCacheKey(origin, destination) {
+  if (!origin || !destination) return "";
+  return [
+    ROUTE_CACHE_PREFIX,
+    origin.lat.toFixed(5),
+    origin.lng.toFixed(5),
+    destination.lat.toFixed(5),
+    destination.lng.toFixed(5),
+  ].join(":");
+}
+
+function readRouteCache(key) {
+  if (!key) return null;
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeRouteCache(key, value) {
+  if (!key) return;
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore storage issues.
+  }
+}
+
+function fitMapToRoute(map, routePath = [], extraPoints = []) {
+  if (!map || !window.google?.maps?.LatLngBounds) return;
+
+  const bounds = new window.google.maps.LatLngBounds();
+  let count = 0;
+
+  routePath.forEach((point) => {
+    if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
+    bounds.extend(point);
+    count += 1;
+  });
+
+  extraPoints.forEach((point) => {
+    if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
+    bounds.extend(point);
+    count += 1;
+  });
+
+  if (count >= 2) {
+    map.fitBounds(bounds, 72);
+    return;
+  }
+
+  const fallback = routePath[0] || extraPoints[0] || DEFAULT_CENTER;
+  map.setCenter(fallback);
+  map.setZoom(14);
 }
 
 function OrderTrackingMap({
-  userLocation,
-  restaurantLocation,
+  routeOriginLocation,
+  routeDestinationLocation,
+  liveCursorLocation,
+  liveHeading = null,
   restaurantName,
+  destinationName = "Delivery Location",
   restaurantsAhead = [],
   onDirectionsCalculated,
-  orderType = "TAKEAWAY"
 }) {
   const mapRef = useRef(null);
-  const [directions, setDirections] = useState(null);
-  const lastRouteRequestedLocationRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const displayedCursorRef = useRef(null);
+  const userHasMovedMapRef = useRef(false);
+  const [routePath, setRoutePath] = useState([]);
+  const [displayedCursor, setDisplayedCursor] = useState(null);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: GOOGLE_MAPS_LIBRARIES
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   const center = useMemo(() => {
-    return userLocation
-      ? { lat: userLocation.lat, lng: userLocation.lng }
-      : (restaurantLocation ? { lat: restaurantLocation.lat, lng: restaurantLocation.lng } : DEFAULT_CENTER);
-  }, [userLocation?.lat, userLocation?.lng, restaurantLocation?.lat, restaurantLocation?.lng]);
+    return displayedCursor || routeDestinationLocation || routeOriginLocation || DEFAULT_CENTER;
+  }, [displayedCursor, routeDestinationLocation, routeOriginLocation]);
 
-  // Compute route directions from user to restaurant
+  const routeCacheKey = useMemo(
+    () => buildRouteCacheKey(routeOriginLocation, routeDestinationLocation),
+    [routeOriginLocation?.lat, routeOriginLocation?.lng, routeDestinationLocation?.lat, routeDestinationLocation?.lng]
+  );
+
   useEffect(() => {
-    if (!isLoaded || !userLocation || !restaurantLocation || !window.google) return;
+    const nextCursor = liveCursorLocation || routeDestinationLocation || routeOriginLocation || null;
+    if (!nextCursor) return;
 
-    if (lastRouteRequestedLocationRef.current) {
-      const dist = getDistanceMeters(userLocation, lastRouteRequestedLocationRef.current);
-      if (dist < 50) {
-        // Skip directions recalculation if distance change is less than 50 meters
-        return;
-      }
+    if (!displayedCursorRef.current) {
+      displayedCursorRef.current = nextCursor;
+      setDisplayedCursor(nextCursor);
+      return;
     }
 
-    const directionsService = new window.google.maps.DirectionsService();
-    directionsService.route(
-      {
-        origin: userLocation,
-        destination: restaurantLocation,
-        travelMode: window.google.maps.TravelMode.DRIVING,
-      },
-      (result, status) => {
-        if (status === window.google.maps.DirectionsStatus.OK) {
-          setDirections(result);
-          lastRouteRequestedLocationRef.current = userLocation;
-          const route = result.routes[0]?.legs[0];
-          if (route && onDirectionsCalculated) {
-            onDirectionsCalculated({
-              distanceText: route.distance?.text || "",
-              durationText: route.duration?.text || "",
-              durationValue: route.duration?.value || 0,
-            });
-          }
-        } else {
-          console.warn("Directions request failed:", status);
+    if (pointsAlmostEqual(displayedCursorRef.current, nextCursor, 0.0000001)) return;
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    const startPoint = displayedCursorRef.current;
+    const startedAt = performance.now();
+    const durationMs = 900;
+
+    const tick = (now) => {
+      const progress = Math.min(1, (now - startedAt) / durationMs);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const framePoint = interpolatePoint(startPoint, nextCursor, eased);
+      displayedCursorRef.current = framePoint;
+      setDisplayedCursor(framePoint);
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(tick);
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [liveCursorLocation?.lat, liveCursorLocation?.lng, routeDestinationLocation?.lat, routeDestinationLocation?.lng, routeOriginLocation?.lat, routeOriginLocation?.lng]);
+
+  useEffect(() => {
+    if (!isLoaded || !routeOriginLocation || !routeDestinationLocation || !window.google?.maps) return;
+
+    const cached = readRouteCache(routeCacheKey);
+    if (Array.isArray(cached?.path) && cached.path.length > 1) {
+      setRoutePath(cached.path);
+      onDirectionsCalculated?.(cached.meta || {});
+    }
+
+    let cancelled = false;
+
+    const loadRoute = async () => {
+      try {
+        const { Route } = await window.google.maps.importLibrary("routes");
+        const { routes } = await Route.computeRoutes({
+          origin: routeOriginLocation,
+          destination: routeDestinationLocation,
+          travelMode: "DRIVING",
+          fields: ["path", "distanceMeters", "durationMillis"],
+        });
+
+        if (cancelled || !Array.isArray(routes) || !routes[0]) {
+          return;
         }
+
+        const route = routes[0];
+        const nextPath = Array.isArray(route.path)
+          ? route.path.map((point) => ({
+              lat: typeof point.lat === "function" ? point.lat() : Number(point.lat),
+              lng: typeof point.lng === "function" ? point.lng() : Number(point.lng),
+            })).filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng))
+          : [];
+
+        const distanceMeters = Number(route.distanceMeters) || 0;
+        const durationMillis = Number(route.durationMillis) || 0;
+        const durationMinutes = durationMillis > 0 ? Math.max(1, Math.round(durationMillis / 60000)) : 0;
+        const distanceText = distanceMeters >= 1000
+          ? `${(distanceMeters / 1000).toFixed(distanceMeters >= 10000 ? 0 : 1)} km`
+          : `${Math.round(distanceMeters)} m`;
+        const durationText = durationMinutes > 0 ? `${durationMinutes} mins` : "";
+
+        const meta = {
+          distanceText,
+          durationText,
+          durationValue: durationMillis > 0 ? Math.round(durationMillis / 1000) : 0,
+        };
+
+        setRoutePath(nextPath);
+        onDirectionsCalculated?.(meta);
+        writeRouteCache(routeCacheKey, { path: nextPath, meta });
+      } catch (error) {
+        console.warn("Order tracking route request failed:", error);
       }
-    );
-  }, [isLoaded, userLocation?.lat, userLocation?.lng, restaurantLocation?.lat, restaurantLocation?.lng]);
+    };
 
-  // Fit bounds to cover user location, restaurant, and nearby restaurants
-  const fitMapBounds = useCallback(() => {
-    if (!mapRef.current || !window.google?.maps) return;
+    loadRoute();
 
-    const bounds = new window.google.maps.LatLngBounds();
-    let count = 0;
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, routeCacheKey, routeOriginLocation, routeDestinationLocation, onDirectionsCalculated]);
 
-    if (userLocation?.lat && userLocation?.lng) {
-      bounds.extend(userLocation);
-      count++;
-    }
-
-    if (restaurantLocation?.lat && restaurantLocation?.lng) {
-      bounds.extend(restaurantLocation);
-      count++;
-    }
-
-    restaurantsAhead.forEach((r) => {
-      const loc = r.location;
-      const rlat = typeof loc?.latitude === "number" ? loc.latitude
-        : (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null);
-      const rlng = typeof loc?.longitude === "number" ? loc.longitude
-        : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
-
-      if (rlat && rlng) {
-        bounds.extend({ lat: rlat, lng: rlng });
-        count++;
-      }
-    });
-
-    if (count >= 2) {
-      mapRef.current.fitBounds(bounds, 80); // padding of 80px
-    } else {
-      mapRef.current.setCenter(center);
-      mapRef.current.setZoom(14);
-    }
-  }, [userLocation?.lat, userLocation?.lng, restaurantLocation?.lat, restaurantLocation?.lng, restaurantsAhead, center]);
+  const fitBoundsNow = useCallback(() => {
+    fitMapToRoute(mapRef.current, routePath, [routeOriginLocation, routeDestinationLocation]);
+  }, [routePath, routeOriginLocation, routeDestinationLocation]);
 
   const onLoad = useCallback((map) => {
     mapRef.current = map;
-    fitMapBounds();
-  }, [fitMapBounds]);
+    userHasMovedMapRef.current = false;
+    fitBoundsNow();
+  }, [fitBoundsNow]);
 
   const onUnmount = useCallback(() => {
     mapRef.current = null;
   }, []);
 
-  // Recenter or fit bounds when coordinates change
   useEffect(() => {
-    if (isLoaded && mapRef.current) {
-      fitMapBounds();
-    }
-  }, [isLoaded, userLocation?.lat, userLocation?.lng, restaurantLocation?.lat, restaurantLocation?.lng, fitMapBounds]);
+    if (!isLoaded || !mapRef.current || userHasMovedMapRef.current) return;
+    fitBoundsNow();
+  }, [isLoaded, fitBoundsNow]);
 
   const mapOptions = useMemo(() => ({
     streetViewControl: false,
     mapTypeControl: false,
     fullscreenControl: false,
     zoomControl: true,
+    gestureHandling: "greedy",
+    styles: [
+      { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#5b6472" }] },
+      { featureType: "all", elementType: "labels.text.stroke", stylers: [{ color: "#f7f7f5" }] },
+      { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#d9dde3" }] },
+      { featureType: "poi", elementType: "geometry", stylers: [{ color: "#eceae4" }] },
+      { featureType: "poi", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+      { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+      { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+      { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#f4f1ea" }] },
+      { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#ebe6db" }] },
+      { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#ddd4c4" }] },
+      { featureType: "road.local", elementType: "geometry", stylers: [{ color: "#fbfbfa" }] },
+      { featureType: "transit", stylers: [{ visibility: "off" }] },
+      { featureType: "water", elementType: "geometry", stylers: [{ color: "#dfe7ef" }] },
+      { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#edf2e6" }] },
+    ],
   }), []);
 
-  const directionsOptions = useMemo(() => ({
-    suppressMarkers: true,
-    polylineOptions: {
-      strokeColor: "#0284c7",
-      strokeOpacity: 0.85,
-      strokeWeight: 6,
-    },
-  }), []);
-
-  const userMarkerOptions = useMemo(() => {
+  const cursorMarkerOptions = useMemo(() => {
     if (!window.google?.maps) return {};
     return {
       icon: {
-        path: window.google?.maps?.SymbolPath?.CIRCLE,
-        scale: 8,
-        fillColor: "#3b82f6",
+        path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+        scale: 6,
+        fillColor: "#2563eb",
         fillOpacity: 1,
         strokeColor: "#ffffff",
-        strokeWeight: 3,
+        strokeWeight: 2,
+        rotation: Number.isFinite(liveHeading) ? liveHeading : 0,
+        anchor: new window.google.maps.Point(0, 2),
       },
-      title: "Your Location",
-      zIndex: 100,
+      title: "Live Tracking",
+      zIndex: 120,
     };
-  }, [isLoaded]);
+  }, [liveHeading, isLoaded]);
 
-  const restaurantMarkerOptions = useMemo(() => {
+  const originMarkerOptions = useMemo(() => {
     if (!window.google?.maps) return {};
     return {
       icon: {
-        path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+        path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z",
         fillColor: "#ea580c",
         fillOpacity: 1,
         strokeColor: "#ffffff",
@@ -185,43 +310,42 @@ function OrderTrackingMap({
       title: restaurantName,
       zIndex: 90,
     };
-  }, [isLoaded, restaurantName]);
+  }, [restaurantName, isLoaded]);
 
-  const handleRecenterToUser = useCallback((e) => {
-    if (e) {
-      if (e.stopPropagation) e.stopPropagation();
-    }
+  const destinationMarkerOptions = useMemo(() => {
+    if (!window.google?.maps) return {};
+    return {
+      icon: {
+        path: window.google.maps.SymbolPath.CIRCLE,
+        scale: 7,
+        fillColor: "#10b981",
+        fillOpacity: 1,
+        strokeColor: "#ffffff",
+        strokeWeight: 3,
+      },
+      title: destinationName,
+      zIndex: 100,
+    };
+  }, [destinationName, isLoaded]);
 
-    if (mapRef.current) {
-      const uLat = userLocation?.lat ?? userLocation?.latitude;
-      const uLng = userLocation?.lng ?? userLocation?.longitude;
-      if (uLat != null && uLng != null) {
-        mapRef.current.panTo({ lat: Number(uLat), lng: Number(uLng) });
-        mapRef.current.setZoom(16);
-      }
-    }
+  const handleRecenter = useCallback((event) => {
+    if (event?.stopPropagation) event.stopPropagation();
+    userHasMovedMapRef.current = false;
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (pos?.coords && mapRef.current) {
-            mapRef.current.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-            mapRef.current.setZoom(16);
-          }
-        },
-        (err) => console.warn("GPS locate error:", err),
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-      );
+    if (!mapRef.current) return;
+    if (displayedCursor) {
+      mapRef.current.panTo(displayedCursor);
+      mapRef.current.setZoom(15);
+      return;
     }
-  }, [userLocation]);
+    fitBoundsNow();
+  }, [displayedCursor, fitBoundsNow]);
 
   useEffect(() => {
-    const handleCustomRecenter = () => {
-      handleRecenterToUser();
-    };
+    const handleCustomRecenter = () => handleRecenter();
     window.addEventListener("recenter-map", handleCustomRecenter);
     return () => window.removeEventListener("recenter-map", handleCustomRecenter);
-  }, [handleRecenterToUser]);
+  }, [handleRecenter]);
 
   if (!isLoaded) {
     return (
@@ -242,57 +366,46 @@ function OrderTrackingMap({
         zoom={14}
         onLoad={onLoad}
         onUnmount={onUnmount}
+        onDragStart={() => {
+          userHasMovedMapRef.current = true;
+        }}
         options={mapOptions}
       >
-        {/* Route directions line */}
-        {directions && (
-          <DirectionsRenderer
-            directions={directions}
-            options={directionsOptions}
+        {routePath.length > 1 && (
+          <Polyline
+            path={routePath}
+            options={{
+              strokeColor: "#0284c7",
+              strokeOpacity: 0.88,
+              strokeWeight: 6,
+            }}
           />
         )}
 
-        {/* User Location Marker */}
-        {userLocation && (
-          <Marker
-            position={userLocation}
-            options={userMarkerOptions}
-          />
-        )}
+        {routeOriginLocation && <Marker position={routeOriginLocation} options={originMarkerOptions} />}
+        {routeDestinationLocation && <Marker position={routeDestinationLocation} options={destinationMarkerOptions} />}
+        {displayedCursor && <Marker position={displayedCursor} options={cursorMarkerOptions} />}
 
-        {/* Restaurant Marker */}
-        {restaurantLocation && (
-          <Marker
-            position={restaurantLocation}
-            options={restaurantMarkerOptions}
-          />
-        )}
-
-        {/* Restaurants Ahead Markers */}
-        {restaurantsAhead.map((r, idx) => {
-          const loc = r.location;
-          const rlat = typeof loc?.latitude === "number" ? loc.latitude
-            : (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null);
-          const rlng = typeof loc?.longitude === "number" ? loc.longitude
-            : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
-
-          if (!rlat || !rlng) return null;
+        {restaurantsAhead.map((restaurant, index) => {
+          const loc = restaurant.location;
+          const lat = typeof loc?.latitude === "number" ? loc.latitude : (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null);
+          const lng = typeof loc?.longitude === "number" ? loc.longitude : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
           return (
             <Marker
-              key={r._id || idx}
-              position={{ lat: rlat, lng: rlng }}
+              key={restaurant._id || index}
+              position={{ lat, lng }}
               options={{
                 icon: {
-                  path: "M12 2C8.13 2 5 5.13 5 9c0 4.17 4.42 9.92 6.24 12.11.4.48 1.08.48 1.52 0C14.58 18.92 19 13.17 19 9c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5 14.5 7.62 14.5 9 13.38 11.5 12 11.5z",
+                  path: window.google.maps.SymbolPath.CIRCLE,
+                  scale: 5,
                   fillColor: "#84cc16",
-                  fillOpacity: 0.9,
+                  fillOpacity: 0.95,
                   strokeColor: "#ffffff",
-                  strokeWeight: 1,
-                  scale: 1.2,
-                  anchor: new window.google.maps.Point(12, 24),
+                  strokeWeight: 2,
                 },
-                title: r.restaurantName,
+                title: restaurant.restaurantName,
                 zIndex: 80,
               }}
             />
@@ -300,16 +413,11 @@ function OrderTrackingMap({
         })}
       </GoogleMap>
 
-      {/* Floating My Location Button */}
       <button
         type="button"
-        onClick={handleRecenterToUser}
-        onTouchEnd={(e) => {
-          e.preventDefault();
-          handleRecenterToUser(e);
-        }}
+        onClick={handleRecenter}
         title="My Location"
-        className="absolute bottom-6 right-4 z-30 w-12 h-12 bg-white hover:bg-gray-50 text-gray-900 dark:bg-neutral-900 dark:hover:bg-neutral-800 dark:text-white rounded-full flex items-center justify-center shadow-2xl border border-gray-100 dark:border-neutral-800 active:scale-90 transition-all duration-200 focus:outline-none cursor-pointer pointer-events-auto"
+        className="absolute bottom-6 right-4 z-30 w-12 h-12 bg-white hover:bg-gray-50 text-gray-900 dark:bg-neutral-900 dark:hover:bg-neutral-800 dark:text-white rounded-full flex items-center justify-center shadow-2xl border border-gray-100 dark:border-neutral-800 active:scale-90 transition-all duration-200 focus:outline-none"
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600 dark:text-orange-400">
           <circle cx="12" cy="12" r="6" />

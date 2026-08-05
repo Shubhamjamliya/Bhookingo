@@ -166,10 +166,10 @@ export default function BottomNavigation() {
             ease: [0.22, 1, 0.36, 1],
             duration: 0.5
           }}
-          className="md:hidden fixed bottom-0 left-0 right-0 z-50 pointer-events-none"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-50"
         >
           <div 
-            className="w-full h-18 bg-surface dark:bg-[#1a1a1a] border-t border-border dark:border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.12)] flex items-center justify-around px-2 overflow-hidden pointer-events-auto"
+            className="w-full h-18 bg-surface dark:bg-[#1a1a1a] border-t border-border dark:border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.12)] flex items-center justify-around px-2 overflow-hidden"
           >
             {navItems.map((item) => (
               <Link

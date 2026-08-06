@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Compass, Loader2, Navigation, AlertTriangle, List, Map, ShieldAlert, CheckCircle, Clock, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Share2, Heart, Wifi, Star, Car, ShieldCheck, BellRing, MapPin } from "lucide-react";
 import { toast } from "sonner";
-import { userAPI, restaurantAPI } from "@food/api";
+import { userAPI, restaurantAPI, orderAPI } from "@food/api";
 import { useProfile } from "@food/context/ProfileContext";
 import { Button } from "@food/components/ui/button";
 import { Dialog, DialogContent } from "@food/components/ui/dialog";
@@ -263,10 +263,41 @@ export default function DrivingMode() {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [liveTravelPosition, setLiveTravelPosition] = useState(null);
   const [isNextStopAlertOpen, setIsNextStopAlertOpen] = useState(false);
-  const [nextStopAlertMessage, setNextStopAlertMessage] = useState("");
   const [heading, setHeading] = useState(null);
   const [speed, setSpeed] = useState(null);
   const [locationError, setLocationError] = useState(null);
+  const [orderedRestaurantIds, setOrderedRestaurantIds] = useState(new Set());
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchActiveOrders = async () => {
+      try {
+        const res = await orderAPI.getOrders({ limit: 50, page: 1 });
+        let orders = [];
+        if (res?.data?.success && res?.data?.data?.orders) {
+          orders = res.data.data.orders;
+        } else if (res?.data?.orders) {
+          orders = res.data.orders;
+        } else if (res?.data?.data?.data && Array.isArray(res.data.data.data)) {
+          orders = res.data.data.data;
+        }
+        
+        const activeIds = new Set();
+        orders.forEach(order => {
+          const status = (order.status || order.orderStatus || "").toLowerCase();
+          if (!["delivered", "cancelled", "completed", "failed", "canceled"].includes(status)) {
+            const rId = order.restaurant?._id || order.restaurantId?._id || order.restaurantId || order.restaurant;
+            if (rId) activeIds.add(String(rId));
+          }
+        });
+        if (isMounted) setOrderedRestaurantIds(activeIds);
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetchActiveOrders();
+    return () => { isMounted = false; };
+  }, []);
 
   const restoredJourney = readSessionJson(DRIVING_JOURNEY_KEY, null);
   const restoredResultData = readSessionJson(DRIVING_RESULT_KEY, null);
@@ -555,7 +586,6 @@ export default function DrivingMode() {
       ? `Nearby restaurant alert. ${safeName} is ${safeDistance} kilometers ahead.`
       : `Nearby restaurant alert. ${safeName} is ahead on your route.`;
 
-    setNextStopAlertMessage(spokenMessage);
     setIsNextStopAlertOpen(true);
 
     try {
@@ -1127,7 +1157,10 @@ export default function DrivingMode() {
   }, [journey, status, fetchRestaurantsAhead]);
 
   useEffect(() => {
-    if (!nextStopId || !Number.isFinite(nextStopLiveDistanceKm) || nextStopLiveDistanceKm > NEXT_STOP_ALERT_DISTANCE_KM) {
+    const isOrdered = nextStopId && orderedRestaurantIds.has(String(nextStopId));
+    const alertThreshold = isOrdered ? 2.0 : NEXT_STOP_ALERT_DISTANCE_KM;
+
+    if (!nextStopId || !Number.isFinite(nextStopLiveDistanceKm) || nextStopLiveDistanceKm > alertThreshold) {
       return;
     }
 
@@ -1245,9 +1278,9 @@ export default function DrivingMode() {
                     {nextStop?.restaurantName || nextStop?.name || "No stop ahead"}
                   </div>
                   <div className="text-[11px] font-medium text-gray-500 dark:text-neutral-400">
-                    {nextStopAlertMessage || (nextStop
+                    {nextStop
                       ? `is ${Number.isFinite(nextStopLiveDistanceKm) ? nextStopLiveDistanceKm.toFixed(nextStopLiveDistanceKm >= 10 ? 0 : 1) : nextStop?.distanceKm ?? "-"} km from current location`
-                      : "No nearby restaurant on this route")}
+                      : "No nearby restaurant on this route"}
                   </div>
                 </div>
               </div>
@@ -1319,6 +1352,7 @@ export default function DrivingMode() {
             onRouteSelect={handleSelectRouteOption}
             onUserPositionChange={handleLiveTravelPositionChange}
             recenterBottomOffset={isDrawerExpanded ? "hidden" : "bottom-[230px]"}
+            orderedRestaurantIds={orderedRestaurantIds}
           />
         ) : (
           <div className="w-full h-full overflow-y-auto px-4 pb-20 pt-4 space-y-4 bg-gray-50/50 dark:bg-[#0a0a0a] pb-[calc(100px+env(safe-area-inset-bottom))]">
@@ -1567,15 +1601,15 @@ export default function DrivingMode() {
                     {selectedRestaurant.totalRatings && (
                       <span className="text-gray-400 dark:text-neutral-500">({selectedRestaurant.totalRatings} Ratings)</span>
                     )}
-                    <span className="text-gray-300 dark:text-neutral-800">Ã¢â‚¬Â¢</span>
+                    <span className="text-gray-300 dark:text-neutral-800">•</span>
                   </>
                 ) : null}
                 <span className="truncate max-w-[120px]">{selectedRestaurant.cuisines?.length ? selectedRestaurant.cuisines.join(", ") : "North Indian, Punjabi"}</span>
-                <span className="text-gray-300 dark:text-neutral-800">Ã¢â‚¬Â¢</span>
-                <span>Ã¢â€šÂ¹Ã¢â€šÂ¹</span>
+                <span className="text-gray-300 dark:text-neutral-800">•</span>
+                <span>₹₹</span>
                 {selectedRestaurant.facilities?.familyFriendly && (
                   <>
-                    <span className="text-gray-300 dark:text-neutral-800">Ã¢â‚¬Â¢</span>
+                    <span className="text-gray-300 dark:text-neutral-800">•</span>
                     <span className="text-orange-600 dark:text-orange-400 font-extrabold flex items-center gap-1">
                       <img src="/icons/familyfriendly.png" alt="Family Friendly" className="w-3.5 h-3.5 object-contain inline-block rounded-full" />
                       Family Friendly
@@ -1715,13 +1749,13 @@ export default function DrivingMode() {
                       <div key={offer._id || offer.id || idx} className="p-3 rounded-xl border border-orange-100 dark:border-neutral-900 bg-orange-50/20 dark:bg-neutral-950/20 flex flex-col justify-between min-h-[88px]">
                         <div>
                           <h5 className="text-xs font-black text-orange-600">
-                            {offer.discountType === 'percentage' ? `${offer.discountValue}% OFF` : `Ã¢â€šÂ¹${offer.discountValue} OFF`}
+                            {offer.discountType === 'percentage' ? `${offer.discountValue}% OFF` : `₹${offer.discountValue} OFF`}
                           </h5>
                           <p className="text-[10px] font-extrabold text-gray-800 dark:text-neutral-300 mt-0.5">
-                            {offer.maxDiscount ? `Up to Ã¢â€šÂ¹${offer.maxDiscount}` : (offer.title || offer.couponCode)}
+                            {offer.maxDiscount ? `Up to ₹${offer.maxDiscount}` : (offer.title || offer.couponCode)}
                           </p>
                           {offer.minOrderValue ? (
-                            <p className="text-[8px] font-bold text-gray-400 mt-1">Min order Ã¢â€šÂ¹{offer.minOrderValue}</p>
+                            <p className="text-[8px] font-bold text-gray-400 mt-1">Min order ₹{offer.minOrderValue}</p>
                           ) : null}
                         </div>
                         <div className="mt-2 text-[9px] font-extrabold text-orange-600 bg-orange-100/50 dark:bg-orange-950/40 px-2 py-0.5 rounded text-center tracking-wider uppercase">

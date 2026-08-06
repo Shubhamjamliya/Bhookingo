@@ -280,7 +280,8 @@ export default function DrivingMap({
   onRestaurantClick,
   onRouteSelect,
   onUserPositionChange,
-  recenterBottomOffset
+  recenterBottomOffset = "bottom-[140px]",
+  orderedRestaurantIds = new Set()
 }) {
   const mapRef = useRef(null);
   const markerAnimationFrameRef = useRef(null);
@@ -1143,15 +1144,20 @@ export default function DrivingMap({
               rlng = rlng + Math.cos(angle) * radius;
             }
 
+            const rId = String(r._id || r.id || idx);
+            const isOrdered = orderedRestaurantIds && orderedRestaurantIds.has(rId);
+            const markerColor = isOrdered ? "#16a34a" : "#ea580c";
+            const borderColor = isOrdered ? "border-green-400" : "border-orange-200";
+
             return (
               <Marker
-                key={r._id || idx}
+                key={rId}
                 position={{ lat: rlat, lng: rlng }}
                 onClick={() => onRestaurantClick(r)}
                 options={{
                   icon: {
                     path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
-                    fillColor: "#ea580c", // orange-600
+                    fillColor: markerColor,
                     fillOpacity: 1,
                     strokeColor: "#ffffff",
                     strokeWeight: 1.5,
@@ -1161,10 +1167,10 @@ export default function DrivingMap({
                   },
                   label: {
                     text: `${r.distanceKm} km`,
-                    color: "#ea580c",
+                    color: markerColor,
                     fontWeight: "900",
                     fontSize: "11px",
-                    className: "bg-white/90 dark:bg-neutral-900/90 border border-orange-200 px-1.5 py-0.5 rounded shadow-sm"
+                    className: `bg-white/90 dark:bg-neutral-900/90 border ${borderColor} px-1.5 py-0.5 rounded shadow-sm`
                   },
                   title: r.restaurantName,
                   zIndex: 50 + seenCount,

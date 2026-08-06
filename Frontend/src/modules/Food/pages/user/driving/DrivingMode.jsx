@@ -36,7 +36,7 @@ const RESTAURANT_QUERY_TIMEOUT_MS = 35000;
 const GEOLOCATION_MAX_AGE_MS = 15000;
 const NEXT_STOP_ALERT_DISTANCE_KM = 2.5;
 const NEXT_STOP_ALERT_COOLDOWN_MS = 90000;
-const PASSED_RESTAURANT_BUFFER_KM = 0.18;
+const PASSED_RESTAURANT_BUFFER_KM = 0.8;
 const ROUTE_SNAP_MAX_DISTANCE_KM = 3;
 
 const buildRouteCacheKey = (journeyLike) => {
@@ -589,24 +589,9 @@ export default function DrivingMode() {
     setIsNextStopAlertOpen(true);
 
     try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextClass) {
-        const audioContext = new AudioContextClass();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(660, audioContext.currentTime + 0.18);
-        gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.12, audioContext.currentTime + 0.03);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.32);
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.34);
-        window.setTimeout(() => {
-          audioContext.close().catch(() => {});
-        }, 500);
+      if (typeof window !== "undefined") {
+        const audio = new Audio("/restaurant_alert.mp3");
+        audio.play().catch(() => {});
       }
     } catch {
       // Ignore browser audio restrictions.
@@ -1113,7 +1098,7 @@ export default function DrivingMode() {
         return a.liveDistanceKm - b.liveDistanceKm;
       });
 
-    const firstAheadStop = rankedStops.find(({ routeProgress }) => (routeProgress.distanceAlongKm - userProgress.distanceAlongKm) >= -PASSED_RESTAURANT_BUFFER_KM);
+    const firstAheadStop = rankedStops.find(({ routeProgress, liveDistanceKm }) => (routeProgress.distanceAlongKm - userProgress.distanceAlongKm) >= -PASSED_RESTAURANT_BUFFER_KM || liveDistanceKm < 1.2);
     if (firstAheadStop) return firstAheadStop.restaurant;
 
     return rankedStops[0]?.restaurant || filteredRestaurants[0] || null;
@@ -1176,7 +1161,7 @@ export default function DrivingMode() {
     };
 
     playNextStopAlert(nextStop?.restaurantName || nextStop?.name, nextStopLiveDistanceKm);
-  }, [nextStopId, nextStopLiveDistanceKm, nextStop?.restaurantName, nextStop?.name, playNextStopAlert]);
+  }, [nextStopId, nextStopLiveDistanceKm, nextStop?.restaurantName, nextStop?.name, playNextStopAlert, orderedRestaurantIds]);
 
 
 
@@ -1267,32 +1252,46 @@ export default function DrivingMode() {
           )}
 
           <div className="flex items-end justify-end gap-2">
-            <div className={`overflow-hidden rounded-2xl border border-orange-200 bg-white/95 shadow-lg backdrop-blur transition-all duration-300 dark:border-orange-900/60 dark:bg-[#151515]/95 ${isNextStopAlertOpen ? "max-w-[240px] translate-x-0 opacity-100" : "max-w-0 translate-x-6 opacity-0"}`}>
-              <div className="flex min-w-[210px] items-center gap-2 px-3 py-2.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-950/40 dark:text-orange-300">
-                  <MapPin className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[10px] font-black uppercase tracking-[0.12em] text-orange-600">Next Restaurant</div>
-                  <div className="truncate text-xs font-bold text-gray-900 dark:text-white">
-                    {nextStop?.restaurantName || nextStop?.name || "No stop ahead"}
+            {(() => {
+              const isOrderedStop = nextStop && orderedRestaurantIds.has(String(nextStop._id || nextStop.id));
+              const alertBorderColor = isOrderedStop ? "border-green-400 dark:border-green-900/60" : "border-orange-200 dark:border-orange-900/60";
+              const alertIconBgColor = isOrderedStop ? "bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400" : "bg-orange-100 text-orange-600 dark:bg-orange-950/40 dark:text-orange-300";
+              const alertTitleColor = isOrderedStop ? "text-green-700 dark:text-green-400" : "text-orange-600";
+              const alertTitleText = isOrderedStop ? "Order Pickup" : "Next Restaurant";
+              const alertButtonBg = isOrderedStop ? "border-green-300 bg-green-500 text-white" : "border-orange-300 bg-orange-500 text-white";
+              const alertButtonHover = isOrderedStop ? "hover:border-green-200 hover:text-green-600" : "hover:border-orange-200 hover:text-orange-600";
+              
+              return (
+                <>
+                  <div className={`overflow-hidden rounded-2xl border ${alertBorderColor} bg-white/95 shadow-lg backdrop-blur transition-all duration-300 dark:bg-[#151515]/95 ${isNextStopAlertOpen ? "max-w-[240px] translate-x-0 opacity-100" : "max-w-0 translate-x-6 opacity-0"}`}>
+                    <div className="flex min-w-[210px] items-center gap-2 px-3 py-2.5">
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${alertIconBgColor}`}>
+                        <MapPin className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-[10px] font-black uppercase tracking-[0.12em] ${alertTitleColor}`}>{alertTitleText}</div>
+                        <div className="truncate text-xs font-bold text-gray-900 dark:text-white">
+                          {nextStop?.restaurantName || nextStop?.name || "No stop ahead"}
+                        </div>
+                        <div className="text-[11px] font-medium text-gray-500 dark:text-neutral-400">
+                          {nextStop
+                            ? `is ${Number.isFinite(nextStopLiveDistanceKm) ? nextStopLiveDistanceKm.toFixed(nextStopLiveDistanceKm >= 10 ? 0 : 1) : nextStop?.distanceKm ?? "-"} km from current location`
+                            : "No nearby restaurant on this route"}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-[11px] font-medium text-gray-500 dark:text-neutral-400">
-                    {nextStop
-                      ? `is ${Number.isFinite(nextStopLiveDistanceKm) ? nextStopLiveDistanceKm.toFixed(nextStopLiveDistanceKm >= 10 ? 0 : 1) : nextStop?.distanceKm ?? "-"} km from current location`
-                      : "No nearby restaurant on this route"}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsNextStopAlertOpen((prev) => !prev)}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-sm transition ${isNextStopAlertOpen ? "border-orange-300 bg-orange-500 text-white" : "border-white/80 bg-white text-gray-800 hover:border-orange-200 hover:text-orange-600 dark:border-neutral-800 dark:bg-[#151515] dark:text-white"}`}
-              title="Next restaurant alert"
-            >
-              <BellRing className="h-4 w-4" />
-            </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsNextStopAlertOpen((prev) => !prev)}
+                    className={`inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-sm transition ${isNextStopAlertOpen ? alertButtonBg : "border-white/80 bg-white text-gray-800 dark:border-neutral-800 dark:bg-[#151515] dark:text-white"} ${!isNextStopAlertOpen ? alertButtonHover : ""}`}
+                    title="Next restaurant alert"
+                  >
+                    <BellRing className="h-4 w-4" />
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>

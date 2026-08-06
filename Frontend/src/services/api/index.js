@@ -800,6 +800,9 @@ export const adminAPI = {
     formData.append("data", JSON.stringify(data));
     // Add files
     if (files.logo) formData.append("logo", files.logo);
+    if (files.userLogo) formData.append("userLogo", files.userLogo);
+    if (files.restaurantLogo) formData.append("restaurantLogo", files.restaurantLogo);
+    if (files.deliveryLogo) formData.append("deliveryLogo", files.deliveryLogo);
     if (files.favicon) formData.append("favicon", files.favicon);
 
     return apiClient.patch(API_ENDPOINTS.ADMIN.BUSINESS_SETTINGS, formData, {

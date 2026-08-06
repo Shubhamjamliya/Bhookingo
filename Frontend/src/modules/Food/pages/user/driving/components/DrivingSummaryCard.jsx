@@ -1,23 +1,45 @@
 import React from "react";
-import { ArrowLeft, Compass, Flag } from "lucide-react";
+import { ArrowLeft, Compass, Navigation, MapPin } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-export default function DrivingSummaryCard({ highwayRef, distanceAhead, nextStopEta, restaurantCount, onExit }) {
+const RollingNumber = ({ value }) => {
   return (
-    <div className="w-full overflow-hidden rounded-b-[28px] border-b border-orange-400 bg-white px-3 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.06)] animate-fade-in relative dark:border-orange-500 dark:bg-[#0a0a0a]">
+    <span className="relative inline-flex justify-center overflow-hidden">
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={value}
+          initial={{ y: "100%", opacity: 0 }}
+          animate={{ y: "0%", opacity: 1 }}
+          exit={{ y: "-100%", opacity: 0, position: "absolute", left: 0, right: 0 }}
+          transition={{ type: "spring", stiffness: 350, damping: 25 }}
+          className="inline-block whitespace-nowrap"
+        >
+          {value}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+};
+
+export default function DrivingSummaryCard({ highwayRef, distanceAhead, nextStopEta, restaurantCount, restaurants, maxDistance, onExit }) {
+  return (
+    <div className="w-full rounded-b-[32px] border-b border-white/20 bg-white/85 dark:bg-[#0a0a0a]/85 backdrop-blur-2xl px-5 py-5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)] transition-all relative overflow-hidden">
       
-      {/* Top Section */}
-      <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-neutral-800 mb-3.5">
+      {/* Decorative Gradient Blob (Subtle) */}
+      <div className="absolute -top-10 -left-10 w-32 h-32 bg-orange-500/20 dark:bg-orange-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 dark:bg-amber-600/5 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Top Header */}
+      <div className="flex items-center justify-between mb-6 relative z-10">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onExit}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition hover:bg-gray-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
-            aria-label="Go back"
+            className="group flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 shadow-sm transition-all hover:scale-105 active:scale-95"
+            aria-label="Exit Driving Mode"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4.5 w-4.5 text-gray-700 dark:text-neutral-300 group-hover:text-orange-600 transition-colors" />
           </button>
-          <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
-            <Compass className="w-4 h-4 text-orange-600" />
           </div>
           <div>
             <h3 className="text-sm font-black text-gray-950 dark:text-white leading-none">Restaurants Ahead</h3>

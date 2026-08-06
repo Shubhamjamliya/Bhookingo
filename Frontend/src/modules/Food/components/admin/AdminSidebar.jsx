@@ -528,7 +528,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-300 ease-out menu-item-animate text-left relative",
             isInSection ? "text-sm font-semibold" : "text-sm",
             isActive(item.path)
-              ? "bg-white text-[#DC2626] shadow-md shadow-black/10 font-semibold"
+              ? "bg-white text-neutral-950 shadow-md shadow-black/10 font-semibold"
               : "text-white/95 hover:bg-white/10 hover:text-white",
             isCollapsed && "justify-center px-2"
           )}
@@ -538,7 +538,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
           <Icon className={cn(
             "shrink-0 transition-all duration-300 text-left",
             isInSection ? "w-4 h-4" : "w-4 h-4",
-            isActive(item.path) ? "text-[#DC2626] scale-110" : "text-white/90"
+            isActive(item.path) ? "text-neutral-950 scale-110" : "text-white/90"
           )} />
           {!isCollapsed && (
             <div className="flex-1 flex items-center justify-between overflow-hidden">
@@ -609,7 +609,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             </div>
           </button>
           {isExpanded && item.subItems && (
-            <div className="ml-5 mt-1 space-y-1 border-[#B91C1C]/40 pl-3 submenu-animate overflow-hidden">
+            <div className="ml-5 mt-1 space-y-1 border-neutral-800 pl-3 submenu-animate overflow-hidden">
               {item.subItems.map((subItem, subIndex) => {
                 const allSubPaths = item.subItems.map(si => si.path)
                 return (
@@ -730,7 +730,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
       `}</style>
       <div
         className={cn(
-          "bg-[#DC2626] border-r border-[#B91C1C]/30 h-screen fixed left-0 top-0 z-50 flex flex-col overflow-hidden",
+          "bg-neutral-950 border-r border-neutral-900 h-screen fixed left-0 top-0 z-50 flex flex-col overflow-hidden",
           "transform transition-all duration-300 ease-in-out",
           "lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
@@ -738,11 +738,11 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
         )}
       >
         {/* Header with Logo and Brand */}
-        <div className="shrink-0 px-3 py-3 border-b border-[#991B1B]/40 bg-[#B91C1C] animate-[fadeIn_0.4s_ease-out]">
+        <div className="shrink-0 px-3 py-3 border-b border-neutral-800 bg-neutral-900 animate-[fadeIn_0.4s_ease-out]">
           <div className="flex items-center justify-between mb-3">
             {!isCollapsed && (
               <div className="flex items-center gap-2 animate-[slideIn_0.3s_ease-out]">
-                <div className="w-44 h-16 rounded-xl flex items-center justify-center -ml-1.5 shadow-md shadow-black/10 bg-white/95 p-1 border border-white/20">
+                <div className="w-44 h-16 flex items-center justify-center -ml-1.5 p-1">
                   {logoUrl ? (
                     <img
                       src={logoUrl || bhookingoLogo}
@@ -767,7 +767,7 @@ export default function AdminSidebar({ isOpen = false, onClose, onCollapseChange
             )}
             {isCollapsed && (
               <div className="w-full flex items-center justify-center">
-                <div className="w-10 h-10 rounded-lg bg-white/95 flex items-center justify-center shadow-md shadow-black/10 ring-1 ring-white/20 p-0.5">
+                <div className="w-10 h-10 flex items-center justify-center p-0.5">
                   {logoUrl || companyName ? (
                     <img
                       src={logoUrl || bhookingoLogo}

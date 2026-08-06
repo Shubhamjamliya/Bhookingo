@@ -152,6 +152,9 @@ router.get('/business-settings/public', businessSettingsController.getBusinessSe
 router.get('/business-settings', businessSettingsController.getBusinessSettings);
 router.patch('/business-settings', upload.fields([
     { name: 'logo', maxCount: 1 },
+    { name: 'userLogo', maxCount: 1 },
+    { name: 'restaurantLogo', maxCount: 1 },
+    { name: 'deliveryLogo', maxCount: 1 },
     { name: 'favicon', maxCount: 1 }
 ]), businessSettingsController.updateBusinessSettings);
 

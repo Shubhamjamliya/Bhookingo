@@ -4,18 +4,13 @@ import { config } from './src/config/env.js';
 import { validateConfig } from './src/config/validateEnv.js';
 import { connectDB, disconnectDB } from './src/config/db.js';
 import { connectRedis, closeRedis } from './src/config/redis.js';
-import { initSocket } from './src/config/socket.js';
+import { initRedisEmitter } from './src/config/socket.js';
 import { initializeQueues, closeBullMQConnection } from './src/queues/index.js';
-import { expireExpiredOffers } from './src/modules/food/admin/services/admin.service.js';
-import { syncExpiredFssaiNotifications } from './src/modules/food/restaurant/services/fssaiExpiry.service.js';
-
 import { logger } from './src/utils/logger.js';
 import { initializeFirebaseRealtime } from './src/config/firebase.js';
 
 const SHUTDOWN_TIMEOUT_MS = 10000;
 let server = null;
-let expireOffersInterval = null;
-let fssaiExpiryInterval = null;
 
 const gracefulShutdown = async (signal) => {
     logger.info(`${signal} received, starting graceful shutdown`);
@@ -28,8 +23,6 @@ const gracefulShutdown = async (signal) => {
             await disconnectDB();
             await closeRedis();
             await closeBullMQConnection();
-            if (expireOffersInterval) clearInterval(expireOffersInterval);
-            if (fssaiExpiryInterval) clearInterval(fssaiExpiryInterval);
             logger.info('Graceful shutdown complete');
             process.exit(0);
         } catch (err) {
@@ -54,11 +47,11 @@ const startServer = async () => {
         // 2. Create HTTP server from Express app
         const httpServer = http.createServer(app);
 
-        // 3. Initialize Socket.IO with the HTTP server (Redis adapter when Redis enabled)
-        await initSocket(httpServer);
-
+        // 3. Connect to Redis & Initialize Redis Emitter
         if (config.redisEnabled) {
             await connectRedis();
+            const { getRedisClient } = await import('./src/config/redis.js');
+            await initRedisEmitter(getRedisClient());
         }
         
         // 5a. Watchdog: Recover stuck orders from previous run
@@ -83,29 +76,9 @@ const startServer = async () => {
 
         // 6. Start the HTTP server
         server = httpServer.listen(config.port, config.host, () => {
-            logger.info(`Server running in ${config.nodeEnv} mode on ${config.host}:${config.port}`);
-            console.log(`🌐 [URL] http://localhost:${config.port}`);
+            logger.info(`API Server running in ${config.nodeEnv} mode on ${config.host}:${config.port}`);
+            console.log(`🌐 [API URL] http://localhost:${config.port}`);
         });
-
-        const runExpire = async () => {
-            try {
-                await expireExpiredOffers();
-            } catch (err) {
-                logger.error(`Expire offers error: ${err.message}`);
-            }
-        };
-        runExpire();
-        expireOffersInterval = setInterval(runExpire, 5 * 60 * 1000);
-
-        const runFssaiExpirySync = async () => {
-            try {
-                await syncExpiredFssaiNotifications();
-            } catch (err) {
-                logger.error(`FSSAI expiry sync error: ${err.message}`);
-            }
-        };
-        runFssaiExpirySync();
-        fssaiExpiryInterval = setInterval(runFssaiExpirySync, 60 * 60 * 1000);
 
         process.on('SIGINT', () => gracefulShutdown('SIGINT'));
         process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

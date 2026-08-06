@@ -14,6 +14,7 @@ const resolvedStorageDir = path.resolve(process.env.STORAGE_DIR || defaultStorag
 export const config = {
     // Basic server config
     port: process.env.PORT || 5000,
+    socketPort: process.env.SOCKET_PORT || 5001,
     host: process.env.HOST || '0.0.0.0',
     nodeEnv: process.env.NODE_ENV || 'development',
 

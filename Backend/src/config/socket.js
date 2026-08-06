@@ -5,6 +5,7 @@ import { verifyAccessToken } from '../core/auth/token.util.js';
 import { getFirebaseDB } from './firebase.js';
 
 let io = null;
+let redisEmitter = null;
 
 
 
@@ -214,14 +215,32 @@ export const initSocket = async (server) => {
 };
 
 /**
- * Returns the initialized Socket.IO instance.
- * @returns {Server | null}
+ * Returns the initialized Socket.IO instance or the Redis Emitter.
+ * @returns {Server | import('@socket.io/redis-emitter').Emitter | null}
  */
 export const getIO = () => {
-    if (!io) {
-        logger.warn('Socket.IO not initialized');
+    if (io) return io;
+    if (redisEmitter) return redisEmitter;
+    
+    logger.warn('Socket.IO (or Emitter) not initialized');
+    // Fallback stub for safety
+    return { to: () => ({ emit: () => {} }), emit: () => {} };
+};
+
+/**
+ * Initializes a Redis Emitter for the API Server.
+ * @param {import('redis').RedisClientType} redisClient 
+ */
+export const initRedisEmitter = async (redisClient) => {
+    if (config.redisEnabled && redisClient) {
+        try {
+            const { Emitter } = await import('@socket.io/redis-emitter');
+            redisEmitter = new Emitter(redisClient);
+            logger.info('Socket.IO Redis Emitter attached for API server');
+        } catch (err) {
+            logger.error(`Failed to initialize Redis Emitter: ${err.message}`);
+        }
     }
-    return io;
 };
 
 export const rooms = roomNames;

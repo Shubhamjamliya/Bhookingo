@@ -118,6 +118,8 @@ export default function BottomNavigation() {
     normalizedPath.startsWith("/restaurants") ||
     (isHomePaths && orderType === "takeaway") || isHomePaths; // Default to Takeaway
 
+  const isOrders = normalizedPath === "/user/orders" || normalizedPath.startsWith("/user/orders") || normalizedPath === "/food/user/orders" || normalizedPath.startsWith("/food/user/orders");
+
   const navItems = [
     {
       id: 'driving',
@@ -136,15 +138,13 @@ export default function BottomNavigation() {
         if (setOrderType) setOrderType('takeaway');
       }
     },
-    /*
     {
-      id: 'under250',
-      label: `Under â‚¹${under250PriceLimit}`,
-      icon: Tag,
-      to: '/food/user/under-250',
-      active: isUnder250
+      id: 'orders',
+      label: 'Orders',
+      icon: ShoppingBag,
+      to: '/user/orders',
+      active: isOrders
     },
-    */
     {
       id: 'profile',
       label: 'Profile',

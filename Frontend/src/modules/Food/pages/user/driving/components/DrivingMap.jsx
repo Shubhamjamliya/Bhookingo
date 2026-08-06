@@ -291,6 +291,11 @@ export default function DrivingMap({
   const lastEmittedUserPositionRef = useRef(null);
   const mapCenterRef = useRef(DEFAULT_CENTER);
   const hasAutoFittedBoundsRef = useRef(false);
+  const haloMarkerRef = useRef(null);
+  const arrowMarkerRef = useRef(null);
+  const lastStateUpdateRef = useRef(0);
+  const lastHeadingUpdateRef = useRef(0);
+
   const [localRoutePath, setLocalRoutePath] = useState([]);
   const [alternateRoutePaths, setAlternateRoutePaths] = useState([]);
   const [isRotationEnabled, setIsRotationEnabled] = useState(true);
@@ -423,7 +428,15 @@ export default function DrivingMap({
         lng: start.lng + (target.lng - start.lng) * eased,
       };
       displayedUserPositionRef.current = nextPosition;
-      setDisplayedUserPosition(nextPosition);
+
+      if (haloMarkerRef.current) haloMarkerRef.current.setPosition(nextPosition);
+      if (arrowMarkerRef.current) arrowMarkerRef.current.setPosition(nextPosition);
+
+      if (now - lastStateUpdateRef.current > 250 || progress === 1) {
+        lastStateUpdateRef.current = now;
+        setDisplayedUserPosition(nextPosition);
+      }
+
       if (progress < 1) {
         markerAnimationFrameRef.current = window.requestAnimationFrame(animate);
       } else {
@@ -467,7 +480,20 @@ export default function DrivingMap({
       const eased = 1 - Math.pow(1 - progress, 3);
       const nextHeading = (startHeading + normalizeDelta * eased + 360) % 360;
       displayedHeadingRef.current = nextHeading;
-      setDisplayedHeading(nextHeading);
+
+      if (arrowMarkerRef.current) {
+        const icon = arrowMarkerRef.current.getIcon();
+        if (icon) {
+          icon.rotation = nextHeading;
+          arrowMarkerRef.current.setIcon(icon);
+        }
+      }
+
+      if (now - lastHeadingUpdateRef.current > 250 || progress === 1) {
+        lastHeadingUpdateRef.current = now;
+        setDisplayedHeading(nextHeading);
+      }
+
       if (progress < 1) {
         headingAnimationFrameRef.current = window.requestAnimationFrame(animateHeading);
       } else {
@@ -839,69 +865,35 @@ export default function DrivingMap({
   }, [isRotationEnabled, displayedHeading]);
 
   useEffect(() => {
-    if (!mapRef.current) return undefined;
-
-    if (mapFollowAnimationFrameRef.current) {
-      window.cancelAnimationFrame(mapFollowAnimationFrameRef.current);
-      mapFollowAnimationFrameRef.current = null;
-    }
+    if (!mapRef.current) return;
 
     if (!isFollowingUser || !navigationTargetPosition) {
       if (isRotationEnabled) {
         mapRef.current.setHeading(displayedHeadingRef.current || 0);
         mapRef.current.setTilt(0);
       }
-      return undefined;
+      return;
     }
 
-    const startCenter = mapCenterRef.current || getNavigationCameraCenter(navigationTargetPosition, displayedHeadingRef.current);
     const targetCenter = getNavigationCameraCenter(navigationTargetPosition, displayedHeadingRef.current);
 
-    if (pointsAlmostEqual(startCenter, targetCenter)) {
-      mapCenterRef.current = targetCenter;
-      mapRef.current.setCenter(targetCenter);
+    if (pointsAlmostEqual(mapCenterRef.current, targetCenter, 0.00001)) {
       if (isRotationEnabled) {
         mapRef.current.setHeading(displayedHeadingRef.current || 0);
         mapRef.current.setTilt(0);
       }
-      return undefined;
+      return;
     }
 
-    let cancelled = false;
-    const startTime = performance.now();
-    const durationMs = simulationPosition ? 1200 : 950;
-
-    const animateMap = (now) => {
-      if (cancelled || !mapRef.current) return;
-      const progress = Math.min(1, (now - startTime) / durationMs);
-      const eased = 1 - Math.pow(1 - progress, 2.1);
-      const nextCenter = {
-        lat: startCenter.lat + (targetCenter.lat - startCenter.lat) * eased,
-        lng: startCenter.lng + (targetCenter.lng - startCenter.lng) * eased,
-      };
-      mapCenterRef.current = nextCenter;
-      mapRef.current.setCenter(nextCenter);
-      if (progress < 1) {
-        mapFollowAnimationFrameRef.current = window.requestAnimationFrame(animateMap);
-      } else {
-        mapFollowAnimationFrameRef.current = null;
-      }
-    };
-
-    mapFollowAnimationFrameRef.current = window.requestAnimationFrame(animateMap);
+    mapCenterRef.current = targetCenter;
+    
+    // Use native Google Maps panning. This avoids the 60fps setCenter() calls which cause tile white-outs.
+    mapRef.current.panTo(targetCenter);
 
     if (isRotationEnabled) {
       mapRef.current.setHeading(displayedHeadingRef.current || 0);
       mapRef.current.setTilt(0);
     }
-
-    return () => {
-      cancelled = true;
-      if (mapFollowAnimationFrameRef.current) {
-        window.cancelAnimationFrame(mapFollowAnimationFrameRef.current);
-        mapFollowAnimationFrameRef.current = null;
-      }
-    };
   }, [navigationTargetPosition, simulationPosition, isFollowingUser, isRotationEnabled]);
 
   const handleToggleNavigationMode = useCallback(() => {
@@ -1073,6 +1065,7 @@ export default function DrivingMap({
         {/* User Location Halo (Round White Circle around cursor like Google Maps) */}
         {(displayedUserPosition || navigationTargetPosition) && (
           <Marker
+            onLoad={(m) => { haloMarkerRef.current = m; }}
             position={displayedUserPosition || navigationTargetPosition}
             options={{
               icon: {
@@ -1092,6 +1085,7 @@ export default function DrivingMap({
         {/* User Location Marker (Navigation Arrow with smooth rotation) */}
         {(displayedUserPosition || navigationTargetPosition) && (
           <Marker
+            onLoad={(m) => { arrowMarkerRef.current = m; }}
             position={displayedUserPosition || navigationTargetPosition}
             options={{
               icon: {

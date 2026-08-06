@@ -3,6 +3,7 @@ import { Info, Phone, Upload, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { adminAPI } from "@food/api";
 import { setCachedSettings, updateFavicon, updateTitle } from "@food/utils/businessSettings";
+import { getMediaUrl } from "@/shared/utils/media";
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation";
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -65,11 +66,11 @@ export default function BusinessSetup() {
         });
 
         // Set logo and favicon previews if they exist
-        if (settings.logo?.url) setLogoPreview(settings.logo.url);
-        if (settings.userLogo?.url) setUserLogoPreview(settings.userLogo.url);
-        if (settings.restaurantLogo?.url) setRestaurantLogoPreview(settings.restaurantLogo.url);
-        if (settings.deliveryLogo?.url) setDeliveryLogoPreview(settings.deliveryLogo.url);
-        if (settings.favicon?.url) setFaviconPreview(settings.favicon.url);
+        if (settings.logo?.url) setLogoPreview(getMediaUrl(settings.logo.url));
+        if (settings.userLogo?.url) setUserLogoPreview(getMediaUrl(settings.userLogo.url));
+        if (settings.restaurantLogo?.url) setRestaurantLogoPreview(getMediaUrl(settings.restaurantLogo.url));
+        if (settings.deliveryLogo?.url) setDeliveryLogoPreview(getMediaUrl(settings.deliveryLogo.url));
+        if (settings.favicon?.url) setFaviconPreview(getMediaUrl(settings.favicon.url));
       }
     } catch (error) {
       debugError("Error fetching business settings:", error);
@@ -152,11 +153,11 @@ export default function BusinessSetup() {
         setCachedSettings(updatedSettings);
 
         // Update previews with new URLs if files were uploaded
-        if (updatedSettings.logo?.url) { setLogoPreview(updatedSettings.logo.url); setLogoFile(null); }
-        if (updatedSettings.userLogo?.url) { setUserLogoPreview(updatedSettings.userLogo.url); setUserLogoFile(null); }
-        if (updatedSettings.restaurantLogo?.url) { setRestaurantLogoPreview(updatedSettings.restaurantLogo.url); setRestaurantLogoFile(null); }
-        if (updatedSettings.deliveryLogo?.url) { setDeliveryLogoPreview(updatedSettings.deliveryLogo.url); setDeliveryLogoFile(null); }
-        if (updatedSettings.favicon?.url) { setFaviconPreview(updatedSettings.favicon.url); setFaviconFile(null); }
+        if (updatedSettings.logo?.url) { setLogoPreview(getMediaUrl(updatedSettings.logo.url)); setLogoFile(null); }
+        if (updatedSettings.userLogo?.url) { setUserLogoPreview(getMediaUrl(updatedSettings.userLogo.url)); setUserLogoFile(null); }
+        if (updatedSettings.restaurantLogo?.url) { setRestaurantLogoPreview(getMediaUrl(updatedSettings.restaurantLogo.url)); setRestaurantLogoFile(null); }
+        if (updatedSettings.deliveryLogo?.url) { setDeliveryLogoPreview(getMediaUrl(updatedSettings.deliveryLogo.url)); setDeliveryLogoFile(null); }
+        if (updatedSettings.favicon?.url) { setFaviconPreview(getMediaUrl(updatedSettings.favicon.url)); setFaviconFile(null); }
       }
 
       toast.success("Business settings saved successfully");

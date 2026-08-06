@@ -95,6 +95,10 @@ app.use(xssClean());
 const storageRoot = path.resolve(config.storageDir);
 app.use('/uploads', express.static(storageRoot));
 app.use('/images', express.static(storageRoot));
+app.use('/api/uploads', express.static(storageRoot));
+app.use('/api/v1/uploads', express.static(storageRoot));
+app.use('/api/images', express.static(storageRoot));
+app.use('/api/v1/images', express.static(storageRoot));
 
 app.use('/api', apiRateLimiter);
 // app.use('/api', responseTimeLogger);

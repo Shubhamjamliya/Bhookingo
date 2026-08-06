@@ -57,8 +57,10 @@ const FILTER_ITEMS = [
 export default function DrivingFilters({ activeFilter, onFilterChange }) {
   return (
     <div className="w-full bg-white dark:bg-[#111111] pt-3 pb-2 px-4 border-b dark:border-neutral-800">
-      {/* justify-between spreads all 7 pills evenly with no scroll */}
-      <div className="flex items-start justify-between gap-1">
+      <div className="flex items-start gap-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <style dangerouslySetInnerHTML={{__html: `
+          .flex::-webkit-scrollbar { display: none; }
+        `}} />
         {FILTER_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = activeFilter === item.id;
@@ -67,7 +69,7 @@ export default function DrivingFilters({ activeFilter, onFilterChange }) {
             <button
               key={item.id}
               onClick={() => onFilterChange(item.id)}
-              className="flex flex-col items-center flex-1 min-w-0 focus:outline-none bg-transparent border-none shadow-none group transition-all duration-200 active:scale-95"
+              className="flex flex-col items-center shrink-0 min-w-[56px] focus:outline-none bg-transparent border-none shadow-none group transition-all duration-200 active:scale-95"
             >
               {/* Circular Icon */}
               <div

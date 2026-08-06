@@ -1315,7 +1315,7 @@ export default function DrivingMode() {
                   <button
                     key={d}
                     onClick={() => setActiveDistanceLimit(d)}
-                    className={`px-3 py-1 text-xs font-bold rounded-full border transition-all ${activeDistanceLimit === d
+                    className={`px-3 py-1 text-xs font-bold rounded-full border transition-all shrink-0 ${activeDistanceLimit === d
                       ? "bg-orange-600 text-white border-orange-600 shadow-sm"
                       : "bg-white text-gray-600 border-gray-200 dark:bg-neutral-900 dark:text-neutral-400"
                       }`}

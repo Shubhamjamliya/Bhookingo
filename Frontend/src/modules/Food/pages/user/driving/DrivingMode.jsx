@@ -302,11 +302,7 @@ export default function DrivingMode() {
         newPath.includes("/checkout");
 
       if (!isStillInDrivingOrRestaurant && !sessionStorage.getItem(DRIVING_JOURNEY_KEY)) {
-        sessionStorage.removeItem("bh_origin_input");
-        sessionStorage.removeItem("bh_origin_coords");
-        sessionStorage.removeItem("bh_destination_input");
-        sessionStorage.removeItem("bh_destination_coords");
-        sessionStorage.removeItem("bh_selected_highway");
+        // intentionally keeping origin/destination in localStorage so it remains filled
       }
     };
   }, []);
@@ -368,20 +364,16 @@ export default function DrivingMode() {
     }
   }, [status]);
 
-  // Exit driving mode Ã¢â‚¬â€ clears journey and returns to start page
+  // Exit driving mode — clears journey and returns to start page
   const handleExitDriving = useCallback(() => {
     sessionStorage.removeItem(DRIVING_JOURNEY_KEY);
     clearDrivingCache();
-    sessionStorage.removeItem("bh_origin_input");
-    sessionStorage.removeItem("bh_origin_coords");
-    sessionStorage.removeItem("bh_destination_input");
-    sessionStorage.removeItem("bh_destination_coords");
-    sessionStorage.removeItem("bh_selected_highway");
+    // Intentionally keeping form inputs in localStorage
     setJourney(null);
     navigate("/food/user/driving", { replace: true });
   }, [navigate]);
 
-  // Intercept browser back button Ã¢â‚¬â€ go to driving start instead of history
+  // Intercept browser back button — go to driving start instead of history
   useEffect(() => {
     const onPopState = () => handleExitDriving();
     window.addEventListener("popstate", onPopState);

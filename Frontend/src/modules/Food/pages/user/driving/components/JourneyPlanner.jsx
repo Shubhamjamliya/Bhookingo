@@ -23,7 +23,7 @@ const DRIVING_ROUTE_OPTIONS_CACHE_KEY = "bh_driving_route_options_cache";
 
 const readSessionJson = (key, fallback = {}) => {
   try {
-    const stored = sessionStorage.getItem(key);
+    const stored = localStorage.getItem(key);
     return stored ? JSON.parse(stored) : fallback;
   } catch {
     return fallback;
@@ -32,7 +32,7 @@ const readSessionJson = (key, fallback = {}) => {
 
 const writeSessionJson = (key, value) => {
   try {
-    sessionStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(key, JSON.stringify(value));
   } catch {}
 };
 
@@ -47,11 +47,11 @@ export default function JourneyPlanner({
 }) {
   // Session storage loads
   const [originInput, setOriginInput] = useState(() => {
-    return sessionStorage.getItem("bh_origin_input") || "";
+    return localStorage.getItem("bh_origin_input") || "";
   });
   const [originCoords, setOriginCoords] = useState(() => {
     try {
-      const stored = sessionStorage.getItem("bh_origin_coords");
+      const stored = localStorage.getItem("bh_origin_coords");
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -59,11 +59,11 @@ export default function JourneyPlanner({
   });
 
   const [destinationInput, setDestinationInput] = useState(() => {
-    return sessionStorage.getItem("bh_destination_input") || "";
+    return localStorage.getItem("bh_destination_input") || "";
   });
   const [destinationCoords, setDestinationCoords] = useState(() => {
     try {
-      const stored = sessionStorage.getItem("bh_destination_coords");
+      const stored = localStorage.getItem("bh_destination_coords");
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -72,7 +72,7 @@ export default function JourneyPlanner({
 
   const [selectedHighway, setSelectedHighway] = useState(() => {
     try {
-      const stored = sessionStorage.getItem("bh_selected_highway");
+      const stored = localStorage.getItem("bh_selected_highway");
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -83,7 +83,7 @@ export default function JourneyPlanner({
   const [searchingOrigin, setSearchingOrigin] = useState(false);
   const [activeInput, setActiveInput] = useState(null); // "origin" | "destination"
   const [preventAutoDetect, setPreventAutoDetect] = useState(() => {
-    return !!sessionStorage.getItem("bh_origin_coords") || !!sessionStorage.getItem("bh_origin_input");
+    return !!localStorage.getItem("bh_origin_coords") || !!localStorage.getItem("bh_origin_input");
   });
 
   const isDevModeAvailable = import.meta.env.DEV || (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
@@ -157,7 +157,7 @@ export default function JourneyPlanner({
     setSelectedHighway(null);
     setAvailableHighways([]);
     setShowHighwaySelection(false);
-    sessionStorage.removeItem("bh_selected_highway");
+    localStorage.removeItem("bh_selected_highway");
   }, []);
 
   const searchPlaces = useCallback(async (query, signal) => {
@@ -236,40 +236,40 @@ export default function JourneyPlanner({
 
   // Sync to Session Storage
   useEffect(() => {
-    sessionStorage.setItem("bh_origin_input", originInput);
+    localStorage.setItem("bh_origin_input", originInput);
   }, [originInput]);
 
   useEffect(() => {
     if (originCoords) {
-      sessionStorage.setItem("bh_origin_coords", JSON.stringify(originCoords));
+      localStorage.setItem("bh_origin_coords", JSON.stringify(originCoords));
     } else {
-      sessionStorage.removeItem("bh_origin_coords");
+      localStorage.removeItem("bh_origin_coords");
     }
   }, [originCoords]);
 
   useEffect(() => {
-    sessionStorage.setItem("bh_destination_input", destinationInput);
+    localStorage.setItem("bh_destination_input", destinationInput);
   }, [destinationInput]);
 
   useEffect(() => {
     if (destinationCoords) {
-      sessionStorage.setItem("bh_destination_coords", JSON.stringify(destinationCoords));
+      localStorage.setItem("bh_destination_coords", JSON.stringify(destinationCoords));
     } else {
-      sessionStorage.removeItem("bh_destination_coords");
+      localStorage.removeItem("bh_destination_coords");
     }
   }, [destinationCoords]);
 
   useEffect(() => {
     if (selectedHighway) {
-      sessionStorage.setItem("bh_selected_highway", JSON.stringify(selectedHighway));
+      localStorage.setItem("bh_selected_highway", JSON.stringify(selectedHighway));
     } else {
-      sessionStorage.removeItem("bh_selected_highway");
+      localStorage.removeItem("bh_selected_highway");
     }
   }, [selectedHighway]);
 
   // Pre-fill current location if GPS coordinates exist and no inputs are present
   useEffect(() => {
-    if (!currentLocation || originCoords || originInput || sessionStorage.getItem("bh_origin_coords") || sessionStorage.getItem("bh_origin_input") || preventAutoDetect) {
+    if (!currentLocation || originCoords || originInput || localStorage.getItem("bh_origin_coords") || localStorage.getItem("bh_origin_input") || preventAutoDetect) {
       return;
     }
 
@@ -632,11 +632,11 @@ export default function JourneyPlanner({
     setSelectedHighway(null);
     setAvailableHighways([]);
     setShowHighwaySelection(false);
-    sessionStorage.removeItem("bh_origin_input");
-    sessionStorage.removeItem("bh_origin_coords");
-    sessionStorage.removeItem("bh_destination_input");
-    sessionStorage.removeItem("bh_destination_coords");
-    sessionStorage.removeItem("bh_selected_highway");
+    localStorage.removeItem("bh_origin_input");
+    localStorage.removeItem("bh_origin_coords");
+    localStorage.removeItem("bh_destination_input");
+    localStorage.removeItem("bh_destination_coords");
+    localStorage.removeItem("bh_selected_highway");
   };
 
   const handleGoHomeAndClear = () => {

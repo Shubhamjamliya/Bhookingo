@@ -390,26 +390,41 @@ export default function DrivingMode() {
     setIsDrawerExpanded((prev) => !prev);
   }, []);
 
+  const scrollContainerRef = useRef(null);
   const touchStartYRef = useRef(0);
   const touchMoveYRef = useRef(0);
+  const isDraggingRef = useRef(false);
+
   const handleTouchStart = (e) => {
     touchStartYRef.current = e.touches ? e.touches[0].clientY : e.clientY;
     touchMoveYRef.current = touchStartYRef.current;
+    isDraggingRef.current = true;
   };
 
   const handleTouchMove = (e) => {
+    if (!isDraggingRef.current) return;
     touchMoveYRef.current = e.touches ? e.touches[0].clientY : e.clientY;
   };
 
   const handleTouchEnd = () => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    
     const deltaY = touchMoveYRef.current - touchStartYRef.current;
     if (Math.abs(deltaY) > 10) {
       suppressHandleClickRef.current = true;
     }
+    
+    // Check if the scroll container is scrolled down. If it is, and the user is swiping down, we shouldn't collapse the drawer.
+    const isScrolledDown = scrollContainerRef.current && scrollContainerRef.current.scrollTop > 0;
+    
     if (deltaY < -18) {
       setIsDrawerExpanded(true);
     } else if (deltaY > 18) {
-      setIsDrawerExpanded(false);
+      // Only collapse if we are at the top of the scroll container
+      if (!isScrolledDown) {
+        setIsDrawerExpanded(false);
+      }
     }
     window.setTimeout(() => {
       suppressHandleClickRef.current = false;
@@ -1398,16 +1413,16 @@ export default function DrivingMode() {
         <div
           style={{ height: isDrawerExpanded ? "calc(100vh - 160px)" : "220px" }}
           className="absolute bottom-0 left-0 right-0 z-20 pointer-events-auto w-full max-w-md mx-auto bg-white dark:bg-[#111111] border-t dark:border-neutral-800/80 rounded-t-[24px] shadow-[0_-8px_30px_rgba(0,0,0,0.06)] flex flex-col transition-[height,transform,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[height] overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleTouchStart}
+          onMouseMove={handleTouchMove}
+          onMouseUp={handleTouchEnd}
         >
           {/* Drag Handle Top Bar */}
           <div
             onClick={toggleDrawer}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onMouseDown={handleTouchStart}
-            onMouseMove={handleTouchMove}
-            onMouseUp={handleTouchEnd}
             className="relative w-full cursor-pointer bg-white dark:bg-[#111111] py-2 shrink-0 flex flex-col items-center select-none touch-none"
           >
             <div className="w-12 h-1.5 bg-gray-200 dark:bg-neutral-800 rounded-full my-1" />
@@ -1431,7 +1446,10 @@ export default function DrivingMode() {
           />
 
           {/* Restaurants List Container */}
-          <div className={`flex-1 px-4 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerExpanded ? "overflow-y-auto pb-28 filters-scroll-hide" : "pb-4 overflow-hidden"}`}>
+          <div 
+            ref={scrollContainerRef}
+            className={`flex-1 px-4 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerExpanded ? "overflow-y-auto pb-28 filters-scroll-hide" : "pb-4 overflow-hidden"}`}
+          >
             {/* Header Row */}
             <div className="flex items-center justify-between py-3 border-b dark:border-neutral-900/60 mb-3 bg-white dark:bg-[#111111] sticky top-0 z-10">
               <h3 className="font-extrabold text-sm text-gray-900 dark:text-white">

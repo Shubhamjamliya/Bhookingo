@@ -1181,7 +1181,7 @@ export default function DrivingMap({
         })()}
       </GoogleMap>
 
-      <div className="absolute right-4 z-30 flex flex-col gap-3 pointer-events-none bottom-[368px]">
+      <div className={`absolute right-4 z-30 flex flex-col gap-3 pointer-events-none ${recenterBottomOffset === 'hidden' ? 'hidden' : 'bottom-[368px]'}`}>
         <button
           type="button"
           onClick={handleToggleNavigationMode}

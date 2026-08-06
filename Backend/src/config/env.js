@@ -53,8 +53,10 @@ export const config = {
     msg91Enabled: process.env.MSG91_ENABLED === 'true',
 
     // Rate limiting
+    rateLimitEnabled: process.env.RATE_LIMIT_ENABLED === 'true',
     rateLimitWindowMinutes: Number(process.env.RATE_LIMIT_WINDOW || 15),
-    rateLimitMaxRequests: Number(process.env.RATE_LIMIT_MAX || 100),
+    rateLimitMax: Number(process.env.RATE_LIMIT_MAX || 3500),
+    rateLimitDevMax: Number(process.env.RATE_LIMIT_DEV_MAX || 2000),
     authRateLimitWindowMinutes: Number(process.env.AUTH_RATE_LIMIT_WINDOW || 15),
     authRateLimitMax: Number(process.env.AUTH_RATE_LIMIT_MAX || 30),
 

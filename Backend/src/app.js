@@ -8,7 +8,7 @@ import mongoSanitize from 'mongo-sanitize';
 import xssClean from 'xss-clean';
 import routes from './routes/index.js';
 import errorHandler from './middleware/errorHandler.js';
-import { apiRateLimiter } from './middleware/rateLimit.js';
+// Rate limiter import removed for SOP compliance (applied in routes/index.js)
 import { responseTimeLogger } from './middleware/responseTimeLogger.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
 import { healthCheck } from './config/health.js';
@@ -100,7 +100,7 @@ app.use('/api/v1/uploads', express.static(storageRoot));
 app.use('/api/images', express.static(storageRoot));
 app.use('/api/v1/images', express.static(storageRoot));
 
-app.use('/api', apiRateLimiter);
+// Global rate limiter removed; SOP delegates limiting to specific Auth and Private routes.
 // app.use('/api', responseTimeLogger);
 
 app.use((req, res, next) => {

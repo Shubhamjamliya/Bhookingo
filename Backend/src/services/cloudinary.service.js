@@ -29,7 +29,7 @@ const normalizeUploadToken = (value, fallback = 'file') => {
 const buildFlatUploadFilename = ({ prefix = 'file', extension = '' }) => {
     const safePrefix = normalizeUploadToken(prefix, 'file');
     const safeExtension = extension ? `.${String(extension).replace(/^\.+/, '').toLowerCase()}` : '';
-    return `${safePrefix}_${crypto.randomUUID()}${safeExtension}`;
+    return `${safePrefix}_${crypto.randomUUID()}_${Date.now()}${safeExtension}`;
 };
 
 const getStoredPublicPath = (filename) => `/uploads/${filename}`;

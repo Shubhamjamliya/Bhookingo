@@ -384,7 +384,7 @@ export default function OrdersPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6 pb-24 md:pb-6">
         {/* Title */}
-        <h1 className="text-2xl md:text-[#B80B3D]xl font-bold text-gray-800 mb-6 text-center md:text-left">
+        <h1 className="text-2xl md:text-restaurant-primaryxl font-bold text-gray-800 mb-6 text-center md:text-left">
           Orders
         </h1>
 
@@ -466,10 +466,10 @@ export default function OrdersPage() {
             />
           ) : error ? (
             <div className="text-center py-12">
-              <p className="text-[#B80B3D] text-base md:text-lg mb-2">Error: {error}</p>
+              <p className="text-restaurant-primary text-base md:text-lg mb-2">Error: {error}</p>
               <button 
                 onClick={() => window.location.reload()} 
-                className="text-[#B80B3D] hover:underline"
+                className="text-restaurant-primary hover:underline"
               >
                 Retry
               </button>
@@ -521,7 +521,7 @@ export default function OrdersPage() {
                   
                   {/* Footer Row */}
                   <div className="flex items-center justify-between pt-2 md:pt-3 border-t border-gray-100 pb-3 md:pb-0">
-                    <span className="text-[#B80B3D] text-xs md:text-sm font-medium">
+                    <span className="text-restaurant-primary text-xs md:text-sm font-medium">
                     </span>
                     <div className="text-right">
                       <p className="text-gray-500 text-[10px] md:text-xs mb-0.5">Amount</p>

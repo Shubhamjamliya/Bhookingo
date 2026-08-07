@@ -423,7 +423,7 @@ export default function AllOrdersPage() {
       case "PREPARING":
         return "bg-yellow-600 text-white"
       case "READY":
-        return "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white"
+        return "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white"
         return "bg-purple-600 text-white"
       default:
         return "bg-gray-600 text-white"
@@ -522,9 +522,9 @@ export default function AllOrdersPage() {
             }`}
             aria-label="Filter"
           >
-            <Filter className={`w-5 h-5 ${hasActiveFilters() ? 'text-[#B80B3D]' : 'text-gray-900'}`} />
+            <Filter className={`w-5 h-5 ${hasActiveFilters() ? 'text-restaurant-primary' : 'text-gray-900'}`} />
             {hasActiveFilters() && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-[#B80B3D] to-[#66001D] rounded-full text-white text-xs flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary rounded-full text-white text-xs flex items-center justify-center font-bold">
                 {Object.values(filters).flat().length}
               </span>
             )}
@@ -556,14 +556,14 @@ export default function AllOrdersPage() {
             className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between"
           >
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-[#B80B3D]" />
+              <Filter className="w-4 h-4 text-restaurant-primary" />
               <span className="text-sm text-blue-900">
                 <span className="font-semibold">{Object.values(filters).flat().length}</span> filter{Object.values(filters).flat().length !== 1 ? 's' : ''} applied
               </span>
             </div>
             <button
               onClick={handleClearFilters}
-              className="text-xs text-[#B80B3D] hover:text-blue-800 font-medium hover:underline"
+              className="text-xs text-restaurant-primary hover:text-blue-800 font-medium hover:underline"
             >
               Clear all
             </button>
@@ -576,7 +576,7 @@ export default function AllOrdersPage() {
         {loading && (
           <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-4 border-[#B80B3D] border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-4 border-restaurant-primary border-t-transparent rounded-full animate-spin"></div>
               <p className="text-gray-600 text-sm">Loading orders...</p>
             </div>
           </div>
@@ -585,7 +585,7 @@ export default function AllOrdersPage() {
         {!loading && error && (
           <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
             <div className="flex flex-col items-center gap-3">
-              <p className="text-[#B80B3D] font-medium text-sm">Error loading orders</p>
+              <p className="text-restaurant-primary font-medium text-sm">Error loading orders</p>
               <p className="text-gray-500 text-xs">{error}</p>
             </div>
           </div>
@@ -671,7 +671,7 @@ export default function AllOrdersPage() {
                 </div>
               ))}
               {order.items.length > 2 && (
-                <p className="text-xs text-[#B80B3D] font-medium">+{order.items.length - 2} more items</p>
+                <p className="text-xs text-restaurant-primary font-medium">+{order.items.length - 2} more items</p>
               )}
             </div>
 
@@ -684,7 +684,7 @@ export default function AllOrdersPage() {
             {/* Reason/Status Message */}
             {order.reason && (
               <div className="mt-3 pt-3 border-t border-gray-200">
-                <p className="text-sm text-[#B80B3D]">{order.reason}</p>
+                <p className="text-sm text-restaurant-primary">{order.reason}</p>
               </div>
             )}
             </motion.div>
@@ -762,7 +762,7 @@ export default function AllOrdersPage() {
                           </p>
                         )}
                       </div>
-                      {isSelected && <span className="text-xs font-semibold text-[#B80B3D]">Selected</span>}
+                      {isSelected && <span className="text-xs font-semibold text-restaurant-primary">Selected</span>}
                     </button>
                   )
                 })}
@@ -909,13 +909,13 @@ export default function AllOrdersPage() {
                                   onClick={() => handleFilterToggle(option)}
                                   className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-all ${
                                     isChecked 
-                                      ? 'border-[#B80B3D] bg-white' 
+                                      ? 'border-restaurant-primary bg-white' 
                                       : 'border-gray-300 bg-white'
                                   }`}
                                 >
                                   {isChecked && (
                                     <div className="w-full h-full rounded-full flex items-center justify-center">
-                                      <div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#B80B3D] to-[#66001D]"></div>
+                                      <div className="w-3 h-3 rounded-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary"></div>
                                     </div>
                                   )}
                                 </div>
@@ -953,7 +953,7 @@ export default function AllOrdersPage() {
                 <button
                   onClick={handleApplyFilters}
                   disabled={isApplyingFilters}
-                  className="flex-1 px-4 py-2.5 bg-gradient-to-br from-[#B80B3D] to-[#66001D] rounded-lg text-sm font-medium text-white hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary rounded-lg text-sm font-medium text-white hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isApplyingFilters ? (
                     <>
@@ -983,7 +983,7 @@ export default function AllOrdersPage() {
             className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center"
           >
             <div className="flex flex-col items-center gap-3">
-              <svg className="animate-spin h-10 w-10 text-[#B80B3D]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-10 w-10 text-restaurant-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -1001,7 +1001,7 @@ export default function AllOrdersPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
             transition={{ duration: 0.3 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-60 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2"
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-60 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2"
           >
             <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

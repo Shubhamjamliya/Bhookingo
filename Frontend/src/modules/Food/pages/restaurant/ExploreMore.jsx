@@ -335,7 +335,7 @@ function TimePickerWheel({
           <div className="border-t border-gray-200 px-4 py-4 flex justify-center">
             <button
               onClick={handleConfirm}
-              className="text-[#B80B3D] hover:text-[#6a2f56] font-bold text-base transition-colors"
+              className="text-restaurant-primary hover:text-[#6a2f56] font-bold text-base transition-colors"
             >
               Okay
             </button>
@@ -913,7 +913,7 @@ export default function ExploreMore() {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: delay + 0.15 + (index * 0.02), type: "spring", stiffness: 500 }}
-                      className="absolute -top-1 -right-1 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                      className="absolute -top-1 -right-1 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white text-[10px] font-semibold px-1.5 py-0.5 rounded"
                     >
                       {item.badge}
                     </motion.span>
@@ -972,7 +972,7 @@ export default function ExploreMore() {
             </button>
             <button
               onClick={() => setProfileOpen(true)}
-              className={`p-2 transition-all duration-200 rounded-full ${profileOpen ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white shadow-lg" : "bg-gray-100 hover:bg-gray-200 text-gray-900"}`}
+              className={`p-2 transition-all duration-200 rounded-full ${profileOpen ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white shadow-lg" : "bg-gray-100 hover:bg-gray-200 text-gray-900"}`}
               aria-label="Profile"
             >
               <UserRound className="w-5 h-5" />
@@ -1006,7 +1006,7 @@ export default function ExploreMore() {
                     </h2>
                     {restaurantDisplayAddress && (
                       <div className="flex items-start gap-1 mt-1.5 opacity-90">
-                        <MapPin className="w-3 h-3 text-[#B80B3D] shrink-0 mt-0.5" />
+                        <MapPin className="w-3 h-3 text-restaurant-primary shrink-0 mt-0.5" />
                         <p className="text-[12px] text-gray-600 font-semibold leading-relaxed" title={restaurantDisplayAddress}>
                           {restaurantDisplayAddress}
                         </p>
@@ -1221,7 +1221,7 @@ export default function ExploreMore() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     autoFocus
-                    className="w-full px-4 py-2 pr-10 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#B80B3D] text-gray-900 placeholder-gray-500"
+                    className="w-full px-4 py-2 pr-10 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-restaurant-primary text-gray-900 placeholder-gray-500"
                   />
                   {searchQuery && (
                     <button
@@ -1267,7 +1267,7 @@ export default function ExploreMore() {
                                   </div>
                                   <span className="flex-1 text-base text-gray-900">{item.label}</span>
                                   {item.badge && (
-                                    <span className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white text-xs font-semibold px-2 py-1 rounded">
+                                    <span className="bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white text-xs font-semibold px-2 py-1 rounded">
                                       {item.badge}
                                     </span>
                                   )}
@@ -1590,7 +1590,7 @@ export default function ExploreMore() {
                 {/* Submit Button */}
                 <button
                   onClick={handleSubmitScheduleOff}
-                  className="w-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] hover:bg-[#6a2f56] text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md active:scale-[0.98] mt-4"
+                  className="w-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary hover:bg-[#6a2f56] text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md active:scale-[0.98] mt-4"
                 >
                   Submit
                 </button>
@@ -1676,7 +1676,7 @@ export default function ExploreMore() {
                     setStartTime({ hour: "9", minute: "00", period: "am" })
                     setEndTime({ hour: "5", minute: "00", period: "pm" })
                   }}
-                  className="w-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#6a2f56] transition-all shadow-md active:scale-[0.98]"
+                  className="w-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white py-3.5 rounded-xl font-bold text-sm hover:bg-[#6a2f56] transition-all shadow-md active:scale-[0.98]"
                 >
                   Done 
                 </button>
@@ -1785,7 +1785,7 @@ export default function ExploreMore() {
                   onClick={() => {
                     handleDeleteSchedule()
                   }}
-                  className="w-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                  className="w-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
                 >
                   Delete Schedule
                 </button>
@@ -1882,7 +1882,7 @@ export default function ExploreMore() {
                     setIsTakeawayUpdating(false);
                   }
                 }}
-                className={`w-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white font-bold py-4 rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+                className={`w-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white font-bold py-4 rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
                   isTakeawayUpdating ? "opacity-70 cursor-not-allowed" : ""
                 }`}
               >
@@ -1923,7 +1923,7 @@ export default function ExploreMore() {
                 
                 <div className="bg-gray-50 rounded-2xl p-4 mb-5 text-center">
                   <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">{balanceData.type}</p>
-                  <p className="text-[#B80B3D]xl font-black text-black">₹{balanceData.balance.toLocaleString('en-IN')}</p>
+                  <p className="text-restaurant-primaryxl font-black text-black">₹{balanceData.balance.toLocaleString('en-IN')}</p>
                 </div>
 
                 <p className="text-sm text-gray-500 mb-6 leading-relaxed">
@@ -1943,7 +1943,7 @@ export default function ExploreMore() {
                   </button>
                   <button
                     onClick={() => setShowBalanceWarning(false)}
-                    className="w-full h-12 rounded-xl bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white font-bold hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D] transition-colors"
+                    className="w-full h-12 rounded-xl bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white font-bold hover:bg-gradient-to-br from-restaurant-primary to-restaurant-secondary transition-colors"
                   >
                     Cancel & Withdraw
                   </button>
@@ -1969,7 +1969,7 @@ export default function ExploreMore() {
                 {/* Icon Circle */}
                 <div className="flex justify-center mb-4">
                   <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                    <Trash2 className="w-8 h-8 text-[#B80B3D]" />
+                    <Trash2 className="w-8 h-8 text-restaurant-primary" />
                   </div>
                 </div>
 
@@ -1980,7 +1980,7 @@ export default function ExploreMore() {
 
                 <div className="mb-5 bg-red-50 border-l-4 border-red-500 rounded-r-xl p-3 text-left">
                   <div className="flex items-center gap-2 mb-1">
-                    <AlertTriangle className="w-4 h-4 text-[#B80B3D] flex-shrink-0" />
+                    <AlertTriangle className="w-4 h-4 text-restaurant-primary flex-shrink-0" />
                     <span className="text-xs font-bold text-red-700 uppercase tracking-wider">Warning</span>
                   </div>
                   <p className="text-[11px] text-red-800 font-medium leading-tight">
@@ -1995,7 +1995,7 @@ export default function ExploreMore() {
                     placeholder="Type DELETE to confirm" 
                     value={deleteCaptcha}
                     onChange={(e) => setDeleteCaptcha(e.target.value.toUpperCase())}
-                    className="w-full h-12 px-4 rounded-xl border-2 border-gray-100 focus:border-[#B80B3D] focus:ring-4 focus:ring-red-50 outline-none transition-all font-bold text-center tracking-widest placeholder:tracking-normal placeholder:font-medium placeholder:text-gray-400"
+                    className="w-full h-12 px-4 rounded-xl border-2 border-gray-100 focus:border-restaurant-primary focus:ring-4 focus:ring-red-50 outline-none transition-all font-bold text-center tracking-widest placeholder:tracking-normal placeholder:font-medium placeholder:text-gray-400"
                   />
                 </div>
 
@@ -2025,7 +2025,7 @@ export default function ExploreMore() {
                       }
                     }}
                     disabled={isDeleting || deleteCaptcha !== "DELETE"}
-                    className="flex-1 h-12 rounded-xl bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white font-bold text-sm transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50"
+                    className="flex-1 h-12 rounded-xl bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white font-bold text-sm transition-all hover:bg-red-700 active:scale-95 disabled:opacity-50"
                   >
                     {isDeleting ? "Deleting..." : "Delete Account"}
                   </button>

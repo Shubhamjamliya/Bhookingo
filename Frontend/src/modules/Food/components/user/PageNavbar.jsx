@@ -121,7 +121,9 @@ export default function PageNavbar({
         // First check cache
         let cached = getCachedSettings()
         if (cached) {
-          if (cached.logo?.url) {
+          if (cached.userLogo?.url) {
+            setLogoUrl(cached.userLogo.url)
+          } else if (cached.logo?.url) {
             setLogoUrl(cached.logo.url)
           }
           if (cached.companyName) {
@@ -132,7 +134,9 @@ export default function PageNavbar({
         // Always try to load fresh data to ensure we have the latest
         const settings = await loadBusinessSettings()
         if (settings) {
-          if (settings.logo?.url) {
+          if (settings.userLogo?.url) {
+            setLogoUrl(settings.userLogo.url)
+          } else if (settings.logo?.url) {
             setLogoUrl(settings.logo.url)
           }
           if (settings.companyName) {
@@ -151,7 +155,9 @@ export default function PageNavbar({
     const handleSettingsUpdate = () => {
       const cached = getCachedSettings()
       if (cached) {
-        if (cached.logo?.url) {
+        if (cached.userLogo?.url) {
+          setLogoUrl(cached.userLogo.url)
+        } else if (cached.logo?.url) {
           setLogoUrl(cached.logo.url)
         }
         if (cached.companyName) {

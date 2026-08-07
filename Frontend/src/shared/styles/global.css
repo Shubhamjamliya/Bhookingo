@@ -109,6 +109,8 @@
 
   --color-page-bg: #F9F9FB;
   --color-primary-orange: #DC2626;
+  --color-restaurant-primary: #22C55E;
+  --color-restaurant-secondary: #16A34A;
   --font-poppins: var(--font-poppins);
   --font-outfit: var(--font-outfit);
 }

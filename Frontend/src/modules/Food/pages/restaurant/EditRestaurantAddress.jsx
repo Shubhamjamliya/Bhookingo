@@ -218,7 +218,7 @@ export default function EditRestaurantAddress() {
           className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
           aria-label="Go back"
         >
-          <ArrowLeft className="w-6 h-6 text-[#B80B3D]" />
+          <ArrowLeft className="w-6 h-6 text-restaurant-primary" />
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
@@ -246,12 +246,12 @@ export default function EditRestaurantAddress() {
         {/* Custom Marker Tooltip Overlay */}
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10">
           {/* Tooltip */}
-          <div className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white px-3 py-2 rounded-lg mb-2 whitespace-nowrap shadow-lg">
+          <div className="bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white px-3 py-2 rounded-lg mb-2 whitespace-nowrap shadow-lg">
             <p className="text-xs font-semibold">Your outlet location</p>
             <p className="text-[10px] text-gray-300">Orders will be picked up from here</p>
           </div>
           {/* Marker Pin */}
-          <div className="w-6 h-6 bg-gradient-to-br from-[#B80B3D] to-[#66001D] rounded-full border-2 border-white shadow-lg mx-auto"></div>
+          <div className="w-6 h-6 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary rounded-full border-2 border-white shadow-lg mx-auto"></div>
         </div>
 
         {/* Address Details Section - Overlays map at bottom */}
@@ -273,7 +273,7 @@ export default function EditRestaurantAddress() {
           <div className="pb-4">
             <button
               onClick={handleUpdateClick}
-              className="w-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white font-bold py-4 text-base rounded-xl shadow-lg shadow-[#B80B3D]/20 transition-all active:scale-[0.98]"
+              className="w-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white font-bold py-4 text-base rounded-xl shadow-lg shadow-restaurant-primary/20 transition-all active:scale-[0.98]"
             >
               Update Address
             </button>
@@ -304,7 +304,7 @@ export default function EditRestaurantAddress() {
               <div
                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                   selectedOption === "update_address"
-                    ? "border-[#B80B3D] bg-gradient-to-br from-[#B80B3D] to-[#66001D]"
+                    ? "border-restaurant-primary bg-gradient-to-br from-restaurant-primary to-restaurant-secondary"
                     : "border-gray-300"
                 }`}
               >
@@ -332,7 +332,7 @@ export default function EditRestaurantAddress() {
               <div
                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                   selectedOption === "minor_correction"
-                    ? "border-[#B80B3D] bg-gradient-to-br from-[#B80B3D] to-[#66001D]"
+                    ? "border-restaurant-primary bg-gradient-to-br from-restaurant-primary to-restaurant-secondary"
                     : "border-gray-300"
                 }`}
               >
@@ -346,7 +346,7 @@ export default function EditRestaurantAddress() {
           {/* Proceed Button */}
           <button
             onClick={handleProceedUpdate}
-            className="w-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white font-bold py-4 rounded-xl mt-6 shadow-lg shadow-[#B80B3D]/20 transition-all active:scale-[0.98]"
+            className="w-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white font-bold py-4 rounded-xl mt-6 shadow-lg shadow-restaurant-primary/20 transition-all active:scale-[0.98]"
           >
             Proceed to update
           </button>

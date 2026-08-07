@@ -376,7 +376,7 @@ export default function RestaurantOTP() {
         <svg viewBox="0 0 1440 320" className="w-full h-full block" preserveAspectRatio="none" overflow="visible">
           <defs>
             <linearGradient id="topRedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#B80B3D" />
+              <stop offset="0%" stopColor="#22C55E" />
               <stop offset="100%" stopColor="#66001D" />
             </linearGradient>
           </defs>
@@ -394,7 +394,7 @@ export default function RestaurantOTP() {
         <svg viewBox="0 0 1440 320" className="w-full h-full block" preserveAspectRatio="none" overflow="visible">
           <defs>
             <linearGradient id="botRedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#B80B3D" />
+              <stop offset="0%" stopColor="#22C55E" />
               <stop offset="100%" stopColor="#66001D" />
             </linearGradient>
           </defs>
@@ -417,14 +417,14 @@ export default function RestaurantOTP() {
               alt="Bhookingo Logo" 
               className="h-28 -mb-3.5 object-contain drop-shadow-md rounded-xl" 
             />
-            <h2 className="text-[25px] font-extrabold text-[#B80B3D] dark:text-red-400 tracking-tight font-['Outfit']">
+            <h2 className="text-[25px] font-extrabold text-restaurant-primary dark:text-red-400 tracking-tight font-['Outfit']">
               Restaurant Partner
             </h2>
             <div className="text-[13px] text-slate-500/90 dark:text-slate-400/90 font-['Outfit'] font-semibold tracking-[0.015em] leading-relaxed max-w-[300px] text-center px-4 mt-5 flex items-center justify-center gap-1.5">
               <span>We've sent a code to {contactInfo}</span>
               <button 
                 onClick={() => navigate("/food/restaurant/login")}
-                className="p-1.5 ml-1 bg-gradient-to-r from-[#B80B3D] to-[#66001D] hover:from-[#90082E] hover:to-[#4A0014] rounded-[10px] text-white shadow-md shadow-[#B80B3D]/20 transition-all hover:scale-105 active:scale-95"
+                className="p-1.5 ml-1 bg-gradient-to-r from-restaurant-primary to-restaurant-secondary hover:from-[#90082E] hover:to-[#4A0014] rounded-[10px] text-white shadow-md shadow-restaurant-primary/20 transition-all hover:scale-105 active:scale-95"
                 aria-label="Edit phone number"
               >
                 <Pencil className="w-3.5 h-3.5" strokeWidth={2.5} />
@@ -458,7 +458,7 @@ export default function RestaurantOTP() {
                     onChange={(e) => handleChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={index === 0 ? handlePaste : undefined}
-                    className={`w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-bold bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 shadow-sm rounded-[20px] outline-none transition-all duration-300 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-900 focus:border-[#B80B3D] focus:ring-4 focus:ring-[#B80B3D]/10 hover:border-gray-400 ${blockTimer > 0 ? "opacity-50 cursor-not-allowed border-red-400 bg-red-50 text-red-800" : ""}`}
+                    className={`w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-bold bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 shadow-sm rounded-[20px] outline-none transition-all duration-300 text-gray-900 dark:text-white focus:bg-white dark:focus:bg-gray-900 focus:border-restaurant-primary focus:ring-4 focus:ring-restaurant-primary/10 hover:border-gray-400 ${blockTimer > 0 ? "opacity-50 cursor-not-allowed border-red-400 bg-red-50 text-red-800" : ""}`}
                     placeholder="•"
                   />
                 ))}
@@ -485,7 +485,7 @@ export default function RestaurantOTP() {
               <button
                 type="submit"
                 disabled={isLoading || !isOtpComplete || blockTimer > 0}
-                className="w-full py-3.5 bg-gradient-to-r from-[#B80B3D] to-[#66001D] hover:from-[#A10935] hover:to-[#4F0016] disabled:opacity-50 text-white rounded-full font-medium text-base shadow-[0_8px_20px_rgba(184,11,61,0.3)] disabled:shadow-none transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4"
+                className="w-full py-3.5 bg-gradient-to-r from-restaurant-primary to-restaurant-secondary hover:from-[#A10935] hover:to-[#4F0016] disabled:opacity-50 text-white rounded-full font-medium text-base shadow-[0_8px_20px_rgba(184,11,61,0.3)] disabled:shadow-none transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-4"
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
@@ -499,10 +499,10 @@ export default function RestaurantOTP() {
 
               {blockTimer > 0 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center w-fit mx-auto px-6 py-2.5 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-100 dark:border-red-900/50 mt-4">
-                  <p className="text-[11px] font-bold text-[#B80B3D] uppercase tracking-wider">
+                  <p className="text-[11px] font-bold text-restaurant-primary uppercase tracking-wider">
                     Too many failed attempts
                   </p>
-                  <p className="text-sm font-bold text-[#B80B3D]">
+                  <p className="text-sm font-bold text-restaurant-primary">
                     Try again after {Math.floor((blockTimer - 1) / 60)}:{String((blockTimer - 1) % 60).padStart(2, '0')}
                   </p>
                 </motion.div>
@@ -514,11 +514,11 @@ export default function RestaurantOTP() {
           <div className="mt-8 text-center">
             <p className="text-[11px] text-gray-400/80 font-medium leading-relaxed max-w-[320px] mx-auto">
               By continuing, you agree to our <br />
-              <Link to="/food/restaurant/terms" className="text-gray-400 hover:text-[#B80B3D] transition-colors uppercase tracking-wider font-semibold">TERMS</Link>
+              <Link to="/food/restaurant/terms" className="text-gray-400 hover:text-restaurant-primary transition-colors uppercase tracking-wider font-semibold">TERMS</Link>
               <span className="mx-2 text-gray-400/80 font-bold">•</span>
-              <Link to="/food/restaurant/privacy" className="text-gray-400 hover:text-[#B80B3D] transition-colors uppercase tracking-wider font-semibold">PRIVACY</Link>
+              <Link to="/food/restaurant/privacy" className="text-gray-400 hover:text-restaurant-primary transition-colors uppercase tracking-wider font-semibold">PRIVACY</Link>
               <span className="mx-2 text-gray-400/80 font-bold">•</span>
-              <Link to="/food/restaurant/help-content" className="text-gray-400 hover:text-[#B80B3D] transition-colors uppercase tracking-wider font-semibold">SUPPORT</Link>
+              <Link to="/food/restaurant/help-content" className="text-gray-400 hover:text-restaurant-primary transition-colors uppercase tracking-wider font-semibold">SUPPORT</Link>
             </p>
           </div>
 
@@ -554,8 +554,8 @@ export default function RestaurantOTP() {
                 <X className="w-5 h-5" />
               </button>
 
-              <div className="w-20 h-20 bg-[#B80B3D]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <ShieldCheck className="h-10 w-10 text-[#B80B3D]" />
+              <div className="w-20 h-20 bg-restaurant-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <ShieldCheck className="h-10 w-10 text-restaurant-primary" />
               </div>
 
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">Restaurant Found!</h3>
@@ -567,7 +567,7 @@ export default function RestaurantOTP() {
               <div className="space-y-4">
                 <button
                   onClick={() => handleRestoreAction("restore")}
-                  className="w-full h-14 bg-gradient-to-r from-[#B80B3D] to-[#66001D] text-white font-bold rounded-2xl shadow-xl shadow-[#B80B3D]/20 transition-all active:scale-[0.98]"
+                  className="w-full h-14 bg-gradient-to-r from-restaurant-primary to-restaurant-secondary text-white font-bold rounded-2xl shadow-xl shadow-restaurant-primary/20 transition-all active:scale-[0.98]"
                 >
                   Restore My Account
                 </button>

@@ -89,7 +89,9 @@ export default function DesktopNavbar({ showLogo = true }) {
             try {
                 const cached = getCachedSettings()
                 if (cached) {
-                    if (cached.logo?.url) {
+                    if (cached.userLogo?.url) {
+                        setLogoUrl(cached.userLogo.url)
+                    } else if (cached.logo?.url) {
                         setLogoUrl(cached.logo.url)
                     }
                     if (cached.companyName) {
@@ -98,7 +100,9 @@ export default function DesktopNavbar({ showLogo = true }) {
                 } else {
                     const settings = await loadBusinessSettings()
                     if (settings) {
-                        if (settings.logo?.url) {
+                        if (settings.userLogo?.url) {
+                            setLogoUrl(settings.userLogo.url)
+                        } else if (settings.logo?.url) {
                             setLogoUrl(settings.logo.url)
                         }
                         if (settings.companyName) {
@@ -116,7 +120,9 @@ export default function DesktopNavbar({ showLogo = true }) {
         const handleSettingsUpdate = () => {
             const cached = getCachedSettings()
             if (cached) {
-                if (cached.logo?.url) {
+                if (cached.userLogo?.url) {
+                    setLogoUrl(cached.userLogo.url)
+                } else if (cached.logo?.url) {
                     setLogoUrl(cached.logo.url)
                 }
                 if (cached.companyName) {

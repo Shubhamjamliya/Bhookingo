@@ -438,7 +438,7 @@ export default function MenuCategoriesPage() {
 
         <button
           onClick={openCreateModal}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#B80B3D] to-[#66001D] px-4 py-3 font-semibold text-white"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-restaurant-primary to-restaurant-secondary px-4 py-3 font-semibold text-white"
         >
           <Plus className="h-5 w-5" />
           Add Category
@@ -584,7 +584,7 @@ export default function MenuCategoriesPage() {
                     value={formData.name}
                     onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="Enter category name"
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[#B80B3D]"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-restaurant-primary"
                   />
                 </div>
 
@@ -593,7 +593,7 @@ export default function MenuCategoriesPage() {
                   <select
                     value={formData.foodTypeScope}
                     onChange={(e) => setFormData((prev) => ({ ...prev, foodTypeScope: e.target.value }))}
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[#B80B3D]"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-restaurant-primary"
                   >
                     <option value="Veg">Veg</option>
                     <option value="Non-Veg">Non-Veg</option>
@@ -608,7 +608,7 @@ export default function MenuCategoriesPage() {
                     value={formData.type}
                     onChange={(e) => setFormData((prev) => ({ ...prev, type: e.target.value }))}
                     placeholder="Examples: Starters, Desserts, Drinks"
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-[#B80B3D]"
+                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-restaurant-primary"
                   />
                 </div>
 
@@ -654,7 +654,7 @@ export default function MenuCategoriesPage() {
                 <button
                   onClick={handleSaveCategory}
                   disabled={uploadingImage}
-                  className="flex-1 rounded-xl bg-gradient-to-br from-[#B80B3D] to-[#66001D] py-3 font-medium text-white disabled:opacity-60"
+                  className="flex-1 rounded-xl bg-gradient-to-br from-restaurant-primary to-restaurant-secondary py-3 font-medium text-white disabled:opacity-60"
                 >
                   {uploadingImage ? "Uploading..." : editingCategory ? "Save & Resubmit" : "Create"}
                 </button>

@@ -774,7 +774,7 @@ export default function HubFinance() {
             onClick={() => setActiveTab("payouts")}
             className={`flex-1 py-3 px-4 rounded-full font-medium text-sm transition-colors ${
               activeTab === "payouts"
-                ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white"
+                ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white"
                 : "bg-white text-gray-600 border border-gray-300"
             }`}
           >
@@ -784,7 +784,7 @@ export default function HubFinance() {
             onClick={() => setActiveTab("invoices")}
             className={`flex-1 py-3 px-4 rounded-full font-medium text-sm transition-colors ${
               activeTab === "invoices"
-                ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white"
+                ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white"
                 : "bg-white text-gray-600 border border-gray-300"
             }`}
           >
@@ -816,7 +816,7 @@ export default function HubFinance() {
                       disabled={!(financeData?.currentCycle?.estimatedPayout > 0)}
                       className={`w-full py-3 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 mt-4 transition-colors ${
                         financeData?.currentCycle?.estimatedPayout > 0
-                          ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white hover:bg-gray-800"
+                          ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white hover:bg-gray-800"
                           : "bg-gray-200 text-gray-500 cursor-not-allowed"
                       }`}
                     >
@@ -1039,7 +1039,7 @@ export default function HubFinance() {
                   <div className="relative" ref={downloadMenuRef}>
                     <button 
                       onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                      className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white rounded-lg px-4 py-3 flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
+                      className="bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white rounded-lg px-4 py-3 flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
                     >
                       <Download className="w-4 h-4" />
                       <span className="text-sm font-medium">Get report</span>
@@ -1060,7 +1060,7 @@ export default function HubFinance() {
                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
                             <div className="w-6 h-6 rounded-md bg-red-50 flex items-center justify-center">
-                              <FileText className="w-4 h-4 text-[#B80B3D]" />
+                              <FileText className="w-4 h-4 text-restaurant-primary" />
                             </div>
                             <span>Download PDF</span>
                           </button>
@@ -1257,7 +1257,7 @@ export default function HubFinance() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none"
                   />
                   {withdrawalAmount && parseFloat(withdrawalAmount) > (financeData?.currentCycle?.estimatedPayout || 0) && (
-                    <p className="text-sm text-[#B80B3D] mt-1">Amount cannot exceed available balance</p>
+                    <p className="text-sm text-restaurant-primary mt-1">Amount cannot exceed available balance</p>
                   )}
                 </div>
 
@@ -1314,7 +1314,7 @@ export default function HubFinance() {
                       }
                     }}
                     disabled={submittingWithdrawal || !withdrawalAmount || parseFloat(withdrawalAmount) <= 0 || parseFloat(withdrawalAmount) > (financeData?.currentCycle?.estimatedPayout || 0)}
-                    className="flex-1 px-4 py-3 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-3 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                   >
                     {submittingWithdrawal ? 'Submitting...' : 'Submit Request'}
                   </button>

@@ -232,7 +232,7 @@ export default function VerificationPending() {
           <div className="space-y-3">
             {isRejectedState ? (
               <Button
-                className="h-12 w-full rounded-xl bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-base font-semibold hover:opacity-95 shadow-md shadow-rose-900/10 text-white"
+                className="h-12 w-full rounded-xl bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-base font-semibold hover:opacity-95 shadow-md shadow-rose-900/10 text-white"
                 onClick={() => navigate("/food/restaurant/onboarding")}
               >
                 Update & Resubmit

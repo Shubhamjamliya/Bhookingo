@@ -495,13 +495,13 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold border ${
                             order.cancelledBy === "user"
                               ? "border-orange-200 bg-orange-50 text-orange-600"
-                              : "border-rose-200 bg-rose-50 text-rose-600"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-600"
                           }`}>
                           <span
                             className={`h-1 w-1 rounded-full ${
                               order.cancelledBy === "user"
                                 ? "bg-orange-500"
-                                : "bg-rose-500"
+                                : "bg-emerald-500"
                             }`}
                           />
                           {cancelledByText}
@@ -517,7 +517,7 @@ function CancelledOrders({ onSelectOrder, refreshToken = 0 }) {
                         {order.itemsSummary}
                       </p>
                       {order.cancellationReason && (
-                        <p className="text-[10px] text-[#B80B3D] mt-1 line-clamp-1">
+                        <p className="text-[10px] text-restaurant-primary mt-1 line-clamp-1">
                           Reason: {order.cancellationReason}
                         </p>
                       )}
@@ -648,7 +648,7 @@ function TableBookings() {
               const s = String(booking.status || '').toLowerCase();
               if (s === 'pending') {
                 return {
-                  style: { color: '#B80B3D', backgroundColor: '#FDF2F4', borderColor: '#FBCFE8' },
+                  style: { color: '#22C55E', backgroundColor: '#DCFCE7', borderColor: '#BBF7D0' },
                   text: 'APPROVAL REQ'
                 };
               }
@@ -733,13 +733,13 @@ function TableBookings() {
                 <div className="mt-4 flex gap-2">
                   <button
                     onClick={() => handleStatusUpdate(booking._id, 'accepted')}
-                    className="flex-1 py-2 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white text-[11px] font-black rounded-xl hover:opacity-95 transition-opacity uppercase tracking-widest shadow-sm"
+                    className="flex-1 py-2 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white text-[11px] font-black rounded-xl hover:opacity-95 transition-opacity uppercase tracking-widest shadow-sm"
                   >
                     Accept
                   </button>
                   <button
                     onClick={() => handleStatusUpdate(booking._id, 'cancelled')}
-                    className="flex-1 py-2 bg-white border border-rose-200 text-slate-600 text-[11px] font-black rounded-xl hover:bg-slate-50 transition-colors uppercase tracking-widest"
+                    className="flex-1 py-2 bg-white border border-emerald-200 text-slate-600 text-[11px] font-black rounded-xl hover:bg-slate-50 transition-colors uppercase tracking-widest"
                   >
                     Decline
                   </button>
@@ -881,7 +881,7 @@ function AllOrders({ onSelectOrder, onCancel }) {
         </div>
         <button 
           onClick={() => navigate('/food/restaurant/orders/all')}
-          className="text-xs font-bold text-[#B80B3D] hover:underline flex items-center gap-1"
+          className="text-xs font-bold text-restaurant-primary hover:underline flex items-center gap-1"
         >
           Full History
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1049,7 +1049,7 @@ function ScheduledOrders({ onSelectOrder, refreshToken }) {
         </div>
         <button
           onClick={() => navigate("/food/restaurant/orders/all")}
-          className="text-xs font-bold text-[#B80B3D] hover:underline flex items-center gap-1">
+          className="text-xs font-bold text-restaurant-primary hover:underline flex items-center gap-1">
           Full History
           <svg
             className="w-3 h-3"
@@ -2425,14 +2425,14 @@ export default function OrdersMain() {
         <div className="py-3">
           <div className="relative group">
             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <Search className="h-4.5 w-4.5 text-slate-400 group-focus-within:text-[#B80B3D] transition-colors" />
+              <Search className="h-4.5 w-4.5 text-slate-400 group-focus-within:text-restaurant-primary transition-colors" />
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by order ID or dish name"
-              className="w-full pl-10 pr-4 py-3 bg-white border border-slate-100 rounded-2xl text-[14px] font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:ring-2 focus:ring-[#B80B3D]/10 focus:border-[#B80B3D]/20 transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-3 bg-white border border-slate-100 rounded-2xl text-[14px] font-semibold text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:ring-2 focus:ring-restaurant-primary/10 focus:border-restaurant-primary/20 transition-all shadow-sm"
             />
             {searchQuery && (
               <button
@@ -2487,7 +2487,7 @@ export default function OrdersMain() {
                 {isActive && (
                   <motion.div
                     layoutId="activeFilterBackground"
-                    className="absolute inset-0 bg-gradient-to-br from-[#B80B3D] to-[#66001D] rounded-full -z-10"
+                    className="absolute inset-0 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary rounded-full -z-10"
                     initial={false}
                     transition={{
                       type: "spring",
@@ -2500,7 +2500,7 @@ export default function OrdersMain() {
                   <span className="flex items-center gap-1.5">
                     {tab.label}
                     {tab.id === 'table-booking' && pendingBookingsCount > 0 && (
-                      <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-[#B80B3D] text-[10px] font-black animate-bounce">
+                      <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-restaurant-primary text-[10px] font-black animate-bounce">
                         {pendingBookingsCount}
                       </span>
                     )}
@@ -2512,7 +2512,7 @@ export default function OrdersMain() {
                   </span>
                   {((tab.id === 'table-booking' && pendingBookingsCount > 0) || 
                     (tab.id === 'all' && pendingOrdersCount > 0)) && (
-                    <span className="w-2 h-2 rounded-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+                    <span className="w-2 h-2 rounded-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
                   )}
                 </div>
               </motion.button>
@@ -2607,24 +2607,24 @@ export default function OrdersMain() {
               transition={{ duration: 0.3, delay: 0.1 }}
               className={`mt-4 mb-4 rounded-2xl shadow-sm px-6 py-4 ${
                 restaurantStatus.rejectionReason
-                  ? "bg-white border border-red-200"
+                  ? "bg-white border border-emerald-200"
                   : "bg-white border border-yellow-200"
               }`}>
               {restaurantStatus.rejectionReason ? (
                 <>
                   <div className="flex items-start gap-3 mb-3">
-                    <div className="flex-shrink-0 rounded-full p-2 bg-red-100">
-                      <AlertCircle className="w-5 h-5 text-[#B80B3D]" />
+                    <div className="flex-shrink-0 rounded-full p-2 bg-emerald-100">
+                      <AlertCircle className="w-5 h-5 text-restaurant-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold text-[#B80B3D] mb-2">
+                      <h3 className="text-lg font-bold text-restaurant-primary mb-2">
                         Denied Verification
                       </h3>
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
-                        <p className="text-xs font-semibold text-red-800 mb-2">
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-3">
+                        <p className="text-xs font-semibold text-emerald-800 mb-2">
                           Reason for Rejection:
                         </p>
-                        <div className="text-xs text-red-700 space-y-1">
+                        <div className="text-xs text-emerald-700 space-y-1">
                           {restaurantStatus.rejectionReason
                             .split("\n")
                             .filter((line) => line.trim()).length > 1 ? (
@@ -2639,7 +2639,7 @@ export default function OrdersMain() {
                                 )}
                             </ul>
                           ) : (
-                            <p className="text-red-700">
+                            <p className="text-emerald-700">
                               {restaurantStatus.rejectionReason}
                             </p>
                           )}
@@ -2654,7 +2654,7 @@ export default function OrdersMain() {
                   <button
                     onClick={handleReverify}
                     disabled={isReverifying}
-                    className="w-full px-6 py-2.5 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    className="w-full px-6 py-2.5 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                     {isReverifying ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -2687,7 +2687,7 @@ export default function OrdersMain() {
             className="mt-4 mb-4 rounded-2xl shadow-sm px-6 py-4 bg-white border border-blue-200">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 rounded-full bg-blue-100">
-                <Clock className="w-4 h-4 text-[#B80B3D]" />
+                <Clock className="w-4 h-4 text-restaurant-primary" />
               </div>
               <h3 className="text-base font-bold text-gray-900">
                 Dining Activation Request Pending
@@ -2818,7 +2818,7 @@ export default function OrdersMain() {
                   {(popupOrder || newOrder)?.restaurantNote && (
                     <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-1">
-                        <FileText className="w-4 h-4 text-[#B80B3D]" />
+                        <FileText className="w-4 h-4 text-restaurant-primary" />
                         <p className="text-[10px] font-bold text-blue-800 uppercase tracking-wider">
                           Note for Restaurant
                         </p>
@@ -2879,7 +2879,7 @@ export default function OrdersMain() {
                                   key={index}
                                   className="flex items-start gap-3">
                                   <div
-                                    className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${item.isVeg ? "bg-green-500" : "bg-gradient-to-br from-[#B80B3D] to-[#66001D]"}`}></div>
+                                    className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${item.isVeg ? "bg-green-500" : "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary"}`}></div>
                                   <div className="flex-1">
                                     <div className="flex items-start justify-between">
                                       <p className="text-sm font-medium text-gray-900">
@@ -3013,13 +3013,13 @@ export default function OrdersMain() {
 
                     if (anyCancelled) {
                       return (
-                        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                          <p className="text-sm font-semibold text-red-700">
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                          <p className="text-sm font-semibold text-emerald-700">
                             {userCancelled
                               ? "Order canceled by user"
                               : "Order cancelled"}
                           </p>
-                          <p className="mt-1 text-xs text-[#B80B3D]">
+                          <p className="mt-1 text-xs text-restaurant-primary">
                             This order is no longer available for acceptance.
                           </p>
                         </div>
@@ -3030,9 +3030,9 @@ export default function OrdersMain() {
                       <div className="space-y-3">
                         <div
                           ref={acceptSliderRef}
-                          className="relative h-14 rounded-2xl bg-gradient-to-br from-[#B80B3D] to-[#66001D] overflow-hidden select-none touch-pan-y">
+                          className="relative h-14 rounded-2xl bg-gradient-to-br from-restaurant-primary to-restaurant-secondary overflow-hidden select-none touch-pan-y">
                           <motion.div
-                            className="absolute inset-y-0 left-0 bg-gradient-to-br from-[#B80B3D] to-[#66001D]"
+                            className="absolute inset-y-0 left-0 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary"
                             initial={{ width: "100%" }}
                             animate={{ width: `${(countdown / 240) * 100}%` }}
                             transition={{ duration: 1, ease: "linear" }}
@@ -3082,7 +3082,7 @@ export default function OrdersMain() {
                         <button
                           onClick={handleRejectClick}
                           disabled={isAcceptingOrder}
-                          className="w-full bg-white border-2 border-red-500 text-[#B80B3D] py-3 rounded-lg font-semibold text-sm hover:bg-red-50 transition-colors disabled:opacity-60">
+                          className="w-full bg-white border-2 border-emerald-500 text-restaurant-primary py-3 rounded-lg font-semibold text-sm hover:bg-emerald-50 transition-colors disabled:opacity-60">
                           Reject Order
                         </button>
                       </div>
@@ -3131,7 +3131,7 @@ export default function OrdersMain() {
                         onClick={() => setRejectReason(reason)}
                         className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                           rejectReason === reason
-                            ? "border-primary-orange bg-gradient-to-br from-[#B80B3D] to-[#66001D]/10"
+                            ? "border-primary-orange bg-gradient-to-br from-restaurant-primary to-restaurant-secondary/10"
                             : "border-gray-200 bg-white hover:border-gray-300"
                         }`}>
                         <div className="flex items-center justify-between">
@@ -3144,7 +3144,7 @@ export default function OrdersMain() {
                             {reason}
                           </span>
                           {rejectReason === reason && (
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] flex items-center justify-center">
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary flex items-center justify-center">
                               <svg
                                 className="w-3 h-3 text-white"
                                 fill="none"
@@ -3177,7 +3177,7 @@ export default function OrdersMain() {
                     disabled={!rejectReason}
                     className={`flex-1 py-3 rounded-lg font-semibold text-sm transition-colors ${
                       rejectReason
-                        ? "!bg-gradient-to-br from-[#B80B3D] to-[#66001D] !text-white hover:!bg-gradient-to-br from-[#B80B3D] to-[#66001D]/90"
+                        ? "!bg-gradient-to-br from-restaurant-primary to-restaurant-secondary !text-white hover:!bg-gradient-to-br from-restaurant-primary to-restaurant-secondary/90"
                         : "bg-gray-200 text-gray-400 cursor-not-allowed"
                     }`}>
                     Confirm Rejection
@@ -3226,14 +3226,14 @@ export default function OrdersMain() {
                         onClick={() => setCancelReason(reason)}
                         className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
                           cancelReason === reason
-                            ? "border-red-500 bg-red-50"
+                            ? "border-emerald-500 bg-emerald-50"
                             : "border-gray-200 hover:border-gray-300"
                         }`}>
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                               cancelReason === reason
-                                ? "border-red-500 bg-gradient-to-br from-[#B80B3D] to-[#66001D]"
+                                ? "border-emerald-500 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary"
                                 : "border-gray-300"
                             }`}>
                             {cancelReason === reason && (
@@ -3254,7 +3254,7 @@ export default function OrdersMain() {
                           <span
                             className={`text-sm font-medium ${
                               cancelReason === reason
-                                ? "text-red-700"
+                                ? "text-emerald-700"
                                 : "text-gray-700"
                             }`}>
                             {reason}
@@ -3277,7 +3277,7 @@ export default function OrdersMain() {
                     disabled={!cancelReason}
                     className={`flex-1 py-3 rounded-lg font-semibold text-sm transition-colors ${
                       cancelReason
-                        ? "!bg-gradient-to-br from-[#B80B3D] to-[#66001D] !text-white hover:bg-red-700"
+                        ? "!bg-gradient-to-br from-restaurant-primary to-restaurant-secondary !text-white hover:bg-emerald-700"
                         : "bg-gray-200 text-gray-400 cursor-not-allowed"
                     }`}>
                     Confirm Cancellation
@@ -3385,9 +3385,9 @@ export default function OrdersMain() {
               </div>
 
               {selectedOrder.status === "cancelled" && selectedOrder.cancellationReason && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl">
-                  <p className="text-[10px] font-bold text-[#B80B3D] uppercase mb-1">Cancellation Reason</p>
-                  <p className="text-xs text-red-700 font-medium">{selectedOrder.cancellationReason}</p>
+                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-100 rounded-xl">
+                  <p className="text-[10px] font-bold text-restaurant-primary uppercase mb-1">Cancellation Reason</p>
+                  <p className="text-xs text-emerald-700 font-medium">{selectedOrder.cancellationReason}</p>
                 </div>
               )}
 
@@ -3400,7 +3400,7 @@ export default function OrdersMain() {
 
               {selectedOrder.restaurantNote && (
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                  <p className="text-[10px] font-bold text-[#B80B3D] uppercase mb-1">Note for Restaurant</p>
+                  <p className="text-[10px] font-bold text-restaurant-primary uppercase mb-1">Note for Restaurant</p>
                   <p className="text-xs text-blue-700 font-medium">{selectedOrder.restaurantNote}</p>
                 </div>
               )}
@@ -3487,7 +3487,7 @@ export default function OrdersMain() {
                             type="button"
                             disabled={isVerifyingCompletionOtp || (isCash && !cashCollected)}
                             onClick={handleVerifyCompletionOtp}
-                            className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+                            className="bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
                           >
                             {isVerifyingCompletionOtp ? "Verifying..." : "Verify OTP & Complete"}
                           </button>
@@ -3495,7 +3495,7 @@ export default function OrdersMain() {
                       </div>
 
                       {completionError && (
-                        <p className="text-xs text-red-650 bg-red-50 border border-red-100 rounded-lg p-2 font-medium text-left">
+                        <p className="text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg p-2 font-medium text-left">
                           ⚠️ {completionError}
                         </p>
                       )}
@@ -3534,7 +3534,7 @@ export default function OrdersMain() {
 
                 return (
                   <button
-                    className="w-full bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white py-2.5 rounded-xl text-sm font-medium hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D]/90 transition-colors cursor-pointer"
+                    className="w-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white py-2.5 rounded-xl text-sm font-medium hover:bg-gradient-to-br from-restaurant-primary to-restaurant-secondary/90 transition-colors cursor-pointer"
                     onClick={() => setIsSheetOpen(false)}>
                     Close
                   </button>
@@ -3619,7 +3619,7 @@ function OrderCard({
   const normalizedStatus = String(status || "").toLowerCase();
   const isReady = normalizedStatus === "ready";
   const isPreparing = normalizedStatus === "preparing";
-  const brandColor = "#B80B3D";
+  const brandColor = "#22C55E";
 
   const statusLabel = String(status || "")
     .replace(/_/g, " ")
@@ -3687,7 +3687,7 @@ function OrderCard({
                     e.stopPropagation();
                     onCancel({ orderId, mongoId, customerName });
                   }}
-                  className="p-1 rounded-full bg-rose-50 text-rose-500"
+                  className="p-1 rounded-full bg-emerald-50 text-emerald-500"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -4331,7 +4331,7 @@ function EmptyState({ message = "Temporarily closed" }) {
             window.location.reload();
           }
         }}
-        className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors">
+        className="bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors">
         View status
       </button>
     </div>

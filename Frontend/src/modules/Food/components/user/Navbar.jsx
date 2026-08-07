@@ -38,7 +38,9 @@ export default function Navbar() {
       try {
         const cached = getCachedSettings()
         if (cached) {
-          if (cached.logo?.url) {
+          if (cached.userLogo?.url) {
+            setLogoUrl(cached.userLogo.url)
+          } else if (cached.logo?.url) {
             setLogoUrl(cached.logo.url)
           }
           if (cached.companyName) {
@@ -47,7 +49,9 @@ export default function Navbar() {
         } else {
           const settings = await loadBusinessSettings()
           if (settings) {
-            if (settings.logo?.url) {
+            if (settings.userLogo?.url) {
+              setLogoUrl(settings.userLogo.url)
+            } else if (settings.logo?.url) {
               setLogoUrl(settings.logo.url)
             }
             if (settings.companyName) {
@@ -65,7 +69,9 @@ export default function Navbar() {
         const handleSettingsUpdate = () => {
             const cached = getCachedSettings()
             if (cached) {
-                if (cached.logo?.url) {
+                if (cached.userLogo?.url) {
+                    setLogoUrl(cached.userLogo.url)
+                } else if (cached.logo?.url) {
                     setLogoUrl(cached.logo.url)
                 }
                 if (cached.companyName) {

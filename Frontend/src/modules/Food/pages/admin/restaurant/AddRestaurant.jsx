@@ -1737,7 +1737,7 @@ export default function AddRestaurant() {
                   <p className="text-sm font-semibold text-gray-900">Pin preview</p>
                   <p className="text-[11px] text-gray-500">Tap on the map or drag the pin to save the exact restaurant coordinates.</p>
                 </div>
-                <MapPin className="h-4 w-4 text-[#B80B3D]" />
+                <MapPin className="h-4 w-4 text-restaurant-primary" />
               </div>
               {isMapsSdkReady ? (
                 <div ref={pinMapContainerRef} className="h-[220px] w-full" />

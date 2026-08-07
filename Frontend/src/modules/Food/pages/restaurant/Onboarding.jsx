@@ -2281,7 +2281,7 @@ export default function RestaurantOnboarding() {
                 onClick={() => isEditing && setStep1({ ...step1, pureVegRestaurant: false })}
                 className={`px-3 py-1.5 text-xs rounded-full border ${
                   step1.pureVegRestaurant === false
-                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white border-gray-900"
                     : "bg-white text-gray-700 border-gray-200"
                 } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
               >
@@ -2478,7 +2478,7 @@ export default function RestaurantOnboarding() {
               />
               {isProcessingLink && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <Loader2 className="h-4 w-4 animate-spin text-[#B80B3D]" />
+                  <Loader2 className="h-4 w-4 animate-spin text-restaurant-primary" />
                 </div>
               )}
             </div>
@@ -2673,7 +2673,7 @@ export default function RestaurantOnboarding() {
                 <p className="text-sm font-semibold text-gray-900">Pin preview</p>
                 <p className="text-[11px] text-gray-500">Tap on the map or drag the pin to save the exact restaurant coordinates.</p>
               </div>
-              <MapPin className="h-4 w-4 text-[#B80B3D]" />
+              <MapPin className="h-4 w-4 text-restaurant-primary" />
             </div>
             {isMapsSdkReady ? (
               <div ref={pinMapContainerRef} className="h-[220px] w-full" />
@@ -2752,7 +2752,7 @@ export default function RestaurantOnboarding() {
                 }))}
                 className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
                   step1.facilities?.parking === false
-                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white border-gray-900"
                     : "bg-white text-gray-700 border-gray-200"
                 } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
               >
@@ -2789,7 +2789,7 @@ export default function RestaurantOnboarding() {
                 }))}
                 className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
                   step1.facilities?.wifi === false
-                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white border-gray-900"
                     : "bg-white text-gray-700 border-gray-200"
                 } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
               >
@@ -2826,7 +2826,7 @@ export default function RestaurantOnboarding() {
                 }))}
                 className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
                   step1.facilities?.familyFriendly === false
-                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white border-gray-900"
                     : "bg-white text-gray-700 border-gray-200"
                 } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
               >
@@ -2863,7 +2863,7 @@ export default function RestaurantOnboarding() {
                 }))}
                 className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
                   step1.facilities?.evCharging === false
-                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white border-gray-900"
                     : "bg-white text-gray-700 border-gray-200"
                 } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
               >
@@ -2900,7 +2900,7 @@ export default function RestaurantOnboarding() {
                 }))}
                 className={`px-4 py-1.5 text-xs rounded-full border font-medium transition-all ${
                   step1.facilities?.washroom === false
-                    ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white border-gray-900"
+                    ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white border-gray-900"
                     : "bg-white text-gray-700 border-gray-200"
                 } ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
               >
@@ -3301,7 +3301,7 @@ export default function RestaurantOnboarding() {
                           e.stopPropagation();
                           await handleRemoveMenuImage(idx)
                         }}
-                        className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white rounded-full p-1 shadow-md hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D] transition-colors"
+                        className="bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white rounded-full p-1 shadow-md hover:bg-gradient-to-br from-restaurant-primary to-restaurant-secondary transition-colors"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -3362,7 +3362,7 @@ export default function RestaurantOnboarding() {
                     e.stopPropagation();
                     await handleRemoveProfileImage()
                   }}
-                  className="absolute -top-1 -right-1 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white rounded-full p-1 shadow-md hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D] transition-colors z-10"
+                  className="absolute -top-1 -right-1 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white rounded-full p-1 shadow-md hover:bg-gradient-to-br from-restaurant-primary to-restaurant-secondary transition-colors z-10"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -3488,7 +3488,7 @@ export default function RestaurantOnboarding() {
                   key={day}
                   type="button"
                   onClick={() => toggleDay(day)}
-                  className={`aspect-square flex items-center justify-center rounded-md text-[11px] font-medium ${active ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white" : "bg-gray-100 text-gray-800"
+                  className={`aspect-square flex items-center justify-center rounded-md text-[11px] font-medium ${active ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white" : "bg-gray-100 text-gray-800"
                     }`}
                 >
                   {day.charAt(0)}
@@ -3616,7 +3616,7 @@ export default function RestaurantOnboarding() {
                   e.stopPropagation()
                   setStep3((prev) => ({ ...prev, panImage: null }))
                 }}
-                className="absolute top-2 right-2 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white rounded-full p-1 shadow-md hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D] transition-colors"
+                className="absolute top-2 right-2 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white rounded-full p-1 shadow-md hover:bg-gradient-to-br from-restaurant-primary to-restaurant-secondary transition-colors"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -3632,7 +3632,7 @@ export default function RestaurantOnboarding() {
           <button
             type="button"
             onClick={() => setStep3({ ...step3, gstRegistered: true })}
-            className={`px-3 py-1.5 text-xs rounded-full ${step3.gstRegistered ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white" : "bg-gray-100 text-gray-800"
+            className={`px-3 py-1.5 text-xs rounded-full ${step3.gstRegistered ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white" : "bg-gray-100 text-gray-800"
               }`}
           >
             Yes
@@ -3640,7 +3640,7 @@ export default function RestaurantOnboarding() {
           <button
             type="button"
             onClick={() => setStep3({ ...step3, gstRegistered: false })}
-            className={`px-3 py-1.5 text-xs rounded-full ${!step3.gstRegistered ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white" : "bg-gray-100 text-gray-800"
+            className={`px-3 py-1.5 text-xs rounded-full ${!step3.gstRegistered ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white" : "bg-gray-100 text-gray-800"
               }`}
           >
             No
@@ -3717,7 +3717,7 @@ export default function RestaurantOnboarding() {
                     e.stopPropagation()
                     setStep3((prev) => ({ ...prev, gstImage: null }))
                   }}
-                  className="absolute top-2 right-2 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white rounded-full p-1 shadow-md hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D] transition-colors"
+                  className="absolute top-2 right-2 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white rounded-full p-1 shadow-md hover:bg-gradient-to-br from-restaurant-primary to-restaurant-secondary transition-colors"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -3828,7 +3828,7 @@ export default function RestaurantOnboarding() {
                 e.stopPropagation()
                 setStep3((prev) => ({ ...prev, fssaiImage: null }))
               }}
-              className="absolute top-2 right-2 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white rounded-full p-1 shadow-md hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D] transition-colors"
+              className="absolute top-2 right-2 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white rounded-full p-1 shadow-md hover:bg-gradient-to-br from-restaurant-primary to-restaurant-secondary transition-colors"
             >
               <X className="w-3 h-3" />
             </button>
@@ -3945,7 +3945,7 @@ export default function RestaurantOnboarding() {
                   disabled={isLoggingOut}
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 text-[#B80B3D] hover:text-red-700 hover:bg-red-50"
+                  className="h-9 w-9 text-restaurant-primary hover:text-red-700 hover:bg-red-50"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />
@@ -4019,7 +4019,7 @@ export default function RestaurantOnboarding() {
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Top Half: brand gradient */}
-                <div className="bg-gradient-to-br from-[#B80B3D] to-[#66001D] p-6 text-center relative">
+                <div className="bg-gradient-to-br from-restaurant-primary to-restaurant-secondary p-6 text-center relative">
                   <div className="absolute top-[-20%] right-[-10%] w-28 h-28 bg-white/10 rounded-full blur-2xl pointer-events-none" />
                   
                   <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-3 border border-white/30">
@@ -4052,7 +4052,7 @@ export default function RestaurantOnboarding() {
         </AnimatePresence>
 
         {error && (
-          <div className="px-4 sm:px-6 pb-2 text-xs text-[#B80B3D]">
+          <div className="px-4 sm:px-6 pb-2 text-xs text-restaurant-primary">
             {error}
           </div>
         )}
@@ -4062,7 +4062,7 @@ export default function RestaurantOnboarding() {
             <Button
               onClick={handleNext}
               disabled={saving || (step === 3 && !isEditing)}
-              className={`text-sm bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white px-6 ${(step === 3 && !isEditing) ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`text-sm bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white px-6 ${(step === 3 && !isEditing) ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               {step === 3 ? (saving ? "Saving..." : "Finish") : saving ? "Saving..." : "Continue"}
             </Button>

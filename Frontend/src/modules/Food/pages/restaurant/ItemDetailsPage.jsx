@@ -793,8 +793,8 @@ export default function ItemDetailsPage() {
           <div className="px-4 pt-4">
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
               <p className="text-sm font-semibold text-red-700">Approval rejected</p>
-              <p className="mt-1 text-sm leading-5 text-[#B80B3D]">Reason: {currentRejectionReason}</p>
-              <p className="mt-2 text-xs font-medium uppercase tracking-[0.18em] text-[#B80B3D]">
+              <p className="mt-1 text-sm leading-5 text-restaurant-primary">Reason: {currentRejectionReason}</p>
+              <p className="mt-2 text-xs font-medium uppercase tracking-[0.18em] text-restaurant-primary">
                 Update the dish and save to send it for approval again
               </p>
             </div>
@@ -855,9 +855,9 @@ export default function ItemDetailsPage() {
                 {!isNewItem && (
                   <button
                     onClick={handleDelete}
-                    className="absolute top-4 right-4 w-10 h-10 bg-gradient-to-br from-[#B80B3D] to-[#66001D] rounded-full flex items-center justify-center shadow-lg hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D] transition-all z-20"
+                    className="absolute top-4 right-4 w-10 h-10 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary rounded-full flex items-center justify-center shadow-lg hover:bg-gradient-to-br from-restaurant-primary to-restaurant-secondary transition-all z-20"
                   >
-                    <Trash2 className="w-5 h-5 text-[#B80B3D]" />
+                    <Trash2 className="w-5 h-5 text-restaurant-primary" />
                   </button>
                 )}
 
@@ -892,7 +892,7 @@ export default function ItemDetailsPage() {
                         setCurrentImageIndex(index)
                       }}
                       className={`transition-all duration-300 rounded-full ${index === currentImageIndex
-                        ? "w-8 h-2 bg-gradient-to-br from-[#B80B3D] to-[#66001D]"
+                        ? "w-8 h-2 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary"
                         : "w-2 h-2 bg-gray-300 hover:bg-gray-400"
                         }`}
                     />
@@ -923,7 +923,7 @@ export default function ItemDetailsPage() {
             />
             <button
               onClick={handleCameraClick}
-              className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white rounded-xl text-sm font-semibold cursor-pointer hover:from-gray-800 hover:to-gray-700 transition-all shadow-md hover:shadow-lg active:scale-95"
+              className="w-full flex items-center justify-center gap-2.5 px-6 py-3.5 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white rounded-xl text-sm font-semibold cursor-pointer hover:from-gray-800 hover:to-gray-700 transition-all shadow-md hover:shadow-lg active:scale-95"
             >
               <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
                 <Plus className="w-4 h-4" />
@@ -996,7 +996,7 @@ export default function ItemDetailsPage() {
               </button>
             </div>
             <div className="flex items-center justify-between mt-1">
-              <span className={`text-xs ${descriptionLength < minDescriptionLength ? "text-[#B80B3D]" : "text-gray-500"}`}>
+              <span className={`text-xs ${descriptionLength < minDescriptionLength ? "text-restaurant-primary" : "text-gray-500"}`}>
                 {descriptionLength < minDescriptionLength ? "Min 5 characters required" : ""}
               </span>
               <span className="text-xs text-gray-500">
@@ -1018,7 +1018,7 @@ export default function ItemDetailsPage() {
               <button
                 onClick={() => setFoodType("Non-Veg")}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${foodType === "Non-Veg"
-                  ? "border-red-600 border-2 text-[#B80B3D]"
+                  ? "border-red-600 border-2 text-restaurant-primary"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
               >
@@ -1099,7 +1099,7 @@ export default function ItemDetailsPage() {
 
                   <div className="relative">
                     <label className="block text-xs text-gray-600 mb-1">
-                      Other platform GST (%) <span className="text-[#B80B3D]">*</span>
+                      Other platform GST (%) <span className="text-restaurant-primary">*</span>
                     </label>
                     <div className="relative">
                       <input
@@ -1121,7 +1121,7 @@ export default function ItemDetailsPage() {
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-600">%</span>
                     </div>
                     {otherPlatformGstError && (
-                      <p className="mt-1.5 text-xs text-[#B80B3D]">Other platform GST is required</p>
+                      <p className="mt-1.5 text-xs text-restaurant-primary">Other platform GST is required</p>
                     )}
                     <p className="mt-1.5 text-xs text-gray-500">
                       Enter the GST rate applied on other platforms for this item.
@@ -1284,7 +1284,7 @@ export default function ItemDetailsPage() {
                       setIsCategoryPopupOpen(false)
                       navigate('/restaurant/menu-categories')
                     }}
-                    className="p-2 rounded-lg bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+                    className="p-2 rounded-lg bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white hover:bg-gray-800 transition-colors flex items-center gap-1.5"
                     title="Add Category"
                   >
                     <Plus className="w-4 h-4" />
@@ -1311,7 +1311,7 @@ export default function ItemDetailsPage() {
                         setIsCategoryPopupOpen(false)
                         navigate('/restaurant/menu-categories')
                       }}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors"
                     >
                       <Plus className="w-5 h-5" />
                       Add Category
@@ -1324,7 +1324,7 @@ export default function ItemDetailsPage() {
                         key={cat.id}
                         onClick={() => handleCategorySelect(cat.id, cat.name)}
                         className={`w-full rounded-lg px-4 py-3 text-left transition-colors ${String(selectedCategoryId || "") === String(cat.id)
-                          ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white"
+                          ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white"
                           : "bg-gray-50 text-gray-900 hover:bg-gray-100"
                           }`}
                       >
@@ -1386,7 +1386,7 @@ export default function ItemDetailsPage() {
                       onClick={() => handleGstSelect(gstValue)}
                       className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                         gst === gstValue
-                          ? "bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white"
+                          ? "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white"
                           : "bg-gray-50 text-gray-900 hover:bg-gray-100"
                       }`}
                     >
@@ -1416,7 +1416,7 @@ export default function ItemDetailsPage() {
           <button
             onClick={handleSave}
             disabled={uploadingImages}
-            className="flex-1 py-3 px-4 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 uppercase bg-gradient-to-br from-[#B80B3D] to-[#66001D] text-white hover:bg-gradient-to-br from-[#B80B3D] to-[#66001D] disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+            className="flex-1 py-3 px-4 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 uppercase bg-gradient-to-br from-restaurant-primary to-restaurant-secondary text-white hover:bg-gradient-to-br from-restaurant-primary to-restaurant-secondary disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
           >
             {uploadingImages ? (
               <>

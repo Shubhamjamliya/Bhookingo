@@ -203,7 +203,7 @@ export default function OutletTimings() {
           <div className="mb-6">
             <div className="text-center mb-2">
             </div>
-            <div className="h-0.5 bg-gradient-to-br from-[#B80B3D] to-[#66001D]"></div>
+            <div className="h-0.5 bg-gradient-to-br from-restaurant-primary to-restaurant-secondary"></div>
           </div>
 
           {/* Day-wise Accordion */}

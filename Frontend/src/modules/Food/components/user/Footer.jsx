@@ -15,11 +15,15 @@ export default function Footer() {
     const loadLogo = async () => {
       try {
         const cached = getCachedSettings()
-        if (cached?.logo?.url) {
+        if (cached?.userLogo?.url) {
+          setLogoUrl(cached.userLogo.url)
+        } else if (cached?.logo?.url) {
           setLogoUrl(cached.logo.url)
         } else {
           const settings = await loadBusinessSettings()
-          if (settings?.logo?.url) {
+          if (settings?.userLogo?.url) {
+            setLogoUrl(settings.userLogo.url)
+          } else if (settings?.logo?.url) {
             setLogoUrl(settings.logo.url)
           }
         }
@@ -32,7 +36,9 @@ export default function Footer() {
     // Listen for business settings updates
     const handleSettingsUpdate = () => {
       const cached = getCachedSettings()
-      if (cached?.logo?.url) {
+      if (cached?.userLogo?.url) {
+        setLogoUrl(cached.userLogo.url)
+      } else if (cached?.logo?.url) {
         setLogoUrl(cached.logo.url)
       }
     }

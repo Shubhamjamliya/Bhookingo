@@ -6,7 +6,6 @@ import { toast } from "sonner"
 import { authAPI, userAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
 import logoNew from "@/assets/logo.webp"
-import GoogleLoginButton from "@food/components/user/GoogleLoginButton"
 import {
   Dialog,
   DialogContent,
@@ -778,32 +777,7 @@ export default function UnifiedOTPFastLogin() {
                     {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "GET OTP"}
                   </button>
 
-                  {/* OR Separator */}
-                  <div className="flex items-center py-1 mobile-divider-spacing">
-                    <div className="flex-1 h-px bg-gray-200"></div>
-                    <span className="px-3 text-[9px] font-bold text-gray-450 tracking-wider">OR</span>
-                    <div className="flex-1 h-px bg-gray-200"></div>
-                  </div>
-
-                  {/* Google & Apple Stack */}
-                  <div className="space-y-1.5">
-                    {/* Google Sign In */}
-                    <div className="w-full">
-                      <GoogleLoginButton />
-                    </div>
-
-                    {/* Apple Sign In */}
-                    <button
-                      type="button"
-                      className="w-full py-2.5 bg-surface border border-border hover:bg-gray-50 rounded-full flex items-center justify-center gap-2.5 font-bold text-gray-700 text-xs shadow-sm cursor-pointer transition-colors mobile-button-padding"
-                    >
-                      <svg className="w-5 h-5 text-text-primary" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C3.8 16.32 3.98 9.58 8.1 9.28c1.37.1 2.2.78 3.03.8.84-.02 1.86-.8 3.42-.65 1.64.16 2.82.88 3.5 1.95-3.22 1.88-2.69 6.08.28 7.3-.7 1.76-1.52 3.48-3.28 3.6zM12.03 9.25c-.15-2.23 1.66-4.14 3.75-4.25.2 2.52-2.1 4.54-3.75 4.25z" />
-                      </svg>
-                      <span>Continue with Apple</span>
-                    </button>
-                  </div>
-
+                  {/* Removed Google & Apple Stack */}
                   {/* Skip For Now Button */}
                   {blockTimer <= 0 && (
                     <button
@@ -850,12 +824,27 @@ export default function UnifiedOTPFastLogin() {
                             setOtpError("");
                           }
                           if (!val) return;
-                          const newOtp = otp.split("");
-                          newOtp[index] = val;
-                          const combined = newOtp.join("").slice(0, 4);
+                          
+                          // Ensure we have an array of length 4 for proper joining
+                          const currentOtpStr = (otp || "");
+                          const newOtpArray = [];
+                          for (let i = 0; i < 4; i++) {
+                            newOtpArray[i] = i === index ? val : (currentOtpStr[i] || "");
+                          }
+                          
+                          const combined = newOtpArray.join("");
                           setOtp(combined);
+                          
                           if (index < 3 && val) {
                             document.getElementById(`otp-${index + 1}`)?.focus();
+                          }
+                          
+                          // Automatically submit if all 4 digits are entered
+                          if (combined.length === 4 && !newOtpArray.includes("")) {
+                            // Slight delay to allow the state and UI to render the final digit
+                            setTimeout(() => {
+                              handleVerifyOTP(null, combined);
+                            }, 50);
                           }
                         }}
                         onKeyDown={(e) => {

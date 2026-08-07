@@ -6,7 +6,6 @@ import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { authAPI } from "@food/api"
 import loginBanner from "@food/assets/loginbanner.png"
-import GoogleLoginButton from "@food/components/user/GoogleLoginButton"
 const debugLog = (...args) => { }
 const debugWarn = (...args) => { }
 const debugError = (...args) => { }
@@ -181,22 +180,7 @@ export default function SignIn() {
             </Button>
           </form>
 
-          {/* Social login separator */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border dark:border-gray-800" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-surface dark:bg-[#1a1a1a] px-3 text-text-secondary dark:text-text-secondary font-medium">
-                or
-              </span>
-            </div>
-          </div>
-
-          {/* Social login buttons */}
-          <div className="grid grid-cols-1 gap-3">
-            <GoogleLoginButton />
-          </div>
+          {/* Removed social login buttons */}
 
           <div className="text-center text-xs md:text-sm text-text-secondary dark:text-text-secondary pt-2">
             <p className="mt-8 text-center text-xs text-text-secondary dark:text-text-secondary max-w-xs mx-auto">

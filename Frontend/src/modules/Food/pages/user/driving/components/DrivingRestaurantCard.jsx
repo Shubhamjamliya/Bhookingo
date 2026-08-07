@@ -59,12 +59,15 @@ function RestaurantImage({ images }) {
   }, [images]);
 
   return (
-    <img
-      src={images[idx] || FOOD_IMAGE_FALLBACK}
-      alt="Restaurant"
-      className="w-[80px] h-[115px] shrink-0 rounded-xl object-cover object-center"
-      onError={(e) => { e.target.src = FOOD_IMAGE_FALLBACK; }}
-    />
+    <div className="w-[85px] h-[105px] shrink-0 rounded-[14px] overflow-hidden shadow-sm relative">
+      <img
+        src={images[idx] || FOOD_IMAGE_FALLBACK}
+        alt="Restaurant"
+        className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700 ease-out"
+        onError={(e) => { e.target.src = FOOD_IMAGE_FALLBACK; }}
+      />
+      <div className="absolute inset-0 border border-black/5 rounded-[14px] pointer-events-none" />
+    </div>
   );
 }
 
@@ -174,8 +177,10 @@ export default function DrivingRestaurantCard({ restaurant, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="flex flex-row items-start gap-3 px-3.5 py-3 bg-white dark:bg-[#161616] border border-gray-100 dark:border-neutral-800 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.07)] hover:shadow-md transition-all duration-200 active:scale-[0.995] cursor-pointer w-full min-w-0"
+      className="flex flex-row items-start gap-4 px-3.5 py-3.5 bg-white dark:bg-[#161616] border border-orange-200 dark:border-orange-900/40 rounded-[20px] shadow-[0_4px_20px_-4px_rgba(249,115,22,0.08)] hover:shadow-[0_8px_25px_-4px_rgba(249,115,22,0.15)] hover:border-orange-500 dark:hover:border-orange-600 transition-all duration-300 active:scale-[0.985] cursor-pointer w-full min-w-0 group relative overflow-hidden"
     >
+      {/* Decorative subtle accent line on the left */}
+      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-orange-400 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       {/* ── Left: restaurant image ── */}
       <RestaurantImage images={foodImages} />
 

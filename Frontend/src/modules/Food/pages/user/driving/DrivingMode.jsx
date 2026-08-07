@@ -470,6 +470,9 @@ export default function DrivingMode() {
 
   // Details Modal State
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const lastSelectedRestaurantRef = useRef(null);
+  if (selectedRestaurant) lastSelectedRestaurantRef.current = selectedRestaurant;
+  const displayRestaurant = selectedRestaurant || lastSelectedRestaurantRef.current;
   const [restaurantOffers, setRestaurantOffers] = useState([]);
   const [isRoutePickerOpen, setIsRoutePickerOpen] = useState(false);
 
@@ -1539,13 +1542,13 @@ export default function DrivingMode() {
       )}
 
       {/* Detail Modal Component */}
-      {selectedRestaurant && (
-        <Dialog open={!!selectedRestaurant} onOpenChange={() => setSelectedRestaurant(null)}>
-          <DialogContent className="max-w-md w-[calc(100vw-32px)] p-0 overflow-hidden bg-white dark:bg-[#111111] rounded-2xl border-none shadow-2xl">
-
-            {/* Cover photo / Carousel with absolute overlays */}
-            <div className="relative h-52 bg-neutral-100 dark:bg-neutral-900">
-              <RestaurantImageCarousel restaurant={selectedRestaurant} />
+      <Dialog open={!!selectedRestaurant} onOpenChange={(open) => !open && setSelectedRestaurant(null)}>
+        <DialogContent className="max-w-md w-[calc(100vw-32px)] p-0 overflow-hidden bg-white dark:bg-[#111111] rounded-2xl border-none shadow-2xl">
+          {displayRestaurant && (
+            <>
+              {/* Cover photo / Carousel with absolute overlays */}
+              <div className="relative h-52 bg-neutral-100 dark:bg-neutral-900">
+                <RestaurantImageCarousel restaurant={displayRestaurant} />
 
               {/* Back Arrow button */}
               <button
@@ -1581,11 +1584,11 @@ export default function DrivingMode() {
               <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0">
                   <h3 className="text-lg font-black text-gray-900 dark:text-white leading-tight flex items-center gap-1.5">
-                    {selectedRestaurant.restaurantName}
+                    {displayRestaurant.restaurantName}
                     <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0 fill-current" />
                   </h3>
                   <p className="text-xs font-bold text-gray-400 dark:text-neutral-500 mt-1">
-                    {selectedRestaurant.highwayRef}, {selectedRestaurant.distanceKm} km Ahead
+                    {displayRestaurant.highwayRef}, {displayRestaurant.distanceKm} km Ahead
                   </p>
                 </div>
                 <div className="text-right shrink-0 flex flex-col items-end gap-1">
@@ -1594,29 +1597,29 @@ export default function DrivingMode() {
                   </span>
                   <span className="text-xs font-black text-orange-600 flex items-center gap-1">
                     <Car className="w-3.5 h-3.5 text-orange-500 fill-current" />
-                    {selectedRestaurant.etaMinutes} min
+                    {displayRestaurant.etaMinutes} min
                   </span>
                 </div>
               </div>
 
               {/* Rating & Tag Info Chips */}
               <div className="flex items-center flex-wrap gap-2 text-[10px] font-bold text-gray-500 dark:text-neutral-400">
-                {selectedRestaurant.rating && selectedRestaurant.rating > 0 ? (
+                {displayRestaurant.rating && displayRestaurant.rating > 0 ? (
                   <>
                     <div className="flex items-center gap-0.5 bg-green-700 text-white px-1.5 py-0.5 rounded shrink-0">
-                      <span>{selectedRestaurant.rating.toFixed(1)}</span>
+                      <span>{displayRestaurant.rating.toFixed(1)}</span>
                       <Star className="w-2.5 h-2.5 fill-current text-white" />
                     </div>
-                    {selectedRestaurant.totalRatings && (
-                      <span className="text-gray-400 dark:text-neutral-500">({selectedRestaurant.totalRatings} Ratings)</span>
+                    {displayRestaurant.totalRatings && (
+                      <span className="text-gray-400 dark:text-neutral-500">({displayRestaurant.totalRatings} Ratings)</span>
                     )}
                     <span className="text-gray-300 dark:text-neutral-800">•</span>
                   </>
                 ) : null}
-                <span className="truncate max-w-[120px]">{selectedRestaurant.cuisines?.length ? selectedRestaurant.cuisines.join(", ") : "North Indian, Punjabi"}</span>
+                <span className="truncate max-w-[120px]">{displayRestaurant.cuisines?.length ? displayRestaurant.cuisines.join(", ") : "North Indian, Punjabi"}</span>
                 <span className="text-gray-300 dark:text-neutral-800">•</span>
                 <span>₹₹</span>
-                {selectedRestaurant.facilities?.familyFriendly && (
+                {displayRestaurant.facilities?.familyFriendly && (
                   <>
                     <span className="text-gray-300 dark:text-neutral-800">•</span>
                     <span className="text-orange-600 dark:text-orange-400 font-extrabold flex items-center gap-1">
@@ -1628,13 +1631,13 @@ export default function DrivingMode() {
               </div>
 
               {/* Facilities Grid (Render only active dynamic cards) */}
-              {(selectedRestaurant.facilities?.parking ||
-                selectedRestaurant.facilities?.washroom ||
-                selectedRestaurant.facilities?.evCharging ||
-                selectedRestaurant.facilities?.wifi) && (
+              {(displayRestaurant.facilities?.parking ||
+                displayRestaurant.facilities?.washroom ||
+                displayRestaurant.facilities?.evCharging ||
+                displayRestaurant.facilities?.wifi) && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {/* Parking Card */}
-                    {selectedRestaurant.facilities?.parking && (
+                    {displayRestaurant.facilities?.parking && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                         <img src="/icons/carparking.png" alt="Parking" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Parking</span>
@@ -1642,7 +1645,7 @@ export default function DrivingMode() {
                     )}
 
                     {/* Washroom Card */}
-                    {selectedRestaurant.facilities?.washroom && (
+                    {displayRestaurant.facilities?.washroom && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                         <img src="/icons/washroom.png" alt="Washroom" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Washroom</span>
@@ -1650,7 +1653,7 @@ export default function DrivingMode() {
                     )}
 
                     {/* EV Charging Card */}
-                    {selectedRestaurant.facilities?.evCharging && (
+                    {displayRestaurant.facilities?.evCharging && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                         <img src="/icons/evcharging.png" alt="EV Charging" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">EV Charging</span>
@@ -1658,7 +1661,7 @@ export default function DrivingMode() {
                     )}
 
                     {/* Wi-Fi Card */}
-                    {selectedRestaurant.facilities?.wifi && (
+                    {displayRestaurant.facilities?.wifi && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                         <img src="/icons/wifi.png" alt="Wi-Fi" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Wi-Fi</span>
@@ -1686,11 +1689,11 @@ export default function DrivingMode() {
                   );
                 };
 
-                const overallFacilityRatingObj = selectedRestaurant.facilityRatings?.overall;
+                const overallFacilityRatingObj = displayRestaurant.facilityRatings?.overall;
                 const overallFacilityAvg = overallFacilityRatingObj?.average || 0;
                 const overallFacilityCount = overallFacilityRatingObj?.count || 0;
 
-                const restaurantFacilities = selectedRestaurant.facilities || {};
+                const restaurantFacilities = displayRestaurant.facilities || {};
                 const activeFacilities = FACILITIES_CONFIG.filter(f => restaurantFacilities[f.key] === true);
 
                 if (activeFacilities.length === 0) return null;
@@ -1714,7 +1717,7 @@ export default function DrivingMode() {
                     {/* Individual Facility Ratings */}
                     <div className="space-y-2">
                       {activeFacilities.map((fac) => {
-                        const stats = selectedRestaurant.facilityRatings?.[fac.key] || {};
+                        const stats = displayRestaurant.facilityRatings?.[fac.key] || {};
                         const avg = stats.average || 0;
                         const count = stats.count || 0;
 
@@ -1779,7 +1782,7 @@ export default function DrivingMode() {
               {/* Single Primary Action Button */}
               <div className="pt-3 border-t border-gray-100 dark:border-neutral-900/60">
                 <Button
-                  onClick={() => handlePreorder(selectedRestaurant)}
+                  onClick={() => handlePreorder(displayRestaurant)}
                   className="w-full h-12 bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-sm shadow-lg shadow-orange-600/20 rounded-xl transition-all flex items-center justify-center gap-2"
                 >
                   <span>Order Now</span>
@@ -1788,10 +1791,10 @@ export default function DrivingMode() {
               </div>
 
             </div>
-
+            </>
+          )}
           </DialogContent>
         </Dialog>
-      )}
 
       {/* Bottom Navigation Bar */}
       <BottomNavigation />

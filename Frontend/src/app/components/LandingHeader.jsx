@@ -1,12 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Smartphone, Menu, X } from 'lucide-react';
 import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
+import { loadBusinessSettings } from "@food/utils/businessSettings";
 
 export default function LandingHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const [headerInfo, setHeaderInfo] = useState({
+    companyName: "Bhookingo",
+    logo: bhookingoLogo
+  });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const settings = await loadBusinessSettings();
+        if (settings) {
+          setHeaderInfo({
+            companyName: settings.companyName || "Bhookingo",
+            logo: settings.logo?.url || settings.favicon?.url || bhookingoLogo
+          });
+        }
+      } catch (error) {
+        // Fallback silently
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const handleAuthClick = () => {
     window.open("https://play.google.com/store/apps/details?id=com.bhookingo.user", "_blank");
@@ -26,10 +49,11 @@ export default function LandingHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5">
-          <img src={bhookingoLogo} className="w-10 h-10 object-contain rounded-xl" alt="Bhookingo Logo" />
+          <img src={headerInfo.logo} className="w-14 h-14 object-contain rounded-xl" alt={`${headerInfo.companyName} Logo`} />
           <div className="flex flex-col">
             <span className="text-2xl font-black tracking-tight text-gray-900 leading-none">
-              <span className="text-[#E0332F]">B</span>hookingo
+              <span className="text-[#E0332F]">{headerInfo.companyName.charAt(0)}</span>
+              {headerInfo.companyName.slice(1)}
             </span>
           </div>
         </Link>

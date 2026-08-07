@@ -1,31 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Smartphone, Globe } from 'lucide-react';
-import api from "@food/api";
+import { loadBusinessSettings } from "@food/utils/businessSettings";
 import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 
 export default function LandingFooter() {
   const navigate = useNavigate();
   const [contactInfo, setContactInfo] = useState({
     email: "bhookingo@gmail.com",
-    mobile: "9999999999"
+    mobile: "+91 9999999999",
+    companyName: "Bhookingo",
+    logo: bhookingoLogo
   });
 
   useEffect(() => {
-    const fetchContactInfo = async () => {
+    const fetchSettings = async () => {
       try {
-        const response = await api.get(`/food/admin/pages-social-media/contact`);
-        if (response.data?.success && response.data?.data) {
+        const settings = await loadBusinessSettings();
+        if (settings) {
+          const number = settings.phone?.number ? `${settings.phone?.countryCode || ''} ${settings.phone.number}`.trim() : "9999999999";
           setContactInfo({
-            email: response.data.data.email || "bhookingo@gmail.com",
-            mobile: response.data.data.mobile || "9999999999"
+            email: settings.email || "bhookingo@gmail.com",
+            mobile: number,
+            companyName: settings.companyName || "Bhookingo",
+            logo: settings.logo?.url || settings.favicon?.url || bhookingoLogo
           });
         }
       } catch (error) {
         // Fallback silently
       }
     };
-    fetchContactInfo();
+    fetchSettings();
   }, []);
 
   const handleAuthClick = () => {
@@ -47,8 +52,8 @@ export default function LandingFooter() {
           {/* Col 1: Brand */}
           <div className="space-y-4 lg:col-span-1">
             <div className="flex items-center gap-2">
-              <img src={bhookingoLogo} className="w-8 h-8 object-contain rounded-lg" alt="Bhookingo Logo" />
-              <span className="text-xl font-black text-white tracking-tight">Bhookingo</span>
+              <img src={contactInfo.logo} className="w-14 h-14 object-contain rounded-lg" alt={`${contactInfo.companyName} Logo`} />
+              <span className="text-xl font-black text-white tracking-tight">{contactInfo.companyName}</span>
             </div>
             <p className="text-gray-400 leading-relaxed">
               India's first highway takeaway & dine-in discovery app. Save time, eat quality food and travel better.
@@ -151,7 +156,7 @@ export default function LandingFooter() {
         </div>
 
         <div className="pt-8 border-t border-gray-800 text-center text-gray-500 text-[11px]">
-          © 2025 Bhookingo. All rights reserved.
+          © {new Date().getFullYear()} {contactInfo.companyName}. All rights reserved.
         </div>
       </div>
     </footer>

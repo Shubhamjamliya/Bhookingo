@@ -577,25 +577,28 @@ export default function DrivingMode() {
     announcedAt: 0
   });
 
-  const playNextStopAlert = useCallback((restaurantName, distanceKm) => {
+  const playNextStopAlert = useCallback((restaurantName, distanceKm, isOrdered = false) => {
     const safeName = restaurantName || "restaurant";
     const safeDistance = Number.isFinite(distanceKm)
       ? distanceKm.toFixed(distanceKm >= 10 ? 0 : 1)
       : null;
-    const spokenMessage = safeDistance
-      ? `Nearby restaurant alert. ${safeName} is ${safeDistance} kilometers ahead.`
-      : `Nearby restaurant alert. ${safeName} is ahead on your route.`;
+      
+    const spokenMessage = isOrdered
+      ? (safeDistance ? `Order pickup alert. ${safeName} is ${safeDistance} kilometers ahead.` : `Order pickup alert. ${safeName} is ahead on your route.`)
+      : (safeDistance ? `Nearby restaurant alert. ${safeName} is ${safeDistance} kilometers ahead.` : `Nearby restaurant alert. ${safeName} is ahead on your route.`);
 
     setIsNextStopAlertOpen(true);
+    
+    // Fallback visible toast in case the custom UI is missed or hidden
+    toast(isOrdered ? `Order Pickup: ${safeName}` : `Next Stop: ${safeName}`, {
+      description: safeDistance ? `is ${safeDistance} km ahead on your route` : 'is ahead on your route',
+      duration: 10000,
+    });
 
-    try {
-      if (typeof window !== "undefined") {
-        const audio = new Audio("/restaurant_alert.mp3");
-        audio.play().catch(() => {});
-      }
-    } catch {
-      // Ignore browser audio restrictions.
-    }
+    // Auto-close the custom UI alert after 10 seconds
+    setTimeout(() => {
+      setIsNextStopAlertOpen(false);
+    }, 10000);
 
     try {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -1142,26 +1145,33 @@ export default function DrivingMode() {
   }, [journey, status, fetchRestaurantsAhead]);
 
   useEffect(() => {
-    const isOrdered = nextStopId && orderedRestaurantIds.has(String(nextStopId));
-    const alertThreshold = isOrdered ? 2.0 : NEXT_STOP_ALERT_DISTANCE_KM;
+    const isOrdered = nextStop && (
+      orderedRestaurantIds.has(String(nextStop._id)) ||
+      orderedRestaurantIds.has(String(nextStop.id)) ||
+      orderedRestaurantIds.has(String(nextStop.restaurantSlug))
+    );
+    // Use a larger threshold for orders so the alert comes out earlier
+    const alertThreshold = isOrdered ? 5.0 : NEXT_STOP_ALERT_DISTANCE_KM;
 
-    if (!nextStopId || !Number.isFinite(nextStopLiveDistanceKm) || nextStopLiveDistanceKm > alertThreshold) {
+    if (!nextStop || !Number.isFinite(nextStopLiveDistanceKm) || nextStopLiveDistanceKm > alertThreshold) {
       return;
     }
 
+    const nextStopIdStr = String(nextStop._id || nextStop.id || nextStop.restaurantSlug);
+
     const lastAlert = lastNextStopAlertRef.current;
     const now = Date.now();
-    if (lastAlert.restaurantId === nextStopId && (now - lastAlert.announcedAt) < NEXT_STOP_ALERT_COOLDOWN_MS) {
+    if (lastAlert.restaurantId === nextStopIdStr && (now - lastAlert.announcedAt) < NEXT_STOP_ALERT_COOLDOWN_MS) {
       return;
     }
 
     lastNextStopAlertRef.current = {
-      restaurantId: nextStopId,
+      restaurantId: nextStopIdStr,
       announcedAt: now
     };
 
-    playNextStopAlert(nextStop?.restaurantName || nextStop?.name, nextStopLiveDistanceKm);
-  }, [nextStopId, nextStopLiveDistanceKm, nextStop?.restaurantName, nextStop?.name, playNextStopAlert, orderedRestaurantIds]);
+    playNextStopAlert(nextStop.restaurantName || nextStop.name, nextStopLiveDistanceKm, isOrdered);
+  }, [nextStop, nextStopLiveDistanceKm, playNextStopAlert, orderedRestaurantIds]);
 
 
 

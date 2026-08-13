@@ -2,10 +2,29 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import sharp from 'sharp';
+import { v2 as cloudinary } from 'cloudinary';
+import mongoose from 'mongoose';
 import { config } from '../config/env.js';
 
 const STORAGE_ROOT = path.resolve(config.storageDir);
 const SUPPORTED_UPLOAD_EXTENSIONS = ['.webp', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.pdf', '.mp4', '.webm', '.mov', '.avi', '.mkv', '.bin'];
+const CLOUDINARY_ENABLED_KEY = 'upload_provider_cloudinary';
+
+let cloudinaryConfigured = false;
+let uploadProviderToggleCache = {
+    value: null,
+    expiresAt: 0
+};
+
+if (config.cloudinaryCloudName && config.cloudinaryApiKey && config.cloudinaryApiSecret) {
+    cloudinary.config({
+        cloud_name: config.cloudinaryCloudName,
+        api_key: config.cloudinaryApiKey,
+        api_secret: config.cloudinaryApiSecret,
+        secure: true
+    });
+    cloudinaryConfigured = true;
+}
 
 const ensureStorageRoot = () => {
     if (!fs.existsSync(STORAGE_ROOT)) {
@@ -33,6 +52,97 @@ const buildFlatUploadFilename = ({ prefix = 'file', extension = '' }) => {
 };
 
 const getStoredPublicPath = (filename) => `/uploads/${filename}`;
+
+const getCloudinaryFolder = (folder = 'uploads') =>
+    String(folder || 'uploads')
+        .replace(/\\/g, '/')
+        .replace(/^\/+|\/+$/g, '')
+        .replace(/\/{2,}/g, '/');
+
+const isCloudinaryAsset = (value) => {
+    const normalized = String(value || '').trim();
+    return /^https?:\/\/res\.cloudinary\.com\//i.test(normalized) || /^cloudinary:/i.test(normalized);
+};
+
+const getCloudinaryPublicId = (value) => {
+    const normalized = String(value || '').trim();
+    if (!normalized) return '';
+    if (/^cloudinary:/i.test(normalized)) {
+        return normalized.replace(/^cloudinary:/i, '').trim();
+    }
+    if (/^https?:\/\/res\.cloudinary\.com\//i.test(normalized)) {
+        try {
+            const url = new URL(normalized);
+            const segments = url.pathname.split('/').filter(Boolean);
+            const uploadIndex = segments.findIndex((segment) => segment === 'upload');
+            if (uploadIndex === -1) return '';
+            const publicIdSegments = segments.slice(uploadIndex + 1).filter((segment) => !/^v\d+$/.test(segment));
+            if (publicIdSegments.length === 0) return '';
+            const last = publicIdSegments[publicIdSegments.length - 1];
+            publicIdSegments[publicIdSegments.length - 1] = last.replace(/\.[^.]+$/, '');
+            return publicIdSegments.join('/');
+        } catch {
+            return '';
+        }
+    }
+    return '';
+};
+
+const shouldUseCloudinary = async () => {
+    if (!cloudinaryConfigured) {
+        return false;
+    }
+
+    const now = Date.now();
+    if (uploadProviderToggleCache.expiresAt > now) {
+        return uploadProviderToggleCache.value === true;
+    }
+
+    try {
+        const FoodSystemConfig = mongoose.models.FoodSystemConfig;
+        if (!FoodSystemConfig) {
+            uploadProviderToggleCache = { value: false, expiresAt: now + 5000 };
+            return false;
+        }
+
+        const doc = await FoodSystemConfig.findOne({ key: CLOUDINARY_ENABLED_KEY }).select('value').lean();
+        const enabled = doc?.value === true;
+        uploadProviderToggleCache = { value: enabled, expiresAt: now + 5000 };
+        return enabled;
+    } catch (error) {
+        console.error('[Storage] Failed to read upload provider setting:', error.message);
+        uploadProviderToggleCache = { value: false, expiresAt: now + 5000 };
+        return false;
+    }
+};
+
+const uploadBufferToCloudinary = async (buffer, folder = 'uploads', resourceType = 'image') => {
+    const targetFolder = getCloudinaryFolder(folder);
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            {
+                folder: targetFolder,
+                resource_type: resourceType
+            },
+            (error, result) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                resolve({
+                    secure_url: result.secure_url,
+                    public_id: `cloudinary:${result.public_id}`,
+                    url: result.secure_url,
+                    bytes: result.bytes,
+                    format: result.format
+                });
+            }
+        );
+
+        stream.on('error', reject);
+        stream.end(buffer);
+    });
+};
 
 const processAndSaveImage = async ({ buffer, prefix, width, height, quality = 85 }) => {
     if (!buffer) {
@@ -78,6 +188,10 @@ const writeBufferFile = async (buffer, { prefix = 'file', extension = 'bin' } = 
 };
 
 export const uploadImageBufferDetailed = async (buffer, folder = 'uploads') => {
+    if (await shouldUseCloudinary()) {
+        return uploadBufferToCloudinary(buffer, folder, 'image');
+    }
+
     return processAndSaveImage({
         buffer,
         prefix: folder,
@@ -121,6 +235,11 @@ export const uploadGenericImage = async (buffer, folder = 'image') => {
 };
 
 export const uploadFileBuffer = async (buffer, folder = 'file', options = {}) => {
+    if (await shouldUseCloudinary()) {
+        const result = await uploadBufferToCloudinary(buffer, folder, 'raw');
+        return result.url;
+    }
+
     return writeBufferFile(buffer, {
         prefix: options.fileName ? path.parse(options.fileName).name : folder,
         extension: options.format || 'bin'
@@ -128,6 +247,11 @@ export const uploadFileBuffer = async (buffer, folder = 'file', options = {}) =>
 };
 
 export const uploadVideoBuffer = async (buffer, folder = 'video', options = {}) => {
+    if (await shouldUseCloudinary()) {
+        const result = await uploadBufferToCloudinary(buffer, folder, 'video');
+        return result.url;
+    }
+
     return writeBufferFile(buffer, {
         prefix: folder || 'video',
         extension: options.format || 'mp4'
@@ -136,6 +260,13 @@ export const uploadVideoBuffer = async (buffer, folder = 'video', options = {}) 
 
 export const deleteLocalFile = async (filePathOrUrl) => {
     try {
+        if (isCloudinaryAsset(filePathOrUrl)) {
+            const publicId = getCloudinaryPublicId(filePathOrUrl);
+            if (!publicId || !cloudinaryConfigured) return false;
+            await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+            return true;
+        }
+
         const normalized = normalizeStoredUploadPath(filePathOrUrl);
         if (!normalized || !normalized.startsWith('/uploads/')) {
             return false;

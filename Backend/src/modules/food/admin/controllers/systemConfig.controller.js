@@ -14,9 +14,6 @@ const CUSTOMIZATION_TOGGLES = [
         description: 'Global toggle for takeaway COD visibility'
     },
     {
-        defaultValue: true,
-    },
-    {
         key: 'dining_cod_enabled',
         defaultValue: true,
         description: 'Global toggle for dining COD visibility'
@@ -35,6 +32,11 @@ const CUSTOMIZATION_TOGGLES = [
         key: 'default_location_enabled',
         defaultValue: false,
         description: 'Enforce default Indore location and disable auto-prompt for new users/guests (App Store mode)'
+    },
+    {
+        key: 'upload_provider_cloudinary',
+        defaultValue: false,
+        description: 'When enabled, image uploads use Cloudinary. When disabled, uploads are stored in the local uploads folder.'
     }
 ];
 

@@ -6,17 +6,17 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const defaultStorageDir = process.env.NODE_ENV === 'production'
+const nodeEnv = process.env.NODE_ENV || 'development';
+const localUploadDir = nodeEnv === 'production'
     ? '/var/www/uploads'
     : path.resolve(__dirname, '../../uploads');
-const resolvedStorageDir = path.resolve(process.env.STORAGE_DIR || defaultStorageDir);
 
 export const config = {
     // Basic server config
     port: process.env.PORT || 5000,
     socketPort: process.env.SOCKET_PORT || 5001,
     host: process.env.HOST || '0.0.0.0',
-    nodeEnv: process.env.NODE_ENV || 'development',
+    nodeEnv,
 
     // Database
     mongodbUri: process.env.MONGO_URI || process.env.MONGODB_URI,
@@ -64,7 +64,7 @@ export const config = {
     bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS || 10),
 
     // Uploads
-    uploadPath: resolvedStorageDir,
+    uploadPath: localUploadDir,
 
     // Redis
     redisEnabled: process.env.REDIS_ENABLED === 'true',
@@ -114,6 +114,6 @@ export const config = {
     emailPass: process.env.EMAIL_PASS ? String(process.env.EMAIL_PASS).replace(/\s/g, '') : '',
     emailFrom: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@example.com',
     bookingRadiusKm: Number(process.env.BOOKING_RADIUS_KM || 50),
-    storageDir: resolvedStorageDir,
+    storageDir: localUploadDir,
     baseUrl: (process.env.BASE_URL || 'http://localhost:5000').replace(/\/$/, '')
 };

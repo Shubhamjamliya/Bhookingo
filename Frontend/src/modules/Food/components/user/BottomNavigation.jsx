@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { ShoppingBag, Tag, UtensilsCrossed, CircleUser, Compass } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -7,6 +7,7 @@ import { useProfile } from "@food/context/ProfileContext"
 
 export default function BottomNavigation() {
   const location = useLocation()
+  const navigate = useNavigate()
   const pathname = location.pathname
   const [under250PriceLimit, setUnder250PriceLimit] = useState(250)
 
@@ -154,6 +155,27 @@ export default function BottomNavigation() {
     }
   ]
 
+  const handleNavClick = (event, item) => {
+    event.preventDefault()
+    item.onClick?.()
+
+    const targetPath = item.to.replace(/\/$/, "") || "/"
+    if (normalizedPath === targetPath) {
+      return
+    }
+
+    const goToTarget = () => navigate(item.to)
+
+    if (typeof document !== "undefined" && typeof document.startViewTransition === "function") {
+      document.startViewTransition(() => {
+        goToTarget()
+      })
+      return
+    }
+
+    goToTarget()
+  }
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -175,7 +197,7 @@ export default function BottomNavigation() {
               <Link
                 key={item.id}
                 to={item.to}
-                onClick={item.onClick}
+                onClick={(event) => handleNavClick(event, item)}
                 className={`flex flex-col items-center justify-center gap-1 h-14 w-full relative transition-all duration-300 ${
                   item.active ? "text-[var(--primary)]" : "text-text-secondary dark:text-text-secondary"
                 }`}

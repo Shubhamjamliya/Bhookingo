@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Compass, Loader2, Navigation, AlertTriangle, List, Map, ShieldAlert, CheckCircle, Clock, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Share2, Heart, Wifi, Star, Car, ShieldCheck, BellRing, MapPin } from "lucide-react";
 import { toast } from "sonner";
@@ -1350,77 +1351,95 @@ export default function DrivingMode() {
       </Dialog>
 
       {/* Main Map or List Container */}
-      <div className="flex-1 w-full relative min-h-0">
-        {viewMode === "map" ? (
-          <DrivingMap
-            userLocation={journey?.origin ? { latitude: journey.origin.lat, longitude: journey.origin.lng } : currentLocation}
-            destinationLocation={journey?.destination}
-            journey={journey}
-            onRouteCalculated={handleRouteCalculated}
-            heading={heading}
-            highway={resultData?.highway}
-            restaurants={filteredRestaurants}
-            onRestaurantClick={setSelectedRestaurant}
-            onRouteSelect={handleSelectRouteOption}
-            onUserPositionChange={handleLiveTravelPositionChange}
-            recenterBottomOffset={isDrawerExpanded ? "hidden" : "bottom-[230px]"}
-            orderedRestaurantIds={orderedRestaurantIds}
-          />
-        ) : (
-          <div className="w-full h-full overflow-y-auto px-4 pb-20 pt-4 space-y-4 bg-gray-50/50 dark:bg-[#0a0a0a] pb-[calc(100px+env(safe-area-inset-bottom))]">
-            {/* Top Search distance filter & sorting */}
-            <div className="flex items-center justify-between gap-4 pb-2">
-              {/* Range Filters */}
-              <div className="flex gap-1.5 overflow-x-auto">
-                {[5, 10, 20, 50].map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setActiveDistanceLimit(d)}
-                    className={`px-3 py-1 text-xs font-bold rounded-full border transition-all shrink-0 ${activeDistanceLimit === d
-                      ? "bg-orange-600 text-white border-orange-600 shadow-sm"
-                      : "bg-white text-gray-600 border-gray-200 dark:bg-neutral-900 dark:text-neutral-400"
-                      }`}
-                  >
-                    {d} km
-                  </button>
-                ))}
+      <div className="flex-1 w-full relative min-h-0 overflow-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          {viewMode === "map" ? (
+            <motion.div
+              key="driving-map-view"
+              className="absolute inset-0"
+              initial={{ opacity: 0, y: 18, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -14, scale: 0.99 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <DrivingMap
+                userLocation={journey?.origin ? { latitude: journey.origin.lat, longitude: journey.origin.lng } : currentLocation}
+                destinationLocation={journey?.destination}
+                journey={journey}
+                onRouteCalculated={handleRouteCalculated}
+                heading={heading}
+                highway={resultData?.highway}
+                restaurants={filteredRestaurants}
+                onRestaurantClick={setSelectedRestaurant}
+                onRouteSelect={handleSelectRouteOption}
+                onUserPositionChange={handleLiveTravelPositionChange}
+                recenterBottomOffset={isDrawerExpanded ? "hidden" : "bottom-[230px]"}
+                orderedRestaurantIds={orderedRestaurantIds}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="driving-list-view"
+              className="absolute inset-0 w-full h-full overflow-y-auto px-4 pt-4 space-y-4 bg-gray-50/50 dark:bg-[#0a0a0a] pb-[calc(100px+env(safe-area-inset-bottom))]"
+              initial={{ opacity: 0, y: 18, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -14, scale: 0.99 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {/* Top Search distance filter & sorting */}
+              <div className="flex items-center justify-between gap-4 pb-2">
+                {/* Range Filters */}
+                <div className="flex gap-1.5 overflow-x-auto">
+                  {[5, 10, 20, 50].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setActiveDistanceLimit(d)}
+                      className={`px-3 py-1 text-xs font-bold rounded-full border transition-all shrink-0 ${activeDistanceLimit === d
+                        ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                        : "bg-white text-gray-600 border-gray-200 dark:bg-neutral-900 dark:text-neutral-400"
+                        }`}
+                    >
+                      {d} km
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sorting Select */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="text-xs font-bold border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 dark:text-white px-2 py-1 rounded-lg focus:outline-none"
+                >
+                  <option value="distance">Distance</option>
+                  <option value="eta">ETA</option>
+                  <option value="rating">Rating</option>
+                </select>
               </div>
 
-              {/* Sorting Select */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="text-xs font-bold border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 dark:text-white px-2 py-1 rounded-lg focus:outline-none"
-              >
-                <option value="distance">Distance</option>
-                <option value="eta">ETA</option>
-                <option value="rating">Rating</option>
-              </select>
-            </div>
-
-            {/* List Cards */}
-            <div className="space-y-3">
-              {filteredRestaurants.length > 0 ? (
-              filteredRestaurants.map((res) => (
-                <DrivingRestaurantCard
-                  key={res._id}
-                  restaurant={res}
-                  onClick={() => setSelectedRestaurant(res)}
-                />
-              ))
-            ) : (
-              <div className="rounded-3xl border border-dashed border-gray-200 bg-white/90 px-4 py-6 text-center shadow-sm dark:border-neutral-800 dark:bg-neutral-900/90">
-                <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                  No restaurants found on this route right now
-                </div>
-                <div className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
-                  The map is still active. Try another route, move further ahead, or adjust driving mode settings.
-                </div>
+              {/* List Cards */}
+              <div className="space-y-3">
+                {filteredRestaurants.length > 0 ? (
+                  filteredRestaurants.map((res) => (
+                    <DrivingRestaurantCard
+                      key={res._id}
+                      restaurant={res}
+                      onClick={() => setSelectedRestaurant(res)}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-gray-200 bg-white/90 px-4 py-6 text-center shadow-sm dark:border-neutral-800 dark:bg-neutral-900/90">
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                      No restaurants found on this route right now
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
+                      The map is still active. Try another route, move further ahead, or adjust driving mode settings.
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Floating Bottom Toggle Control */}

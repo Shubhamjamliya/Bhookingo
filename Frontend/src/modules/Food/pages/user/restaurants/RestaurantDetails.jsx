@@ -3011,7 +3011,7 @@ function RestaurantDetailsContent() {
           >
             <Button
               ref={menuButtonRef}
-              className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] hover:from-[var(--primary-dark)] hover:to-[#7F1D1D] text-white flex items-center gap-2 shadow-[0_12px_40px_rgba(220,38,38,0.4)] border border-white/20 px-6 py-3.5 h-auto rounded-full font-bold active:scale-95 group"
+              className="bg-[var(--primary)] hover:bg-primary-dark text-white flex items-center gap-2 shadow-[0_12px_32px_rgba(220,38,38,0.32)] border border-[var(--primary-dark)] px-6 py-3.5 h-auto rounded-full font-bold active:scale-95 group"
               size="lg"
               onClick={() => setShowMenuSheet(true)}
             >
@@ -3041,12 +3041,13 @@ function RestaurantDetailsContent() {
 
                 {/* Menu Sheet */}
                 <motion.div
-                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[85vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
+                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[85vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col border border-gray-200 dark:border-gray-800"
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
                   transition={{ duration: 0.2, type: "spring", damping: 30, stiffness: 400 }}
                   style={{ willChange: "transform" }}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {/* Scrollable Content */}
                   <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -3100,7 +3101,7 @@ function RestaurantDetailsContent() {
                   </div>
 
                   {/* Close Button */}
-                  <div className="border-t border-border dark:border-gray-800 px-4 py-4 bg-surface dark:bg-[#1a1a1a]">
+                  <div className="border-t border-border dark:border-gray-800 px-4 py-4 bg-white dark:bg-[#1a1a1a]">
                     <Button
                       className="w-full bg-[var(--primary)] hover:bg-primary-dark text-white border-0 flex items-center justify-center gap-2 py-6 rounded-xl font-bold transition-all shadow-lg text-sm"
                       onClick={() => setShowMenuSheet(false)}
@@ -3862,7 +3863,7 @@ function RestaurantDetailsContent() {
 
                 {/* Menu Options Bottom Sheet */}
                 <motion.div
-                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-surface dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[70vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col"
+                  className="fixed left-0 right-0 bottom-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-[10000] bg-white dark:bg-[#1a1a1a] rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[70vh] md:max-h-[90vh] md:max-w-lg w-full md:w-auto flex flex-col border border-gray-200 dark:border-gray-800"
                   initial={{ y: "100%" }}
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
@@ -3913,7 +3914,7 @@ function RestaurantDetailsContent() {
                     {/* FSSAI License Information */}
                     {restaurant?.onboarding?.step3?.fssai?.registrationNumber && (
                       <div className="mt-4 px-2 pt-4 border-t border-border dark:border-gray-800 flex items-center gap-3 opacity-80 mb-2">
-                        <div className="h-8 w-14 flex items-center justify-center bg-surface rounded p-1 border border-border">
+                        <div className="h-8 w-14 flex items-center justify-center bg-white dark:bg-[#202020] rounded p-1 border border-border dark:border-gray-700">
                           <img
                             src={fssaiLogo}
                             alt="FSSAI"
@@ -3957,7 +3958,7 @@ function RestaurantDetailsContent() {
                   onClick={() => setShowShareModal(false)}
                 />
                 <motion.div
-                  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[10021] w-[92vw] max-w-md bg-surface dark:bg-[#1a1a1a] rounded-2xl shadow-2xl"
+                  className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[10021] w-[92vw] max-w-md bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}

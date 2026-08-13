@@ -3228,6 +3228,17 @@ export async function createRestaurantByAdmin(body) {
 
     const proximity = await detectHighwayAtPoint(latitude, longitude);
     if (proximity.status !== 'IN_SERVICE') {
+        console.log('[Admin Create Restaurant] Highway validation failed', {
+            latitude,
+            longitude,
+            status: proximity.status,
+            thresholdMeters: proximity.thresholdMeters ?? null,
+            distanceMeters: proximity.distanceMeters ?? null,
+            nearestHighwayId: proximity.highwayId ?? null,
+            nearestHighwayName: proximity.highwayName ?? null,
+            nearestHighwayRef: proximity.highwayRef ?? null
+        });
+
         const error = new ValidationError('Restaurant location is not within the allowed National Highway range.');
         error.highwayCheck = false;
         error.nearestHighway = proximity.highwayRef || null;

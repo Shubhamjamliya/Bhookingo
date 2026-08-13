@@ -1,9 +1,7 @@
 import * as turf from '@turf/turf';
 import { config } from '../../../../config/env.js';
 import { logger } from '../../../../utils/logger.js';
-import { FoodHighway } from '../../admin/models/highway.model.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
-import { hydrateHighwayGeometry } from '../../admin/services/highway.service.js';
 import { decodePolyline, fetchDirections as fetchLegacyDirections } from '../../orders/utils/googleMaps.js';
 import { getStoredDrivingSettingsConfig } from './drivingSettings.shared.js';
 
@@ -124,90 +122,7 @@ const getSampledRoutePoints = (coordinates = []) => {
 };
 
 export async function matchStoredHighwaysAlongRoute(decodedCoordinates, corridorRadiusKm) {
-    if (!Array.isArray(decodedCoordinates) || decodedCoordinates.length < 2) {
-        return [];
-    }
-
-    const bounds = computeBoundingBoxFromCoordinates(decodedCoordinates);
-    if (!bounds) {
-        return [];
-    }
-
-    const paddingDeg = corridorRadiusKm / 111;
-    const candidateHighways = await FoodHighway.find({
-        isActive: true,
-        'boundingBox.minLat': { $lte: bounds.maxLat + paddingDeg },
-        'boundingBox.maxLat': { $gte: bounds.minLat - paddingDeg },
-        'boundingBox.minLng': { $lte: bounds.maxLng + paddingDeg },
-        'boundingBox.maxLng': { $gte: bounds.minLng - paddingDeg }
-    })
-        .select('name ref geometryPath boundingBox totalDistance nodeCount segmentCount')
-        .lean();
-
-    if (!candidateHighways.length) {
-        return [];
-    }
-
-    const routeLine = turf.lineString(decodedCoordinates.map((coordinate) => [coordinate.lng, coordinate.lat]));
-    const sampledRoutePoints = getSampledRoutePoints(decodedCoordinates);
-    const matchingHighways = [];
-
-    for (const candidate of candidateHighways) {
-        const hydratedHighway = await hydrateHighwayGeometry(candidate, { mergeSegments: true });
-        const highwayCoordinates = Array.isArray(hydratedHighway?.coordinates) ? hydratedHighway.coordinates : [];
-        if (highwayCoordinates.length < 2) continue;
-
-        const highwayLine = turf.lineString(highwayCoordinates.map((coordinate) => [coordinate.lng, coordinate.lat]));
-        let minDistanceKm = Infinity;
-        let closePointCount = 0;
-
-        for (const routePoint of sampledRoutePoints) {
-            const projectedPoint = turf.nearestPointOnLine(
-                highwayLine,
-                turf.point([routePoint.lng, routePoint.lat]),
-                { units: 'kilometers' }
-            );
-            const distanceKm = projectedPoint?.properties?.dist;
-            if (!Number.isFinite(distanceKm)) continue;
-
-            minDistanceKm = Math.min(minDistanceKm, distanceKm);
-            if (distanceKm <= corridorRadiusKm) {
-                closePointCount += 1;
-            }
-        }
-
-        const startHighwayPoint = highwayCoordinates[0];
-        const endHighwayPoint = highwayCoordinates[highwayCoordinates.length - 1];
-        const edgePoints = [startHighwayPoint, endHighwayPoint].filter(Boolean);
-        for (const highwayPoint of edgePoints) {
-            const projectedPoint = turf.nearestPointOnLine(
-                routeLine,
-                turf.point([highwayPoint.lng, highwayPoint.lat]),
-                { units: 'kilometers' }
-            );
-            const distanceKm = projectedPoint?.properties?.dist;
-            if (!Number.isFinite(distanceKm)) continue;
-            minDistanceKm = Math.min(minDistanceKm, distanceKm);
-            if (distanceKm <= corridorRadiusKm) {
-                closePointCount += 1;
-            }
-        }
-
-        if (closePointCount > 0 && minDistanceKm <= corridorRadiusKm) {
-            matchingHighways.push({
-                _id: hydratedHighway._id,
-                name: hydratedHighway.name,
-                ref: hydratedHighway.ref,
-                minDistanceKm: Number(minDistanceKm.toFixed(2)),
-                totalDistance: hydratedHighway.totalDistance,
-                nodeCount: hydratedHighway.nodeCount,
-                segmentCount: hydratedHighway.segmentCount
-            });
-        }
-    }
-
-    matchingHighways.sort((a, b) => a.minDistanceKm - b.minDistanceKm);
-    return matchingHighways;
+    return [];
 }
 
 async function countRestaurantsAlongRoute(decodedCoordinates, corridorRadiusKm) {
@@ -226,7 +141,6 @@ async function countRestaurantsAlongRoute(decodedCoordinates, corridorRadiusKm) 
         status: 'approved',
         isAcceptingOrders: true,
         isHighwayRestaurant: true,
-        highwayId: { $ne: null },
         'location.latitude': { $gte: bounds.minLat - paddingDeg, $lte: bounds.maxLat + paddingDeg },
         'location.longitude': { $gte: bounds.minLng - paddingDeg, $lte: bounds.maxLng + paddingDeg }
     })

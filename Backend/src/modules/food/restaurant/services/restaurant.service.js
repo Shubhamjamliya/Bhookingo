@@ -1384,15 +1384,7 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}, o
         ...queryFilter
     };
 
-    let currentHighwayId = null;
-
-    if (lat !== null && lng !== null) {
-        // Detect if user is within 2 KM of a National Highway
-        const nearestResult = await findNearestHighway(lat, lng, 2000);
-        if (nearestResult) {
-            currentHighwayId = nearestResult.highway._id;
-        }
-    }
+    const currentHighwayId = null;
 
     const pipeline = [];
 

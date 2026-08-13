@@ -1,4 +1,3 @@
-import { hydrateHighwayGeometry } from '../../admin/services/highway.service.js';
 import { FoodHighway } from '../../admin/models/highway.model.js';
 import { detectHighwayUsingGoogleMaps } from '../../location/services/location.service.js';
 
@@ -57,33 +56,41 @@ export const listHighwaysPublicController = async (req, res, next) => {
 
 export const listHighwaysNearbyPublicController = async (req, res, next) => {
     try {
-        const filter = { isActive: true };
-
         const minLat = toFinite(req.query.minLat);
         const maxLat = toFinite(req.query.maxLat);
         const minLng = toFinite(req.query.minLng);
         const maxLng = toFinite(req.query.maxLng);
-
+        const highways = [];
+        const points = [];
         if (minLat !== null && maxLat !== null && minLng !== null && maxLng !== null) {
-            filter['boundingBox.minLat'] = { $lte: maxLat };
-            filter['boundingBox.maxLat'] = { $gte: minLat };
-            filter['boundingBox.minLng'] = { $lte: maxLng };
-            filter['boundingBox.maxLng'] = { $gte: minLng };
+            points.push(
+                { lat: minLat, lng: minLng },
+                { lat: minLat, lng: maxLng },
+                { lat: maxLat, lng: minLng },
+                { lat: maxLat, lng: maxLng },
+                { lat: Number(((minLat + maxLat) / 2).toFixed(6)), lng: Number(((minLng + maxLng) / 2).toFixed(6)) }
+            );
         }
 
-        const highways = await FoodHighway.find(filter)
-            .select('name ref geometryPath isActive boundingBox totalDistance nodeCount segmentCount')
-            .sort({ ref: 1 })
-            .lean();
-
-        const hydratedHighways = await Promise.all(
-            highways.map((highway) => hydrateHighwayGeometry(highway, { mergeSegments: true }))
-        );
+        const seenRefs = new Set();
+        for (const point of points) {
+            const detected = await detectHighwayUsingGoogleMaps(point.lat, point.lng);
+            if (detected?.status === 'IN_SERVICE' && detected.highwayRef && !seenRefs.has(detected.highwayRef)) {
+                seenRefs.add(detected.highwayRef);
+                highways.push({
+                    _id: detected.highwayRef,
+                    name: detected.highwayName || detected.highwayRef,
+                    ref: detected.highwayRef,
+                    isActive: true,
+                    source: 'google_maps'
+                });
+            }
+        }
 
         return res.status(200).json({
             success: true,
             message: 'Nearby highways fetched',
-            data: { highways: hydratedHighways }
+            data: { highways }
         });
     } catch (error) {
         next(error);

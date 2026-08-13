@@ -112,6 +112,22 @@ const timeToString = (date) => {
   return `${hours}:${minutes}`
 }
 
+const parseGoogleAddressComponents = (components = []) => {
+  const comps = Array.isArray(components) ? components : []
+  const get = (types) => comps.find((component) => types.some((type) => component.types?.includes(type)))?.long_name || ""
+  const route = get(["route"])
+  const streetNumber = get(["street_number"])
+  const roadName = [streetNumber, route].filter(Boolean).join(" ").trim() || route || ""
+
+  return {
+    area: get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"]),
+    city: get(["locality"]) || get(["administrative_area_level_2"]),
+    state: get(["administrative_area_level_1"]) || get(["administrative_area_level_2"]),
+    pincode: get(["postal_code"]),
+    roadName,
+  }
+}
+
 const parse24HourTo12Hour = (timeStr, defaultVal = "09:00") => {
   const val = timeStr || defaultVal
   const [h24, min] = val.split(":")

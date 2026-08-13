@@ -249,8 +249,21 @@ export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters 
     let nearestDistance = Infinity;
 
     for (const candidate of candidates) {
-        const hydratedHighway = await hydrateHighwayGeometry(candidate);
-        const segmentList = await getHighwaySegments(hydratedHighway);
+        let hydratedHighway;
+        let segmentList;
+        try {
+            hydratedHighway = await hydrateHighwayGeometry(candidate);
+            segmentList = await getHighwaySegments(hydratedHighway);
+        } catch (error) {
+            console.error('[HighwayService] Failed to hydrate highway geometry during detect', {
+                highwayId: candidate?._id ? String(candidate._id) : null,
+                highwayRef: candidate?.ref || null,
+                highwayName: candidate?.name || null,
+                geometryPath: candidate?.geometryPath || null,
+                error: error?.message || String(error)
+            });
+            continue;
+        }
 
         for (const coords of segmentList) {
             if (!coords || coords.length < 2) continue;

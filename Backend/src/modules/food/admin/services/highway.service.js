@@ -17,6 +17,7 @@ import {
     deleteHighwayGeometry
 } from '../utils/highwayGeometryStorage.js';
 import { getStoredDrivingSettingsConfig, saveDrivingSettingsConfig } from '../../driving/services/drivingSettings.shared.js';
+import { detectHighwayUsingGoogleMaps } from '../../location/services/location.service.js';
 
 
 const cloneCoordinate = (coord) => ({ lat: Number(coord?.lat), lng: Number(coord?.lng) });
@@ -318,14 +319,13 @@ export async function assignHighwayToRestaurant(restaurantId, thresholdOverride 
 
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-        const threshold = thresholdOverride ?? await getHighwayThresholdMeters();
-        const result = await findNearestHighway(lat, lng, threshold);
+        const result = await detectHighwayUsingGoogleMaps(lat, lng);
 
-        const update = result
+        const update = result?.status === 'IN_SERVICE'
             ? {
-                highwayId: result.highway._id,
-                highwayName: result.highway.name,
-                highwayRef: result.highway.ref,
+                highwayId: null,
+                highwayName: result.highwayName || null,
+                highwayRef: result.highwayRef || null,
                 isHighwayRestaurant: true
             }
             : {

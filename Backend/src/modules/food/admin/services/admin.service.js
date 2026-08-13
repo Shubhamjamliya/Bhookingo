@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
-import { assignHighwayToRestaurant, detectHighwayAtPoint } from './highway.service.js';
+import { assignHighwayToRestaurant } from './highway.service.js';
+import { detectHighwayUsingGoogleMaps } from '../../location/services/location.service.js';
 
 
 import { FoodHighway } from '../models/highway.model.js';
@@ -3226,7 +3227,7 @@ export async function createRestaurantByAdmin(body) {
         throw new ValidationError('Latitude and longitude coordinates are required for highway proximity validation.');
     }
 
-    const proximity = await detectHighwayAtPoint(latitude, longitude);
+    const proximity = await detectHighwayUsingGoogleMaps(latitude, longitude);
     if (proximity.status !== 'IN_SERVICE') {
         console.log('[Admin Create Restaurant] Highway validation failed', {
             latitude,
@@ -3304,10 +3305,10 @@ export async function createRestaurantByAdmin(body) {
             : undefined,
         status: 'approved',
         approvedAt: new Date(),
-        highwayId: proximity.highwayId,
+        highwayId: null,
         highwayName: proximity.highwayName,
         highwayRef: proximity.highwayRef,
-        isHighwayRestaurant: true,
+        isHighwayRestaurant: proximity.status === 'IN_SERVICE',
         locationSource: locationSource
     };
 

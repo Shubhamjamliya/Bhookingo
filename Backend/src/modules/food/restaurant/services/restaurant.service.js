@@ -8,9 +8,10 @@ import { FoodDiningRestaurant } from '../../dining/models/diningRestaurant.model
 import { FoodItem } from '../../admin/models/food.model.js';
 import { getFoodDisplayPrice } from '../../admin/services/foodVariant.service.js';
 import { FoodOrder } from '../../orders/models/order.model.js';
-import { assignHighwayToRestaurant, findNearestHighway } from '../../admin/services/highway.service.js';
+import { assignHighwayToRestaurant } from '../../admin/services/highway.service.js';
 import { FoodRestaurantOutletTimings } from '../models/outletTimings.model.js';
 import { DISCOVERY_RADIUS_KM, UNDER250_RADIUS_KM } from '../../orders/services/order.helpers.js';
+import { detectHighwayUsingGoogleMaps } from '../../location/services/location.service.js';
 
 const normalizeName = (value) =>
     String(value || '')
@@ -351,23 +352,14 @@ export const registerRestaurant = async (payload, files) => {
     try {
         const latNum = toFiniteNumber(latitude);
         const lngNum = toFiniteNumber(longitude);
-        const providedHighwayId = highwayId && mongoose.Types.ObjectId.isValid(String(highwayId).trim())
-            ? String(highwayId).trim()
+        const googleHighwayDetection = (latNum !== null && lngNum !== null)
+            ? await detectHighwayUsingGoogleMaps(latNum, lngNum)
             : null;
 
-        const inferredHighwayResult = (latNum !== null && lngNum !== null)
-            ? await findNearestHighway(latNum, lngNum, 2000)
-            : null;
-
-        if (providedHighwayId && !inferredHighwayResult) {
-            throw new ValidationError('Selected highway is too far from the restaurant location. Move the pin closer to the roadside/highway.');
+        if (!googleHighwayDetection || googleHighwayDetection.status !== 'IN_SERVICE') {
+            throw new ValidationError('Restaurant location is not within the allowed National Highway range.');
         }
 
-        if (providedHighwayId && inferredHighwayResult && String(inferredHighwayResult.highway._id) !== providedHighwayId) {
-            throw new ValidationError('Selected highway does not match the restaurant location. Please use the nearest roadside/highway location.');
-        }
-
-        const resolvedHighway = inferredHighwayResult?.highway || null;
         const restaurant = await FoodRestaurant.create({
             restaurantName,
             restaurantNameNormalized,
@@ -379,10 +371,10 @@ export const registerRestaurant = async (payload, files) => {
             ownerPhoneLast10,
             primaryContactNumber,
             pureVegRestaurant: pureVegRestaurant === true,
-            highwayId: resolvedHighway?._id || null,
-            highwayName: resolvedHighway?.name || null,
-            highwayRef: resolvedHighway?.ref || null,
-            isHighwayRestaurant: Boolean(resolvedHighway),
+            highwayId: null,
+            highwayName: googleHighwayDetection.highwayName || null,
+            highwayRef: googleHighwayDetection.highwayRef || null,
+            isHighwayRestaurant: true,
             locationSource: locationSource || 'google_places',
             // Store unified location object (geo + address).
             location: {

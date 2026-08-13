@@ -1,5 +1,6 @@
-import { detectHighwayAtPoint, hydrateHighwayGeometry } from '../../admin/services/highway.service.js';
+import { hydrateHighwayGeometry } from '../../admin/services/highway.service.js';
 import { FoodHighway } from '../../admin/models/highway.model.js';
+import { detectHighwayUsingGoogleMaps } from '../../location/services/location.service.js';
 
 const toFinite = (v) => {
     const n = typeof v === 'number' ? v : parseFloat(String(v));
@@ -14,7 +15,7 @@ export const detectHighwayPublicController = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'lat and lng are required' });
         }
 
-        const result = await detectHighwayAtPoint(lat, lng);
+        const result = await detectHighwayUsingGoogleMaps(lat, lng);
         console.log(`[Restaurant Onboarding] detectHighway API requested for lat: ${lat}, lng: ${lng}`);
         console.log(`[Restaurant Onboarding] Result: Nearest highway ${result.highwayRef}, Distance: ${result.distanceMeters}m, Threshold: ${result.thresholdMeters}m, Status: ${result.status}`);
 

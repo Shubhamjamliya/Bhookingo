@@ -43,12 +43,6 @@ export const adminSidebarMenu = [
     label: "RESTAURANT MANAGEMENT",
     items: [
       {
-        type: "link",
-        label: "Highway Setup",
-        path: "/admin/food/highway-setup",
-        icon: "MapPin",
-      },
-      {
         type: "expandable",
         label: "Restaurants",
         icon: "UtensilsCrossed",

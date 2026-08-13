@@ -142,7 +142,7 @@ export default function RestaurantRouter() {
           <Route path="manage-outlets" element={<ManageOutlets />} />
           <Route path="update-bank-details" element={<UpdateBankDetails />} />
           <Route path="reservations" element={<DiningReservations />} />
-          <Route path="zone-setup" element={<Navigate to="/admin/food/highway-setup" replace />} />
+          <Route path="zone-setup" element={<Navigate to="/admin/food/restaurants" replace />} />
         </Route>
         <Route path="onboarding" element={<RestaurantOnboarding />} />
         

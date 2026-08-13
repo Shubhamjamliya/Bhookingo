@@ -571,47 +571,6 @@ export const adminAPI = {
       }
       return res;
     }),
-  getHighwayById: (id) =>
-    apiClient.get(`/food/admin/highways/${String(id)}`, { contextModule: "admin" }),
-  /** Create a manual highway */
-  createHighway: (body) =>
-    apiClient.post("/food/admin/highways", body, { contextModule: "admin" }),
-  /** Update a manual highway */
-  updateHighway: (id, body) =>
-    apiClient.put(`/food/admin/highways/${String(id)}`, body, { contextModule: "admin" }),
-  /** Bulk import National Highways from GeoJSON file upload. */
-  importHighways: (file, { onUploadProgress } = {}) => {
-    if (!file) {
-      return Promise.reject(new Error('GeoJSON file is required'))
-    }
-    const formData = new FormData()
-    formData.append('geojson', file)
-    return apiClient.post("/food/admin/highways/import", formData, {
-      contextModule: "admin",
-      timeout: 600000,
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (event) => {
-        if (!onUploadProgress) return
-        if (event.total) {
-          onUploadProgress(Math.min(100, Math.round((event.loaded * 100) / event.total)))
-        } else {
-          onUploadProgress(0)
-        }
-      },
-    })
-  },
-  /** Delete a highway record. */
-  deleteHighway: (id) =>
-    apiClient.delete(`/food/admin/highways/${String(id)}`, { contextModule: "admin" }),
-  /** Toggle highway active/inactive. */
-  toggleHighwayStatus: (id) =>
-    apiClient.patch(`/food/admin/highways/${String(id)}/toggle`, {}, { contextModule: "admin" }),
-  /** Get the distance threshold setting. */
-  getHighwaySettings: () =>
-    apiClient.get("/food/admin/highway-settings", { contextModule: "admin" }),
-  /** Update the distance threshold setting. */
-  updateHighwaySettings: (body) =>
-    apiClient.patch("/food/admin/highway-settings", body ?? {}, { contextModule: "admin" }),
   getRestaurantReport: (params = {}) =>
     apiClient.get("/food/admin/reports/restaurants", {
       params: { page: 1, limit: 1000, ...params },

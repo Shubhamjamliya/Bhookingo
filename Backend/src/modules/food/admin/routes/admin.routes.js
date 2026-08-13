@@ -12,6 +12,7 @@ import * as orderController from '../../orders/controllers/order.controller.js';
 import { getAdminPageController, upsertAdminPageController } from '../controllers/pageContent.controller.js';
 import * as systemConfigController from '../controllers/systemConfig.controller.js';
 import { listHighwaysController } from '../controllers/highway.controller.js';
+import { upload } from '../../../../middleware/upload.js';
 import {
     getDrivingModeSettingsController,
     updateDrivingModeSettingsController

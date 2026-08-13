@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { useNavigate } from "react-router-dom"
 import { Building2, Info, Tag, Upload, Calendar, FileText, MapPin, CheckCircle2, X, Image as ImageIcon, Clock, Loader2 } from "lucide-react"
@@ -496,12 +496,12 @@ export default function AddRestaurant() {
   const pinMapRef = useRef(null)
   const pinMarkerRef = useRef(null)
   const pinGeocoderRef = useRef(null)
+  const highwayDetectTimerRef = useRef(null)
 
-  useEffect(() => {
-    const lat = Number(step1.location?.latitude)
-    const lng = Number(step1.location?.longitude)
-    const address = step1.location?.formattedAddress || step1.location?.addressLine1 || ""
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !address.trim()) {
+  const detectHighwayForLocation = useCallback(async (lat, lng) => {
+    const latNum = Number(lat)
+    const lngNum = Number(lng)
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
       setHighwayInfo({
         loading: false,
         status: null,
@@ -514,33 +514,21 @@ export default function AddRestaurant() {
       return
     }
 
-    const triggerDetection = async () => {
-      setHighwayInfo((prev) => ({ ...prev, loading: true }))
-      try {
-        const res = await highwayAPI.detectHighway(lat, lng)
-        const data = res?.data?.data
-        if (res?.data?.success && data) {
-          setHighwayInfo({
-            loading: false,
-            status: data.status,
-            highwayId: data.highwayId || null,
-            highwayName: data.highwayName || null,
-            highwayRef: data.highwayRef || null,
-            distanceMeters: data.distanceMeters ?? null,
-            thresholdMeters: data.thresholdMeters ?? null,
-          })
-        } else {
-          setHighwayInfo({
-            loading: false,
-            status: "OUT_OF_SERVICE",
-            highwayId: null,
-            highwayName: null,
-            highwayRef: null,
-            distanceMeters: null,
-            thresholdMeters: null,
-          })
-        }
-      } catch (err) {
+    setHighwayInfo((prev) => ({ ...prev, loading: true }))
+    try {
+      const res = await highwayAPI.detectHighway(latNum, lngNum)
+      const data = res?.data?.data
+      if (res?.data?.success && data) {
+        setHighwayInfo({
+          loading: false,
+          status: data.status,
+          highwayId: data.highwayId || null,
+          highwayName: data.highwayName || null,
+          highwayRef: data.highwayRef || null,
+          distanceMeters: data.distanceMeters ?? null,
+          thresholdMeters: data.thresholdMeters ?? null,
+        })
+      } else {
         setHighwayInfo({
           loading: false,
           status: "OUT_OF_SERVICE",
@@ -551,10 +539,38 @@ export default function AddRestaurant() {
           thresholdMeters: null,
         })
       }
+    } catch {
+      setHighwayInfo((prev) => ({ ...prev, loading: false }))
+    }
+  }, [])
+
+  useEffect(() => {
+    const lat = step1.location?.latitude
+    const lng = step1.location?.longitude
+    const address = step1.location?.formattedAddress || step1.location?.addressLine1 || ""
+    if (!lat || !lng || !address.trim()) {
+      setHighwayInfo({
+        loading: false,
+        status: null,
+        highwayId: null,
+        highwayName: null,
+        highwayRef: null,
+        distanceMeters: null,
+        thresholdMeters: null,
+      })
+      return
     }
 
-    triggerDetection()
-  }, [step1.location?.latitude, step1.location?.longitude])
+    if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
+
+    highwayDetectTimerRef.current = setTimeout(() => {
+      detectHighwayForLocation(lat, lng)
+    }, 400)
+
+    return () => {
+      if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
+    }
+  }, [step1.location?.latitude, step1.location?.longitude, step1.location?.formattedAddress, step1.location?.addressLine1, detectHighwayForLocation])
 
   const autoDetectedRoadLabel = (() => {
     if (highwayInfo.highwayRef) {

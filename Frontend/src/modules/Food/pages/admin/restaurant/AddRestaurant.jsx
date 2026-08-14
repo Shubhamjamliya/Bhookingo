@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { Switch } from "@food/components/ui/switch"
 import { formatRoadDistance } from "@food/utils/formatRoadDistance"
 import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
+import RestaurantAddressHighwaySection from "@food/components/address/RestaurantAddressHighwaySection"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
 
 const debugLog = (...args) => { }
@@ -1675,278 +1676,104 @@ export default function AddRestaurant() {
         </div>
       </section>
 
-      <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
-        <h2 className="text-lg font-semibold text-black">Restaurant contact & location</h2>
-        <div className="relative">
-          <Label className="text-xs text-gray-700">Search location</Label>
-          <div className="relative">
-            {isGoogleMapsValid ? (
-              <Input
-                key="google-input"
-                ref={locationSearchInputRef}
-                value={locationSearchValue}
-                onChange={(e) => setLocationSearchValue(e.target.value)}
-                className="mt-1 bg-white text-sm"
-                placeholder="Search and select restaurant address..."
-              />
-            ) : (
-              <Input
-                key="fallback-input"
-                value={locationSearchValue}
-                onChange={(e) => setLocationSearchValue(e.target.value)}
-                className="mt-1 bg-white text-sm"
-                placeholder="Search and select restaurant address..."
-              />
-            )}
-            {!isGoogleMapsValid && isSearchingLocation && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-              </div>
-            )}
-          </div>
+      <RestaurantAddressHighwaySection
+        sectionTitle="Restaurant contact & location"
+        isGoogleMapsValid={isGoogleMapsValid}
+        isSearchingLocation={isSearchingLocation}
+        locationSearchValue={locationSearchValue}
+        onLocationSearchChange={(value) => setLocationSearchValue(value)}
+        locationSearchInputRef={locationSearchInputRef}
+        locationSuggestions={locationSuggestions}
+        locationSuggestionsVisible={!isGoogleMapsValid && locationSuggestions.length > 0}
+        onSelectLocationSuggestion={(suggestion) => {
+          const { lat, lng, display, addr } = suggestion
+          const area = addr.suburb || addr.neighbourhood || addr.city_district || addr.locality || ""
+          const city = addr.city || addr.town || addr.village || ""
+          const state = addr.state || ""
+          const pincode = addr.postcode || ""
+          const roadName = [addr.house_number, addr.road].filter(Boolean).join(" ").trim() || addr.road || ""
 
-          {!isGoogleMapsValid && locationSuggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto">
-              {locationSuggestions.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => {
-                    const { lat, lng, display, addr } = s
-                    const area = addr.suburb || addr.neighbourhood || addr.city_district || addr.locality || ""
-                    const city = addr.city || addr.town || addr.village || ""
-                    const state = addr.state || ""
-                    const pincode = addr.postcode || ""
-                    const roadName = [addr.house_number, addr.road].filter(Boolean).join(" ").trim() || addr.road || ""
+          isPlaceSelectedRef.current = true
 
-                    isPlaceSelectedRef.current = true
+          setStep1((prev) => ({
+            ...prev,
+            location: {
+              ...prev.location,
+              formattedAddress: display,
+              addressLine1: display,
+              area: area || prev.location.area,
+              city: city || prev.location.city,
+              state: state || prev.location.state,
+              pincode: pincode || prev.location.pincode,
+              latitude: lat,
+              longitude: lng,
+              placeId: suggestion.place_id || "",
+              roadName: roadName || prev.location.roadName || "",
+            },
+            locationSource: "google_places",
+          }))
+          setMapsLinkValue("")
+          setIsRoadNameDirty(false)
+          setLocationSearchValue(display)
+          setLocationSuggestions([])
 
-                    setStep1((prev) => ({
-                      ...prev,
-                      location: {
-                        ...prev.location,
-                        formattedAddress: display,
-                        addressLine1: display,
-                        area: area || prev.location.area,
-                        city: city || prev.location.city,
-                        state: state || prev.location.state,
-                        pincode: pincode || prev.location.pincode,
-                        latitude: lat,
-                        longitude: lng,
-                        placeId: s.place_id || "",
-                        roadName: roadName || prev.location.roadName || "",
-                      },
-                      locationSource: "google_places",
-                    }))
-                    setMapsLinkValue("")
-                    setIsRoadNameDirty(false)
-                    setLocationSearchValue(display)
-                    setLocationSuggestions([])
-
-                    if (locationSearchInputRef.current) {
-                      locationSearchInputRef.current.blur()
-                    }
-                  }}
-                  className="w-full px-4 py-2 text-left text-[13px] font-medium text-gray-700 hover:bg-orange-50 border-b border-gray-100 last:border-none"
-                >
-                  <span className="truncate">{s.display}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <p className="text-[11px] text-gray-500 mt-1">
-            Search to auto-fill Area, City, State, Pincode and coordinates.
-          </p>
-
-          {step1.isHighwayRestaurant === true && highwayInfo.loading && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 flex items-center gap-2 text-xs">
-              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-              <span>{HIGHWAY_DETECTION_COPY.checking}</span>
-            </div>
-          )}
-
-          {step1.isHighwayRestaurant === true && !highwayInfo.loading && highwayInfo.status === "IN_SERVICE" && (
-            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md text-green-800 space-y-1 text-xs">
-              <div className="flex items-center gap-2 font-semibold">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span>{HIGHWAY_DETECTION_COPY.success}</span>
-              </div>
-              <div className="pl-6 text-gray-600 space-y-0.5">
-                <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                {highwayInfo.highwayName && (<p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
-                <p>Distance: <span className="font-medium text-gray-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
-              </div>
-            </div>
-          )}
-
-          {step1.isHighwayRestaurant === true && !highwayInfo.loading && highwayInfo.status === "OUT_OF_SERVICE" && (
-            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 space-y-1 text-xs">
-              <div className="flex items-center gap-2 font-semibold">
-                <X className="w-4 h-4 text-red-600" />
-                <span>{HIGHWAY_DETECTION_COPY.error}</span>
-              </div>
-              {highwayInfo.highwayRef && (
-                <div className="pl-6 text-gray-600 space-y-0.5">
-                  <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                  {highwayInfo.highwayName && (<p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
-                  <p>Distance: <span className="font-medium text-gray-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
-                </div>
-              )}
-            </div>
-          )}
-          {step1.isHighwayRestaurant !== true && (
-            <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-md text-slate-700 text-xs">
-              Normal restaurant selected. Highway detection is skipped.
-            </div>
-          )}
-      
-
-          {Number.isFinite(Number(step1.location?.latitude)) && Number.isFinite(Number(step1.location?.longitude)) && (
-            <div className="mt-3 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between border-b border-gray-200 px-4 py-2.5">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Pin preview</p>
-                  <p className="text-[11px] text-gray-500">Tap on the map or drag the pin to save the exact restaurant coordinates.</p>
-                </div>
-                <MapPin className="h-4 w-4 text-restaurant-primary" />
-              </div>
-              {isMapsSdkReady ? (
-                <div ref={pinMapContainerRef} className="h-[220px] w-full" />
-              ) : (
-                <iframe
-                  src={`https://www.google.com/maps?q=${step1.location?.latitude},${step1.location?.longitude}&hl=en&z=16&output=embed`}
-                  width="100%"
-                  height="220"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Restaurant road preview map fallback"
-                  className="w-full"
-                />
-              )}
-              <div className="border-t border-gray-200 bg-white px-4 py-2 text-[11px] text-gray-600 space-y-1">
-                <div>
-                  Coordinates saved: <span className="font-semibold text-gray-900">{Number(step1.location?.latitude).toFixed(6)}, {Number(step1.location?.longitude).toFixed(6)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center my-4">
-          <hr className="flex-grow border-t border-gray-200" />
-          <span className="px-3 text-xs font-semibold text-gray-400 tracking-wider uppercase">OR</span>
-          <hr className="flex-grow border-t border-gray-200" />
-        </div>
-
-        <div>
-          <Label className="text-xs text-gray-700">Google Maps Location Link (Optional)</Label>
-          <div className="relative mt-1">
+          if (locationSearchInputRef.current) {
+            locationSearchInputRef.current.blur()
+          }
+        }}
+        isHighwayRestaurant={step1.isHighwayRestaurant === true}
+        highwayInfo={highwayInfo}
+        pinMapContainerRef={pinMapContainerRef}
+        isMapsSdkReady={isMapsSdkReady}
+        location={step1.location}
+        showMapsLink
+        mapsLinkValue={mapsLinkValue}
+        onMapsLinkChange={handleMapsLinkChange}
+        isProcessingLink={isProcessingLink}
+        locationSource={step1.locationSource}
+        renderPrimaryContact={
+          <div>
+            <Label className="text-xs text-gray-700">Primary contact number*</Label>
             <Input
-              value={mapsLinkValue}
-              onChange={handleMapsLinkChange}
-              className="bg-white text-sm pr-10"
-              placeholder="Paste Google Maps URL here"
-              disabled={isProcessingLink}
+              value={step1.primaryContactNumber || ""}
+              onChange={(e) => setStep1({ ...step1, primaryContactNumber: sanitizeDigits(e.target.value).slice(0, 10) })}
+              className="mt-1 bg-white text-sm text-black placeholder-black"
+              placeholder="Restaurant's primary contact number"
+              inputMode="numeric"
+              maxLength={10}
             />
-            {isProcessingLink && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-              </div>
-            )}
           </div>
-          <p className="text-[11px] text-gray-500 mt-1">
-            You can either search the restaurant above or paste a Google Maps location link.
-          </p>
-        </div>
-
-        {step1.locationSource && (
-          <div className="mt-3 text-xs flex items-center gap-1.5 font-medium text-slate-600 bg-slate-50/70 border border-slate-100 rounded px-2.5 py-1.5 w-fit">
-            <MapPin className="w-3.5 h-3.5 text-slate-500" />
-            <span>Location Source:</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${step1.locationSource === "google_maps_link"
-                ? "bg-blue-100 text-blue-700"
-                : "bg-orange-100 text-orange-700"
-              }`}>
-              {step1.locationSource === "google_maps_link" ? "Google Maps Link" : "Google Search"}
-            </span>
-          </div>
-        )}
-
-        <div>
-          <Label className="text-xs text-gray-700">Primary contact number*</Label>
-          <Input
-            value={step1.primaryContactNumber || ""}
-            onChange={(e) => setStep1({ ...step1, primaryContactNumber: sanitizeDigits(e.target.value).slice(0, 10) })}
-            className="mt-1 bg-white text-sm text-black placeholder-black"
-            placeholder="Restaurant's primary contact number"
-            inputMode="numeric"
-            maxLength={10}
-          />
-        </div>
-        <div className="space-y-3">
-          <Input
-            value={step1.location?.area || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, area: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="Area / Sector / Locality*"
-          />
-          <Input
-            value={step1.location?.city || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, city: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="City*"
-          />
-          <Input
-            value={step1.location?.addressLine1 || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, addressLine1: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="Shop no. / building no. (optional)"
-          />
-          <Input
-            value={step1.location?.addressLine2 || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, addressLine2: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="Floor / tower (optional)"
-          />
-          <Input
-            value={step1.location?.state || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, state: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="State (optional)"
-          />
-          <Input
-            value={step1.location?.pincode || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, pincode: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="Pin code (optional)"
-          />
-          <Input
-            value={step1.location?.landmark || ""}
-            onChange={(e) => setStep1({ ...step1, location: { ...step1.location, landmark: e.target.value } })}
-            className="bg-white text-sm"
-            placeholder="Nearby landmark (optional)"
-          />
-          {step1.isHighwayRestaurant === true && (
-            <div>
-              <Label className="text-xs text-gray-700">{HIGHWAY_DETECTION_COPY.roadFieldLabel}</Label>
-              <Input
-                value={step1.location?.roadName || ""}
-                onChange={(e) => {
-                  setIsRoadNameDirty(true)
-                  setStep1({ ...step1, location: { ...step1.location, roadName: e.target.value } })
-                }}
-                className="mt-1 bg-white text-sm"
-                placeholder="Auto-detected road / highway"
-              />
-              <p className="text-[11px] text-gray-500 mt-1">
-                This is auto-filled from the detected NH / SH and you can edit it if needed.
-              </p>
+        }
+        renderCityField={
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs text-gray-700">City*</Label>
+              {step1.location?.city?.trim() ? (
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                  Auto-detected
+                </span>
+              ) : null}
             </div>
-          )}
-        </div>
-      </section>
+            <Input
+              value={step1.location?.city || ""}
+              onChange={(e) => setStep1({ ...step1, location: { ...step1.location, city: e.target.value } })}
+              className="bg-white text-sm"
+              placeholder="City*"
+            />
+            <p className="text-[11px] text-gray-500">
+              This is auto-filled from the selected location. You can change it if needed.
+            </p>
+          </div>
+        }
+        onLocationFieldChange={(field, value) =>
+          setStep1({ ...step1, location: { ...step1.location, [field]: value } })
+        }
+        onRoadNameChange={(value) => {
+          setIsRoadNameDirty(true)
+          setStep1({ ...step1, location: { ...step1.location, roadName: value } })
+        }}
+        normalizePincode={(value) => value}
+      />
     </div>
   )
 

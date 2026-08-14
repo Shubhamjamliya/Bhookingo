@@ -18,12 +18,11 @@ import {
   Sparkles,
   MapPin,
   Loader2,
-  CheckCircle2,
-  AlertCircle,
 } from "lucide-react"
 import { Button } from "@food/components/ui/button"
 import { Input } from "@food/components/ui/input"
 import { Label } from "@food/components/ui/label"
+import RestaurantAddressHighwaySection from "@food/components/address/RestaurantAddressHighwaySection"
 import {
   Select,
   SelectContent,
@@ -36,8 +35,6 @@ import OptimizedImage from "@food/components/OptimizedImage"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
-import { formatRoadDistance } from "@food/utils/formatRoadDistance"
-import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
 import { toast } from "sonner"
 import { MobileTimePicker } from "@mui/x-date-pickers/MobileTimePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
@@ -1762,254 +1759,71 @@ export default function EditOwner() {
           {/* TAB 3: ADDRESS */}
           {activeTab === "address" && (
             <div className="space-y-6">
-              <section className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-                <div>
-                  <h3 className="text-base font-bold text-gray-900">Address Details</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Use the same address selection flow as onboarding so route discovery can place the restaurant correctly on travel roads.
-                  </p>
-                </div>
-
-                <div className="relative">
-                  <Label className="text-xs text-gray-700">Search location</Label>
-                  <div className="relative mt-1">
+              <RestaurantAddressHighwaySection
+                sectionTitle="Address Details"
+                sectionDescription="Use the same address selection flow as onboarding so route discovery can place the restaurant correctly on travel roads."
+                isGoogleMapsValid
+                isSearchingLocation={isSearchingLocation}
+                locationSearchValue={locationSearchValue}
+                onLocationSearchChange={(value) => {
+                  isPlaceSelectedRef.current = false
+                  setFormData((prev) => ({ ...prev, locationSource: "google_places" }))
+                  setLocationSearchValue(value)
+                }}
+                onLocationSearchBlur={handleLocationSearchBlur}
+                locationSearchInputRef={locationSearchInputRef}
+                locationSuggestions={locationPredictions.map((prediction) => ({
+                  id: prediction.place_id,
+                  place_id: prediction.place_id,
+                  display: prediction.description,
+                  rawPrediction: prediction,
+                }))}
+                locationSuggestionsVisible={locationPredictions.length > 0}
+                onSelectLocationSuggestion={(suggestion) => {
+                  if (!suggestion?.rawPrediction) return
+                  handleLocationPredictionSelect(suggestion.rawPrediction)
+                }}
+                isHighwayRestaurant={formData.isHighwayRestaurant === true}
+                highwayInfo={highwayInfo}
+                pinMapContainerRef={pinMapContainerRef}
+                isMapsSdkReady={isMapsSdkReady}
+                location={formData.location}
+                showMapsLink
+                mapsLinkValue={mapsLinkValue}
+                onMapsLinkChange={handleMapsLinkChange}
+                isProcessingLink={isProcessingLink}
+                locationSource={formData.locationSource}
+                renderCityField={
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <Label className="text-xs text-gray-700">City*</Label>
+                      {formData.location?.city?.trim() ? (
+                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                          Auto-detected
+                        </span>
+                      ) : null}
+                    </div>
                     <Input
-                      ref={locationSearchInputRef}
-                      value={locationSearchValue}
-                      onChange={(e) => {
-                        isPlaceSelectedRef.current = false
-                        setFormData((prev) => ({ ...prev, locationSource: "google_places" }))
-                        setLocationSearchValue(e.target.value)
-                      }}
-                      onBlur={handleLocationSearchBlur}
+                      value={formData.location?.city || ""}
+                      onChange={(e) => handleLocationChange("city", e.target.value)}
                       className="bg-white text-sm"
-                      placeholder="Search and select restaurant address..."
-                      autoComplete="off"
+                      placeholder="City*"
                     />
-                    {isSearchingLocation && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                      </div>
-                    )}
+                    <p className="text-[11px] text-gray-500">
+                      This is auto-filled from the selected location. You can change it if needed.
+                    </p>
                   </div>
-
-                  {locationPredictions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-xl z-[999999] overflow-hidden max-h-60 overflow-y-auto">
-                      {locationPredictions.map((prediction) => (
-                        <button
-                          key={prediction.place_id}
-                          type="button"
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            handleLocationPredictionSelect(prediction)
-                          }}
-                          className="w-full px-4 py-2 text-left text-[13px] font-medium text-gray-700 hover:bg-orange-50 border-b border-gray-100 last:border-none"
-                        >
-                          <span className="block truncate">{prediction.description}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  <p className="text-[11px] text-gray-500 mt-1">
-                    Search to auto-fill Area, City, State, Pincode and coordinates.
-                  </p>
-                </div>
-
-                <div className="flex items-center my-2">
-                  <hr className="flex-grow border-t border-gray-200" />
-                  <span className="px-3 text-xs font-semibold text-gray-400 tracking-wider uppercase">OR</span>
-                  <hr className="flex-grow border-t border-gray-200" />
-                </div>
-
-                <div>
-                  <Label className="text-xs text-gray-700">Google Maps Location Link (Optional)</Label>
-                  <div className="relative mt-1">
-                    <Input
-                      value={mapsLinkValue}
-                      onChange={handleMapsLinkChange}
-                      className="bg-white text-sm pr-10"
-                      placeholder="Paste Google Maps URL here"
-                      disabled={isProcessingLink}
-                    />
-                    {isProcessingLink && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Loader2 className="h-4 w-4 animate-spin text-restaurant-primary" />
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-gray-500 mt-1">
-                    You can either search the restaurant above or paste a Google Maps location link.
-                  </p>
-                </div>
-
-                {formData.locationSource && (
-                  <div className="mt-1 text-xs flex items-center gap-1.5 font-medium text-slate-600 bg-slate-50/70 border border-slate-100 rounded px-2.5 py-1.5 w-fit">
-                    <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Location Source:</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      formData.locationSource === "google_maps_link"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-orange-100 text-orange-700"
-                    }`}>
-                      {formData.locationSource === "google_maps_link" ? "Google Maps Link" : "Google Search"}
-                    </span>
-                  </div>
-                )}
-
-                <Input
-                  value={formData.location?.addressLine1 || ""}
-                  onChange={(e) => handleLocationChange("addressLine1", e.target.value)}
-                  className="bg-white text-sm"
-                  placeholder="Shop no. / building no. (optional)"
-                />
-                <Input
-                  value={formData.location?.addressLine2 || ""}
-                  onChange={(e) => handleLocationChange("addressLine2", e.target.value)}
-                  className="bg-white text-sm"
-                  placeholder="Floor / tower (optional)"
-                />
-                <Input
-                  value={formData.location?.landmark || ""}
-                  onChange={(e) => handleLocationChange("landmark", e.target.value)}
-                  className="bg-white text-sm"
-                  placeholder="Nearby landmark (optional)"
-                />
-                <Input
-                  value={formData.location?.area || ""}
-                  onChange={(e) => handleLocationChange("area", e.target.value)}
-                  className="bg-white text-sm"
-                  placeholder="Area / Sector / Locality*"
-                />
-                <Select
-                  value={formData.location?.city || ""}
-                  onValueChange={(value) => handleLocationChange("city", value)}
-                >
-                  <SelectTrigger className="bg-white text-sm text-gray-700">
-                    <SelectValue placeholder="Select City*" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Indore">Indore</SelectItem>
-                    <SelectItem value="Bhopal">Bhopal</SelectItem>
-                    <SelectItem value="Gwalior">Gwalior</SelectItem>
-                    <SelectItem value="Jabalpur">Jabalpur</SelectItem>
-                    <SelectItem value="Mumbai">Mumbai</SelectItem>
-                    <SelectItem value="Pune">Pune</SelectItem>
-                    <SelectItem value="Delhi">Delhi</SelectItem>
-                    <SelectItem value="Bangalore">Bangalore</SelectItem>
-                    <SelectItem value="Ahmedabad">Ahmedabad</SelectItem>
-                    <SelectItem value="Hyderabad">Hyderabad</SelectItem>
-                    <SelectItem value="Chennai">Chennai</SelectItem>
-                    <SelectItem value="Kolkata">Kolkata</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Input
-                    value={formData.location?.state || ""}
-                    onChange={(e) => handleLocationChange("state", e.target.value)}
-                    className="bg-white text-sm"
-                    placeholder="State"
-                  />
-                  <Input
-                    value={formData.location?.pincode || ""}
-                    onChange={(e) => handleLocationChange("pincode", normalizePincode(e.target.value))}
-                    className="bg-white text-sm"
-                    placeholder="Pincode"
-                  />
-                </div>
-
-                <p className="text-[11px] text-gray-500 mt-1">
-                  Please ensure that this address is the same as mentioned on your FSSAI license.
-                </p>
-              </section>
-
-              <section className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-                <div>
-                  <h3 className="text-base font-bold text-gray-900">{HIGHWAY_DETECTION_COPY.sectionTitle}</h3>
-                  <p className="mt-1 text-sm text-gray-600">
-                    We auto-detect the nearest NH or SH from the selected address. You can point the location on the map and refine the saved road label if needed.
-                  </p>
-                </div>
-
-                {(highwayInfo.loading || highwayInfo.status) && (
-                  <div
-                    className={`rounded-xl border px-4 py-3 text-sm ${
-                      highwayInfo.loading
-                        ? "bg-slate-50 border-slate-200 text-slate-600"
-                        : highwayInfo.status === "IN_SERVICE"
-                          ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                          : "bg-rose-50 border-rose-200 text-rose-800"
-                    }`}
-                  >
-                    {highwayInfo.loading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                        <span>{HIGHWAY_DETECTION_COPY.checking}</span>
-                      </div>
-                    ) : highwayInfo.status === "IN_SERVICE" ? (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 font-semibold">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span>{HIGHWAY_DETECTION_COPY.success}</span>
-                        </div>
-                        <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                          <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                          {highwayInfo.highwayName && <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
-                          {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 font-semibold">
-                          <AlertCircle className="w-4 h-4 text-rose-600" />
-                          <span>{HIGHWAY_DETECTION_COPY.error}</span>
-                        </div>
-                        {highwayInfo.highwayRef && (
-                          <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                            <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                            {highwayInfo.highwayName && <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
-                            {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {Number.isFinite(Number(formData.location?.latitude)) && Number.isFinite(Number(formData.location?.longitude)) && (
-                  <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
-                    <div className="flex items-center justify-between border-b border-gray-200 px-4 py-2.5">
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">Pin preview</p>
-                        <p className="text-[11px] text-gray-500">Tap on the map or drag the pin to save the exact restaurant coordinates.</p>
-                      </div>
-                      <MapPin className="h-4 w-4 text-restaurant-primary" />
-                    </div>
-                    <div ref={pinMapContainerRef} className="h-[220px] w-full" />
-                    <div className="border-t border-gray-200 bg-white px-4 py-2 text-[11px] text-gray-600 space-y-1">
-                      <div>
-                        Coordinates saved: <span className="font-semibold text-gray-900">{Number(formData.location?.latitude).toFixed(6)}, {Number(formData.location?.longitude).toFixed(6)}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <Label className="text-xs text-gray-700">Road / Highway name*</Label>
-                  <Input
-                    value={formData.location?.roadName || ""}
-                    onChange={(e) => {
-                      setIsRoadNameDirty(true)
-                      handleLocationChange("roadName", e.target.value)
-                    }}
-                    className="mt-1 bg-white text-sm"
-                    placeholder="Auto-detected road / highway"
-                  />
-                  <p className="text-[11px] text-gray-500 mt-1">
-                    This is auto-filled from the detected NH / SH and you can still edit it to match the exact road shown on the pin.
-                  </p>
-                </div>
-              </section>
+                }
+                onLocationFieldChange={handleLocationChange}
+                onRoadNameChange={(value) => {
+                  setIsRoadNameDirty(true)
+                  handleLocationChange("roadName", value)
+                }}
+                normalizePincode={normalizePincode}
+                footerNote="Please ensure that this address is the same as mentioned on your FSSAI license."
+                cardClassName="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4"
+                searchInputClassName="bg-white text-sm"
+              />
             </div>
           )}
 

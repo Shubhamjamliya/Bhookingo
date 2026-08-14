@@ -1585,5 +1585,3 @@ export default function Under250() {
     </div>
   )
 }
-
-import { getFacilityAvailability } from "@food/utils/facilityHelpers";

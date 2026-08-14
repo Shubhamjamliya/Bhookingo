@@ -23,10 +23,6 @@ export function getRequiredPermissionForPath(path) {
   if (cleanPath.startsWith('/admin/food/categories')) {
     return { module: 'settings', action: 'view' };
   }
-  if (cleanPath.startsWith('/admin/food/highway-setup')) {
-    return { module: 'settings', action: 'view' };
-  }
-
   if (cleanPath === '/admin/food/restaurants') {
     return { module: 'restaurants', action: 'view' };
   }

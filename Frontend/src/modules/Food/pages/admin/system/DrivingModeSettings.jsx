@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, SlidersHorizontal, Navigation, Shield, Compass, Route } from "lucide-react";
+import { Loader2, Navigation, Shield, Route, TimerReset } from "lucide-react";
 import { toast } from "sonner";
 import { adminAPI } from "@food/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@food/components/ui/card";
@@ -27,13 +27,10 @@ export default function DrivingModeSettings() {
   const loadToastShownRef = useRef(false);
 
   const [enabled, setEnabled] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState(5);
-  const [rangeKm, setRangeKm] = useState(50);
-  const [entryRadiusMeters, setEntryRadiusMeters] = useState(2000);
   const [googleRouteSearchRadiusKm, setGoogleRouteSearchRadiusKm] = useState(15);
   const [googleRouteForwardRangeKm, setGoogleRouteForwardRangeKm] = useState(100);
   const [googleRouteBackwardBufferKm, setGoogleRouteBackwardBufferKm] = useState(0.5);
-  const [storedHighwayMatchRadiusKm, setStoredHighwayMatchRadiusKm] = useState(5);
+  const [onboardingRoadRangeKm, setOnboardingRoadRangeKm] = useState(2);
   const [showAllRouteRestaurants, setShowAllRouteRestaurants] = useState(false);
 
   useEffect(() => {
@@ -46,13 +43,10 @@ export default function DrivingModeSettings() {
         if (!cancelled) {
           const data = res?.data?.data || {};
           setEnabled(data.enabled !== false);
-          setRefreshInterval(Number(data.locationRefreshIntervalMinutes) || 5);
-          setRangeKm(Number(data.restaurantSearchRadiusKm) || 50);
-          setEntryRadiusMeters(Number(data.highwayEntryRadiusMeters) || 2000);
+          setOnboardingRoadRangeKm((Number(data.highwayEntryRadiusMeters) || 2000) / 1000);
           setGoogleRouteSearchRadiusKm(Number(data.googleRouteSearchRadiusKm) || 15);
           setGoogleRouteForwardRangeKm(Number(data.googleRouteForwardRangeKm) || 100);
           setGoogleRouteBackwardBufferKm(Number(data.googleRouteBackwardBufferKm) >= 0 ? Number(data.googleRouteBackwardBufferKm) : 0.5);
-          setStoredHighwayMatchRadiusKm(Number(data.storedHighwayMatchRadiusKm) || 5);
           setShowAllRouteRestaurants(data.showAllRouteRestaurants === true);
         }
       } catch (_error) {
@@ -85,13 +79,10 @@ export default function DrivingModeSettings() {
     try {
       const payload = {
         enabled,
-        locationRefreshIntervalMinutes: refreshInterval,
-        restaurantSearchRadiusKm: rangeKm,
-        highwayEntryRadiusMeters: entryRadiusMeters,
+        highwayEntryRadiusMeters: Math.round(Number(onboardingRoadRangeKm || 0) * 1000),
         googleRouteSearchRadiusKm,
         googleRouteForwardRangeKm,
         googleRouteBackwardBufferKm,
-        storedHighwayMatchRadiusKm,
         showAllRouteRestaurants,
       };
 
@@ -138,7 +129,7 @@ export default function DrivingModeSettings() {
           </h1>
         </div>
         <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-          Configure all live highway detection, Google route corridor, and restaurant discovery rules from one place.
+          Configure the single Google Maps driving flow from one place.
         </p>
       </div>
 
@@ -146,8 +137,8 @@ export default function DrivingModeSettings() {
         <Card className="dark:bg-[#1a1a1a] dark:border-neutral-800 shadow-md">
           <CardHeader className="border-b dark:border-neutral-800">
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
-              <CardTitle className="dark:text-white">Feature Toggle & Core Parameters</CardTitle>
+              <Navigation className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+              <CardTitle className="dark:text-white">Driving Mode</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
@@ -167,105 +158,9 @@ export default function DrivingModeSettings() {
 
             <div className="space-y-2">
               <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                <Compass className="w-4 h-4 text-gray-500" />
-                Driving Mode Location Refresh Interval
-              </Label>
-              <select
-                value={refreshInterval}
-                onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                className="w-full max-w-md h-10 px-3 rounded-lg border border-gray-200 dark:border-neutral-800 bg-white dark:bg-[#121212] dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 transition-all font-medium"
-              >
-                <option value={1}>1 Minute</option>
-                <option value={5}>5 Minutes</option>
-                <option value={10}>10 Minutes</option>
-                <option value={15}>15 Minutes</option>
-                <option value={30}>30 Minutes</option>
-              </select>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Determines how often the user app refreshes and fetches new restaurants ahead. Higher intervals save server and Maps API cost.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                 <Navigation className="w-4 h-4 text-gray-500" />
-                Stored Highway Restaurant Range (KM)
+                Forward Distance Range (KM)
               </Label>
-              <Input
-                type="number"
-                min={1}
-                max={500}
-                required
-                value={rangeKm}
-                onChange={(e) => setRangeKm(Number(e.target.value))}
-                className="max-w-md bg-white border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 h-10 transition-all"
-              />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Controls how far ahead restaurants can appear when users are browsing on stored highway geometry.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                <Shield className="w-4 h-4 text-gray-500" />
-                Highway Entry Proximity Radius (Meters)
-              </Label>
-              <Input
-                type="number"
-                min={100}
-                max={10000}
-                required
-                value={entryRadiusMeters}
-                onChange={(e) => setEntryRadiusMeters(Number(e.target.value))}
-                className="max-w-md bg-white border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 h-10 transition-all"
-              />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Distance threshold within which a user or restaurant is treated as being near a stored National Highway.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="dark:bg-[#1a1a1a] dark:border-neutral-800 shadow-md">
-          <CardHeader className="border-b dark:border-neutral-800">
-            <div className="flex items-center gap-2">
-              <Route className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
-              <CardTitle className="dark:text-white">Google Route Corridor Settings</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6 space-y-6">
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300">Google Route Restaurant Corridor Radius (KM)</Label>
-              <Input
-                type="number"
-                min={1}
-                max={50}
-                required
-                value={googleRouteSearchRadiusKm}
-                onChange={(e) => setGoogleRouteSearchRadiusKm(Number(e.target.value))}
-                className="max-w-md bg-white border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 h-10 transition-all"
-              />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Restaurants must fall within this distance from the Google route polyline to be shown.
-              </p>
-            </div>
-
-            <div className="flex items-start justify-between gap-4 p-4 border rounded-xl bg-neutral-50/50 dark:bg-neutral-900/50 dark:border-neutral-800">
-              <div className="space-y-1">
-                <Label className="text-base font-bold dark:text-neutral-200">Show All Valid Restaurants On Full Route</Label>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-snug">
-                  When enabled, trip planning shows every valid roadside restaurant ahead on the full selected route instead of limiting discovery to only the next nearby stretch.
-                </p>
-              </div>
-              <Switch
-                checked={showAllRouteRestaurants}
-                onCheckedChange={setShowAllRouteRestaurants}
-                className="scale-95 data-[state=checked]:bg-[#16a34a] data-[state=unchecked]:bg-zinc-400 shadow-sm"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300">Google Route Forward Search Distance (KM)</Label>
               <Input
                 type="number"
                 min={1}
@@ -276,12 +171,15 @@ export default function DrivingModeSettings() {
                 className="max-w-md bg-white border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 h-10 transition-all"
               />
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Maximum forward distance ahead of the user along the Google route for restaurant discovery. This limit is ignored when the full-route toggle is enabled.
+                Maximum distance ahead of the user to scan for restaurants.
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300">Google Route Backward Tolerance (KM)</Label>
+              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <TimerReset className="w-4 h-4 text-gray-500" />
+                Backward Tolerance Range (KM)
+              </Label>
               <Input
                 type="number"
                 min={0}
@@ -293,25 +191,66 @@ export default function DrivingModeSettings() {
                 className="max-w-md bg-white border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 h-10 transition-all"
               />
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Small tolerance behind the user on the route to avoid hiding near-current restaurants due to GPS drift.
+                Small allowance behind the user so nearby restaurants are not hidden because of GPS drift.
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300">Stored Highway Match Radius (KM)</Label>
+              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <Route className="w-4 h-4 text-gray-500" />
+                Sideward Search Range (KM)
+              </Label>
               <Input
                 type="number"
                 min={1}
-                max={25}
+                max={50}
                 required
-                value={storedHighwayMatchRadiusKm}
-                onChange={(e) => setStoredHighwayMatchRadiusKm(Number(e.target.value))}
+                value={googleRouteSearchRadiusKm}
+                onChange={(e) => setGoogleRouteSearchRadiusKm(Number(e.target.value))}
                 className="max-w-md bg-white border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 h-10 transition-all"
               />
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                Distance used when comparing the Google route against your stored highway coordinate network.
+                Restaurants must fall within this sideways distance from the route line to be shown.
               </p>
             </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <Shield className="w-4 h-4 text-gray-500" />
+                Onboarding Sideward Range (KM)
+              </Label>
+              <Input
+                type="number"
+                min={0.1}
+                max={10}
+                step="0.1"
+                required
+                value={onboardingRoadRangeKm}
+                onChange={(e) => setOnboardingRoadRangeKm(Number(e.target.value))}
+                className="max-w-md bg-white border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 h-10 transition-all"
+              />
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Road-distance limit used while onboarding or adding a highway restaurant.
+              </p>
+            </div>
+
+            <div className="flex items-start justify-between gap-4 p-4 border rounded-xl bg-neutral-50/50 dark:bg-neutral-900/50 dark:border-neutral-800">
+              <div className="space-y-1">
+                <Label className="text-base font-bold dark:text-neutral-200">Show All Restaurants On Route</Label>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-snug">
+                  When enabled, route listing keeps all valid restaurants on the selected route without forward-distance filtering.
+                </p>
+              </div>
+              <Switch
+                checked={showAllRouteRestaurants}
+                onCheckedChange={setShowAllRouteRestaurants}
+                className="scale-95 data-[state=checked]:bg-[#16a34a] data-[state=unchecked]:bg-zinc-400 shadow-sm"
+              />
+            </div>
+
+            <p className="text-xs text-neutral-400 dark:text-neutral-500">
+              These settings now fully control route-side restaurant matching and highway onboarding checks.
+            </p>
           </CardContent>
         </Card>
 

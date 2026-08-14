@@ -161,7 +161,7 @@ export async function createOrder(userId, dto) {
   if (restaurant.isAcceptingOrders === false)
     throw new ValidationError("Restaurant not accepting orders");
 
-  if (restaurant.isHighwayRestaurant && restaurant.highwayId) {
+  if (restaurant.isHighwayRestaurant) {
     const { validateOrderDrivingRange } = await import('../../driving/services/driving.service.js');
     await validateOrderDrivingRange(restaurant, dto.userLocation);
   }
@@ -1047,7 +1047,7 @@ export async function calculateAndSaveRestaurantRatingStats(restaurantId) {
     });
   });
 
-  // Calculate dynamic nested facilityRatings structure
+  // Calculate nested facilities ratings
   const facilityRatings = {};
   FACILITIES_CONFIG.forEach(fac => {
     const { sum, count } = facilityStats[fac.key];
@@ -1066,16 +1066,12 @@ export async function calculateAndSaveRestaurantRatingStats(restaurantId) {
   const updateData = {
     rating: overallCount > 0 ? Number((overallSum / overallCount).toFixed(1)) : 0,
     totalRatings: overallCount,
-
-    // Backward compatibility (old top-level fields)
-    parkingRating: facilityRatings.parking?.average || 0,
-    wifiRating: facilityRatings.wifi?.average || 0,
-    familyFriendlyRating: facilityRatings.familyFriendly?.average || 0,
-    evChargingRating: facilityRatings.evCharging?.average || 0,
-    washroomRating: facilityRatings.washroom?.average || 0,
-
-    // Nested ratings configuration
-    facilityRatings
+    "facilities.parking.rating": facilityRatings.parking || { average: 0, count: 0 },
+    "facilities.wifi.rating": facilityRatings.wifi || { average: 0, count: 0 },
+    "facilities.familyFriendly.rating": facilityRatings.familyFriendly || { average: 0, count: 0 },
+    "facilities.evCharging.rating": facilityRatings.evCharging || { average: 0, count: 0 },
+    "facilities.washroom.rating": facilityRatings.washroom || { average: 0, count: 0 },
+    "facilities.overall.rating": facilityRatings.overall || { average: 0, count: 0 },
   };
 
   await FoodRestaurant.findByIdAndUpdate(restaurantId, { $set: updateData });

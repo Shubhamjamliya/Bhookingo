@@ -1,5 +1,5 @@
-import { detectHighwayAtPoint, hydrateHighwayGeometry } from '../../admin/services/highway.service.js';
 import { FoodHighway } from '../../admin/models/highway.model.js';
+import { detectHighwayUsingGoogleMaps } from '../../location/services/location.service.js';
 
 const toFinite = (v) => {
     const n = typeof v === 'number' ? v : parseFloat(String(v));
@@ -14,13 +14,13 @@ export const detectHighwayPublicController = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'lat and lng are required' });
         }
 
-        const result = await detectHighwayAtPoint(lat, lng);
+        const result = await detectHighwayUsingGoogleMaps(lat, lng);
         console.log(`[Restaurant Onboarding] detectHighway API requested for lat: ${lat}, lng: ${lng}`);
-        console.log(`[Restaurant Onboarding] Result: Nearest highway ${result.highwayRef}, Distance: ${result.distanceMeters}m, Threshold: ${result.thresholdMeters}m, Status: ${result.status}`);
+        console.log(`[Restaurant Onboarding] Result: Nearest NH/SH ${result.highwayRef}, Distance: ${result.distanceMeters}m, Threshold: ${result.thresholdMeters}m, Status: ${result.status}`);
 
         return res.status(200).json({
             success: true,
-            message: result.status === 'IN_SERVICE' ? 'Highway detected' : 'Out of service area',
+            message: result.status === 'IN_SERVICE' ? 'Nearby NH/SH detected' : 'Not within 2 km from NH or SH',
             data: {
                 status: result.status,
                 thresholdMeters: result.thresholdMeters,
@@ -56,33 +56,41 @@ export const listHighwaysPublicController = async (req, res, next) => {
 
 export const listHighwaysNearbyPublicController = async (req, res, next) => {
     try {
-        const filter = { isActive: true };
-
         const minLat = toFinite(req.query.minLat);
         const maxLat = toFinite(req.query.maxLat);
         const minLng = toFinite(req.query.minLng);
         const maxLng = toFinite(req.query.maxLng);
-
+        const highways = [];
+        const points = [];
         if (minLat !== null && maxLat !== null && minLng !== null && maxLng !== null) {
-            filter['boundingBox.minLat'] = { $lte: maxLat };
-            filter['boundingBox.maxLat'] = { $gte: minLat };
-            filter['boundingBox.minLng'] = { $lte: maxLng };
-            filter['boundingBox.maxLng'] = { $gte: minLng };
+            points.push(
+                { lat: minLat, lng: minLng },
+                { lat: minLat, lng: maxLng },
+                { lat: maxLat, lng: minLng },
+                { lat: maxLat, lng: maxLng },
+                { lat: Number(((minLat + maxLat) / 2).toFixed(6)), lng: Number(((minLng + maxLng) / 2).toFixed(6)) }
+            );
         }
 
-        const highways = await FoodHighway.find(filter)
-            .select('name ref geometryPath isActive boundingBox totalDistance nodeCount segmentCount')
-            .sort({ ref: 1 })
-            .lean();
-
-        const hydratedHighways = await Promise.all(
-            highways.map((highway) => hydrateHighwayGeometry(highway, { mergeSegments: true }))
-        );
+        const seenRefs = new Set();
+        for (const point of points) {
+            const detected = await detectHighwayUsingGoogleMaps(point.lat, point.lng);
+            if (detected?.status === 'IN_SERVICE' && detected.highwayRef && !seenRefs.has(detected.highwayRef)) {
+                seenRefs.add(detected.highwayRef);
+                highways.push({
+                    _id: detected.highwayRef,
+                    name: detected.highwayName || detected.highwayRef,
+                    ref: detected.highwayRef,
+                    isActive: true,
+                    source: 'google_maps'
+                });
+            }
+        }
 
         return res.status(200).json({
             success: true,
             message: 'Nearby highways fetched',
-            data: { highways: hydratedHighways }
+            data: { highways }
         });
     } catch (error) {
         next(error);

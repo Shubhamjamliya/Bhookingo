@@ -42,6 +42,45 @@ const geoPointSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const facilityRatingSummarySchema = new mongoose.Schema(
+  {
+    average: { type: Number, default: 0 },
+    count: { type: Number, default: 0 },
+  },
+  { _id: false },
+);
+
+const facilityDetailSchema = new mongoose.Schema(
+  {
+    available: { type: Boolean, default: false },
+    rating: { type: facilityRatingSummarySchema, default: () => ({}) },
+  },
+  { _id: false },
+);
+
+const restaurantDocumentsSchema = new mongoose.Schema(
+  {
+    pan: {
+      number: { type: String, trim: true, default: "" },
+      name: { type: String, trim: true, default: "" },
+      image: { type: String, trim: true, default: "" },
+    },
+    gst: {
+      registered: { type: Boolean, default: false },
+      number: { type: String, trim: true, default: "" },
+      legalName: { type: String, trim: true, default: "" },
+      address: { type: String, trim: true, default: "" },
+      image: { type: String, trim: true, default: "" },
+    },
+    fssai: {
+      number: { type: String, trim: true, default: "" },
+      expiry: { type: Date, default: null },
+      image: { type: String, trim: true, default: "" },
+    },
+  },
+  { _id: false },
+);
+
 const restaurantSchema = new mongoose.Schema(
   {
     restaurantName: {
@@ -128,30 +167,9 @@ const restaurantSchema = new mongoose.Schema(
       default: true,
       index: true,
     },
-    panNumber: {
-      type: String,
-    },
-    nameOnPan: {
-      type: String,
-    },
-    gstRegistered: {
-      type: Boolean,
-      default: false,
-    },
-    gstNumber: {
-      type: String,
-    },
-    gstLegalName: {
-      type: String,
-    },
-    gstAddress: {
-      type: String,
-    },
-    fssaiNumber: {
-      type: String,
-    },
-    fssaiExpiry: {
-      type: Date,
+    documents: {
+      type: restaurantDocumentsSchema,
+      default: () => ({}),
     },
     accountNumber: {
       type: String,
@@ -203,13 +221,6 @@ const restaurantSchema = new mongoose.Schema(
       default: "google_places",
     },
 
-    /** National Highway classification (auto-assigned from location). */
-    highwayId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "FoodHighway",
-      index: true,
-      default: null,
-    },
     highwayName: {
       type: String,
       trim: true,
@@ -225,18 +236,15 @@ const restaurantSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    restaurantType: {
+      type: String,
+      enum: ["highway", "normal"],
+      default: "normal",
+      index: true,
+    },
     businessModel: {
       type: String,
       trim: true,
-    },
-    panImage: {
-      type: String,
-    },
-    gstImage: {
-      type: String,
-    },
-    fssaiImage: {
-      type: String,
     },
     featuredDish: { type: String },
     featuredPrice: { type: Number },
@@ -251,19 +259,6 @@ const restaurantSchema = new mongoose.Schema(
       set: normalizeRatingValue,
     },
     totalRatings: { type: Number, default: 0, min: 0 },
-    parkingRating: { type: Number, default: 0 },
-    wifiRating: { type: Number, default: 0 },
-    familyFriendlyRating: { type: Number, default: 0 },
-    evChargingRating: { type: Number, default: 0 },
-    washroomRating: { type: Number, default: 0 },
-    facilityRatings: {
-      parking: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-      wifi: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-      familyFriendly: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-      evCharging: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-      washroom: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-      overall: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-    },
     diningSettings: {
       isEnabled: { type: Boolean, default: false },
       maxGuests: { type: Number, default: 6 },
@@ -273,26 +268,14 @@ const restaurantSchema = new mongoose.Schema(
       isEnabled: { type: Boolean, default: true },
     },
     facilities: {
-      parking: {
-        type: Boolean,
-        default: false
+      parking: { type: facilityDetailSchema, default: () => ({}) },
+      wifi: { type: facilityDetailSchema, default: () => ({}) },
+      familyFriendly: { type: facilityDetailSchema, default: () => ({}) },
+      evCharging: { type: facilityDetailSchema, default: () => ({}) },
+      washroom: { type: facilityDetailSchema, default: () => ({}) },
+      overall: {
+        rating: { type: facilityRatingSummarySchema, default: () => ({}) },
       },
-      wifi: {
-        type: Boolean,
-        default: false
-      },
-      familyFriendly: {
-        type: Boolean,
-        default: false
-      },
-      evCharging: {
-        type: Boolean,
-        default: false
-      },
-      washroom: {
-        type: Boolean,
-        default: false
-      }
     },
     menu: {
       sections: { type: Array, default: [] },
@@ -443,6 +426,87 @@ restaurantSchema.pre("validate", function normalizeDerivedFields(next) {
     }
   }
 
+  const facilityKeys = [
+    "parking",
+    "wifi",
+    "familyFriendly",
+    "evCharging",
+    "washroom",
+  ];
+  if (!this.facilities || typeof this.facilities !== "object") {
+    this.facilities = {};
+  }
+
+  facilityKeys.forEach((key) => {
+    const legacyFacilityValue = this.facilities?.[key];
+    const normalizedFacility =
+      legacyFacilityValue &&
+      typeof legacyFacilityValue === "object" &&
+      !Array.isArray(legacyFacilityValue)
+        ? legacyFacilityValue
+        : { available: legacyFacilityValue === true };
+
+    normalizedFacility.available = normalizedFacility.available === true;
+    normalizedFacility.rating = {
+      average: Number(normalizedFacility.rating?.average ?? 0) || 0,
+      count: Number(normalizedFacility.rating?.count ?? 0) || 0,
+    };
+
+    this.facilities[key] = normalizedFacility;
+  });
+
+  const overallRating =
+    this.facilities?.overall?.rating &&
+    typeof this.facilities.overall.rating === "object"
+      ? this.facilities.overall.rating
+      : {};
+
+  this.facilities.overall = {
+    rating: {
+      average: Number(overallRating.average || 0) || 0,
+      count: Number(overallRating.count || 0) || 0,
+    },
+  };
+
+  if (!this.documents || typeof this.documents !== "object") {
+    this.documents = {};
+  }
+
+  const pan = this.documents.pan && typeof this.documents.pan === "object" ? this.documents.pan : {};
+  const gst = this.documents.gst && typeof this.documents.gst === "object" ? this.documents.gst : {};
+  const fssai =
+    this.documents.fssai && typeof this.documents.fssai === "object" ? this.documents.fssai : {};
+
+  this.documents.pan = {
+    number: typeof pan.number === "string" ? pan.number.trim().toUpperCase() : "",
+    name: typeof pan.name === "string" ? pan.name.trim() : "",
+    image: typeof pan.image === "string" ? pan.image.trim() : "",
+  };
+
+  this.documents.gst = {
+    registered: gst.registered === true,
+    number: typeof gst.number === "string" ? gst.number.trim().toUpperCase() : "",
+    legalName: typeof gst.legalName === "string" ? gst.legalName.trim() : "",
+    address: typeof gst.address === "string" ? gst.address.trim() : "",
+    image: typeof gst.image === "string" ? gst.image.trim() : "",
+  };
+
+  let normalizedFssaiExpiry = null;
+  if (fssai.expiry instanceof Date && !Number.isNaN(fssai.expiry.getTime())) {
+    normalizedFssaiExpiry = fssai.expiry;
+  } else if (fssai.expiry) {
+    const parsedExpiry = new Date(fssai.expiry);
+    if (!Number.isNaN(parsedExpiry.getTime())) {
+      normalizedFssaiExpiry = parsedExpiry;
+    }
+  }
+
+  this.documents.fssai = {
+    number: typeof fssai.number === "string" ? fssai.number.trim() : "",
+    expiry: normalizedFssaiExpiry,
+    image: typeof fssai.image === "string" ? fssai.image.trim() : "",
+  };
+
 
   next();
 });
@@ -473,7 +537,6 @@ restaurantSchema.index({ status: 1, rating: -1, createdAt: -1 });
 restaurantSchema.index({ "takeawaySettings.isEnabled": 1 });
 restaurantSchema.index({ "diningSettings.isEnabled": 1 });
 
-restaurantSchema.index({ highwayId: 1, status: 1 });
 restaurantSchema.index({ isHighwayRestaurant: 1, status: 1 });
 
 export const FoodRestaurant = mongoose.model(

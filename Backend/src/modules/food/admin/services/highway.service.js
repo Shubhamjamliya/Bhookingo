@@ -17,6 +17,7 @@ import {
     deleteHighwayGeometry
 } from '../utils/highwayGeometryStorage.js';
 import { getStoredDrivingSettingsConfig, saveDrivingSettingsConfig } from '../../driving/services/drivingSettings.shared.js';
+import { detectHighwayUsingGoogleMaps } from '../../location/services/location.service.js';
 
 
 const cloneCoordinate = (coord) => ({ lat: Number(coord?.lat), lng: Number(coord?.lng) });
@@ -308,12 +309,21 @@ export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters 
     let nearestDistance = Infinity;
 
     for (const candidate of candidates) {
-        const hydratedHighway = await hydrateHighwayGeometry(candidate);
-        const segmentList = Array.isArray(hydratedHighway?.segments) && hydratedHighway.segments.length > 0
-            ? hydratedHighway.segments
-            : (Array.isArray(hydratedHighway?.coordinates) && hydratedHighway.coordinates.length >= 2
-                ? [hydratedHighway.coordinates]
-                : []);
+        let hydratedHighway;
+        let segmentList;
+        try {
+            hydratedHighway = await hydrateHighwayGeometry(candidate);
+            segmentList = await getHighwaySegments(hydratedHighway);
+        } catch (error) {
+            console.error('[HighwayService] Failed to hydrate highway geometry during detect', {
+                highwayId: candidate?._id ? String(candidate._id) : null,
+                highwayRef: candidate?.ref || null,
+                highwayName: candidate?.name || null,
+                geometryPath: candidate?.geometryPath || null,
+                error: error?.message || String(error)
+            });
+            continue;
+        }
 
         for (const coords of segmentList) {
             if (!coords || coords.length < 2) continue;
@@ -380,17 +390,18 @@ export async function assignHighwayToRestaurant(restaurantId, thresholdOverride 
 
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-        const threshold = thresholdOverride ?? await getHighwayThresholdMeters();
-        const result = await findNearestHighway(lat, lng, threshold);
+        const result = await detectHighwayUsingGoogleMaps(lat, lng);
 
-        const update = result
+        const update = result?.status === 'IN_SERVICE'
             ? {
-                highwayId: result.highway._id,
-                highwayName: result.highway.name,
-                highwayRef: result.highway.ref,
+                restaurantType: 'highway',
+                highwayId: null,
+                highwayName: result.highwayName || null,
+                highwayRef: result.highwayRef || null,
                 isHighwayRestaurant: true
             }
             : {
+                restaurantType: 'normal',
                 highwayId: null,
                 highwayName: null,
                 highwayRef: null,
@@ -494,7 +505,7 @@ export async function deleteHighway(id) {
     const existing = await FoodHighway.findById(id).select('geometryPath').lean();
     const result = await FoodHighway.findByIdAndDelete(id);
     if (!result) throw new ValidationError('Highway not found');
-    await deleteHighwayGeometry(existing?.geometryPath).catch(() => {});
+    await deleteHighwayGeometry(existing?.geometryPath).catch(() => { });
     return { deleted: true };
 }
 

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import api from "@food/api";
 import { Input } from "@food/components/ui/input";
 import { Mail, Phone, Loader2, Save } from "lucide-react";
+import { isValidEmail } from "@/shared/utils/emailValidation";
 
 export default function ContactInfoCMS() {
   const [loading, setLoading] = useState(true);
@@ -64,8 +65,8 @@ export default function ContactInfoCMS() {
     e.preventDefault();
 
     // Validation
-    if (!contactData.email.toLowerCase().endsWith("@gmail.com")) {
-      toast.error("Email address must be a valid @gmail.com address");
+    if (!isValidEmail(contactData.email)) {
+      toast.error("Please enter a valid email address");
       return;
     }
     
@@ -135,13 +136,13 @@ export default function ContactInfoCMS() {
                 Public Support Email
               </label>
               <Input
-                placeholder="e.g. bhookingo@gmail.com"
+                placeholder="e.g. support@bhookingo.com"
                 value={contactData.email}
                 onChange={(e) => setContactData({ ...contactData, email: e.target.value })}
                 className="max-w-md placeholder:text-slate-400 text-slate-800"
               />
               <p className="text-xs text-slate-500">
-                This email address will be visible in the footer of the landing page.
+                This email address will be visible in the footer of the landing page and can use any valid domain.
               </p>
             </div>
 

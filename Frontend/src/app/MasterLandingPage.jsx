@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   MapPin,
   Clock,
@@ -7,29 +7,13 @@ import {
   Zap,
   Utensils,
   Smartphone,
-  Globe,
   Search,
   ShoppingBag,
   Car,
-  CheckCircle2,
-  XCircle,
-  ShieldCheck,
-  Award,
   CreditCard,
-  Building2,
-  Navigation,
-  Sparkles,
   Flame,
-  ArrowRight,
-  Bell,
-  User,
-  Home as HomeIcon,
-  ShoppingBag as OrdersIcon,
   X,
-  Menu,
   Check,
-  Coffee,
-  Compass,
   Navigation2
 } from 'lucide-react';
 import LandingHeader from './components/LandingHeader';
@@ -42,36 +26,37 @@ export default function MasterLandingPage() {
     window.open("https://play.google.com/store/apps/details?id=com.bhookingo.user", "_blank");
   };
 
-  const handleAppRedirect = (path) => {
+  const openConsumerExperience = (path, webFallbackPath = "/user/auth/login") => {
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
     const isAndroid = /android/i.test(userAgent);
     const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
 
     const playStoreUrl = "https://play.google.com/store/apps/details?id=com.bhookingo.user";
+    const appSchemeUrl = `bhookingo://${path}`;
 
     if (isAndroid) {
       const intentUrl = `intent://${path}#Intent;scheme=bhookingo;package=com.bhookingo.user;S.browser_fallback_url=${encodeURIComponent(playStoreUrl)};end`;
       window.location.href = intentUrl;
-    } else if (isIOS) {
-      const appSchemeUrl = `bhookingo://${path}`;
+      return;
+    }
+
+    if (isIOS) {
       window.location.href = appSchemeUrl;
       setTimeout(() => {
         window.location.href = playStoreUrl;
       }, 2000);
-    } else {
-      window.location.href = appSchemeUrl;
-      setTimeout(() => {
-        window.open(playStoreUrl, "_blank");
-      }, 1500);
+      return;
     }
+
+    navigate(webFallbackPath);
   };
 
   const handleDriveModeClick = () => {
-    handleAppRedirect("food/user/driving");
+    openConsumerExperience("food/user/driving");
   };
 
   const handleExploreWebClick = () => {
-    handleAppRedirect("food/user/takeaway");
+    navigate("/user/auth/login");
   };
 
   return (
@@ -132,10 +117,17 @@ export default function MasterLandingPage() {
                   <Smartphone className="w-4 h-4" />
                   <span>Download App</span>
                 </button>
+                <button
+                  onClick={handleExploreWebClick}
+                  className="border border-white/25 bg-white/10 hover:bg-white/16 text-white text-sm font-black px-8 py-4 rounded-full shadow-lg transition-all active:scale-95 flex items-center gap-2.5 backdrop-blur-sm"
+                >
+                  <Search className="w-4 h-4" />
+                  <span>Browse on Web</span>
+                </button>
               </div>
 
               {/* Horizontal Feature Chips Row (Hero Bottom) */}
-              <div className="pt-6 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+              <div className="pt-6 border-t border-white/15 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {[
                   { icon: MapPin, text: "Forward Restaurants" },
                   { icon: Clock, text: "Save Time & Money" },
@@ -145,9 +137,9 @@ export default function MasterLandingPage() {
                   { icon: Zap, text: "EV Charging On Route" },
                   { icon: ParkingIcon, text: "Parking Info Easy & Safe" }
                 ].map((item, idx) => (
-                  <div key={idx} className="bg-black/40 border border-white/10 rounded-xl p-2 sm:p-2.5 flex flex-col items-start gap-1.5 backdrop-blur-sm hover:border-red-500/50 transition-colors w-full min-h-[76px] justify-between">
+                  <div key={idx} className="bg-black/40 border border-white/10 rounded-xl px-3 py-3 flex items-center gap-2.5 backdrop-blur-sm hover:border-red-500/50 transition-colors w-full min-h-[60px] overflow-hidden">
                     <item.icon className="w-4 h-4 text-[#E0332F] shrink-0" />
-                    <span className="text-[9px] sm:text-[10px] font-semibold text-gray-200 leading-tight break-words w-full">
+                    <span className="text-[11px] sm:text-xs font-semibold text-gray-200 leading-tight break-words min-w-0">
                       {item.text}
                     </span>
                   </div>

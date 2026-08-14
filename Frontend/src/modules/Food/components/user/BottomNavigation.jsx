@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { ShoppingBag, Tag, UtensilsCrossed, CircleUser, Compass } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -7,11 +7,12 @@ import { useProfile } from "@food/context/ProfileContext"
 
 export default function BottomNavigation() {
   const location = useLocation()
+  const navigate = useNavigate()
   const pathname = location.pathname
   const [under250PriceLimit, setUnder250PriceLimit] = useState(250)
 
   const [isVisible, setIsVisible] = useState(true)
-  
+
   // Fetch landing settings to get dynamic price limit
   useEffect(() => {
     let cancelled = false
@@ -33,17 +34,17 @@ export default function BottomNavigation() {
 
   // Normalize pathname by removing trailing slash for consistent comparison
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
-  
+
   // Check active routes
   const { orderType, setOrderType } = useProfile();
-  
+
   const isDining = normalizedPath === "/food/dining" || normalizedPath.startsWith("/food/user/dining") || normalizedPath === "/dining" || normalizedPath.startsWith("/user/dining");
   const isUnder250 = normalizedPath === "/food/under-250" || normalizedPath.startsWith("/food/user/under-250") || normalizedPath === "/under-250" || normalizedPath.startsWith("/user/under-250");
   const isProfile = normalizedPath.startsWith("/food/profile") || normalizedPath.startsWith("/food/user/profile") || normalizedPath.startsWith("/user/profile") || normalizedPath === "/profile";
   const isDriving = normalizedPath === "/food/user/driving" || normalizedPath.startsWith("/food/user/driving") || normalizedPath === "/driving" || normalizedPath.startsWith("/user/driving");
-  
-  const isHomePaths = normalizedPath === "/food" || 
-    normalizedPath === "/food/user" || 
+
+  const isHomePaths = normalizedPath === "/food" ||
+    normalizedPath === "/food/user" ||
     normalizedPath === "/user" ||
     normalizedPath === "/" ||
     ((normalizedPath.startsWith("/food/user") || normalizedPath.startsWith("/user")) && !isProfile && !isDining && !isUnder250 && !isDriving && !normalizedPath.startsWith("/food/user/takeaway") && !normalizedPath.startsWith("/user/takeaway")) ||
@@ -52,7 +53,7 @@ export default function BottomNavigation() {
     normalizedPath.startsWith("/user/restaurants") ||
     normalizedPath.startsWith("/restaurants");
 
-  const isTakeaway = normalizedPath === "/food/user/takeaway" || 
+  const isTakeaway = normalizedPath === "/food/user/takeaway" ||
     normalizedPath.startsWith("/food/user/takeaway") ||
     normalizedPath === "/user/takeaway" ||
     normalizedPath.startsWith("/user/takeaway") ||
@@ -98,6 +99,27 @@ export default function BottomNavigation() {
     }
   ]
 
+  const handleNavClick = (event, item) => {
+    event.preventDefault()
+    item.onClick?.()
+
+    const targetPath = item.to.replace(/\/$/, "") || "/"
+    if (normalizedPath === targetPath) {
+      return
+    }
+
+    const goToTarget = () => navigate(item.to)
+
+    if (typeof document !== "undefined" && typeof document.startViewTransition === "function") {
+      document.startViewTransition(() => {
+        goToTarget()
+      })
+      return
+    }
+
+    goToTarget()
+  }
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -105,24 +127,23 @@ export default function BottomNavigation() {
           initial={{ y: 120 }}
           animate={{ y: 0 }}
           exit={{ y: 120 }}
-          transition={{ 
+          transition={{
             type: "tween",
             ease: [0.22, 1, 0.36, 1],
             duration: 0.5
           }}
           className="md:hidden fixed bottom-4 left-4 right-4 z-50"
         >
-          <div 
+          <div
             className="w-full h-16 bg-white dark:bg-[#1a1a1a] rounded-full shadow-[0_4px_25px_rgba(0,0,0,0.1)] flex items-center justify-around px-2"
           >
             {navItems.map((item) => (
               <Link
                 key={item.id}
                 to={item.to}
-                onClick={item.onClick}
-                className={`flex flex-col items-center justify-center gap-1 h-[3.25rem] w-full relative transition-all duration-300 ${
-                  item.active ? "text-[#c22031] dark:text-red-400" : "text-slate-500 dark:text-slate-400"
-                }`}
+                onClick={(event) => handleNavClick(event, item)}
+                className={`flex flex-col items-center justify-center gap-1 h-14 w-full relative transition-all duration-300 ${item.active ? "text-[var(--primary)]" : "text-text-secondary dark:text-text-secondary"
+                  }`}
               >
                 {item.active && (
                   <motion.div
@@ -131,11 +152,11 @@ export default function BottomNavigation() {
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                
+
                 <div className="relative z-10 flex flex-col items-center gap-0.5">
-                  <item.icon 
-                    className={`h-[22px] w-[22px] transition-transform duration-300 ${item.active ? "scale-105" : ""}`} 
-                    strokeWidth={item.active ? 2 : 1.75} 
+                  <item.icon
+                    className={`h-[22px] w-[22px] transition-transform duration-300 ${item.active ? "scale-105" : ""}`}
+                    strokeWidth={item.active ? 2 : 1.75}
                   />
                   <span className={`text-[10px] font-semibold tracking-wide ${item.active ? "opacity-100" : "opacity-90"}`}>
                     {item.id === 'under250' ? 'Under 250' : item.label}

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { useNavigate } from "react-router-dom"
 import { Building2, Info, Tag, Upload, Calendar, FileText, MapPin, CheckCircle2, X, Image as ImageIcon, Clock, Loader2 } from "lucide-react"
@@ -9,6 +9,8 @@ import { Button } from "@food/components/ui/button"
 import { adminAPI, uploadAPI, highwayAPI } from "@food/api"
 import { toast } from "sonner"
 import { Switch } from "@food/components/ui/switch"
+import { formatRoadDistance } from "@food/utils/formatRoadDistance"
+import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
 
 const debugLog = (...args) => { }
@@ -110,6 +112,22 @@ const timeToString = (date) => {
   const hours = date.getHours().toString().padStart(2, "0")
   const minutes = date.getMinutes().toString().padStart(2, "0")
   return `${hours}:${minutes}`
+}
+
+const parseGoogleAddressComponents = (components = []) => {
+  const comps = Array.isArray(components) ? components : []
+  const get = (types) => comps.find((component) => types.some((type) => component.types?.includes(type)))?.long_name || ""
+  const route = get(["route"])
+  const streetNumber = get(["street_number"])
+  const roadName = [streetNumber, route].filter(Boolean).join(" ").trim() || route || ""
+
+  return {
+    area: get(["sublocality_level_1", "sublocality", "neighborhood"]) || get(["locality"]),
+    city: get(["locality"]) || get(["administrative_area_level_2"]),
+    state: get(["administrative_area_level_1"]) || get(["administrative_area_level_2"]),
+    pincode: get(["postal_code"]),
+    roadName,
+  }
 }
 
 const parse24HourTo12Hour = (timeStr, defaultVal = "09:00") => {
@@ -409,6 +427,7 @@ export default function AddRestaurant() {
   // Step 1: Basic Info
   const [step1, setStep1] = useState({
     restaurantName: "",
+    isHighwayRestaurant: true,
     pureVegRestaurant: null,
     ownerName: "",
     ownerEmail: "",
@@ -467,7 +486,6 @@ export default function AddRestaurant() {
   const [highwayInfo, setHighwayInfo] = useState({
     loading: false,
     status: null,
-    highwayId: null,
     highwayName: null,
     highwayRef: null,
     distanceMeters: null,
@@ -480,16 +498,15 @@ export default function AddRestaurant() {
   const pinMapRef = useRef(null)
   const pinMarkerRef = useRef(null)
   const pinGeocoderRef = useRef(null)
+  const highwayDetectTimerRef = useRef(null)
 
-  useEffect(() => {
-    const lat = Number(step1.location?.latitude)
-    const lng = Number(step1.location?.longitude)
-    const address = step1.location?.formattedAddress || step1.location?.addressLine1 || ""
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !address.trim()) {
+  const detectHighwayForLocation = useCallback(async (lat, lng) => {
+    const latNum = Number(lat)
+    const lngNum = Number(lng)
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
       setHighwayInfo({
         loading: false,
         status: null,
-        highwayId: null,
         highwayName: null,
         highwayRef: null,
         distanceMeters: null,
@@ -498,47 +515,71 @@ export default function AddRestaurant() {
       return
     }
 
-    const triggerDetection = async () => {
-      setHighwayInfo((prev) => ({ ...prev, loading: true }))
-      try {
-        const res = await highwayAPI.detectHighway(lat, lng)
-        const data = res?.data?.data
-        if (res?.data?.success && data) {
-          setHighwayInfo({
-            loading: false,
-            status: data.status,
-            highwayId: data.highwayId || null,
-            highwayName: data.highwayName || null,
-            highwayRef: data.highwayRef || null,
-            distanceMeters: data.distanceMeters ?? null,
-            thresholdMeters: data.thresholdMeters ?? null,
-          })
-        } else {
-          setHighwayInfo({
-            loading: false,
-            status: "OUT_OF_SERVICE",
-            highwayId: null,
-            highwayName: null,
-            highwayRef: null,
-            distanceMeters: null,
-            thresholdMeters: null,
-          })
-        }
-      } catch (err) {
+    setHighwayInfo((prev) => ({ ...prev, loading: true }))
+    try {
+      const res = await highwayAPI.detectHighway(latNum, lngNum)
+      const data = res?.data?.data
+      if (res?.data?.success && data) {
+        setHighwayInfo({
+          loading: false,
+          status: data.status,
+          highwayName: data.highwayName || null,
+          highwayRef: data.highwayRef || null,
+          distanceMeters: data.distanceMeters ?? null,
+          thresholdMeters: data.thresholdMeters ?? null,
+        })
+      } else {
         setHighwayInfo({
           loading: false,
           status: "OUT_OF_SERVICE",
-          highwayId: null,
           highwayName: null,
           highwayRef: null,
           distanceMeters: null,
           thresholdMeters: null,
         })
       }
+    } catch {
+      setHighwayInfo((prev) => ({ ...prev, loading: false }))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (step1.isHighwayRestaurant !== true) {
+      setHighwayInfo({
+        loading: false,
+        status: null,
+        highwayName: null,
+        highwayRef: null,
+        distanceMeters: null,
+        thresholdMeters: null,
+      })
+      return
+    }
+    const lat = step1.location?.latitude
+    const lng = step1.location?.longitude
+    const address = step1.location?.formattedAddress || step1.location?.addressLine1 || ""
+    if (!lat || !lng || !address.trim()) {
+      setHighwayInfo({
+        loading: false,
+        status: null,
+        highwayName: null,
+        highwayRef: null,
+        distanceMeters: null,
+        thresholdMeters: null,
+      })
+      return
     }
 
-    triggerDetection()
-  }, [step1.location?.latitude, step1.location?.longitude])
+    if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
+
+    highwayDetectTimerRef.current = setTimeout(() => {
+      detectHighwayForLocation(lat, lng)
+    }, 400)
+
+    return () => {
+      if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
+    }
+  }, [step1.isHighwayRestaurant, step1.location?.latitude, step1.location?.longitude, step1.location?.formattedAddress, step1.location?.addressLine1, detectHighwayForLocation])
 
   const autoDetectedRoadLabel = (() => {
     if (highwayInfo.highwayRef) {
@@ -903,12 +944,12 @@ export default function AddRestaurant() {
     const lng = Number(step1.location?.longitude)
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       errors.push("Please search and select a location so map coordinates are captured.")
-    } else if (highwayInfo.loading) {
-      errors.push("Checking highway proximity — please wait a moment.")
-    } else if (highwayInfo.status !== "IN_SERVICE") {
-      errors.push("Restaurant location is not within the allowed National Highway range.")
+    } else if (step1.isHighwayRestaurant === true && highwayInfo.loading) {
+      errors.push(HIGHWAY_DETECTION_COPY.validationPending)
+    } else if (step1.isHighwayRestaurant === true && highwayInfo.status !== "IN_SERVICE") {
+      errors.push(HIGHWAY_DETECTION_COPY.validationFailed)
     }
-    if (!step1.location?.roadName?.trim()) errors.push("Road / highway name is required")
+    if (step1.isHighwayRestaurant === true && !step1.location?.roadName?.trim()) errors.push("Road name is required")
     return errors
   }
 
@@ -1054,10 +1095,10 @@ export default function AddRestaurant() {
         ownerEmail: step1.ownerEmail,
         ownerPhone: step1.ownerPhone,
         primaryContactNumber: step1.primaryContactNumber,
+        isHighwayRestaurant: step1.isHighwayRestaurant === true,
 
         location: step1.location,
         locationSource: step1.locationSource || "google_places",
-        ...(highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId ? { highwayId: String(highwayInfo.highwayId) } : {}),
         // Step 2
         menuImages: menuImagesData,
         profileImage: profileImageData,
@@ -1567,6 +1608,34 @@ export default function AddRestaurant() {
               This helps users filter restaurants by dietary preference.
             </p>
           </div>
+          <div>
+            <Label className="text-xs text-gray-700">Restaurant type*</Label>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setStep1((prev) => ({ ...prev, isHighwayRestaurant: true }))}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.isHighwayRestaurant === true
+                  ? "bg-orange-600 text-white border-orange-600"
+                  : "bg-white text-gray-700 border-gray-200"
+                  }`}
+              >
+                Highway Restaurant
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep1((prev) => ({ ...prev, isHighwayRestaurant: false }))}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.isHighwayRestaurant === false
+                  ? "bg-gray-900 text-white border-gray-900"
+                  : "bg-white text-gray-700 border-gray-200"
+                  }`}
+              >
+                Normal Restaurant
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1">
+              Highway restaurants require highway verification. Normal restaurants skip highway detection.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -1690,42 +1759,45 @@ export default function AddRestaurant() {
             Search to auto-fill Area, City, State, Pincode and coordinates.
           </p>
 
-          {highwayInfo.loading && (
+          {step1.isHighwayRestaurant === true && highwayInfo.loading && (
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 flex items-center gap-2 text-xs">
               <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-              <span>Checking highway proximity...</span>
+              <span>{HIGHWAY_DETECTION_COPY.checking}</span>
             </div>
           )}
 
-          {!highwayInfo.loading && highwayInfo.status === "IN_SERVICE" && (
+          {step1.isHighwayRestaurant === true && !highwayInfo.loading && highwayInfo.status === "IN_SERVICE" && (
             <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md text-green-800 space-y-1 text-xs">
               <div className="flex items-center gap-2 font-semibold">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span>Restaurant location available</span>
+                <span>{HIGHWAY_DETECTION_COPY.success}</span>
               </div>
               <div className="pl-6 text-gray-600 space-y-0.5">
-                <p>Nearest Highway: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                {highwayInfo.highwayName && (<p>Highway Name: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
-                {highwayInfo.highwayId && (<p>Highway ID: <span className="font-medium text-gray-900">{String(highwayInfo.highwayId)}</span></p>)}
-                <p>Distance: <span className="font-medium text-gray-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                {highwayInfo.highwayName && (<p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
+                <p>Distance: <span className="font-medium text-gray-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
               </div>
             </div>
           )}
 
-          {!highwayInfo.loading && highwayInfo.status === "OUT_OF_SERVICE" && (
+          {step1.isHighwayRestaurant === true && !highwayInfo.loading && highwayInfo.status === "OUT_OF_SERVICE" && (
             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 space-y-1 text-xs">
               <div className="flex items-center gap-2 font-semibold">
                 <X className="w-4 h-4 text-red-600" />
-                <span>Restaurant location is not within the allowed National Highway range.</span>
+                <span>{HIGHWAY_DETECTION_COPY.error}</span>
               </div>
               {highwayInfo.highwayRef && (
                 <div className="pl-6 text-gray-600 space-y-0.5">
-                  <p>Nearest Highway: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                  {highwayInfo.highwayName && (<p>Highway Name: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
-                  {highwayInfo.highwayId && (<p>Highway ID: <span className="font-medium text-gray-900">{String(highwayInfo.highwayId)}</span></p>)}
-                  <p>Distance: <span className="font-medium text-gray-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                  <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                  {highwayInfo.highwayName && (<p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
+                  <p>Distance: <span className="font-medium text-gray-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                 </div>
               )}
+            </div>
+          )}
+          {step1.isHighwayRestaurant !== true && (
+            <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-md text-slate-700 text-xs">
+              Normal restaurant selected. Highway detection is skipped.
             </div>
           )}
       
@@ -1856,21 +1928,23 @@ export default function AddRestaurant() {
             className="bg-white text-sm"
             placeholder="Nearby landmark (optional)"
           />
-          <div>
-            <Label className="text-xs text-gray-700">Road / Highway name*</Label>
-            <Input
-              value={step1.location?.roadName || ""}
-              onChange={(e) => {
-                setIsRoadNameDirty(true)
-                setStep1({ ...step1, location: { ...step1.location, roadName: e.target.value } })
-              }}
-              className="mt-1 bg-white text-sm"
-              placeholder="Auto-detected road / highway"
-            />
-            <p className="text-[11px] text-gray-500 mt-1">
-              This is auto-filled from the detected NH / SH and you can edit it if needed.
-            </p>
-          </div>
+          {step1.isHighwayRestaurant === true && (
+            <div>
+              <Label className="text-xs text-gray-700">{HIGHWAY_DETECTION_COPY.roadFieldLabel}</Label>
+              <Input
+                value={step1.location?.roadName || ""}
+                onChange={(e) => {
+                  setIsRoadNameDirty(true)
+                  setStep1({ ...step1, location: { ...step1.location, roadName: e.target.value } })
+                }}
+                className="mt-1 bg-white text-sm"
+                placeholder="Auto-detected road / highway"
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                This is auto-filled from the detected NH / SH and you can edit it if needed.
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </div>

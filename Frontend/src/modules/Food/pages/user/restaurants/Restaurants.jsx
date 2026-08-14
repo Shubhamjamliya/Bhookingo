@@ -18,6 +18,7 @@ import {
 import AnimatedPage from "@food/components/user/AnimatedPage";
 import Footer from "@food/components/user/Footer";
 import ScrollReveal from "@food/components/user/ScrollReveal";
+import { getFacilityAvailability, getFacilityRatingEntry } from "@food/utils/facilityHelpers";
 import TextReveal from "@food/components/user/TextReveal";
 import { Card, CardContent } from "@food/components/ui/card";
 import { Button } from "@food/components/ui/button";
@@ -76,19 +77,18 @@ const getTakeawayActiveAmenities = (facilities) => {
   const items = [];
   const isTrue = (val) => val === true || val === "true" || val === 1 || val === "1";
 
-  if (isTrue(facilities.parking || facilities.carparking)) items.push(TAKEAWAY_FACILITY_ICONS.parking);
-  if (isTrue(facilities.wifi)) items.push(TAKEAWAY_FACILITY_ICONS.wifi);
-  if (isTrue(facilities.familyFriendly || facilities.family_friendly || facilities.family)) items.push(TAKEAWAY_FACILITY_ICONS.familyFriendly);
-  if (isTrue(facilities.evCharging || facilities.ev_charging)) items.push(TAKEAWAY_FACILITY_ICONS.evCharging);
-  if (isTrue(facilities.washroom)) items.push(TAKEAWAY_FACILITY_ICONS.washroom);
+  if (isTrue(getFacilityAvailability(facilities, "parking") || facilities.carparking)) items.push(TAKEAWAY_FACILITY_ICONS.parking);
+  if (isTrue(getFacilityAvailability(facilities, "wifi"))) items.push(TAKEAWAY_FACILITY_ICONS.wifi);
+  if (isTrue(getFacilityAvailability(facilities, "familyFriendly") || facilities.family_friendly || facilities.family)) items.push(TAKEAWAY_FACILITY_ICONS.familyFriendly);
+  if (isTrue(getFacilityAvailability(facilities, "evCharging") || facilities.ev_charging)) items.push(TAKEAWAY_FACILITY_ICONS.evCharging);
+  if (isTrue(getFacilityAvailability(facilities, "washroom"))) items.push(TAKEAWAY_FACILITY_ICONS.washroom);
   return items;
 };
 
 const getFacilityRatingInfo = (restaurant, facKey) => {
   if (!restaurant) return { ratingText: "5+", countText: null, hasRating: false };
-  const ratings = restaurant.facilityRatings || restaurant.originalData?.facilityRatings || {};
-  const facRating = ratings[facKey] || {};
-  const avg = Number(facRating.average || restaurant[`${facKey}Rating`]) || 0;
+  const facRating = getFacilityRatingEntry(restaurant, facKey);
+  const avg = Number(facRating.average) || 0;
   const cnt = Number(facRating.count) || 0;
 
   if (avg > 0) {

@@ -66,7 +66,7 @@ export default function ForRestaurantsPage() {
                     <b.icon className="w-6 h-6" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900">{b.title}</h3>
-                  <p className="text-xs text-gray-600 leading-relaxed">{b.desc}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">{b.desc}</p>
                 </div>
               ))}
             </div>

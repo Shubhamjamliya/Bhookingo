@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 import { ValidationError } from '../../../../core/auth/errors.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
-import { assignHighwayToRestaurant, detectHighwayAtPoint } from './highway.service.js';
+import { assignHighwayToRestaurant } from './highway.service.js';
+import { detectHighwayUsingGoogleMaps } from '../../location/services/location.service.js';
 
 
 import { FoodHighway } from '../models/highway.model.js';
@@ -114,6 +115,52 @@ const validateOpeningClosingTimes = (openingTime, closingTime) => {
     if (close < open) {
         throw new ValidationError('Closing time cannot be less than opening time');
     }
+};
+
+const buildRestaurantDocumentsPayload = (body = {}, { toStr, toUrl }) => ({
+    pan: {
+        number: toStr(body.panNumber).toUpperCase(),
+        name: toStr(body.nameOnPan),
+        image: toUrl(body.panImage) || ''
+    },
+    gst: {
+        registered: body.gstRegistered === undefined
+            ? false
+            : parseBooleanLike(body.gstRegistered, 'gstRegistered'),
+        number: toStr(body.gstNumber).toUpperCase(),
+        legalName: toStr(body.gstLegalName),
+        address: toStr(body.gstAddress),
+        image: toUrl(body.gstImage) || ''
+    },
+    fssai: {
+        number: toStr(body.fssaiNumber),
+        expiry: body.fssaiExpiry ? new Date(body.fssaiExpiry) : null,
+        image: toUrl(body.fssaiImage) || ''
+    }
+});
+
+const serializeRestaurantDocumentsForResponse = (restaurant) => {
+    if (!restaurant || typeof restaurant !== 'object') return restaurant;
+    const documents = restaurant.documents && typeof restaurant.documents === 'object' ? restaurant.documents : {};
+    const pan = documents.pan && typeof documents.pan === 'object' ? documents.pan : {};
+    const gst = documents.gst && typeof documents.gst === 'object' ? documents.gst : {};
+    const fssai = documents.fssai && typeof documents.fssai === 'object' ? documents.fssai : {};
+
+    return {
+        ...restaurant,
+        documents,
+        panNumber: pan.number || '',
+        nameOnPan: pan.name || '',
+        panImage: pan.image || '',
+        gstRegistered: gst.registered === true,
+        gstNumber: gst.number || '',
+        gstLegalName: gst.legalName || '',
+        gstAddress: gst.address || '',
+        gstImage: gst.image || '',
+        fssaiNumber: fssai.number || '',
+        fssaiExpiry: fssai.expiry || null,
+        fssaiImage: fssai.image || ''
+    };
 };
 
 export async function getRestaurantComplaints(query = {}) {
@@ -2132,10 +2179,11 @@ export async function getRestaurantReviews(query = {}) {
 
 export async function getRestaurantById(id) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
-    return FoodRestaurant.findById(id)
+    const restaurant = await FoodRestaurant.findById(id)
         .select('-__v')
         .populate('highwayId', 'name ref isActive')
         .lean();
+    return serializeRestaurantDocumentsForResponse(restaurant);
 }
 
 export async function getRestaurantAnalytics(restaurantId) {
@@ -2290,11 +2338,14 @@ export async function getPendingRestaurants() {
         .populate('highwayId', 'name ref')
         .sort({ createdAt: -1 })
         .lean();
-    return restaurants.map((r, i) => ({
+    return restaurants.map((restaurant, i) => {
+        const r = serializeRestaurantDocumentsForResponse(restaurant);
+        return {
         ...r,
         sl: i + 1,
         highway: r.highwayId?.name || r.highwayId?.ref || null,
-    }));
+    };
+    });
 }
 
 export async function updateRestaurantById(id, body = {}) {
@@ -2373,14 +2424,35 @@ export async function updateRestaurantById(id, body = {}) {
 
 
     // Business & Docs
-    if (body.panNumber !== undefined) doc.panNumber = toStr(body.panNumber);
-    if (body.nameOnPan !== undefined) doc.nameOnPan = toStr(body.nameOnPan);
-    if (body.gstRegistered !== undefined) doc.gstRegistered = parseBooleanLike(body.gstRegistered, 'gstRegistered');
-    if (body.gstNumber !== undefined) doc.gstNumber = toStr(body.gstNumber);
-    if (body.gstLegalName !== undefined) doc.gstLegalName = toStr(body.gstLegalName);
-    if (body.gstAddress !== undefined) doc.gstAddress = toStr(body.gstAddress);
-    if (body.fssaiNumber !== undefined) doc.fssaiNumber = toStr(body.fssaiNumber);
-    if (body.fssaiExpiry !== undefined) doc.fssaiExpiry = body.fssaiExpiry ? new Date(body.fssaiExpiry) : undefined;
+    const nextDocuments = doc.documents && typeof doc.documents === 'object' ? doc.documents.toObject?.() || doc.documents : {};
+    if (
+        body.panNumber !== undefined ||
+        body.nameOnPan !== undefined ||
+        body.panImage !== undefined ||
+        body.gstRegistered !== undefined ||
+        body.gstNumber !== undefined ||
+        body.gstLegalName !== undefined ||
+        body.gstAddress !== undefined ||
+        body.gstImage !== undefined ||
+        body.fssaiNumber !== undefined ||
+        body.fssaiExpiry !== undefined ||
+        body.fssaiImage !== undefined
+    ) {
+        const mergedBody = {
+            panNumber: body.panNumber !== undefined ? body.panNumber : nextDocuments?.pan?.number,
+            nameOnPan: body.nameOnPan !== undefined ? body.nameOnPan : nextDocuments?.pan?.name,
+            panImage: body.panImage !== undefined ? body.panImage : nextDocuments?.pan?.image,
+            gstRegistered: body.gstRegistered !== undefined ? body.gstRegistered : nextDocuments?.gst?.registered,
+            gstNumber: body.gstNumber !== undefined ? body.gstNumber : nextDocuments?.gst?.number,
+            gstLegalName: body.gstLegalName !== undefined ? body.gstLegalName : nextDocuments?.gst?.legalName,
+            gstAddress: body.gstAddress !== undefined ? body.gstAddress : nextDocuments?.gst?.address,
+            gstImage: body.gstImage !== undefined ? body.gstImage : nextDocuments?.gst?.image,
+            fssaiNumber: body.fssaiNumber !== undefined ? body.fssaiNumber : nextDocuments?.fssai?.number,
+            fssaiExpiry: body.fssaiExpiry !== undefined ? body.fssaiExpiry : nextDocuments?.fssai?.expiry,
+            fssaiImage: body.fssaiImage !== undefined ? body.fssaiImage : nextDocuments?.fssai?.image
+        };
+        doc.documents = buildRestaurantDocumentsPayload(mergedBody, { toStr, toUrl: getUrl });
+    }
 
     // Bank Details
     if (body.accountNumber !== undefined) doc.accountNumber = toStr(body.accountNumber);
@@ -2395,9 +2467,6 @@ export async function updateRestaurantById(id, body = {}) {
     // Images
     const getUrl = (v) => (v && typeof v === 'object' ? v.url : v);
     if (body.profileImage !== undefined) doc.profileImage = toStr(getUrl(body.profileImage)) || undefined;
-    if (body.panImage !== undefined) doc.panImage = toStr(getUrl(body.panImage)) || undefined;
-    if (body.gstImage !== undefined) doc.gstImage = toStr(getUrl(body.gstImage)) || undefined;
-    if (body.fssaiImage !== undefined) doc.fssaiImage = toStr(getUrl(body.fssaiImage)) || undefined;
 
     if (body.menuImages !== undefined) {
         if (Array.isArray(body.menuImages)) {
@@ -2408,7 +2477,8 @@ export async function updateRestaurantById(id, body = {}) {
     }
 
     await doc.save();
-    return FoodRestaurant.findById(id).select('-__v').populate('highwayId', 'name ref isActive').lean();
+    const restaurant = await FoodRestaurant.findById(id).select('-__v').populate('highwayId', 'name ref isActive').lean();
+    return serializeRestaurantDocumentsForResponse(restaurant);
 }
 
 export async function updateRestaurantStatus(id, body = {}) {
@@ -2453,6 +2523,13 @@ export async function updateRestaurantLocation(id, body = {}) {
     const pincode = toStr(source.pincode || source.zipCode || source.postalCode);
     const landmark = toStr(source.landmark);
     const formattedAddress = toStr(source.formattedAddress || source.address || addressLine1);
+    const roadName = toStr(source.roadName);
+    const placeId = toStr(source.placeId || source.place_id);
+    const highwayRef = toStr(body.highwayRef || source.highwayRef);
+    const highwayName = toStr(body.highwayName || source.highwayName);
+    const isHighwayRestaurant = body.isHighwayRestaurant === undefined
+        ? doc.isHighwayRestaurant === true
+        : parseBooleanLike(body.isHighwayRestaurant, 'isHighwayRestaurant');
 
     if (!doc.location || typeof doc.location !== 'object') {
         doc.location = { type: 'Point' };
@@ -2472,6 +2549,8 @@ export async function updateRestaurantLocation(id, body = {}) {
     doc.location.state = state;
     doc.location.pincode = pincode;
     doc.location.landmark = landmark;
+    doc.location.roadName = roadName;
+    doc.location.placeId = placeId;
 
     // Keep flat fields in sync for legacy readers.
     doc.addressLine1 = addressLine1;
@@ -2481,6 +2560,10 @@ export async function updateRestaurantLocation(id, body = {}) {
     doc.state = state;
     doc.pincode = pincode;
     doc.landmark = landmark;
+    doc.highwayRef = isHighwayRestaurant ? (highwayRef || null) : null;
+    doc.highwayName = isHighwayRestaurant ? (highwayName || doc.highwayName || null) : null;
+    doc.isHighwayRestaurant = isHighwayRestaurant;
+    doc.restaurantType = isHighwayRestaurant ? 'highway' : 'normal';
 
     if (body.highwayId !== undefined) {
         const highwayId = String(body.highwayId || '').trim();
@@ -2494,9 +2577,8 @@ export async function updateRestaurantLocation(id, body = {}) {
     }
 
     await doc.save();
-    // Fire-and-forget highway re-assignment when location changes
-    setImmediate(() => assignHighwayToRestaurant(id).catch(() => { }));
-    return FoodRestaurant.findById(id).select('-__v').lean();
+    const restaurant = await FoodRestaurant.findById(id).select('-__v').lean();
+    return serializeRestaurantDocumentsForResponse(restaurant);
 }
 
 // ----- Categories -----
@@ -3222,13 +3304,38 @@ export async function createRestaurantByAdmin(body) {
     const latitude = toFiniteNumber(loc.latitude ?? latFromCoordinates);
     const longitude = toFiniteNumber(loc.longitude ?? lngFromCoordinates);
 
-    if (latitude === null || longitude === null) {
+    const wantsHighwayRestaurant = body.isHighwayRestaurant === undefined
+        ? true
+        : parseBooleanLike(body.isHighwayRestaurant, 'isHighwayRestaurant');
+
+    if (wantsHighwayRestaurant && (latitude === null || longitude === null)) {
         throw new ValidationError('Latitude and longitude coordinates are required for highway proximity validation.');
     }
 
-    const proximity = await detectHighwayAtPoint(latitude, longitude);
-    if (proximity.status !== 'IN_SERVICE') {
-        const error = new ValidationError('Restaurant location is not within the allowed National Highway range.');
+    const proximity = wantsHighwayRestaurant
+        ? await detectHighwayUsingGoogleMaps(latitude, longitude)
+        : {
+            status: 'NORMAL_RESTAURANT',
+            highwayId: null,
+            highwayName: null,
+            highwayRef: null,
+            distanceMeters: null,
+            thresholdMeters: null
+        };
+
+    if (wantsHighwayRestaurant && proximity.status !== 'IN_SERVICE') {
+        console.log('[Admin Create Restaurant] Highway validation failed', {
+            latitude,
+            longitude,
+            status: proximity.status,
+            thresholdMeters: proximity.thresholdMeters ?? null,
+            distanceMeters: proximity.distanceMeters ?? null,
+            nearestHighwayId: proximity.highwayId ?? null,
+            nearestHighwayName: proximity.highwayName ?? null,
+            nearestHighwayRef: proximity.highwayRef ?? null
+        });
+
+        const error = new ValidationError('Restaurant location is not near a detectable road.');
         error.highwayCheck = false;
         error.nearestHighway = proximity.highwayRef || null;
         error.distance = proximity.distanceMeters || null;
@@ -3264,23 +3371,13 @@ export async function createRestaurantByAdmin(body) {
         openingTime: normalizedOpeningTime,
         closingTime: normalizedClosingTime,
         openDays: Array.isArray(body.openDays) ? body.openDays : [],
-        panNumber: toStr(body.panNumber),
-        nameOnPan: toStr(body.nameOnPan),
-        gstRegistered: Boolean(body.gstRegistered),
-        gstNumber: toStr(body.gstNumber),
-        gstLegalName: toStr(body.gstLegalName),
-        gstAddress: toStr(body.gstAddress),
-        fssaiNumber: toStr(body.fssaiNumber),
-        fssaiExpiry: body.fssaiExpiry ? new Date(body.fssaiExpiry) : undefined,
+        documents: buildRestaurantDocumentsPayload(body, { toStr, toUrl }),
         accountNumber: toStr(body.accountNumber),
         ifscCode: toStr(body.ifscCode),
         accountHolderName: toStr(body.accountHolderName),
         accountType: toStr(body.accountType),
         menuImages: menuUrls,
         profileImage: toUrl(body.profileImage),
-        panImage: toUrl(body.panImage),
-        gstImage: toUrl(body.gstImage),
-        fssaiImage: toUrl(body.fssaiImage),
         featuredDish: toStr(body.featuredDish),
         featuredPrice: typeof body.featuredPrice === 'number' ? body.featuredPrice : (parseFloat(body.featuredPrice) || undefined),
         offer: toStr(body.offer),
@@ -3293,10 +3390,11 @@ export async function createRestaurantByAdmin(body) {
             : undefined,
         status: 'approved',
         approvedAt: new Date(),
-        highwayId: proximity.highwayId,
-        highwayName: proximity.highwayName,
-        highwayRef: proximity.highwayRef,
-        isHighwayRestaurant: true,
+        restaurantType: wantsHighwayRestaurant ? 'highway' : 'normal',
+        highwayId: null,
+        highwayName: wantsHighwayRestaurant ? proximity.highwayName : null,
+        highwayRef: wantsHighwayRestaurant ? proximity.highwayRef : null,
+        isHighwayRestaurant: wantsHighwayRestaurant,
         locationSource: locationSource
     };
 

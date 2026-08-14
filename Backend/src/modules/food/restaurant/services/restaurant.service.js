@@ -8,9 +8,10 @@ import { FoodDiningRestaurant } from '../../dining/models/diningRestaurant.model
 import { FoodItem } from '../../admin/models/food.model.js';
 import { getFoodDisplayPrice } from '../../admin/services/foodVariant.service.js';
 import { FoodOrder } from '../../orders/models/order.model.js';
-import { assignHighwayToRestaurant, findNearestHighway } from '../../admin/services/highway.service.js';
+import { assignHighwayToRestaurant } from '../../admin/services/highway.service.js';
 import { FoodRestaurantOutletTimings } from '../models/outletTimings.model.js';
 import { DISCOVERY_RADIUS_KM, UNDER250_RADIUS_KM } from '../../orders/services/order.helpers.js';
+import { detectHighwayUsingGoogleMaps } from '../../location/services/location.service.js';
 
 const normalizeName = (value) =>
     String(value || '')
@@ -39,7 +40,69 @@ const normalizeTotalRatingsValue = (value) => {
     return Math.max(0, Math.floor(numeric));
 };
 
+const getFacilityAvailability = (facilities, key) => {
+    const entry = facilities?.[key];
+    if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        return entry.available === true;
+    }
+    return entry === true;
+};
+
+const buildFacilitiesPayload = (facilities) => {
+    if (!facilities || typeof facilities !== 'object') return undefined;
+    const toAvailable = (value) => value === true || value === 'true';
+    return {
+        parking: { available: toAvailable(facilities.parking), rating: { average: 0, count: 0 } },
+        wifi: { available: toAvailable(facilities.wifi), rating: { average: 0, count: 0 } },
+        familyFriendly: { available: toAvailable(facilities.familyFriendly), rating: { average: 0, count: 0 } },
+        evCharging: { available: toAvailable(facilities.evCharging), rating: { average: 0, count: 0 } },
+        washroom: { available: toAvailable(facilities.washroom), rating: { average: 0, count: 0 } },
+        overall: { rating: { average: 0, count: 0 } }
+    };
+};
+
 const toUrl = (v) => (v && (typeof v === 'string' ? v : v.url)) ? (typeof v === 'string' ? v : v.url) : '';
+
+const getRestaurantDocuments = (doc) => {
+    const documents = doc?.documents && typeof doc.documents === 'object' ? doc.documents : {};
+    return {
+        pan: documents.pan && typeof documents.pan === 'object' ? documents.pan : {},
+        gst: documents.gst && typeof documents.gst === 'object' ? documents.gst : {},
+        fssai: documents.fssai && typeof documents.fssai === 'object' ? documents.fssai : {}
+    };
+};
+
+const buildDocumentsPayload = ({
+    panNumber,
+    nameOnPan,
+    panImage,
+    gstRegistered,
+    gstNumber,
+    gstLegalName,
+    gstAddress,
+    gstImage,
+    fssaiNumber,
+    fssaiExpiry,
+    fssaiImage
+}) => ({
+    pan: {
+        number: String(panNumber || '').trim().toUpperCase(),
+        name: String(nameOnPan || '').trim(),
+        image: toUrl(panImage) || ''
+    },
+    gst: {
+        registered: gstRegistered === true,
+        number: String(gstNumber || '').trim().toUpperCase(),
+        legalName: String(gstLegalName || '').trim(),
+        address: String(gstAddress || '').trim(),
+        image: toUrl(gstImage) || ''
+    },
+    fssai: {
+        number: String(fssaiNumber || '').trim(),
+        expiry: fssaiExpiry || null,
+        image: toUrl(fssaiImage) || ''
+    }
+});
 
 const normalizeRestaurantTime = (value) => {
     const raw = String(value || '').trim();
@@ -90,6 +153,7 @@ const timeToMinutes = (value) => {
 
 const toRestaurantProfile = (doc) => {
     if (!doc) return null;
+    const documents = getRestaurantDocuments(doc);
     const loc = doc.location && typeof doc.location === 'object' ? doc.location : null;
     const location =
         (loc?.formattedAddress ||
@@ -140,7 +204,10 @@ const toRestaurantProfile = (doc) => {
         restaurantId: doc.restaurantId || undefined,
         name: doc.restaurantName || '',
         restaurantName: doc.restaurantName || '',
-        highwayId: doc.highwayId ? String(doc.highwayId) : '',
+        restaurantType: doc.restaurantType || (doc.isHighwayRestaurant ? 'highway' : 'normal'),
+        highwayName: doc.highwayName || '',
+        highwayRef: doc.highwayRef || '',
+        isHighwayRestaurant: Boolean(doc.isHighwayRestaurant),
         cuisines: Array.isArray(doc.cuisines) ? doc.cuisines : [],
         location,
         locationSource: doc.locationSource || 'google_places',
@@ -148,17 +215,18 @@ const toRestaurantProfile = (doc) => {
         ownerEmail: doc.ownerEmail || '',
         ownerPhone: doc.ownerPhone || '',
         primaryContactNumber: doc.primaryContactNumber || '',
-        panNumber: doc.panNumber || '',
-        nameOnPan: doc.nameOnPan || '',
-        panImage: doc.panImage ? { url: doc.panImage } : null,
-        gstRegistered: Boolean(doc.gstRegistered),
-        gstNumber: doc.gstNumber || '',
-        gstLegalName: doc.gstLegalName || '',
-        gstAddress: doc.gstAddress || '',
-        gstImage: doc.gstImage ? { url: doc.gstImage } : null,
-        fssaiNumber: doc.fssaiNumber || '',
-        fssaiExpiry: doc.fssaiExpiry || null,
-        fssaiImage: doc.fssaiImage ? { url: doc.fssaiImage } : null,
+        documents,
+        panNumber: documents.pan.number || '',
+        nameOnPan: documents.pan.name || '',
+        panImage: documents.pan.image ? { url: documents.pan.image } : null,
+        gstRegistered: Boolean(documents.gst.registered),
+        gstNumber: documents.gst.number || '',
+        gstLegalName: documents.gst.legalName || '',
+        gstAddress: documents.gst.address || '',
+        gstImage: documents.gst.image ? { url: documents.gst.image } : null,
+        fssaiNumber: documents.fssai.number || '',
+        fssaiExpiry: documents.fssai.expiry || null,
+        fssaiImage: documents.fssai.image ? { url: documents.fssai.image } : null,
         accountNumber: doc.accountNumber || '',
         ifscCode: doc.ifscCode || '',
         accountHolderName: doc.accountHolderName || '',
@@ -182,11 +250,11 @@ const toRestaurantProfile = (doc) => {
             isEnabled: doc.takeawaySettings?.isEnabled === true
         },
         facilities: doc.facilities ? {
-            parking: Boolean(doc.facilities.parking),
-            wifi: Boolean(doc.facilities.wifi),
-            familyFriendly: Boolean(doc.facilities.familyFriendly),
-            evCharging: Boolean(doc.facilities.evCharging),
-            washroom: Boolean(doc.facilities.washroom)
+            parking: getFacilityAvailability(doc.facilities, 'parking'),
+            wifi: getFacilityAvailability(doc.facilities, 'wifi'),
+            familyFriendly: getFacilityAvailability(doc.facilities, 'familyFriendly'),
+            evCharging: getFacilityAvailability(doc.facilities, 'evCharging'),
+            washroom: getFacilityAvailability(doc.facilities, 'washroom')
         } : {
             parking: false,
             wifi: false,
@@ -277,7 +345,8 @@ export const registerRestaurant = async (payload, files) => {
         longitude,
         locationSource,
         placeId,
-        highwayId,
+        isHighwayRestaurant,
+        restaurantType,
         cuisines,
         openingTime,
         closingTime,
@@ -351,23 +420,15 @@ export const registerRestaurant = async (payload, files) => {
     try {
         const latNum = toFiniteNumber(latitude);
         const lngNum = toFiniteNumber(longitude);
-        const providedHighwayId = highwayId && mongoose.Types.ObjectId.isValid(String(highwayId).trim())
-            ? String(highwayId).trim()
+        const wantsHighwayRestaurant = isHighwayRestaurant !== false && restaurantType !== 'normal';
+        const googleHighwayDetection = wantsHighwayRestaurant && latNum !== null && lngNum !== null
+            ? await detectHighwayUsingGoogleMaps(latNum, lngNum)
             : null;
 
-        const inferredHighwayResult = (latNum !== null && lngNum !== null)
-            ? await findNearestHighway(latNum, lngNum, 2000)
-            : null;
-
-        if (providedHighwayId && !inferredHighwayResult) {
-            throw new ValidationError('Selected highway is too far from the restaurant location. Move the pin closer to the roadside/highway.');
+        if (wantsHighwayRestaurant && (!googleHighwayDetection || googleHighwayDetection.status !== 'IN_SERVICE')) {
+            throw new ValidationError('Restaurant location is not near a detectable road.');
         }
 
-        if (providedHighwayId && inferredHighwayResult && String(inferredHighwayResult.highway._id) !== providedHighwayId) {
-            throw new ValidationError('Selected highway does not match the restaurant location. Please use the nearest roadside/highway location.');
-        }
-
-        const resolvedHighway = inferredHighwayResult?.highway || null;
         const restaurant = await FoodRestaurant.create({
             restaurantName,
             restaurantNameNormalized,
@@ -378,11 +439,11 @@ export const registerRestaurant = async (payload, files) => {
             ownerPhoneDigits,
             ownerPhoneLast10,
             primaryContactNumber,
+            restaurantType: wantsHighwayRestaurant ? 'highway' : 'normal',
             pureVegRestaurant: pureVegRestaurant === true,
-            highwayId: resolvedHighway?._id || null,
-            highwayName: resolvedHighway?.name || null,
-            highwayRef: resolvedHighway?.ref || null,
-            isHighwayRestaurant: Boolean(resolvedHighway),
+            highwayName: wantsHighwayRestaurant ? (googleHighwayDetection?.highwayName || null) : null,
+            highwayRef: wantsHighwayRestaurant ? (googleHighwayDetection?.highwayRef || null) : null,
+            isHighwayRestaurant: wantsHighwayRestaurant,
             locationSource: locationSource || 'google_places',
             // Store unified location object (geo + address).
             location: {
@@ -406,14 +467,19 @@ export const registerRestaurant = async (payload, files) => {
             openingTime: normalizedOpeningTime || undefined,
             closingTime: normalizedClosingTime || undefined,
             openDays: openDays || [],
-            panNumber,
-            nameOnPan,
-            gstRegistered,
-            gstNumber,
-            gstLegalName,
-            gstAddress,
-            fssaiNumber,
-            fssaiExpiry,
+            documents: buildDocumentsPayload({
+                panNumber,
+                nameOnPan,
+                panImage: images.panImage,
+                gstRegistered,
+                gstNumber,
+                gstLegalName,
+                gstAddress,
+                gstImage: images.gstImage,
+                fssaiNumber,
+                fssaiExpiry,
+                fssaiImage: images.fssaiImage
+            }),
             accountNumber,
             ifscCode,
             accountHolderName,
@@ -422,18 +488,14 @@ export const registerRestaurant = async (payload, files) => {
             takeawaySettings: {
                 isEnabled: isTakeawayEnabled === undefined ? true : (isTakeawayEnabled === 'true' || isTakeawayEnabled === true)
             },
-            facilities: facilities ? {
-                parking: facilities.parking === true || facilities.parking === 'true',
-                wifi: facilities.wifi === true || facilities.wifi === 'true',
-                familyFriendly: facilities.familyFriendly === true || facilities.familyFriendly === 'true',
-                evCharging: facilities.evCharging === true || facilities.evCharging === 'true',
-                washroom: facilities.washroom === true || facilities.washroom === 'true'
-            } : undefined,
-            ...images
+            facilities: buildFacilitiesPayload(facilities),
+            profileImage: images.profileImage
         });
 
         // Re-check nearest highway from coordinates as a safety sync for future threshold changes.
-        await assignHighwayToRestaurant(restaurant._id);
+        if (wantsHighwayRestaurant) {
+            await assignHighwayToRestaurant(restaurant._id);
+        }
 
         const refreshed = await FoodRestaurant.findById(restaurant._id).lean();
 
@@ -469,7 +531,6 @@ export const getCurrentRestaurantProfile = async (restaurantId) => {
             [
                 'restaurantName',
                 'restaurantId',
-                'highwayId',
                 'cuisines',
                 'location',
                 'addressLine1',
@@ -499,17 +560,7 @@ export const getCurrentRestaurantProfile = async (restaurantId) => {
                 'diningSettings',
                 'takeawaySettings',
                 'isAcceptingOrders',
-                'panNumber',
-                'nameOnPan',
-                'panImage',
-                'gstRegistered',
-                'gstNumber',
-                'gstLegalName',
-                'gstAddress',
-                'gstImage',
-                'fssaiNumber',
-                'fssaiExpiry',
-                'fssaiImage',
+                'documents',
                 'rating',
                 'totalRatings',
                 'status',
@@ -766,7 +817,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
     }
 
     const currentRestaurant = await FoodRestaurant.findById(restaurantId)
-        .select('restaurantName restaurantNameNormalized ownerPhone ownerPhoneDigits ownerPhoneLast10 primaryContactNumber status')
+        .select('restaurantName restaurantNameNormalized ownerPhone ownerPhoneDigits ownerPhoneLast10 primaryContactNumber status isHighwayRestaurant')
         .lean();
 
     if (!currentRestaurant) {
@@ -774,6 +825,8 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
     }
 
     const update = {};
+    let shouldSyncHighwayAfterUpdate = false;
+    let nextIsHighwayRestaurant = currentRestaurant.isHighwayRestaurant;
 
     // Owner/contact fields (used by restaurant Contact Details screens)
     if (body.ownerName !== undefined) {
@@ -862,20 +915,34 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                 parsedFacilities = {};
             }
         }
-        update.facilities = {
-            parking: parsedFacilities?.parking === true || parsedFacilities?.parking === 'true',
-            wifi: parsedFacilities?.wifi === true || parsedFacilities?.wifi === 'true',
-            familyFriendly: parsedFacilities?.familyFriendly === true || parsedFacilities?.familyFriendly === 'true',
-            evCharging: parsedFacilities?.evCharging === true || parsedFacilities?.evCharging === 'true',
-            washroom: parsedFacilities?.washroom === true || parsedFacilities?.washroom === 'true'
-        };
+        update.facilities = buildFacilitiesPayload(parsedFacilities);
     }
 
-    if (body.highwayId !== undefined) {
-        const highwayId = String(body.highwayId || '').trim();
-        update.highwayId = highwayId && mongoose.Types.ObjectId.isValid(highwayId)
-            ? new mongoose.Types.ObjectId(highwayId)
-            : undefined;
+    if (body.isHighwayRestaurant !== undefined) {
+        let parsedIsHighwayRestaurant;
+        if (typeof body.isHighwayRestaurant === 'boolean') {
+            parsedIsHighwayRestaurant = body.isHighwayRestaurant;
+        } else if (typeof body.isHighwayRestaurant === 'string') {
+            const normalized = body.isHighwayRestaurant.trim().toLowerCase();
+            if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+                parsedIsHighwayRestaurant = true;
+            } else if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+                parsedIsHighwayRestaurant = false;
+            } else {
+                throw new ValidationError('isHighwayRestaurant must be a boolean');
+            }
+        } else {
+            throw new ValidationError('isHighwayRestaurant must be a boolean');
+        }
+
+        nextIsHighwayRestaurant = parsedIsHighwayRestaurant;
+        update.isHighwayRestaurant = parsedIsHighwayRestaurant;
+        update.restaurantType = parsedIsHighwayRestaurant ? 'highway' : 'normal';
+
+        if (!parsedIsHighwayRestaurant) {
+            update.highwayName = null;
+            update.highwayRef = null;
+        }
     }
 
     // Bank + UPI fields (Explore -> Update Bank Details page)
@@ -962,6 +1029,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             roadName: toStr(loc.roadName),
             placeId: toStr(loc.placeId)
         };
+        shouldSyncHighwayAfterUpdate = nextIsHighwayRestaurant !== false;
     }
 
     if (body.locationSource !== undefined) {
@@ -1023,60 +1091,75 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         update.profileImage = toUrl(body.profileImage) || '';
     }
 
-    if (body.panNumber !== undefined) {
-        update.panNumber = String(body.panNumber || '').trim().toUpperCase();
+    const nextDocuments = {};
+    let hasDocumentUpdates = false;
+
+    if (body.panNumber !== undefined || body.nameOnPan !== undefined || body.panImage !== undefined) {
+        if (body.panNumber !== undefined) {
+            nextDocuments['documents.pan.number'] = String(body.panNumber || '').trim().toUpperCase();
+        }
+        if (body.nameOnPan !== undefined) {
+            nextDocuments['documents.pan.name'] = String(body.nameOnPan || '').trim();
+        }
+        if (body.panImage !== undefined) {
+            nextDocuments['documents.pan.image'] = toUrl(body.panImage) || '';
+        }
+        hasDocumentUpdates = true;
     }
-    if (body.nameOnPan !== undefined) {
-        update.nameOnPan = String(body.nameOnPan || '').trim();
-    }
-    if (body.panImage !== undefined) {
-        update.panImage = toUrl(body.panImage) || '';
-    }
-    if (body.gstRegistered !== undefined) {
-        if (typeof body.gstRegistered === 'boolean') {
-            update.gstRegistered = body.gstRegistered;
-        } else if (typeof body.gstRegistered === 'string') {
-            const normalized = body.gstRegistered.trim().toLowerCase();
-            if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
-                update.gstRegistered = true;
-            } else if (normalized === 'false' || normalized === '0' || normalized === 'no') {
-                update.gstRegistered = false;
+    if (body.gstRegistered !== undefined || body.gstNumber !== undefined || body.gstLegalName !== undefined || body.gstAddress !== undefined || body.gstImage !== undefined) {
+        if (body.gstRegistered !== undefined) {
+            if (typeof body.gstRegistered === 'boolean') {
+                nextDocuments['documents.gst.registered'] = body.gstRegistered;
+            } else if (typeof body.gstRegistered === 'string') {
+                const normalized = body.gstRegistered.trim().toLowerCase();
+                if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+                    nextDocuments['documents.gst.registered'] = true;
+                } else if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+                    nextDocuments['documents.gst.registered'] = false;
+                } else {
+                    throw new ValidationError('gstRegistered must be a boolean');
+                }
             } else {
                 throw new ValidationError('gstRegistered must be a boolean');
             }
-        } else {
-            throw new ValidationError('gstRegistered must be a boolean');
         }
+        if (body.gstNumber !== undefined) {
+            nextDocuments['documents.gst.number'] = String(body.gstNumber || '').trim().toUpperCase();
+        }
+        if (body.gstLegalName !== undefined) {
+            nextDocuments['documents.gst.legalName'] = String(body.gstLegalName || '').trim();
+        }
+        if (body.gstAddress !== undefined) {
+            nextDocuments['documents.gst.address'] = String(body.gstAddress || '').trim();
+        }
+        if (body.gstImage !== undefined) {
+            nextDocuments['documents.gst.image'] = toUrl(body.gstImage) || '';
+        }
+        hasDocumentUpdates = true;
     }
-    if (body.gstNumber !== undefined) {
-        update.gstNumber = String(body.gstNumber || '').trim().toUpperCase();
-    }
-    if (body.gstLegalName !== undefined) {
-        update.gstLegalName = String(body.gstLegalName || '').trim();
-    }
-    if (body.gstAddress !== undefined) {
-        update.gstAddress = String(body.gstAddress || '').trim();
-    }
-    if (body.gstImage !== undefined) {
-        update.gstImage = toUrl(body.gstImage) || '';
-    }
-    if (body.fssaiNumber !== undefined) {
-        update.fssaiNumber = String(body.fssaiNumber || '').trim();
-    }
-    if (body.fssaiExpiry !== undefined) {
-        const rawExpiry = String(body.fssaiExpiry || '').trim();
-        if (!rawExpiry) {
-            update.fssaiExpiry = null;
-        } else {
-            const parsedExpiry = new Date(rawExpiry);
-            if (Number.isNaN(parsedExpiry.getTime())) {
-                throw new ValidationError('FSSAI expiry date is invalid');
+    if (body.fssaiNumber !== undefined || body.fssaiExpiry !== undefined || body.fssaiImage !== undefined) {
+        if (body.fssaiNumber !== undefined) {
+            nextDocuments['documents.fssai.number'] = String(body.fssaiNumber || '').trim();
+        }
+        if (body.fssaiExpiry !== undefined) {
+            const rawExpiry = String(body.fssaiExpiry || '').trim();
+            if (!rawExpiry) {
+                nextDocuments['documents.fssai.expiry'] = null;
+            } else {
+                const parsedExpiry = new Date(rawExpiry);
+                if (Number.isNaN(parsedExpiry.getTime())) {
+                    throw new ValidationError('FSSAI expiry date is invalid');
+                }
+                nextDocuments['documents.fssai.expiry'] = parsedExpiry;
             }
-            update.fssaiExpiry = parsedExpiry;
         }
+        if (body.fssaiImage !== undefined) {
+            nextDocuments['documents.fssai.image'] = toUrl(body.fssaiImage) || '';
+        }
+        hasDocumentUpdates = true;
     }
-    if (body.fssaiImage !== undefined) {
-        update.fssaiImage = toUrl(body.fssaiImage) || '';
+    if (hasDocumentUpdates) {
+        Object.assign(update, nextDocuments);
     }
 
     if (!Object.keys(update).length) {
@@ -1124,24 +1207,13 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                     'status',
                     'createdAt',
                     'updatedAt',
-                    'panNumber',
-                    'nameOnPan',
-                    'panImage',
-                    'gstRegistered',
-                    'gstNumber',
-                    'gstLegalName',
-                    'gstAddress',
-                    'gstImage',
-                    'fssaiNumber',
-                    'fssaiExpiry',
-                    'fssaiImage',
+                    'documents',
                     'accountNumber',
                     'ifscCode',
                     'accountHolderName',
                     'accountType',
                     'upiId',
                     'upiQrImage',
-                    'highwayId',
                     'facilities',
                     'rejectionReason',
                     'rejectedAt',
@@ -1159,7 +1231,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         }
 
         // Re-assign highway when location changes (replaces legacy zone tracing)
-        if (body.location !== undefined) {
+        if (shouldSyncHighwayAfterUpdate) {
             await assignHighwayToRestaurant(restaurantId);
             const refreshed = await FoodRestaurant.findById(restaurantId)
                 .select(
@@ -1188,24 +1260,13 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                         'status',
                         'createdAt',
                         'updatedAt',
-                        'panNumber',
-                        'nameOnPan',
-                        'panImage',
-                        'gstRegistered',
-                        'gstNumber',
-                        'gstLegalName',
-                        'gstAddress',
-                        'gstImage',
-                        'fssaiNumber',
-                        'fssaiExpiry',
-                        'fssaiImage',
+                        'documents',
                         'accountNumber',
                         'ifscCode',
                         'accountHolderName',
                         'accountType',
                         'upiId',
                         'upiQrImage',
-                        'highwayId',
                         'highwayName',
                         'highwayRef',
                         'isHighwayRestaurant',
@@ -1392,15 +1453,7 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}, o
         ...queryFilter
     };
 
-    let currentHighwayId = null;
-
-    if (lat !== null && lng !== null) {
-        // Detect if user is within 2 KM of a National Highway
-        const nearestResult = await findNearestHighway(lat, lng, 2000);
-        if (nearestResult) {
-            currentHighwayId = nearestResult.highway._id;
-        }
-    }
+    const currentHighwayId = null;
 
     const pipeline = [];
 
@@ -1424,9 +1477,6 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}, o
         const matchConditions = [
             { distanceMeters: { $lte: radiusKm * 1000 } }
         ];
-        if (currentHighwayId && includeHighwayRestaurants && highwayUnlimitedDistance) {
-            matchConditions.push({ highwayId: currentHighwayId });
-        }
         pipeline.push({
             $match: {
                 $or: matchConditions
@@ -1436,9 +1486,7 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}, o
         // Add fields for highway priority sorting and distance formatting
         pipeline.push({
             $addFields: {
-                isOnCurrentHighway: currentHighwayId
-                    ? { $cond: [{ $eq: ['$highwayId', currentHighwayId] }, 1, 0] }
-                    : 0,
+                isOnCurrentHighway: 0,
                 distanceInKm: { $round: [{ $divide: ['$distanceMeters', 1000] }, 2] },
                 distance: {
                     $cond: [
@@ -1561,7 +1609,6 @@ export const listApprovedRestaurants = async (query = {}) => {
         pureVegRestaurant: 1,
         createdAt: 1,
         facilities: 1,
-        facilityRatings: 1,
         location: 1,
         distance: 1,
         distanceInKm: 1,
@@ -1663,13 +1710,12 @@ export const listApprovedRestaurants = async (query = {}) => {
         rating: normalizeRatingValue(r.rating),
         totalRatings: normalizeTotalRatingsValue(r.totalRatings),
         facilities: r.facilities ? {
-            parking: Boolean(r.facilities.parking),
-            wifi: Boolean(r.facilities.wifi),
-            familyFriendly: Boolean(r.facilities.familyFriendly),
-            evCharging: Boolean(r.facilities.evCharging),
-            washroom: Boolean(r.facilities.washroom)
+            parking: getFacilityAvailability(r.facilities, 'parking'),
+            wifi: getFacilityAvailability(r.facilities, 'wifi'),
+            familyFriendly: getFacilityAvailability(r.facilities, 'familyFriendly'),
+            evCharging: getFacilityAvailability(r.facilities, 'evCharging'),
+            washroom: getFacilityAvailability(r.facilities, 'washroom')
         } : null,
-        facilityRatings: r.facilityRatings || null,
         profileImage: r.profileImage ? { url: r.profileImage } : null,
         coverImages: Array.isArray(r.coverImages) ? r.coverImages : [],
         openingTime: r.openingTime || null,

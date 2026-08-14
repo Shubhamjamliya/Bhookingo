@@ -75,7 +75,7 @@ export default function HowItWorksPage() {
                   <p className="text-sm text-gray-600 leading-relaxed">{step.desc}</p>
                   <ul className="space-y-2 pt-2">
                     {step.bullets.map((b, bIdx) => (
-                      <li key={bIdx} className="flex items-center gap-2 text-xs font-semibold text-gray-800">
+                      <li key={bIdx} className="flex items-center gap-2 text-sm font-semibold text-gray-800">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                         <span>{b}</span>
                       </li>
@@ -92,10 +92,10 @@ export default function HowItWorksPage() {
                     </div>
                     <div className="space-y-2">
                       <h3 className="text-xl font-black">{step.title}</h3>
-                      <p className="text-xs text-gray-400">Guaranteed quality & real-time route precision.</p>
+                      <p className="text-sm text-gray-300">Guaranteed quality and real-time route precision.</p>
                     </div>
                     <button
-                      onClick={() => navigate('/food/user')}
+                      onClick={() => navigate('/user/auth/login')}
                       className="bg-[#E0332F] hover:bg-[#c92824] text-white text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors w-fit"
                     >
                       <span>Try Now</span>

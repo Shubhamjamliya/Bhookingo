@@ -17,8 +17,6 @@ const OrdersPage = lazy(() => import("@food/pages/admin/orders/OrdersPage"));
 const Category = lazy(() => import("@food/pages/admin/categories/Category"));
 const FeeSettings = lazy(() => import("@food/pages/admin/fee-settings/FeeSettings"));
 const ReferralSettings = lazy(() => import("@food/pages/admin/referral-settings/ReferralSettings"));
-// Highway Management (replaces Zone Management)
-const HighwaySetup = lazy(() => import("@food/pages/admin/restaurant/HighwaySetup"));
 const RestaurantsList = lazy(() => import("@food/pages/admin/restaurant/RestaurantsList"));
 const AddRestaurant = lazy(() => import("@food/pages/admin/restaurant/AddRestaurant"));
 const JoiningRequest = lazy(() => import("@food/pages/admin/restaurant/JoiningRequest"));
@@ -164,10 +162,9 @@ export default function AdminRouter() {
             <Route path="order-refunds/new" element={<NewRefundRequests />} />
 
             {/* RESTAURANT MANAGEMENT */}
-            <Route path="highway-setup" element={<HighwaySetup />} />
-            {/* Legacy zone routes — redirect to highway-setup */}
-            <Route path="zone-setup" element={<Navigate to="../highway-setup" replace />} />
-            <Route path="zone-setup/*" element={<Navigate to="../../highway-setup" replace />} />
+            <Route path="highway-setup" element={<Navigate to="../restaurants" replace />} />
+            <Route path="zone-setup" element={<Navigate to="../restaurants" replace />} />
+            <Route path="zone-setup/*" element={<Navigate to="../../restaurants" replace />} />
             <Route path="food-approval" element={<FoodApproval />} />
             <Route path="restaurants" element={<RestaurantsList />} />
             <Route path="restaurants/add" element={<AddRestaurant />} />

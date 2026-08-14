@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { adminAPI, highwayAPI } from "@food/api"
 import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
 import { Label } from "@food/components/ui/label"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
+import { formatRoadDistance } from "@food/utils/formatRoadDistance"
+import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
+import { getFacilityAvailability } from "@food/utils/facilityHelpers"
 import { ArrowLeft, Loader2, MapPin, CheckCircle2, AlertCircle } from "lucide-react"
 
 const debugError = (..._args) => { }
@@ -37,6 +40,24 @@ const parseGoogleAddressComponents = (components = []) => {
     pincode: get(["postal_code"]),
     roadName,
   }
+}
+
+const extractHighwayRef = (value = "") => {
+  const raw = String(value || "").trim()
+  if (!raw) return ""
+
+  const compactMatch = raw.match(/\b(NH|SH)\s*[- ]?\s*(\d+[A-Z]?)\b/i)
+  if (compactMatch) {
+    return `${compactMatch[1].toUpperCase()}-${compactMatch[2].toUpperCase()}`
+  }
+
+  const expandedMatch = raw.match(/\b(National|State)\s+Highway\s+(\d+[A-Z]?)\b/i)
+  if (expandedMatch) {
+    const prefix = expandedMatch[1].toLowerCase().startsWith("national") ? "NH" : "SH"
+    return `${prefix}-${expandedMatch[2].toUpperCase()}`
+  }
+
+  return ""
 }
 
 const normalizeLocationFormFromRestaurant = (restaurant) => {
@@ -76,6 +97,7 @@ const normalizeLocationFormFromRestaurant = (restaurant) => {
     landmark: loc?.landmark || restaurant?.landmark || "",
     placeId: loc?.placeId || restaurant?.placeId || "",
     roadName: loc?.roadName || restaurant?.roadName || "",
+    highwayRef: restaurant?.highwayRef || "",
     latitude: hasValidCoords ? lat : "",
     longitude: hasValidCoords ? lng : "",
   }
@@ -84,6 +106,10 @@ const normalizeLocationFormFromRestaurant = (restaurant) => {
 const normalizeDetailsFormFromRestaurant = (restaurant) => {
   return {
     name: restaurant?.name || restaurant?.restaurantName || "",
+    isHighwayRestaurant:
+      typeof restaurant?.isHighwayRestaurant === "boolean"
+        ? restaurant.isHighwayRestaurant
+        : true,
     pureVegRestaurant:
       typeof restaurant?.pureVegRestaurant === "boolean"
         ? restaurant.pureVegRestaurant
@@ -98,11 +124,11 @@ const normalizeDetailsFormFromRestaurant = (restaurant) => {
     isActive: restaurant?.isActive !== false,
     takeawayEnabled: restaurant?.takeawaySettings?.isEnabled ?? false,
     facilities: restaurant?.facilities ? {
-      parking: restaurant.facilities.parking === true,
-      wifi: restaurant.facilities.wifi === true,
-      familyFriendly: restaurant.facilities.familyFriendly === true,
-      evCharging: restaurant.facilities.evCharging === true,
-      washroom: restaurant.facilities.washroom === true
+      parking: getFacilityAvailability(restaurant.facilities, "parking"),
+      wifi: getFacilityAvailability(restaurant.facilities, "wifi"),
+      familyFriendly: getFacilityAvailability(restaurant.facilities, "familyFriendly"),
+      evCharging: getFacilityAvailability(restaurant.facilities, "evCharging"),
+      washroom: getFacilityAvailability(restaurant.facilities, "washroom")
     } : {
       parking: false,
       wifi: false,
@@ -163,20 +189,26 @@ export default function EditRestaurant() {
   const [detailsForm, setDetailsForm] = useState(() => normalizeDetailsFormFromRestaurant(null))
   const [locationForm, setLocationForm] = useState(() => normalizeLocationFormFromRestaurant(null))
   const [locationError, setLocationError] = useState("")
+  const [locationSearchValue, setLocationSearchValue] = useState("")
+  const [isGoogleMapsValid, setIsGoogleMapsValid] = useState(true)
+  const [locationSuggestions, setLocationSuggestions] = useState([])
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false)
   const [highwayInfo, setHighwayInfo] = useState({
     loading: false,
     status: null,
-    highwayId: null,
     highwayName: null,
     highwayRef: null,
     distanceMeters: null,
     thresholdMeters: null,
   })
   const [isRoadNameDirty, setIsRoadNameDirty] = useState(false)
+  const [isHighwayRefDirty, setIsHighwayRefDirty] = useState(false)
   const [isMapsSdkReady, setIsMapsSdkReady] = useState(() => Boolean(window.google?.maps))
 
   const locationSearchInputRef = useRef(null)
   const placesAutocompleteRef = useRef(null)
+  const mapsScriptLoadedRef = useRef(false)
+  const isPlaceSelectedRef = useRef(false)
   const pinMapContainerRef = useRef(null)
   const pinMapRef = useRef(null)
   const pinMarkerRef = useRef(null)
@@ -208,6 +240,14 @@ export default function EditRestaurant() {
         setRestaurant(data)
         setDetailsForm(normalizeDetailsFormFromRestaurant(data))
         setLocationForm(normalizeLocationFormFromRestaurant(data))
+        setLocationSearchValue(
+          data?.location?.formattedAddress ||
+          data?.location?.addressLine1 ||
+          data?.formattedAddress ||
+          data?.addressLine1 ||
+          data?.address ||
+          ""
+        )
       } catch (e) {
         debugError(e)
         if (!mounted) return
@@ -260,27 +300,88 @@ export default function EditRestaurant() {
   }, [])
 
   useEffect(() => {
-    if (!locationSearchInputRef.current) return
-    if (placesAutocompleteRef.current) return
-
     let cancelled = false
+    let autocomplete = null
+
+    if (placesAutocompleteRef.current) {
+      try {
+        window.google?.maps?.event?.clearInstanceListeners(placesAutocompleteRef.current)
+      } catch {}
+      placesAutocompleteRef.current = null
+    }
+
     const init = async () => {
-      setLocationError("")
-      const loaded = await loadGooglePlaces()
-      if (cancelled) return
-      if (!loaded || !window.google?.maps?.places?.Autocomplete) {
-        setLocationError("Unable to load Google Places Autocomplete.")
-        return
+      let inputElement = null
+      for (let i = 0; i < 50; i += 1) {
+        if (locationSearchInputRef.current) {
+          inputElement = locationSearchInputRef.current
+          break
+        }
+        await new Promise((resolve) => setTimeout(resolve, 100))
       }
 
-      placesAutocompleteRef.current = new window.google.maps.places.Autocomplete(
-        locationSearchInputRef.current,
-        {
-          fields: ["formatted_address", "address_components", "geometry"],
-          // Omit `types: ["geocode"]` — that biases Autocomplete toward Geocoding API (geocode/json) traffic.
-          componentRestrictions: { country: "in" },
-        },
-      )
+      if (!inputElement || cancelled) return
+
+      const loadMaps = async () => {
+        if (window.google?.maps?.places?.Autocomplete) {
+          mapsScriptLoadedRef.current = true
+          setIsMapsSdkReady(true)
+          return true
+        }
+
+        const apiKey = await getGoogleMapsApiKey()
+        if (!apiKey) {
+          setIsGoogleMapsValid(false)
+          setLocationError("Unable to load Google Places Autocomplete.")
+          return false
+        }
+
+        window.gm_authFailure = () => {
+          setIsGoogleMapsValid(false)
+          setIsMapsSdkReady(false)
+          setLocationError("Unable to load Google Places Autocomplete.")
+        }
+
+        const scripts = Array.from(document.getElementsByTagName("script"))
+        const mapsScript = scripts.find((script) => script.src?.includes("maps.googleapis.com/maps/api/js"))
+
+        if (mapsScript && !mapsScript.src.includes("libraries=places")) {
+          mapsScript.remove()
+        } else if (mapsScript && mapsScript.src.includes("libraries=places")) {
+          for (let i = 0; i < 60; i += 1) {
+            if (window.google?.maps?.places?.Autocomplete) return true
+            if (cancelled) return false
+            await new Promise((resolve) => setTimeout(resolve, 100))
+          }
+        }
+
+        return new Promise((resolve) => {
+          const script = document.createElement("script")
+          script.id = "google-maps-sdk"
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&v=weekly`
+          script.async = true
+          script.defer = true
+          script.onload = () => {
+            setTimeout(() => {
+              const ok = !!window.google?.maps?.places?.Autocomplete
+              mapsScriptLoadedRef.current = ok
+              setIsMapsSdkReady(Boolean(window.google?.maps))
+              if (!ok) {
+                setIsGoogleMapsValid(false)
+                setLocationError("Unable to load Google Places Autocomplete.")
+              }
+              resolve(ok)
+            }, 200)
+          }
+          script.onerror = () => {
+            setIsGoogleMapsValid(false)
+            setIsMapsSdkReady(false)
+            setLocationError("Unable to load Google Places Autocomplete.")
+            resolve(false)
+          }
+          document.head.appendChild(script)
+        })
+      }
 
       const parsePlace = (place) => {
         const formattedAddress = place?.formatted_address || ""
@@ -302,31 +403,157 @@ export default function EditRestaurant() {
         }
       }
 
-      placesAutocompleteRef.current.addListener("place_changed", () => {
-        const place = placesAutocompleteRef.current.getPlace()
-        const parsed = parsePlace(place)
-        setLocationForm((prev) => ({
-          ...prev,
-          formattedAddress: parsed.formattedAddress || prev.formattedAddress,
-          addressLine1: parsed.formattedAddress || prev.addressLine1,
-          area: parsed.area || prev.area,
-          city: parsed.city || prev.city,
-          state: parsed.state || prev.state,
-          pincode: parsed.pincode || prev.pincode,
-          roadName: parsed.roadName || prev.roadName || "",
-          placeId: parsed.placeId || prev.placeId || "",
-          latitude: parsed.latitude !== "" ? parsed.latitude : prev.latitude,
-          longitude: parsed.longitude !== "" ? parsed.longitude : prev.longitude,
-        }))
-      })
+      setLocationError("")
+      const ok = await loadMaps()
+      if (!ok || cancelled || !inputElement) return
+
+      if (inputElement.hasAttribute("data-google-places-initialized")) return
+
+      try {
+        autocomplete = new window.google.maps.places.Autocomplete(inputElement, {
+          fields: ["formatted_address", "address_components", "geometry", "place_id"],
+          componentRestrictions: { country: "in" },
+          types: ["geocode", "establishment"],
+        })
+
+        inputElement.setAttribute("data-google-places-initialized", "true")
+        placesAutocompleteRef.current = autocomplete
+        isPlaceSelectedRef.current = false
+        setIsGoogleMapsValid(true)
+
+        autocomplete.addListener("place_changed", () => {
+          if (cancelled) return
+          const place = autocomplete.getPlace()
+          if (!place?.geometry) return
+
+          isPlaceSelectedRef.current = true
+          const parsed = parsePlace(place)
+          setLocationForm((prev) => ({
+            ...prev,
+            formattedAddress: parsed.formattedAddress || prev.formattedAddress,
+            addressLine1: parsed.formattedAddress || prev.addressLine1 || "",
+            area: parsed.area || prev.area,
+            city: parsed.city || prev.city,
+            state: parsed.state || prev.state,
+            pincode: parsed.pincode || prev.pincode,
+            roadName: parsed.roadName || prev.roadName || "",
+            placeId: parsed.placeId || prev.placeId || "",
+            latitude: parsed.latitude !== "" ? parsed.latitude : prev.latitude,
+            longitude: parsed.longitude !== "" ? parsed.longitude : prev.longitude,
+          }))
+          setLocationSearchValue(parsed.formattedAddress || "")
+          setIsRoadNameDirty(false)
+
+          if (inputElement) inputElement.blur()
+
+          const containers = document.querySelectorAll(".pac-container")
+          containers.forEach((container) => {
+            container.style.display = "none"
+            container.style.visibility = "hidden"
+          })
+        })
+
+        const pacContainerFix = () => {
+          if (cancelled) return
+          const containers = document.querySelectorAll(".pac-container")
+          if (isPlaceSelectedRef.current) {
+            containers.forEach((container) => {
+              container.style.display = "none"
+              container.style.visibility = "hidden"
+            })
+            return
+          }
+          const applyFix = () => {
+            if (cancelled || isPlaceSelectedRef.current) {
+              containers.forEach((container) => {
+                container.style.display = "none"
+                container.style.visibility = "hidden"
+              })
+              return
+            }
+            containers.forEach((container) => {
+              container.style.zIndex = "999999"
+              container.style.pointerEvents = "auto"
+              container.style.visibility = "visible"
+              container.style.display = "block"
+            })
+          }
+          applyFix()
+          setTimeout(applyFix, 100)
+          setTimeout(applyFix, 300)
+        }
+
+        inputElement.addEventListener("focus", () => {
+          if (cancelled) return
+          isPlaceSelectedRef.current = false
+          pacContainerFix()
+        })
+        inputElement.addEventListener("input", () => {
+          if (cancelled) return
+          isPlaceSelectedRef.current = false
+          pacContainerFix()
+        })
+      } catch (e) {
+        debugError(e)
+        setIsGoogleMapsValid(false)
+        setLocationError("Unable to load Google Places Autocomplete.")
+      }
     }
 
-    requestAnimationFrame(init)
+    init().catch(() => {})
+
     return () => {
       cancelled = true
+      if (autocomplete) {
+        try {
+          window.google?.maps?.event?.clearInstanceListeners(autocomplete)
+        } catch {}
+      }
+      if (locationSearchInputRef.current) {
+        locationSearchInputRef.current.removeAttribute("data-google-places-initialized")
+      }
       placesAutocompleteRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    if (isGoogleMapsValid) {
+      setLocationSuggestions([])
+      setIsSearchingLocation(false)
+      return
+    }
+
+    const q = String(locationSearchValue || "").trim()
+    if (q.length < 3) {
+      setLocationSuggestions([])
+      setIsSearchingLocation(false)
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearchingLocation(true)
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=4&q=${encodeURIComponent(q)}&countrycodes=in`
+        const res = await fetch(url, { headers: { Accept: "application/json" } })
+        const json = await res.json()
+        const mapped = (Array.isArray(json) ? json : []).map((result) => ({
+          id: result.place_id,
+          display: result.display_name || "",
+          lat: Number(result.lat),
+          lng: Number(result.lon),
+          addr: result.address || {},
+          place_id: result.place_id,
+        }))
+        setLocationSuggestions(mapped)
+      } catch (e) {
+        debugError(e)
+      } finally {
+        setIsSearchingLocation(false)
+      }
+    }, 400)
+
+    return () => clearTimeout(timer)
+  }, [locationSearchValue, isGoogleMapsValid])
 
   useEffect(() => {
     if (window.google?.maps && !isMapsSdkReady) {
@@ -334,64 +561,69 @@ export default function EditRestaurant() {
     }
   }, [isMapsSdkReady])
 
-  useEffect(() => {
-    const lat = Number(locationForm.latitude)
-    const lng = Number(locationForm.longitude)
-    const address = locationForm.formattedAddress || locationForm.addressLine1 || ""
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !address.trim()) {
-      setHighwayInfo({ loading: false, status: null, highwayId: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
+  const detectHighwayForLocation = useCallback(async (lat, lng) => {
+    const latNum = Number(lat)
+    const lngNum = Number(lng)
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+      setHighwayInfo({ loading: false, status: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
       return
     }
 
-    let cancelled = false
-    const run = async () => {
-      setHighwayInfo((prev) => ({ ...prev, loading: true }))
-      try {
-        const res = await highwayAPI.detectHighway(lat, lng)
-        const data = res?.data?.data
-        if (cancelled) return
-        if (res?.data?.success && data) {
-          setHighwayInfo({
-            loading: false,
-            status: data.status,
-            highwayId: data.highwayId || null,
-            highwayName: data.highwayName || null,
-            highwayRef: data.highwayRef || null,
-            distanceMeters: data.distanceMeters ?? null,
-            thresholdMeters: data.thresholdMeters ?? null,
-          })
-        } else {
-          setHighwayInfo({ loading: false, status: "OUT_OF_SERVICE", highwayId: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
-        }
-      } catch {
-        if (!cancelled) {
-          setHighwayInfo({ loading: false, status: "OUT_OF_SERVICE", highwayId: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
-        }
+    setHighwayInfo((prev) => ({ ...prev, loading: true }))
+    try {
+      const res = await highwayAPI.detectHighway(latNum, lngNum)
+      const data = res?.data?.data
+      if (res?.data?.success && data) {
+        setHighwayInfo({
+          loading: false,
+          status: data.status,
+          highwayName: data.highwayName || null,
+          highwayRef: data.highwayRef || null,
+          distanceMeters: data.distanceMeters ?? null,
+          thresholdMeters: data.thresholdMeters ?? null,
+        })
+      } else {
+        setHighwayInfo({ loading: false, status: "OUT_OF_SERVICE", highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
       }
+    } catch {
+      setHighwayInfo((prev) => ({ ...prev, loading: false }))
     }
-    run()
-    return () => { cancelled = true }
-  }, [locationForm.latitude, locationForm.longitude, locationForm.formattedAddress, locationForm.addressLine1])
-
-  const autoDetectedRoadLabel = (() => {
-    if (highwayInfo.highwayRef) return `${highwayInfo.highwayRef}${highwayInfo.highwayName ? ` - ${highwayInfo.highwayName}` : ""}`
-    if (highwayInfo.highwayName) return String(highwayInfo.highwayName)
-    return ""
-  })()
+  }, [])
 
   useEffect(() => {
-    if (!autoDetectedRoadLabel) return
+    if (detailsForm.isHighwayRestaurant !== true) {
+      setHighwayInfo({ loading: false, status: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
+      return
+    }
+
+    const lat = locationForm.latitude
+    const lng = locationForm.longitude
+    if (!lat || !lng) {
+      setHighwayInfo({ loading: false, status: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
+      return
+    }
+
+    detectHighwayForLocation(lat, lng)
+  }, [detailsForm.isHighwayRestaurant, locationForm.latitude, locationForm.longitude, detectHighwayForLocation])
+
+  const autoDetectedHighwayRef = extractHighwayRef(highwayInfo.highwayRef || highwayInfo.highwayName || "")
+
+  useEffect(() => {
+    if (!autoDetectedHighwayRef) return
     setLocationForm((prev) => {
-      const currentRoadName = String(prev.roadName || "")
-      if (isRoadNameDirty && currentRoadName && currentRoadName !== lastAutoRoadNameRef.current) return prev
-      if (currentRoadName === autoDetectedRoadLabel) {
-        lastAutoRoadNameRef.current = autoDetectedRoadLabel
+      const currentHighwayRef = String(prev.highwayRef || "")
+      if (isHighwayRefDirty && currentHighwayRef && currentHighwayRef !== lastAutoRoadNameRef.current) return prev
+      if (currentHighwayRef === autoDetectedHighwayRef) {
+        lastAutoRoadNameRef.current = autoDetectedHighwayRef
         return prev
       }
-      lastAutoRoadNameRef.current = autoDetectedRoadLabel
-      return { ...prev, roadName: autoDetectedRoadLabel }
+      lastAutoRoadNameRef.current = autoDetectedHighwayRef
+      return { ...prev, highwayRef: autoDetectedHighwayRef }
     })
-  }, [autoDetectedRoadLabel, isRoadNameDirty])
+  }, [
+    autoDetectedHighwayRef,
+    isHighwayRefDirty,
+  ])
 
   const reverseGeocodePinnedLocation = async (lat, lng) => {
     if (!window.google?.maps?.Geocoder) return null
@@ -424,6 +656,9 @@ export default function EditRestaurant() {
       placeId: geoDetails?.placeId || prev.placeId || "",
       roadName: geoDetails?.roadName || prev.roadName || prev.area || "",
     }))
+    if (geoDetails?.formattedAddress) {
+      setLocationSearchValue(geoDetails.formattedAddress)
+    }
     setIsRoadNameDirty(false)
   }
 
@@ -471,6 +706,7 @@ export default function EditRestaurant() {
 
       const payload = {
         name: detailsForm.name,
+        isHighwayRestaurant: detailsForm.isHighwayRestaurant === true,
         pureVegRestaurant: detailsForm.pureVegRestaurant === true,
         ownerName: detailsForm.ownerName,
         ownerEmail: detailsForm.ownerEmail,
@@ -507,10 +743,6 @@ export default function EditRestaurant() {
     const latitude = Number(locationForm.latitude)
     const longitude = Number(locationForm.longitude)
 
-    if (!locationForm.zoneId) {
-      alert("Please select a zone")
-      return
-    }
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !locationForm.formattedAddress) {
       alert("Please select a location from dropdown")
       return
@@ -535,7 +767,10 @@ export default function EditRestaurant() {
         zipCode: locationForm.pincode || "",
         postalCode: locationForm.pincode || "",
         roadName: locationForm.roadName || "",
-        ...(highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId ? { highwayId: String(highwayInfo.highwayId) } : {}),
+        placeId: locationForm.placeId || "",
+        highwayRef: detailsForm.isHighwayRestaurant === true ? (locationForm.highwayRef || "") : "",
+        highwayName: detailsForm.isHighwayRestaurant === true ? (highwayInfo.highwayName || "") : "",
+        isHighwayRestaurant: detailsForm.isHighwayRestaurant === true,
       }
 
       const res = await adminAPI.updateRestaurantLocation(restaurantId, payload)
@@ -583,9 +818,9 @@ export default function EditRestaurant() {
           </div>
         ) : (
           <div className="space-y-6">
-            <section className="bg-white rounded-xl border border-slate-200 p-6">
+            <section className="bg-white p-4 sm:p-6 rounded-md border border-slate-200 space-y-6">
               <div className="flex items-center justify-between gap-3 mb-4">
-                <h2 className="text-lg font-semibold text-slate-900">Basic Details</h2>
+                <h2 className="text-lg font-semibold text-black">Basic restaurant details</h2>
                 <Button onClick={handleSaveDetails} disabled={savingDetails}>
                   {savingDetails ? (
                     <span className="inline-flex items-center gap-2">
@@ -600,36 +835,171 @@ export default function EditRestaurant() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Restaurant Name</Label>
-                  <Input value={detailsForm.name} onChange={(e) => setDetailsForm((p) => ({ ...p, name: e.target.value }))} />
+                  <Label className="text-xs text-gray-700">Restaurant name*</Label>
+                  <Input
+                    value={detailsForm.name}
+                    onChange={(e) => setDetailsForm((p) => ({ ...p, name: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Enter restaurant name"
+                  />
                 </div>
                 <div>
-                  <Label>Pure Veg</Label>
-                  <div className="mt-2 flex items-center gap-2">
+                  <Label className="text-xs text-gray-700">Pure veg restaurant?*</Label>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setDetailsForm((p) => ({ ...p, pureVegRestaurant: true }))}
                       className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.pureVegRestaurant === true
                           ? "bg-green-600 text-white border-green-600"
-                          : "bg-white text-slate-700 border-slate-300"
+                          : "bg-white text-gray-700 border-gray-200"
                         }`}
                     >
-                      Yes
+                      Yes, Pure Veg
                     </button>
                     <button
                       type="button"
                       onClick={() => setDetailsForm((p) => ({ ...p, pureVegRestaurant: false }))}
                       className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.pureVegRestaurant === false
-                          ? "bg-slate-900 text-white border-slate-900"
-                          : "bg-white text-slate-700 border-slate-300"
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "bg-white text-gray-700 border-gray-200"
                         }`}
                     >
-                      No
+                      No, Mixed Menu
                     </button>
                   </div>
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    This helps users filter restaurants by dietary preference.
+                  </p>
                 </div>
+                <div>
+                  <Label className="text-xs text-gray-700">Restaurant type*</Label>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDetailsForm((p) => ({ ...p, isHighwayRestaurant: true }))}
+                      className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.isHighwayRestaurant === true
+                          ? "bg-orange-600 text-white border-orange-600"
+                          : "bg-white text-gray-700 border-gray-200"
+                        }`}
+                    >
+                      Highway Restaurant
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDetailsForm((p) => ({ ...p, isHighwayRestaurant: false }))}
+                      className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.isHighwayRestaurant === false
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "bg-white text-gray-700 border-gray-200"
+                        }`}
+                    >
+                      Normal Restaurant
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    Highway restaurants require road verification. Normal restaurants skip road detection.
+                  </p>
+                </div>
+              </div>
 
-                <div className="md:col-span-2 border-t border-slate-100 pt-4 mt-2">
+              <div className="border-t border-gray-100 pt-6">
+                <h3 className="text-lg font-semibold text-black mb-4">Owner details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-700">Full name*</Label>
+                    <Input
+                      value={detailsForm.ownerName}
+                      onChange={(e) => setDetailsForm((p) => ({ ...p, ownerName: e.target.value }))}
+                      className="mt-1 bg-white text-sm"
+                      placeholder="Owner full name"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-700">Email address*</Label>
+                    <Input
+                      type="email"
+                      value={detailsForm.ownerEmail}
+                      onChange={(e) => setDetailsForm((p) => ({ ...p, ownerEmail: e.target.value }))}
+                      className="mt-1 bg-white text-sm"
+                      placeholder="owner@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-700">Phone number*</Label>
+                    <Input
+                      value={detailsForm.ownerPhone}
+                      onChange={(e) => setDetailsForm((p) => ({ ...p, ownerPhone: e.target.value }))}
+                      className="mt-1 bg-white text-sm"
+                      placeholder="10-digit mobile number"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-700">Primary contact number*</Label>
+                    <Input
+                      value={detailsForm.primaryContactNumber}
+                      onChange={(e) => setDetailsForm((p) => ({ ...p, primaryContactNumber: e.target.value }))}
+                      className="mt-1 bg-white text-sm"
+                      placeholder="Restaurant's primary contact number"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-6">
+                <h3 className="text-lg font-semibold text-black mb-4">Restaurant details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-700">Primary email</Label>
+                    <Input
+                      value={detailsForm.email}
+                      onChange={(e) => setDetailsForm((p) => ({ ...p, email: e.target.value }))}
+                      className="mt-1 bg-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-700">Offer</Label>
+                    <Input
+                      value={detailsForm.offer}
+                      onChange={(e) => setDetailsForm((p) => ({ ...p, offer: e.target.value }))}
+                      className="mt-1 bg-white text-sm"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label className="text-xs text-gray-700">Cuisines (comma separated)</Label>
+                    <Input
+                      value={detailsForm.cuisinesText}
+                      onChange={(e) => setDetailsForm((p) => ({ ...p, cuisinesText: e.target.value }))}
+                      className="mt-1 bg-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-700">Takeaway (Pickup) Enabled</Label>
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDetailsForm((p) => ({ ...p, takeawayEnabled: true }))}
+                        className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.takeawayEnabled === true
+                            ? "bg-green-600 text-white border-green-600"
+                            : "bg-white text-gray-700 border-gray-200"
+                          }`}
+                      >
+                        Enabled
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDetailsForm((p) => ({ ...p, takeawayEnabled: false }))}
+                        className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.takeawayEnabled === false
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : "bg-white text-gray-700 border-gray-200"
+                          }`}
+                      >
+                        Disabled
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-6">
                   <Label className="text-sm font-bold text-slate-800 mb-3 block">Facilities</Label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
@@ -643,7 +1013,7 @@ export default function EditRestaurant() {
                           }))}
                           className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.facilities?.parking === true
                               ? "bg-green-600 text-white border-green-600"
-                              : "bg-white text-slate-700 border-slate-300"
+                              : "bg-white text-gray-700 border-gray-200"
                             }`}
                         >
                           Yes
@@ -655,8 +1025,8 @@ export default function EditRestaurant() {
                             facilities: { ...p.facilities, parking: false }
                           }))}
                           className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.facilities?.parking === false
-                              ? "bg-slate-900 text-white border-slate-900"
-                              : "bg-white text-slate-700 border-slate-300"
+                              ? "bg-gray-900 text-white border-gray-900"
+                              : "bg-white text-gray-700 border-gray-200"
                             }`}
                         >
                           No
@@ -675,7 +1045,7 @@ export default function EditRestaurant() {
                           }))}
                           className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.facilities?.wifi === true
                               ? "bg-green-600 text-white border-green-600"
-                              : "bg-white text-slate-700 border-slate-300"
+                              : "bg-white text-gray-700 border-gray-200"
                             }`}
                         >
                           Yes
@@ -687,8 +1057,8 @@ export default function EditRestaurant() {
                             facilities: { ...p.facilities, wifi: false }
                           }))}
                           className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.facilities?.wifi === false
-                              ? "bg-slate-900 text-white border-slate-900"
-                              : "bg-white text-slate-700 border-slate-300"
+                              ? "bg-gray-900 text-white border-gray-900"
+                              : "bg-white text-gray-700 border-gray-200"
                             }`}
                         >
                           No
@@ -707,7 +1077,7 @@ export default function EditRestaurant() {
                           }))}
                           className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.facilities?.familyFriendly === true
                               ? "bg-green-600 text-white border-green-600"
-                              : "bg-white text-slate-700 border-slate-300"
+                              : "bg-white text-gray-700 border-gray-200"
                             }`}
                         >
                           Yes
@@ -719,8 +1089,8 @@ export default function EditRestaurant() {
                             facilities: { ...p.facilities, familyFriendly: false }
                           }))}
                           className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.facilities?.familyFriendly === false
-                              ? "bg-slate-900 text-white border-slate-900"
-                              : "bg-white text-slate-700 border-slate-300"
+                              ? "bg-gray-900 text-white border-gray-900"
+                              : "bg-white text-gray-700 border-gray-200"
                             }`}
                         >
                           No
@@ -739,7 +1109,7 @@ export default function EditRestaurant() {
                           }))}
                           className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.facilities?.evCharging === true
                               ? "bg-green-600 text-white border-green-600"
-                              : "bg-white text-slate-700 border-slate-300"
+                              : "bg-white text-gray-700 border-gray-200"
                             }`}
                         >
                           Yes
@@ -751,8 +1121,8 @@ export default function EditRestaurant() {
                             facilities: { ...p.facilities, evCharging: false }
                           }))}
                           className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.facilities?.evCharging === false
-                              ? "bg-slate-900 text-white border-slate-900"
-                              : "bg-white text-slate-700 border-slate-300"
+                              ? "bg-gray-900 text-white border-gray-900"
+                              : "bg-white text-gray-700 border-gray-200"
                             }`}
                         >
                           No
@@ -771,7 +1141,7 @@ export default function EditRestaurant() {
                           }))}
                           className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.facilities?.washroom === true
                               ? "bg-green-600 text-white border-green-600"
-                              : "bg-white text-slate-700 border-slate-300"
+                              : "bg-white text-gray-700 border-gray-200"
                             }`}
                         >
                           Yes
@@ -783,8 +1153,8 @@ export default function EditRestaurant() {
                             facilities: { ...p.facilities, washroom: false }
                           }))}
                           className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.facilities?.washroom === false
-                              ? "bg-slate-900 text-white border-slate-900"
-                              : "bg-white text-slate-700 border-slate-300"
+                              ? "bg-gray-900 text-white border-gray-900"
+                              : "bg-white text-gray-700 border-gray-200"
                             }`}
                         >
                           No
@@ -792,75 +1162,13 @@ export default function EditRestaurant() {
                       </div>
                     </div>
                   </div>
-                </div>
-                <div>
-                  <Label>Primary Email</Label>
-                  <Input value={detailsForm.email} onChange={(e) => setDetailsForm((p) => ({ ...p, email: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Owner Name</Label>
-                  <Input value={detailsForm.ownerName} onChange={(e) => setDetailsForm((p) => ({ ...p, ownerName: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Owner Email</Label>
-                  <Input value={detailsForm.ownerEmail} onChange={(e) => setDetailsForm((p) => ({ ...p, ownerEmail: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Owner Phone</Label>
-                  <Input value={detailsForm.ownerPhone} onChange={(e) => setDetailsForm((p) => ({ ...p, ownerPhone: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Primary Contact Number</Label>
-                  <Input value={detailsForm.primaryContactNumber} onChange={(e) => setDetailsForm((p) => ({ ...p, primaryContactNumber: e.target.value }))} />
-                </div>
-                <div className="md:col-span-2">
-                  <Label>Cuisines (comma separated)</Label>
-                  <Input value={detailsForm.cuisinesText} onChange={(e) => setDetailsForm((p) => ({ ...p, cuisinesText: e.target.value }))} />
-                </div>
-                <div>
-                  <Input
-                    type="number"
-                  />
-                </div>
-                <div>
-                  <Label>Offer</Label>
-                  <Input value={detailsForm.offer} onChange={(e) => setDetailsForm((p) => ({ ...p, offer: e.target.value }))} />
-                </div>
-                <div>
-                  <Label>Takeaway (Pickup) Enabled</Label>
-                  <div className="mt-2 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setDetailsForm((p) => ({ ...p, takeawayEnabled: true }))}
-                      className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.takeawayEnabled === true
-                          ? "bg-green-600 text-white border-green-600"
-                          : "bg-white text-slate-700 border-slate-300"
-                        }`}
-                    >
-                      Enabled
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDetailsForm((p) => ({ ...p, takeawayEnabled: false }))}
-                      className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.takeawayEnabled === false
-                          ? "bg-slate-900 text-white border-slate-900"
-                          : "bg-white text-slate-700 border-slate-300"
-                        }`}
-                    >
-                      Disabled
-                    </button>
-                  </div>
-                </div>
               </div>
             </section>
 
-            <section className="bg-white rounded-xl border border-slate-200 p-6">
+            <section className="bg-white p-4 sm:p-6 rounded-md border border-slate-200 space-y-4">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Location</h2>
-                  {currentZoneLabel ? (
-                    <p className="text-xs text-slate-500 mt-1">Current Zone: {currentZoneLabel}</p>
-                  ) : null}
+                  <h2 className="text-lg font-semibold text-black">Restaurant contact & location</h2>
                 </div>
                 <Button onClick={handleSaveLocation} disabled={savingLocation}>
                   {savingLocation ? (
@@ -882,74 +1190,106 @@ export default function EditRestaurant() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <Label>Service Zone</Label>
-                  <select
-                    value={locationForm.zoneId || ""}
-                    onChange={(e) => setLocationForm((p) => ({ ...p, zoneId: e.target.value }))}
-                    className="mt-1 h-10 w-full rounded-md border border-input bg-white px-3 text-sm"
-                    disabled={zonesLoading}
-                  >
-                    <option value="">{zonesLoading ? "Loading zones..." : "Select a zone"}</option>
-                    {zones.map((z) => {
-                      const zid = normalizeZoneId(z?._id || z?.id)
-                      const label = z?.name || z?.zoneName || zid
-                      return (
-                        <option key={zid} value={zid}>
-                          {label}
-                        </option>
-                      )
-                    })}
-                  </select>
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label>Search location</Label>
-                  <Input
-                    ref={locationSearchInputRef}
-                    placeholder="Start typing your restaurant address..."
-                    className="mt-1 bg-white text-sm text-black! dark:text-white! placeholder:text-gray-500 dark:placeholder:text-gray-400 caret-black dark:caret-white"
-                    style={{ color: "#000", WebkitTextFillColor: "#000" }}
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1">
+                  <Label className="text-xs text-gray-700">Search location</Label>
+                  <div className="relative">
+                    <Input
+                      key={isGoogleMapsValid ? "google-input" : "fallback-input"}
+                      ref={isGoogleMapsValid ? locationSearchInputRef : null}
+                      value={locationSearchValue}
+                      onChange={(e) => setLocationSearchValue(e.target.value)}
+                      placeholder="Start typing your restaurant address..."
+                      className="mt-1 bg-white text-sm"
+                      style={{ color: "#000", WebkitTextFillColor: "#000" }}
+                    />
+                    {!isGoogleMapsValid && isSearchingLocation && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-1">
                     Select a suggestion from the dropdown to fill address + coordinates.
                   </p>
 
-                  {(highwayInfo.loading || highwayInfo.status) && (
+                  {!isGoogleMapsValid && locationSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto overflow-hidden rounded-md border border-gray-200 bg-white shadow-xl">
+                      {locationSuggestions.map((suggestion) => (
+                        <button
+                          key={suggestion.id}
+                          type="button"
+                          onClick={() => {
+                            const { lat, lng, display, addr } = suggestion
+                            const area = addr.suburb || addr.neighbourhood || addr.city_district || addr.locality || ""
+                            const city = addr.city || addr.town || addr.village || ""
+                            const state = addr.state || ""
+                            const pincode = addr.postcode || ""
+                            const roadName = [addr.house_number, addr.road].filter(Boolean).join(" ").trim() || addr.road || ""
+
+                            isPlaceSelectedRef.current = true
+                            setLocationForm((prev) => ({
+                              ...prev,
+                              formattedAddress: display,
+                              addressLine1: display,
+                              area: area || prev.area,
+                              city: city || prev.city,
+                              state: state || prev.state,
+                              pincode: pincode || prev.pincode,
+                              latitude: lat,
+                              longitude: lng,
+                              placeId: suggestion.place_id || "",
+                              roadName: roadName || prev.roadName || "",
+                            }))
+                            setLocationSearchValue(display)
+                            setLocationSuggestions([])
+                            setIsRoadNameDirty(false)
+                          }}
+                          className="w-full border-b border-gray-100 px-4 py-2 text-left text-[13px] font-medium text-gray-700 hover:bg-orange-50 last:border-none"
+                        >
+                          <span className="truncate">{suggestion.display}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {detailsForm.isHighwayRestaurant === true && (highwayInfo.loading || highwayInfo.status) && (
                     <div className={`mt-3 rounded-xl border px-4 py-3 text-sm ${highwayInfo.loading ? "bg-slate-50 border-slate-200 text-slate-600" : highwayInfo.status === "IN_SERVICE" ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-rose-50 border-rose-200 text-rose-800"}`}>
                       {highwayInfo.loading ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                          <span>Checking highway proximity...</span>
+                          <span>{HIGHWAY_DETECTION_COPY.checking}</span>
                         </div>
                       ) : highwayInfo.status === "IN_SERVICE" ? (
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 font-semibold">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            <span>Restaurant location verified. Located within highway range.</span>
+                            <span>{HIGHWAY_DETECTION_COPY.success}</span>
                           </div>
                           <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                            <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                            {highwayInfo.highwayName && <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
-                            {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
-                            <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                            <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                            {highwayInfo.highwayName && <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                            <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                           </div>
                         </div>
                       ) : (
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 font-semibold">
                             <AlertCircle className="w-4 h-4 text-rose-600" />
-                            <span>Restaurant must be within 2 KM of a highway.</span>
+                            <span>{HIGHWAY_DETECTION_COPY.error}</span>
                           </div>
                           {highwayInfo.highwayRef && (
                             <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                              <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                              {highwayInfo.highwayName && <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
-                              {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
-                              <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                              <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                              {highwayInfo.highwayName && <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                              <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                             </div>
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+                  {detailsForm.isHighwayRestaurant !== true && (
+                    <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-md text-slate-700 text-xs">
+                      Normal restaurant selected. Highway detection is skipped.
                     </div>
                   )}
 
@@ -972,47 +1312,104 @@ export default function EditRestaurant() {
                   )}
                 </div>
 
+                <div>
+                  <Label className="text-xs text-gray-700">Primary contact number*</Label>
+                  <Input
+                    value={detailsForm.primaryContactNumber}
+                    onChange={(e) => setDetailsForm((p) => ({ ...p, primaryContactNumber: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Restaurant's primary contact number"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-700">Area / Sector / Locality*</Label>
+                  <Input
+                    value={locationForm.area}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, area: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-700">City*</Label>
+                  <Input
+                    value={locationForm.city}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, city: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-700">Shop no. / building no.</Label>
+                  <Input
+                    value={locationForm.addressLine1}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, addressLine1: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Shop no. / building no. (optional)"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-700">Floor / tower</Label>
+                  <Input
+                    value={locationForm.addressLine2}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, addressLine2: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Floor / tower (optional)"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-700">State</Label>
+                  <Input
+                    value={locationForm.state}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, state: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-700">Pin code</Label>
+                  <Input
+                    value={locationForm.pincode}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, pincode: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                  />
+                </div>
                 <div className="md:col-span-2">
-                  <Label>Formatted Address</Label>
-                  <Input value={locationForm.formattedAddress} readOnly className="mt-1 bg-slate-50" />
+                  <Label className="text-xs text-gray-700">Nearby landmark</Label>
+                  <Input
+                    value={locationForm.landmark}
+                    onChange={(e) => setLocationForm((p) => ({ ...p, landmark: e.target.value }))}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Nearby landmark (optional)"
+                  />
                 </div>
-                <div>
-                  <Label>Area</Label>
-                  <Input value={locationForm.area} readOnly className="mt-1 bg-slate-50" />
-                </div>
-                <div>
-                  <Label>City</Label>
-                  <Input value={locationForm.city} readOnly className="mt-1 bg-slate-50" />
-                </div>
-                <div>
-                  <Label>State</Label>
-                  <Input value={locationForm.state} readOnly className="mt-1 bg-slate-50" />
-                </div>
-                <div>
-                  <Label>Pincode</Label>
-                  <Input value={locationForm.pincode} readOnly className="mt-1 bg-slate-50" />
-                </div>
+                {detailsForm.isHighwayRestaurant === true && (
+                <>
                 <div className="md:col-span-2">
-                  <Label>Road / Highway name</Label>
+                  <Label className="text-xs text-gray-700">{HIGHWAY_DETECTION_COPY.roadFieldLabel}</Label>
                   <Input
                     value={locationForm.roadName || ""}
                     onChange={(e) => {
                       setIsRoadNameDirty(true)
                       setLocationForm((p) => ({ ...p, roadName: e.target.value }))
                     }}
-                    className="mt-1"
-                    placeholder="Auto-detected road / highway"
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Auto-detected road name"
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">This is auto-filled from the detected NH / SH and you can still edit it if needed.</p>
+                  <p className="text-[11px] text-gray-500 mt-1">This keeps the actual road or street name near the restaurant.</p>
                 </div>
-                <div className="md:col-span-2">
-                  <Label>Landmark</Label>
+                <div>
+                  <Label className="text-xs text-gray-700">NH / SH reference</Label>
                   <Input
-                    value={locationForm.landmark}
-                    onChange={(e) => setLocationForm((p) => ({ ...p, landmark: e.target.value }))}
-                    className="mt-1"
+                    value={locationForm.highwayRef || ""}
+                    onChange={(e) => {
+                      setIsHighwayRefDirty(true)
+                      setLocationForm((p) => ({ ...p, highwayRef: e.target.value.toUpperCase() }))
+                    }}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Auto-filled if road is NH/SH"
                   />
+                  <p className="text-[11px] text-gray-500 mt-1">Examples: `NH-52`, `SH-27`. Leave empty for normal roads.</p>
                 </div>
+                </>
+                )}
               </div>
             </section>
           </div>

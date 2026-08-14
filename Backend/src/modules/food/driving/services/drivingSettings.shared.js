@@ -6,13 +6,10 @@ export const DRIVING_SETTINGS_KEY = 'driving_mode_settings';
 
 export const DEFAULT_DRIVING_SETTINGS = {
     enabled: true,
-    locationRefreshIntervalMinutes: 5,
-    restaurantSearchRadiusKm: 50,
     highwayEntryRadiusMeters: 2000,
     googleRouteSearchRadiusKm: 1,
     googleRouteForwardRangeKm: 100,
     googleRouteBackwardBufferKm: 0.5,
-    storedHighwayMatchRadiusKm: 5,
     showAllRouteRestaurants: false
 };
 
@@ -34,14 +31,6 @@ const normalizeNonNegativeNumber = (value, fallback) => {
 export function normalizeDrivingSettings(rawSettings = {}) {
     return {
         enabled: rawSettings.enabled !== false,
-        locationRefreshIntervalMinutes: normalizePositiveNumber(
-            rawSettings.locationRefreshIntervalMinutes,
-            DEFAULT_DRIVING_SETTINGS.locationRefreshIntervalMinutes
-        ),
-        restaurantSearchRadiusKm: normalizePositiveNumber(
-            rawSettings.restaurantSearchRadiusKm,
-            DEFAULT_DRIVING_SETTINGS.restaurantSearchRadiusKm
-        ),
         highwayEntryRadiusMeters: normalizePositiveNumber(
             rawSettings.highwayEntryRadiusMeters,
             DEFAULT_DRIVING_SETTINGS.highwayEntryRadiusMeters
@@ -57,10 +46,6 @@ export function normalizeDrivingSettings(rawSettings = {}) {
         googleRouteBackwardBufferKm: normalizeNonNegativeNumber(
             rawSettings.googleRouteBackwardBufferKm,
             DEFAULT_DRIVING_SETTINGS.googleRouteBackwardBufferKm
-        ),
-        storedHighwayMatchRadiusKm: normalizePositiveNumber(
-            rawSettings.storedHighwayMatchRadiusKm,
-            DEFAULT_DRIVING_SETTINGS.storedHighwayMatchRadiusKm
         ),
         showAllRouteRestaurants: rawSettings.showAllRouteRestaurants === true
     };
@@ -85,22 +70,13 @@ export async function saveDrivingSettingsConfig(settings, adminId = null, option
 
     const payload = {
         enabled: mergedSettings.enabled !== false,
-        locationRefreshIntervalMinutes: Number(settings.locationRefreshIntervalMinutes ?? mergedSettings.locationRefreshIntervalMinutes),
-        restaurantSearchRadiusKm: Number(settings.restaurantSearchRadiusKm ?? mergedSettings.restaurantSearchRadiusKm),
         highwayEntryRadiusMeters: Number(settings.highwayEntryRadiusMeters ?? mergedSettings.highwayEntryRadiusMeters),
         googleRouteSearchRadiusKm: Number(settings.googleRouteSearchRadiusKm ?? mergedSettings.googleRouteSearchRadiusKm),
         googleRouteForwardRangeKm: Number(settings.googleRouteForwardRangeKm ?? mergedSettings.googleRouteForwardRangeKm),
         googleRouteBackwardBufferKm: Number(settings.googleRouteBackwardBufferKm ?? mergedSettings.googleRouteBackwardBufferKm),
-        storedHighwayMatchRadiusKm: Number(settings.storedHighwayMatchRadiusKm ?? mergedSettings.storedHighwayMatchRadiusKm),
         showAllRouteRestaurants: settings.showAllRouteRestaurants ?? mergedSettings.showAllRouteRestaurants
     };
 
-    if (!Number.isFinite(payload.locationRefreshIntervalMinutes) || payload.locationRefreshIntervalMinutes <= 0) {
-        throw new ValidationError('Refresh interval must be a positive number');
-    }
-    if (!Number.isFinite(payload.restaurantSearchRadiusKm) || payload.restaurantSearchRadiusKm <= 0) {
-        throw new ValidationError('Restaurant search range must be a positive number in KM');
-    }
     if (!Number.isFinite(payload.highwayEntryRadiusMeters) || payload.highwayEntryRadiusMeters <= 0) {
         throw new ValidationError('Highway entry radius must be a positive number in meters');
     }
@@ -112,9 +88,6 @@ export async function saveDrivingSettingsConfig(settings, adminId = null, option
     }
     if (!Number.isFinite(payload.googleRouteBackwardBufferKm) || payload.googleRouteBackwardBufferKm < 0) {
         throw new ValidationError('Google route backward tolerance must be zero or a positive number in KM');
-    }
-    if (!Number.isFinite(payload.storedHighwayMatchRadiusKm) || payload.storedHighwayMatchRadiusKm <= 0) {
-        throw new ValidationError('Stored highway match radius must be a positive number in KM');
     }
 
     await FoodSystemConfig.findOneAndUpdate(

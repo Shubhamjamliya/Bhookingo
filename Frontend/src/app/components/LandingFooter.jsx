@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Smartphone, Globe } from 'lucide-react';
 import { loadBusinessSettings } from "@food/utils/businessSettings";
 import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 
@@ -18,7 +17,10 @@ export default function LandingFooter() {
       try {
         const settings = await loadBusinessSettings();
         if (settings) {
-          const number = settings.phone?.number ? `${settings.phone?.countryCode || ''} ${settings.phone.number}`.trim() : "9999999999";
+          const number = settings.phone?.number
+            ? `${settings.phone?.countryCode || ''} ${settings.phone.number}`.trim()
+            : "9999999999";
+
           setContactInfo({
             email: settings.email || "bhookingo@gmail.com",
             mobile: number,
@@ -26,10 +28,11 @@ export default function LandingFooter() {
             logo: settings.logo?.url || settings.favicon?.url || bhookingoLogo
           });
         }
-      } catch (error) {
+      } catch (_error) {
         // Fallback silently
       }
     };
+
     fetchSettings();
   }, []);
 
@@ -38,29 +41,27 @@ export default function LandingFooter() {
   };
 
   const handleExploreWebClick = () => {
-    navigate("/food/user");
+    navigate("/user/auth/login");
   };
 
   const handleDriveModeClick = () => {
-    navigate("/food/user/driving");
+    navigate("/user/auth/login");
   };
 
   return (
     <footer id="contact" className="bg-[#0B1013] text-gray-400 py-16 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
-          {/* Col 1: Brand */}
           <div className="space-y-4 lg:col-span-1">
             <div className="flex items-center gap-2">
               <img src={contactInfo.logo} className="w-14 h-14 object-contain rounded-lg" alt={`${contactInfo.companyName} Logo`} />
               <span className="text-xl font-black text-white tracking-tight">{contactInfo.companyName}</span>
             </div>
             <p className="text-gray-400 leading-relaxed">
-              India's first highway takeaway & dine-in discovery app. Save time, eat quality food and travel better.
+              India's first highway takeaway and dine-in discovery app. Save time, eat better, and travel with more confidence.
             </p>
           </div>
 
-          {/* Col 2: Quick Links */}
           <div>
             <h4 className="text-white font-bold text-sm mb-4">Quick Links</h4>
             <ul className="space-y-2.5">
@@ -72,19 +73,17 @@ export default function LandingFooter() {
             </ul>
           </div>
 
-          {/* Col 3: For Travelers */}
           <div>
             <h4 className="text-white font-bold text-sm mb-4">For Travelers</h4>
             <ul className="space-y-2.5">
+              <li><button onClick={handleExploreWebClick} className="hover:text-white transition-colors">Browse on Web</button></li>
               <li><button onClick={handleExploreWebClick} className="hover:text-white transition-colors">Search Restaurants</button></li>
               <li><button onClick={handleExploreWebClick} className="hover:text-white transition-colors">Takeaway</button></li>
-              <li><button onClick={handleExploreWebClick} className="hover:text-white transition-colors">Dine-in</button></li>
-              <li><button onClick={handleDriveModeClick} className="hover:text-white transition-colors">Route Guide</button></li>
+              <li><button onClick={handleDriveModeClick} className="hover:text-white transition-colors">Drive Mode</button></li>
               <li><Link to="/how-it-works" className="hover:text-white transition-colors">FAQs</Link></li>
             </ul>
           </div>
 
-          {/* Col 4: Support */}
           <div>
             <h4 className="text-white font-bold text-sm mb-4">Support</h4>
             <ul className="space-y-2.5">
@@ -96,7 +95,6 @@ export default function LandingFooter() {
             </ul>
           </div>
 
-          {/* Col 5: Download App */}
           <div>
             <h4 className="text-white font-bold text-sm mb-4">Download App</h4>
             <div className="space-y-2.5">
@@ -105,32 +103,32 @@ export default function LandingFooter() {
                 className="w-full bg-white/10 hover:bg-white/20 text-white p-2.5 rounded-lg flex items-center gap-3 transition-colors border border-white/10"
               >
                 <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="none">
-                  <path d="M3.25 2.3c-.15.15-.25.38-.25.68v18.04c0 .3.1.53.25.68l.08.08L13.5 12.18v-.18L3.33 2.22l-.08.08z" fill="url(#footerPlay1)"/>
-                  <path d="M16.89 15.63l-3.39-3.39v-.18l3.39-3.39.08.05 4.01 2.28c1.15.65 1.15 1.73 0 2.38l-4.01 2.28-.08-.03z" fill="url(#footerPlay2)"/>
-                  <path d="M13.59 12.09L3.33 22.25c.38.4 1 .33 1.55.02l12.01-6.84-3.3-3.34z" fill="url(#footerPlay3)"/>
-                  <path d="M13.59 12.09l3.3-3.34-12.01-6.84c-.55-.31-1.17-.38-1.55.02l10.26 10.16z" fill="url(#footerPlay4)"/>
+                  <path d="M3.25 2.3c-.15.15-.25.38-.25.68v18.04c0 .3.1.53.25.68l.08.08L13.5 12.18v-.18L3.33 2.22l-.08.08z" fill="url(#footerPlay1)" />
+                  <path d="M16.89 15.63l-3.39-3.39v-.18l3.39-3.39.08.05 4.01 2.28c1.15.65 1.15 1.73 0 2.38l-4.01 2.28-.08-.03z" fill="url(#footerPlay2)" />
+                  <path d="M13.59 12.09L3.33 22.25c.38.4 1 .33 1.55.02l12.01-6.84-3.3-3.34z" fill="url(#footerPlay3)" />
+                  <path d="M13.59 12.09l3.3-3.34-12.01-6.84c-.55-.31-1.17-.38-1.55.02l10.26 10.16z" fill="url(#footerPlay4)" />
                   <defs>
                     <linearGradient id="footerPlay1" x1="10.23" y1="2.46" x2="-2.04" y2="14.73" gradientUnits="userSpaceOnUse">
-                      <stop offset="0" stopColor="#00a0ff"/>
-                      <stop offset="0.01" stopColor="#00a1ff"/>
-                      <stop offset="0.26" stopColor="#00beff"/>
-                      <stop offset="0.57" stopColor="#00d7ff"/>
-                      <stop offset="0.86" stopColor="#00e6ff"/>
-                      <stop offset="1" stopColor="#00ebff"/>
+                      <stop offset="0" stopColor="#00a0ff" />
+                      <stop offset="0.01" stopColor="#00a1ff" />
+                      <stop offset="0.26" stopColor="#00beff" />
+                      <stop offset="0.57" stopColor="#00d7ff" />
+                      <stop offset="0.86" stopColor="#00e6ff" />
+                      <stop offset="1" stopColor="#00ebff" />
                     </linearGradient>
                     <linearGradient id="footerPlay2" x1="22.27" y1="12" x2="3.19" y2="12" gradientUnits="userSpaceOnUse">
-                      <stop offset="0" stopColor="#ff3a44"/>
-                      <stop offset="1" stopColor="#c31162"/>
+                      <stop offset="0" stopColor="#ff3a44" />
+                      <stop offset="1" stopColor="#c31162" />
                     </linearGradient>
                     <linearGradient id="footerPlay3" x1="16.5" y1="15.89" x2="-2.26" y2="34.65" gradientUnits="userSpaceOnUse">
-                      <stop offset="0" stopColor="#00e676"/>
-                      <stop offset="1" stopColor="#12c37d"/>
+                      <stop offset="0" stopColor="#00e676" />
+                      <stop offset="1" stopColor="#12c37d" />
                     </linearGradient>
                     <linearGradient id="footerPlay4" x1="10.45" y1="10.15" x2="-2.25" y2="-2.55" gradientUnits="userSpaceOnUse">
-                      <stop offset="0" stopColor="#ffe000"/>
-                      <stop offset="0.4" stopColor="#ffca00"/>
-                      <stop offset="0.77" stopColor="#ff9f00"/>
-                      <stop offset="1" stopColor="#ff7a00"/>
+                      <stop offset="0" stopColor="#ffe000" />
+                      <stop offset="0.4" stopColor="#ffca00" />
+                      <stop offset="0.77" stopColor="#ff9f00" />
+                      <stop offset="1" stopColor="#ff7a00" />
                     </linearGradient>
                   </defs>
                 </svg>

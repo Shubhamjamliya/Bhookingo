@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Compass, Loader2, Navigation, AlertTriangle, List, Map, ShieldAlert, CheckCircle, Clock, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Share2, Heart, Wifi, Star, Car, ShieldCheck, BellRing, MapPin } from "lucide-react";
 import { toast } from "sonner";
@@ -17,7 +18,7 @@ import { extractImages } from "@food/utils/common";
 import JourneyPlanner from "./components/JourneyPlanner";
 import { FACILITIES_CONFIG } from "../../../utils/facilitiesConfig";
 import { DrivingModeSkeleton } from "@food/components/ui/loading-skeletons";
-import { useQueryClient } from "@tanstack/react-query";
+import { getFacilityAvailability, getFacilityRatingEntry, getOverallFacilityRatingEntry } from "@food/utils/facilityHelpers";
 
 const readSessionJson = (key, fallback = null) => {
   try {
@@ -39,6 +40,7 @@ const NEXT_STOP_ALERT_DISTANCE_KM = 2.5;
 const NEXT_STOP_ALERT_COOLDOWN_MS = 90000;
 const PASSED_RESTAURANT_BUFFER_KM = 0.8;
 const ROUTE_SNAP_MAX_DISTANCE_KM = 3;
+const DRIVING_REFRESH_INTERVAL_MINUTES = 5;
 
 const buildRouteCacheKey = (journeyLike) => {
   if (!journeyLike) return "";
@@ -76,9 +78,9 @@ const getDistanceBetweenKm = (from, to) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return earthRadiusKm * c;
 };
@@ -283,7 +285,7 @@ export default function DrivingMode() {
         } else if (res?.data?.data?.data && Array.isArray(res.data.data.data)) {
           orders = res.data.data.data;
         }
-        
+
         const activeIds = new Set();
         orders.forEach(order => {
           const status = (order.status || order.orderStatus || "").toLowerCase();
@@ -442,15 +444,15 @@ export default function DrivingMode() {
   const handleTouchEnd = () => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
-    
+
     const deltaY = touchMoveYRef.current - touchStartYRef.current;
     if (Math.abs(deltaY) > 10) {
       suppressHandleClickRef.current = true;
     }
-    
+
     // Check if the scroll container is scrolled down. If it is, and the user is swiping down, we shouldn't collapse the drawer.
     const isScrolledDown = scrollContainerRef.current && scrollContainerRef.current.scrollTop > 0;
-    
+
     if (deltaY < -18) {
       setIsDrawerExpanded(true);
     } else if (deltaY > 18) {
@@ -467,7 +469,7 @@ export default function DrivingMode() {
   // View States
   const [viewMode, setViewMode] = useState("map"); // "map" | "list"
   const [activeFacilityFilter, setActiveFacilityFilter] = useState("all");
-  const [activeDistanceLimit, setActiveDistanceLimit] = useState(50); // in KM
+  const [activeDistanceLimit, setActiveDistanceLimit] = useState(null); // null means show all returned route restaurants
   const [sortBy, setSortBy] = useState("distance"); // "distance" | "eta" | "rating"
 
   // Details Modal State
@@ -480,6 +482,29 @@ export default function DrivingMode() {
 
   const profileContext = useProfile?.() || {};
   const { isFavorite, addFavorite, removeFavorite } = profileContext;
+  const distanceFilterOptions = React.useMemo(() => {
+    if (!settings) return [];
+
+    const options = [];
+    if (settings.showAllRouteRestaurants === true) {
+      options.push(null);
+    }
+
+    const numericOptions = [Number(settings.googleRouteForwardRangeKm)]
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .filter((value, index, array) => array.indexOf(value) === index)
+      .sort((a, b) => a - b);
+
+    options.push(...numericOptions);
+    return options;
+  }, [settings]);
+
+  useEffect(() => {
+    if (!distanceFilterOptions.length) return;
+    if (activeDistanceLimit === null && distanceFilterOptions.includes(null)) return;
+    if (activeDistanceLimit !== null && distanceFilterOptions.includes(activeDistanceLimit)) return;
+    setActiveDistanceLimit(distanceFilterOptions[0] ?? null);
+  }, [distanceFilterOptions, activeDistanceLimit]);
 
   useEffect(() => {
     if (!selectedRestaurant) {
@@ -587,13 +612,13 @@ export default function DrivingMode() {
     const safeDistance = Number.isFinite(distanceKm)
       ? distanceKm.toFixed(distanceKm >= 10 ? 0 : 1)
       : null;
-      
+
     const spokenMessage = isOrdered
       ? (safeDistance ? `Order pickup alert. ${safeName} is ${safeDistance} kilometers ahead.` : `Order pickup alert. ${safeName} is ahead on your route.`)
       : (safeDistance ? `Nearby restaurant alert. ${safeName} is ${safeDistance} kilometers ahead.` : `Nearby restaurant alert. ${safeName} is ahead on your route.`);
 
     setIsNextStopAlertOpen(true);
-    
+
     // Fallback visible toast in case the custom UI is missed or hidden
     toast(isOrdered ? `Order Pickup: ${safeName}` : `Next Stop: ${safeName}`, {
       description: safeDistance ? `is ${safeDistance} km ahead on your route` : 'is ahead on your route',
@@ -666,7 +691,6 @@ export default function DrivingMode() {
       if (res?.data?.success) {
         const s = res.data.data;
         setSettings(s);
-        if (s.rangeKm) setActiveDistanceLimit(s.rangeKm);
         if (s.enabled === false) {
           setSettingsError("disabled");
           setStatus("disabled");
@@ -946,14 +970,14 @@ export default function DrivingMode() {
 
   // Periodic polling interval
   useEffect(() => {
-    if (!currentLocation || !settings?.refreshInterval || status !== "AVAILABLE") return;
+    if (!currentLocation || status !== "AVAILABLE") return;
 
     const intervalId = setInterval(() => {
       fetchRestaurantsAhead(false);
-    }, settings.refreshInterval * 60 * 1000);
+    }, DRIVING_REFRESH_INTERVAL_MINUTES * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [currentLocation?.latitude, currentLocation?.longitude, settings?.refreshInterval, fetchRestaurantsAhead, status]);
+  }, [currentLocation?.latitude, currentLocation?.longitude, fetchRestaurantsAhead, status]);
 
   // Handle Retry button
   const handleRetry = async () => {
@@ -1062,9 +1086,13 @@ export default function DrivingMode() {
 
     let list = [...resultData.restaurants];
 
-    // Render all visible restaurants returned by backend (up to 100 km)
+    if (Number.isFinite(activeDistanceLimit) && activeDistanceLimit > 0) {
+      list = list.filter((restaurant) => {
+        const distanceKm = Number(restaurant?.distanceKm);
+        return Number.isFinite(distanceKm) && distanceKm <= activeDistanceLimit;
+      });
+    }
 
-    // 2. Facilities tags filter
     if (activeFacilityFilter !== "all") {
       if (activeFacilityFilter === "veg") {
         list = list.filter((r) => r.pureVegRestaurant === true);
@@ -1073,7 +1101,6 @@ export default function DrivingMode() {
       }
     }
 
-    // 3. Sorting
     list.sort((a, b) => {
       if (sortBy === "eta") return a.etaMinutes - b.etaMinutes;
       if (sortBy === "rating") return b.rating - a.rating;
@@ -1081,7 +1108,48 @@ export default function DrivingMode() {
     });
 
     return list;
-  }, [resultData?.restaurants, activeFacilityFilter, sortBy]);
+  }, [resultData?.restaurants, activeDistanceLimit, activeFacilityFilter, sortBy]);
+
+  useEffect(() => {
+    if (!Array.isArray(resultData?.restaurants)) return;
+    console.groupCollapsed(`[DrivingMode][Browser] API restaurants (${resultData.restaurants.length})`);
+    console.table(
+      resultData.restaurants.map((restaurant, index) => ({
+        index: index + 1,
+        id: restaurant?._id || restaurant?.id || "-",
+        name: restaurant?.restaurantName || restaurant?.name || "-",
+        highwayRef: restaurant?.highwayRef || restaurant?.highwayName || "-",
+        distanceKm: restaurant?.distanceKm,
+        etaMinutes: restaurant?.etaMinutes,
+        routeOffsetKm: restaurant?.routeOffsetKm,
+        city: restaurant?.city || "-",
+        isHighwayRestaurant: restaurant?.isHighwayRestaurant,
+      }))
+    );
+    console.groupEnd();
+  }, [resultData?.restaurants]);
+
+  useEffect(() => {
+    console.groupCollapsed(`[DrivingMode][Browser] Filtered restaurants (${filteredRestaurants.length})`);
+    console.log("filters", {
+      activeDistanceLimit,
+      activeFacilityFilter,
+      sortBy,
+    });
+    console.table(
+      filteredRestaurants.map((restaurant, index) => ({
+        index: index + 1,
+        id: restaurant?._id || restaurant?.id || "-",
+        name: restaurant?.restaurantName || restaurant?.name || "-",
+        highwayRef: restaurant?.highwayRef || restaurant?.highwayName || "-",
+        distanceKm: restaurant?.distanceKm,
+        etaMinutes: restaurant?.etaMinutes,
+        routeOffsetKm: restaurant?.routeOffsetKm,
+        city: restaurant?.city || "-",
+      }))
+    );
+    console.groupEnd();
+  }, [filteredRestaurants, activeDistanceLimit, activeFacilityFilter, sortBy]);
 
   const effectiveTravelPosition = React.useMemo(() => liveTravelPosition || (journey?.origin ? { lat: journey.origin.lat, lng: journey.origin.lng } : currentLocation), [liveTravelPosition, journey?.origin?.lat, journey?.origin?.lng, currentLocation]);
   const activeRouteMetrics = React.useMemo(() => buildRoutePathMetrics(getJourneyActivePath(journey)), [journey]);
@@ -1090,7 +1158,7 @@ export default function DrivingMode() {
     if (!activeRouteMetrics || !effectiveTravelPosition) return filteredRestaurants[0] || null;
 
     const userProgress = getRouteProgressSnapshot(activeRouteMetrics, effectiveTravelPosition);
-    if (!userProgress) return filteredRestaurants[0] || null;
+    if (!userProgress) return null;
 
     const rankedStops = filteredRestaurants
       .map((restaurant) => {
@@ -1118,8 +1186,21 @@ export default function DrivingMode() {
     const firstAheadStop = rankedStops.find(({ routeProgress, liveDistanceKm }) => (routeProgress.distanceAlongKm - userProgress.distanceAlongKm) >= -PASSED_RESTAURANT_BUFFER_KM || liveDistanceKm < 1.2);
     if (firstAheadStop) return firstAheadStop.restaurant;
 
-    return rankedStops[0]?.restaurant || filteredRestaurants[0] || null;
+    return rankedStops[0]?.restaurant || null;
   }, [filteredRestaurants, activeRouteMetrics, effectiveTravelPosition]);
+
+  useEffect(() => {
+    console.log("[DrivingMode][Browser] Next stop", nextStop
+      ? {
+        id: nextStop?._id || nextStop?.id || "-",
+        name: nextStop?.restaurantName || nextStop?.name || "-",
+        highwayRef: nextStop?.highwayRef || nextStop?.highwayName || "-",
+        distanceKm: nextStop?.distanceKm,
+        etaMinutes: nextStop?.etaMinutes,
+        routeOffsetKm: nextStop?.routeOffsetKm,
+      }
+      : null);
+  }, [nextStop]);
   const nextStopId = nextStop?._id || nextStop?.id || nextStop?.restaurantSlug || null;
   const nextStopLiveDistanceKm = getDistanceBetweenKm(effectiveTravelPosition, getRestaurantLatLng(nextStop));
   const nextStopLiveEtaMinutes = React.useMemo(() => {
@@ -1148,8 +1229,6 @@ export default function DrivingMode() {
     })
     : []), [journey?.availableRoutes]);
   const hasMultipleRoutes = visibleRouteOptions.length > 1;
-  const rangeLimit = settings?.restaurantSearchRadiusKm || 50;
-
   useEffect(() => {
     if (!journey || status !== "AVAILABLE") return undefined;
     const intervalId = window.setInterval(() => {
@@ -1284,7 +1363,7 @@ export default function DrivingMode() {
               const alertTitleText = isOrderedStop ? "Order Pickup" : "Next Restaurant";
               const alertButtonBg = isOrderedStop ? "border-green-300 bg-green-500 text-white" : "border-orange-300 bg-orange-500 text-white";
               const alertButtonHover = isOrderedStop ? "hover:border-green-200 hover:text-green-600" : "hover:border-orange-200 hover:text-orange-600";
-              
+
               return (
                 <>
                   <div className={`overflow-hidden rounded-2xl border ${alertBorderColor} bg-white/95 shadow-lg backdrop-blur transition-all duration-300 dark:bg-[#151515]/95 ${isNextStopAlertOpen ? "max-w-[240px] translate-x-0 opacity-100" : "max-w-0 translate-x-6 opacity-0"}`}>
@@ -1361,77 +1440,95 @@ export default function DrivingMode() {
       </Dialog>
 
       {/* Main Map or List Container */}
-      <div className="flex-1 w-full relative min-h-0">
-        {viewMode === "map" ? (
-          <DrivingMap
-            userLocation={journey?.origin ? { latitude: journey.origin.lat, longitude: journey.origin.lng } : currentLocation}
-            destinationLocation={journey?.destination}
-            journey={journey}
-            onRouteCalculated={handleRouteCalculated}
-            heading={heading}
-            highway={resultData?.highway}
-            restaurants={filteredRestaurants}
-            onRestaurantClick={setSelectedRestaurant}
-            onRouteSelect={handleSelectRouteOption}
-            onUserPositionChange={handleLiveTravelPositionChange}
-            recenterBottomOffset={isDrawerExpanded ? "hidden" : "bottom-[230px]"}
-            orderedRestaurantIds={orderedRestaurantIds}
-          />
-        ) : (
-          <div className="w-full h-full overflow-y-auto px-4 pb-20 pt-4 space-y-4 bg-gray-50/50 dark:bg-[#0a0a0a] pb-[calc(100px+env(safe-area-inset-bottom))]">
-            {/* Top Search distance filter & sorting */}
-            <div className="flex items-center justify-between gap-4 pb-2">
-              {/* Range Filters */}
-              <div className="flex gap-1.5 overflow-x-auto">
-                {[5, 10, 20, 50].map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setActiveDistanceLimit(d)}
-                    className={`px-3 py-1 text-xs font-bold rounded-full border transition-all shrink-0 ${activeDistanceLimit === d
-                      ? "bg-orange-600 text-white border-orange-600 shadow-sm"
-                      : "bg-white text-gray-600 border-gray-200 dark:bg-neutral-900 dark:text-neutral-400"
-                      }`}
-                  >
-                    {d} km
-                  </button>
-                ))}
+      <div className="flex-1 w-full relative min-h-0 overflow-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          {viewMode === "map" ? (
+            <motion.div
+              key="driving-map-view"
+              className="absolute inset-0"
+              initial={{ opacity: 0, y: 18, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -14, scale: 0.99 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <DrivingMap
+                userLocation={journey?.origin ? { latitude: journey.origin.lat, longitude: journey.origin.lng } : currentLocation}
+                destinationLocation={journey?.destination}
+                journey={journey}
+                onRouteCalculated={handleRouteCalculated}
+                heading={heading}
+                highway={resultData?.highway}
+                restaurants={filteredRestaurants}
+                onRestaurantClick={setSelectedRestaurant}
+                onRouteSelect={handleSelectRouteOption}
+                onUserPositionChange={handleLiveTravelPositionChange}
+                recenterBottomOffset={isDrawerExpanded ? "hidden" : "bottom-[230px]"}
+                orderedRestaurantIds={orderedRestaurantIds}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="driving-list-view"
+              className="absolute inset-0 w-full h-full overflow-y-auto px-4 pt-4 space-y-4 bg-gray-50/50 dark:bg-[#0a0a0a] pb-[calc(100px+env(safe-area-inset-bottom))]"
+              initial={{ opacity: 0, y: 18, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -14, scale: 0.99 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {/* Top Search distance filter & sorting */}
+              <div className="flex items-center justify-between gap-4 pb-2">
+                {/* Range Filters */}
+                <div className="flex gap-1.5 overflow-x-auto">
+                  {distanceFilterOptions.map((d) => (
+                    <button
+                      key={d ?? "all"}
+                      onClick={() => setActiveDistanceLimit(d)}
+                      className={`px-3 py-1 text-xs font-bold rounded-full border transition-all shrink-0 ${activeDistanceLimit === d
+                        ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                        : "bg-white text-gray-600 border-gray-200 dark:bg-neutral-900 dark:text-neutral-400"
+                        }`}
+                    >
+                      {d === null ? "All" : `${d} km`}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sorting Select */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="text-xs font-bold border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 dark:text-white px-2 py-1 rounded-lg focus:outline-none"
+                >
+                  <option value="distance">Distance</option>
+                  <option value="eta">ETA</option>
+                  <option value="rating">Rating</option>
+                </select>
               </div>
 
-              {/* Sorting Select */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="text-xs font-bold border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 dark:text-white px-2 py-1 rounded-lg focus:outline-none"
-              >
-                <option value="distance">Distance</option>
-                <option value="eta">ETA</option>
-                <option value="rating">Rating</option>
-              </select>
-            </div>
-
-            {/* List Cards */}
-            <div className="space-y-3">
-              {filteredRestaurants.length > 0 ? (
-              filteredRestaurants.map((res) => (
-                <DrivingRestaurantCard
-                  key={res._id}
-                  restaurant={res}
-                  onClick={() => setSelectedRestaurant(res)}
-                />
-              ))
-            ) : (
-              <div className="rounded-3xl border border-dashed border-gray-200 bg-white/90 px-4 py-6 text-center shadow-sm dark:border-neutral-800 dark:bg-neutral-900/90">
-                <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                  No restaurants found on this route right now
-                </div>
-                <div className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
-                  The map is still active. Try another route, move further ahead, or adjust driving mode settings.
-                </div>
+              {/* List Cards */}
+              <div className="space-y-3">
+                {filteredRestaurants.length > 0 ? (
+                  filteredRestaurants.map((res) => (
+                    <DrivingRestaurantCard
+                      key={res._id}
+                      restaurant={res}
+                      onClick={() => setSelectedRestaurant(res)}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-gray-200 bg-white/90 px-4 py-6 text-center shadow-sm dark:border-neutral-800 dark:bg-neutral-900/90">
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                      No restaurants found on this route right now
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500 dark:text-neutral-400">
+                      The map is still active. Try another route, move further ahead, or adjust driving mode settings.
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Floating Bottom Toggle Control */}
@@ -1503,14 +1600,14 @@ export default function DrivingMode() {
           />
 
           {/* Restaurants List Container */}
-          <div 
+          <div
             ref={scrollContainerRef}
             className={`flex-1 px-4 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isDrawerExpanded ? "overflow-y-auto pb-28 filters-scroll-hide" : "pb-4 overflow-hidden"}`}
           >
             {/* Header Row */}
             <div className="flex items-center justify-between py-3 border-b dark:border-neutral-900/60 mb-3 bg-white dark:bg-[#111111] sticky top-0 z-10">
               <h3 className="font-extrabold text-sm text-gray-900 dark:text-white">
-                Restaurants Ahead ({activeDistanceLimit} km)
+                Restaurants Ahead ({activeDistanceLimit === null ? "All" : `${activeDistanceLimit} km`})
               </h3>
 
               {/* Sort Select */}
@@ -1561,251 +1658,251 @@ export default function DrivingMode() {
               <div className="relative h-52 bg-neutral-100 dark:bg-neutral-900">
                 <RestaurantImageCarousel restaurant={displayRestaurant} />
 
-              {/* Back Arrow button */}
-              <button
-                onClick={() => setSelectedRestaurant(null)}
-                className="absolute top-4 left-4 z-20 w-9 h-9 bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-gray-800 dark:text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all border-none focus:outline-none cursor-pointer"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-
-              {/* Share & Favorite buttons */}
-              <div className="absolute top-4 right-4 z-20 flex gap-2">
+                {/* Back Arrow button */}
                 <button
-                  onClick={handleShare}
-                  title="Share restaurant"
-                  className="w-9 h-9 bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-gray-800 dark:text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all border-none focus:outline-none cursor-pointer"
+                  onClick={() => setSelectedRestaurant(null)}
+                  className="absolute top-4 left-4 z-20 w-9 h-9 bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-gray-800 dark:text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all border-none focus:outline-none cursor-pointer"
                 >
-                  <Share2 className="w-4.5 h-4.5 text-gray-700 dark:text-gray-200" />
+                  <ArrowLeft className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={handleToggleFavorite}
-                  title={isFavourited ? "Remove from favorites" : "Add to favorites"}
-                  className="w-9 h-9 bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-gray-800 dark:text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all border-none focus:outline-none cursor-pointer"
-                >
-                  <Heart className={`w-4.5 h-4.5 ${isFavourited ? "text-red-500 fill-current" : "text-gray-600 dark:text-gray-300"}`} />
-                </button>
-              </div>
-            </div>
 
-            {/* Content Details Area */}
-            <div className="p-5 space-y-4 max-h-[calc(100vh-280px)] overflow-y-auto filters-scroll-hide">
-
-              {/* Title & Status Row */}
-              <div className="flex justify-between items-start gap-2">
-                <div className="min-w-0">
-                  <h3 className="text-lg font-black text-gray-900 dark:text-white leading-tight flex items-center gap-1.5">
-                    {displayRestaurant.restaurantName}
-                    <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0 fill-current" />
-                  </h3>
-                  <p className="text-xs font-bold text-gray-400 dark:text-neutral-500 mt-1">
-                    {displayRestaurant.highwayRef}, {displayRestaurant.distanceKm} km Ahead
-                  </p>
-                </div>
-                <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                  <span className="text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full border border-green-200 text-green-700 bg-green-50/50 dark:bg-green-950/20 dark:border-green-900/40">
-                    Open
-                  </span>
-                  <span className="text-xs font-black text-orange-600 flex items-center gap-1">
-                    <Car className="w-3.5 h-3.5 text-orange-500 fill-current" />
-                    {displayRestaurant.etaMinutes} min
-                  </span>
+                {/* Share & Favorite buttons */}
+                <div className="absolute top-4 right-4 z-20 flex gap-2">
+                  <button
+                    onClick={handleShare}
+                    title="Share restaurant"
+                    className="w-9 h-9 bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-gray-800 dark:text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all border-none focus:outline-none cursor-pointer"
+                  >
+                    <Share2 className="w-4.5 h-4.5 text-gray-700 dark:text-gray-200" />
+                  </button>
+                  <button
+                    onClick={handleToggleFavorite}
+                    title={isFavourited ? "Remove from favorites" : "Add to favorites"}
+                    className="w-9 h-9 bg-white/90 dark:bg-neutral-900/90 hover:bg-white dark:hover:bg-neutral-900 text-gray-800 dark:text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-all border-none focus:outline-none cursor-pointer"
+                  >
+                    <Heart className={`w-4.5 h-4.5 ${isFavourited ? "text-red-500 fill-current" : "text-gray-600 dark:text-gray-300"}`} />
+                  </button>
                 </div>
               </div>
 
-              {/* Rating & Tag Info Chips */}
-              <div className="flex items-center flex-wrap gap-2 text-[10px] font-bold text-gray-500 dark:text-neutral-400">
-                {displayRestaurant.rating && displayRestaurant.rating > 0 ? (
-                  <>
-                    <div className="flex items-center gap-0.5 bg-green-700 text-white px-1.5 py-0.5 rounded shrink-0">
-                      <span>{displayRestaurant.rating.toFixed(1)}</span>
-                      <Star className="w-2.5 h-2.5 fill-current text-white" />
-                    </div>
-                    {displayRestaurant.totalRatings && (
-                      <span className="text-gray-400 dark:text-neutral-500">({displayRestaurant.totalRatings} Ratings)</span>
-                    )}
-                    <span className="text-gray-300 dark:text-neutral-800">•</span>
-                  </>
-                ) : null}
-                <span className="truncate max-w-[120px]">{displayRestaurant.cuisines?.length ? displayRestaurant.cuisines.join(", ") : "North Indian, Punjabi"}</span>
-                <span className="text-gray-300 dark:text-neutral-800">•</span>
-                <span>₹₹</span>
-                {displayRestaurant.facilities?.familyFriendly && (
-                  <>
-                    <span className="text-gray-300 dark:text-neutral-800">•</span>
-                    <span className="text-orange-600 dark:text-orange-400 font-extrabold flex items-center gap-1">
-                      <img src="/icons/familyfriendly.png" alt="Family Friendly" className="w-3.5 h-3.5 object-contain inline-block rounded-full" />
-                      Family Friendly
-                    </span>
-                  </>
-                )}
-              </div>
+              {/* Content Details Area */}
+              <div className="p-5 space-y-4 max-h-[calc(100vh-280px)] overflow-y-auto filters-scroll-hide">
 
-              {/* Facilities Grid (Render only active dynamic cards) */}
-              {(displayRestaurant.facilities?.parking ||
-                displayRestaurant.facilities?.washroom ||
-                displayRestaurant.facilities?.evCharging ||
-                displayRestaurant.facilities?.wifi) && (
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {/* Parking Card */}
-                    {displayRestaurant.facilities?.parking && (
-                      <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
-                        <img src="/icons/carparking.png" alt="Parking" className="w-5 h-5 object-contain rounded-full" />
-                        <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Parking</span>
-                      </div>
-                    )}
-
-                    {/* Washroom Card */}
-                    {displayRestaurant.facilities?.washroom && (
-                      <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
-                        <img src="/icons/washroom.png" alt="Washroom" className="w-5 h-5 object-contain rounded-full" />
-                        <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Washroom</span>
-                      </div>
-                    )}
-
-                    {/* EV Charging Card */}
-                    {displayRestaurant.facilities?.evCharging && (
-                      <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
-                        <img src="/icons/evcharging.png" alt="EV Charging" className="w-5 h-5 object-contain rounded-full" />
-                        <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">EV Charging</span>
-                      </div>
-                    )}
-
-                    {/* Wi-Fi Card */}
-                    {displayRestaurant.facilities?.wifi && (
-                      <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
-                        <img src="/icons/wifi.png" alt="Wi-Fi" className="w-5 h-5 object-contain rounded-full" />
-                        <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Wi-Fi</span>
-                      </div>
-                    )}
+                {/* Title & Status Row */}
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0">
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white leading-tight flex items-center gap-1.5">
+                      {displayRestaurant.restaurantName}
+                      <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0 fill-current" />
+                    </h3>
+                    <p className="text-xs font-bold text-gray-400 dark:text-neutral-500 mt-1">
+                      {displayRestaurant.highwayRef}, {displayRestaurant.distanceKm} km Ahead
+                    </p>
                   </div>
-                )}
+                  <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                    <span className="text-[10px] uppercase font-black px-2.5 py-0.5 rounded-full border border-green-200 text-green-700 bg-green-50/50 dark:bg-green-950/20 dark:border-green-900/40">
+                      Open
+                    </span>
+                    <span className="text-xs font-black text-orange-600 flex items-center gap-1">
+                      <Car className="w-3.5 h-3.5 text-orange-500 fill-current" />
+                      {displayRestaurant.etaMinutes} min
+                    </span>
+                  </div>
+                </div>
 
-              {/* Facilities Ratings Section */}
-              {(() => {
-                const renderStars = (rating) => {
-                  const rounded = Math.round(rating || 0);
-                  return (
-                    <div className="flex items-center gap-0.5 shrink-0">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          className={`w-3 h-3 ${s <= rounded
-                              ? "fill-amber-400 text-amber-400"
-                              : "text-gray-300 dark:text-neutral-700 fill-none stroke-[1.5]"
-                            }`}
-                        />
-                      ))}
-                    </div>
-                  );
-                };
+                {/* Rating & Tag Info Chips */}
+                <div className="flex items-center flex-wrap gap-2 text-[10px] font-bold text-gray-500 dark:text-neutral-400">
+                  {displayRestaurant.rating && displayRestaurant.rating > 0 ? (
+                    <>
+                      <div className="flex items-center gap-0.5 bg-green-700 text-white px-1.5 py-0.5 rounded shrink-0">
+                        <span>{displayRestaurant.rating.toFixed(1)}</span>
+                        <Star className="w-2.5 h-2.5 fill-current text-white" />
+                      </div>
+                      {displayRestaurant.totalRatings && (
+                        <span className="text-gray-400 dark:text-neutral-500">({displayRestaurant.totalRatings} Ratings)</span>
+                      )}
+                      <span className="text-gray-300 dark:text-neutral-800">•</span>
+                    </>
+                  ) : null}
+                  <span className="truncate max-w-[120px]">{displayRestaurant.cuisines?.length ? displayRestaurant.cuisines.join(", ") : "North Indian, Punjabi"}</span>
+                  <span className="text-gray-300 dark:text-neutral-800">•</span>
+                  <span>₹₹</span>
+                  {getFacilityAvailability(displayRestaurant.facilities, "familyFriendly") && (
+                    <>
+                      <span className="text-gray-300 dark:text-neutral-800">•</span>
+                      <span className="text-orange-600 dark:text-orange-400 font-extrabold flex items-center gap-1">
+                        <img src="/icons/familyfriendly.png" alt="Family Friendly" className="w-3.5 h-3.5 object-contain inline-block rounded-full" />
+                        Family Friendly
+                      </span>
+                    </>
+                  )}
+                </div>
 
-                const overallFacilityRatingObj = displayRestaurant.facilityRatings?.overall;
-                const overallFacilityAvg = overallFacilityRatingObj?.average || 0;
-                const overallFacilityCount = overallFacilityRatingObj?.count || 0;
-
-                const restaurantFacilities = displayRestaurant.facilities || {};
-                const activeFacilities = FACILITIES_CONFIG.filter(f => restaurantFacilities[f.key] === true);
-
-                if (activeFacilities.length === 0) return null;
-
-                return (
-                  <div className="bg-gray-50/20 dark:bg-neutral-900/10 p-3 rounded-2xl border border-gray-100 dark:border-neutral-900 space-y-3">
-                    {/* Overall Facilities Header Summary */}
-                    <div className="flex justify-between items-center pb-2 border-b border-gray-150 dark:border-neutral-900/60">
-                      <span className="text-xs font-black text-gray-900 dark:text-white">Facilities Ratings</span>
-                      {overallFacilityCount > 0 ? (
-                        <div className="flex items-center gap-2">
-                          {renderStars(overallFacilityAvg)}
-                          <span className="text-xs font-black text-gray-800 dark:text-neutral-200">{overallFacilityAvg.toFixed(1)}</span>
-                          <span className="text-[9px] font-bold text-gray-400 dark:text-neutral-500">Based on {overallFacilityCount} rating{overallFacilityCount > 1 ? 's' : ''}</span>
+                {/* Facilities Grid (Render only active dynamic cards) */}
+                {(getFacilityAvailability(displayRestaurant.facilities, "parking") ||
+                  getFacilityAvailability(displayRestaurant.facilities, "washroom") ||
+                  getFacilityAvailability(displayRestaurant.facilities, "evCharging") ||
+                  getFacilityAvailability(displayRestaurant.facilities, "wifi")) && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {/* Parking Card */}
+                      {getFacilityAvailability(displayRestaurant.facilities, "parking") && (
+                        <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
+                          <img src="/icons/carparking.png" alt="Parking" className="w-5 h-5 object-contain rounded-full" />
+                          <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Parking</span>
                         </div>
-                      ) : (
-                        <span className="text-[10px] font-bold text-gray-400">No ratings yet</span>
+                      )}
+
+                      {/* Washroom Card */}
+                      {getFacilityAvailability(displayRestaurant.facilities, "washroom") && (
+                        <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
+                          <img src="/icons/washroom.png" alt="Washroom" className="w-5 h-5 object-contain rounded-full" />
+                          <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Washroom</span>
+                        </div>
+                      )}
+
+                      {/* EV Charging Card */}
+                      {getFacilityAvailability(displayRestaurant.facilities, "evCharging") && (
+                        <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
+                          <img src="/icons/evcharging.png" alt="EV Charging" className="w-5 h-5 object-contain rounded-full" />
+                          <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">EV Charging</span>
+                        </div>
+                      )}
+
+                      {/* Wi-Fi Card */}
+                      {getFacilityAvailability(displayRestaurant.facilities, "wifi") && (
+                        <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
+                          <img src="/icons/wifi.png" alt="Wi-Fi" className="w-5 h-5 object-contain rounded-full" />
+                          <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Wi-Fi</span>
+                        </div>
                       )}
                     </div>
+                  )}
 
-                    {/* Individual Facility Ratings */}
-                    <div className="space-y-2">
-                      {activeFacilities.map((fac) => {
-                        const stats = displayRestaurant.facilityRatings?.[fac.key] || {};
-                        const avg = stats.average || 0;
-                        const count = stats.count || 0;
+                {/* Facilities Ratings Section */}
+                {(() => {
+                  const renderStars = (rating) => {
+                    const rounded = Math.round(rating || 0);
+                    return (
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`w-3 h-3 ${s <= rounded
+                              ? "fill-amber-400 text-amber-400"
+                              : "text-gray-300 dark:text-neutral-700 fill-none stroke-[1.5]"
+                              }`}
+                          />
+                        ))}
+                      </div>
+                    );
+                  };
 
-                        return (
-                          <div key={fac.key} className="flex items-center justify-between text-[11px] font-bold">
-                            <span className="text-gray-700 dark:text-neutral-300 flex items-center gap-1.5">
-                              {fac.icon ? (
-                                <img src={fac.icon} alt={fac.label} className="w-4 h-4 object-contain rounded-full" />
-                              ) : (
-                                <span>{fac.emoji}</span>
-                              )}
-                              {fac.label}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              {renderStars(avg)}
-                              {count > 0 ? (
-                                <>
-                                  <span className="text-gray-900 dark:text-white font-extrabold">{avg.toFixed(1)}</span>
-                                  <span className="text-[9px] text-gray-400 font-medium">({count})</span>
-                                </>
-                              ) : (
-                                <span className="text-gray-450 dark:text-neutral-500 font-medium">No ratings yet</span>
-                              )}
-                            </div>
+                  const overallFacilityRatingObj = getOverallFacilityRatingEntry(displayRestaurant);
+                  const overallFacilityAvg = overallFacilityRatingObj.average || 0;
+                  const overallFacilityCount = overallFacilityRatingObj.count || 0;
+
+                  const restaurantFacilities = displayRestaurant.facilities || {};
+                  const activeFacilities = FACILITIES_CONFIG.filter(f => getFacilityAvailability(restaurantFacilities, f.key));
+
+                  if (activeFacilities.length === 0) return null;
+
+                  return (
+                    <div className="bg-gray-50/20 dark:bg-neutral-900/10 p-3 rounded-2xl border border-gray-100 dark:border-neutral-900 space-y-3">
+                      {/* Overall Facilities Header Summary */}
+                      <div className="flex justify-between items-center pb-2 border-b border-gray-150 dark:border-neutral-900/60">
+                        <span className="text-xs font-black text-gray-900 dark:text-white">Facilities Ratings</span>
+                        {overallFacilityCount > 0 ? (
+                          <div className="flex items-center gap-2">
+                            {renderStars(overallFacilityAvg)}
+                            <span className="text-xs font-black text-gray-800 dark:text-neutral-200">{overallFacilityAvg.toFixed(1)}</span>
+                            <span className="text-[9px] font-bold text-gray-400 dark:text-neutral-500">Based on {overallFacilityCount} rating{overallFacilityCount > 1 ? 's' : ''}</span>
                           </div>
-                        );
-                      })}
+                        ) : (
+                          <span className="text-[10px] font-bold text-gray-400">No ratings yet</span>
+                        )}
+                      </div>
+
+                      {/* Individual Facility Ratings */}
+                      <div className="space-y-2">
+                        {activeFacilities.map((fac) => {
+                          const stats = getFacilityRatingEntry(displayRestaurant, fac.key);
+                          const avg = stats.average || 0;
+                          const count = stats.count || 0;
+
+                          return (
+                            <div key={fac.key} className="flex items-center justify-between text-[11px] font-bold">
+                              <span className="text-gray-700 dark:text-neutral-300 flex items-center gap-1.5">
+                                {fac.icon ? (
+                                  <img src={fac.icon} alt={fac.label} className="w-4 h-4 object-contain rounded-full" />
+                                ) : (
+                                  <span>{fac.emoji}</span>
+                                )}
+                                {fac.label}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {renderStars(avg)}
+                                {count > 0 ? (
+                                  <>
+                                    <span className="text-gray-900 dark:text-white font-extrabold">{avg.toFixed(1)}</span>
+                                    <span className="text-[9px] text-gray-400 font-medium">({count})</span>
+                                  </>
+                                ) : (
+                                  <span className="text-gray-450 dark:text-neutral-500 font-medium">No ratings yet</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Dynamic Offers Section - Completely hidden if no active coupons match */}
+                {restaurantOffers && restaurantOffers.length > 0 && (
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-black text-gray-900 dark:text-white">Offers for You</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {restaurantOffers.map((offer, idx) => (
+                        <div key={offer._id || offer.id || idx} className="p-3 rounded-xl border border-orange-100 dark:border-neutral-900 bg-orange-50/20 dark:bg-neutral-950/20 flex flex-col justify-between min-h-[88px]">
+                          <div>
+                            <h5 className="text-xs font-black text-orange-600">
+                              {offer.discountType === 'percentage' ? `${offer.discountValue}% OFF` : `₹${offer.discountValue} OFF`}
+                            </h5>
+                            <p className="text-[10px] font-extrabold text-gray-800 dark:text-neutral-300 mt-0.5">
+                              {offer.maxDiscount ? `Up to ₹${offer.maxDiscount}` : (offer.title || offer.couponCode)}
+                            </p>
+                            {offer.minOrderValue ? (
+                              <p className="text-[8px] font-bold text-gray-400 mt-1">Min order ₹{offer.minOrderValue}</p>
+                            ) : null}
+                          </div>
+                          <div className="mt-2 text-[9px] font-extrabold text-orange-600 bg-orange-100/50 dark:bg-orange-950/40 px-2 py-0.5 rounded text-center tracking-wider uppercase">
+                            {offer.couponCode}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                );
-              })()}
+                )}
 
-              {/* Dynamic Offers Section - Completely hidden if no active coupons match */}
-              {restaurantOffers && restaurantOffers.length > 0 && (
-                <div className="space-y-2.5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-gray-900 dark:text-white">Offers for You</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {restaurantOffers.map((offer, idx) => (
-                      <div key={offer._id || offer.id || idx} className="p-3 rounded-xl border border-orange-100 dark:border-neutral-900 bg-orange-50/20 dark:bg-neutral-950/20 flex flex-col justify-between min-h-[88px]">
-                        <div>
-                          <h5 className="text-xs font-black text-orange-600">
-                            {offer.discountType === 'percentage' ? `${offer.discountValue}% OFF` : `₹${offer.discountValue} OFF`}
-                          </h5>
-                          <p className="text-[10px] font-extrabold text-gray-800 dark:text-neutral-300 mt-0.5">
-                            {offer.maxDiscount ? `Up to ₹${offer.maxDiscount}` : (offer.title || offer.couponCode)}
-                          </p>
-                          {offer.minOrderValue ? (
-                            <p className="text-[8px] font-bold text-gray-400 mt-1">Min order ₹{offer.minOrderValue}</p>
-                          ) : null}
-                        </div>
-                        <div className="mt-2 text-[9px] font-extrabold text-orange-600 bg-orange-100/50 dark:bg-orange-950/40 px-2 py-0.5 rounded text-center tracking-wider uppercase">
-                          {offer.couponCode}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                {/* Single Primary Action Button */}
+                <div className="pt-3 border-t border-gray-100 dark:border-neutral-900/60">
+                  <Button
+                    onClick={() => handlePreorder(displayRestaurant)}
+                    className="w-full h-12 bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-sm shadow-lg shadow-orange-600/20 rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>Order Now</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
                 </div>
-              )}
 
-              {/* Single Primary Action Button */}
-              <div className="pt-3 border-t border-gray-100 dark:border-neutral-900/60">
-                <Button
-                  onClick={() => handlePreorder(displayRestaurant)}
-                  className="w-full h-12 bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-sm shadow-lg shadow-orange-600/20 rounded-xl transition-all flex items-center justify-center gap-2"
-                >
-                  <span>Order Now</span>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
               </div>
-
-            </div>
             </>
           )}
-          </DialogContent>
-        </Dialog>
+        </DialogContent>
+      </Dialog>
 
       {/* Bottom Navigation Bar */}
       <BottomNavigation />

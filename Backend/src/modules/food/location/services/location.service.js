@@ -407,6 +407,239 @@ function extractRedirectFromHtml(html, baseUrl) {
   return null;
 }
 
+const GOOGLE_HIGHWAY_REGEX = /\b(?:NH[-\s]?(\d+[A-Z]?)|National Highway\s*(\d+[A-Z]?)|SH[-\s]?(\d+[A-Z]?)|State Highway\s*(\d+[A-Z]?))\b/i;
+const DEFAULT_GOOGLE_HIGHWAY_SEARCH_THRESHOLD_METERS = 2000;
+const DEFAULT_GOOGLE_HIGHWAY_NEAREST_SEARCH_METERS = 5000;
+const GOOGLE_HIGHWAY_ALIAS_PATTERNS = [
+  {
+    regex: /\b(?:AB\s*Road|AB\s*Rd|Agra\s*Bombay\s*Road|Bombay\s*Agra\s*Road)\b/i,
+    highwayRef: 'NH-52',
+    highwayName: 'National Highway 52'
+  },
+  {
+    regex: /\b(?:Agra\s*-\s*Mumbai\s*Highway|Agra\s*-\s*Mumbai\s*Hwy)\b/i,
+    highwayRef: 'NH-52',
+    highwayName: 'National Highway 52'
+  }
+];
+
+const toRadians = (deg) => (Number(deg) * Math.PI) / 180;
+const toDegrees = (rad) => (Number(rad) * 180) / Math.PI;
+
+const offsetCoordinatesMeters = (lat, lng, northMeters = 0, eastMeters = 0) => {
+  const earthRadius = 6378137;
+  const dLat = northMeters / earthRadius;
+  const dLng = eastMeters / (earthRadius * Math.cos(toRadians(lat || 0)) || earthRadius);
+
+  return {
+    lat: Number((lat + toDegrees(dLat)).toFixed(6)),
+    lng: Number((lng + toDegrees(dLng)).toFixed(6))
+  };
+};
+
+const buildNearbyDetectionPoints = (lat, lng, maxSearchMeters) => {
+  const distances = [0, 300, 750, 1200, 2000, 3000, maxSearchMeters].filter((value, index, arr) => value > 0 ? arr.indexOf(value) === index : index === 0);
+  const headings = [
+    { north: 1, east: 0 },
+    { north: -1, east: 0 },
+    { north: 0, east: 1 },
+    { north: 0, east: -1 },
+    { north: 0.7071, east: 0.7071 },
+    { north: 0.7071, east: -0.7071 },
+    { north: -0.7071, east: 0.7071 },
+    { north: -0.7071, east: -0.7071 }
+  ];
+
+  const points = [{ lat, lng, distanceMeters: 0 }];
+  for (const distance of distances) {
+    if (!distance) continue;
+    for (const heading of headings) {
+      const point = offsetCoordinatesMeters(lat, lng, heading.north * distance, heading.east * distance);
+      points.push({ ...point, distanceMeters: distance });
+    }
+  }
+
+  const deduped = new Map();
+  for (const point of points) {
+    const key = `${point.lat},${point.lng}`;
+    if (!deduped.has(key) || point.distanceMeters < deduped.get(key).distanceMeters) {
+      deduped.set(key, point);
+    }
+  }
+  return Array.from(deduped.values());
+};
+
+const extractGoogleHighwayCandidates = (results = []) => {
+  const candidates = [];
+  for (const result of results) {
+    if (typeof result?.formatted_address === 'string' && result.formatted_address.trim()) {
+      candidates.push(result.formatted_address.trim());
+    }
+
+    for (const component of Array.isArray(result?.address_components) ? result.address_components : []) {
+      if (typeof component?.long_name === 'string' && component.long_name.trim()) {
+        candidates.push(component.long_name.trim());
+      }
+      if (typeof component?.short_name === 'string' && component.short_name.trim()) {
+        candidates.push(component.short_name.trim());
+      }
+    }
+  }
+
+  return Array.from(new Set(candidates));
+};
+
+const normalizeGoogleHighwayLabel = (value = '') => {
+  const raw = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!raw) return { highwayRef: null, highwayName: null };
+
+  for (const alias of GOOGLE_HIGHWAY_ALIAS_PATTERNS) {
+    if (alias.regex.test(raw)) {
+      return {
+        highwayRef: alias.highwayRef,
+        highwayName: alias.highwayName
+      };
+    }
+  }
+
+  const match = raw.match(GOOGLE_HIGHWAY_REGEX);
+  const nhNumber = match?.[1] || match?.[2] || null;
+  const shNumber = match?.[3] || match?.[4] || null;
+  if (!nhNumber && !shNumber) return { highwayRef: null, highwayName: null };
+
+  if (nhNumber) {
+    return {
+      highwayRef: `NH-${String(nhNumber).toUpperCase()}`,
+      highwayName: `National Highway ${String(nhNumber).toUpperCase()}`
+    };
+  }
+
+  return {
+    highwayRef: `SH-${String(shNumber).toUpperCase()}`,
+    highwayName: `State Highway ${String(shNumber).toUpperCase()}`
+  };
+};
+
+export async function detectHighwayUsingGoogleMaps(lat, lng) {
+  const latitude = Number(lat);
+  const longitude = Number(lng);
+  const thresholdMeters = DEFAULT_GOOGLE_HIGHWAY_SEARCH_THRESHOLD_METERS;
+  const nearestSearchMeters = DEFAULT_GOOGLE_HIGHWAY_NEAREST_SEARCH_METERS;
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return {
+      status: 'OUT_OF_SERVICE',
+      thresholdMeters,
+      highwayId: null,
+      highwayName: null,
+      highwayRef: null,
+      distanceMeters: null
+    };
+  }
+
+  const apiKey = config.googleMapsApiKey;
+  if (!apiKey) {
+    logger.warn('[LocationService] Google Maps API key missing. Highway detection skipped.');
+    return {
+      status: 'OUT_OF_SERVICE',
+      thresholdMeters,
+      highwayId: null,
+      highwayName: null,
+      highwayRef: null,
+      distanceMeters: null
+    };
+  }
+
+  const detectionPoints = buildNearbyDetectionPoints(latitude, longitude, nearestSearchMeters);
+  const scannedCandidates = [];
+  let nearestDetected = null;
+
+  try {
+    for (const point of detectionPoints) {
+      const googleGeoRes = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${point.lat},${point.lng}&key=${apiKey}`,
+        { timeout: 5000 }
+      );
+
+      const results = Array.isArray(googleGeoRes.data?.results) ? googleGeoRes.data.results : [];
+      const candidates = extractGoogleHighwayCandidates(results);
+      scannedCandidates.push(...candidates.slice(0, 6));
+
+      for (const candidate of candidates) {
+        const normalized = normalizeGoogleHighwayLabel(candidate);
+        if (normalized.highwayRef) {
+          if (!nearestDetected || point.distanceMeters < nearestDetected.distanceMeters) {
+            nearestDetected = {
+              highwayId: null,
+              highwayName: normalized.highwayName,
+              highwayRef: normalized.highwayRef,
+              distanceMeters: point.distanceMeters,
+              matchedCandidate: candidate
+            };
+          }
+
+          if (point.distanceMeters > thresholdMeters) {
+            continue;
+          }
+
+          console.log('[LocationService] Google nearby highway detected', {
+            inputLat: latitude,
+            inputLng: longitude,
+            matchedLat: point.lat,
+            matchedLng: point.lng,
+            distanceMeters: point.distanceMeters,
+            thresholdMeters,
+            highwayRef: normalized.highwayRef,
+            highwayName: normalized.highwayName,
+            matchedCandidate: candidate
+          });
+
+          return {
+            status: 'IN_SERVICE',
+            thresholdMeters,
+            highwayId: null,
+            highwayName: normalized.highwayName,
+            highwayRef: normalized.highwayRef,
+            distanceMeters: point.distanceMeters
+          };
+        }
+      }
+    }
+  } catch (error) {
+    logger.warn(`[LocationService] Google highway detection failed: ${error.message}`);
+  }
+
+  console.log('[LocationService] Google nearby highway not detected', {
+    inputLat: latitude,
+    inputLng: longitude,
+    thresholdMeters,
+    nearestSearchMeters,
+    nearestDetected,
+    scannedPointCount: detectionPoints.length,
+    scannedCandidates: Array.from(new Set(scannedCandidates)).slice(0, 20)
+  });
+
+  if (nearestDetected) {
+    return {
+      status: 'OUT_OF_SERVICE',
+      thresholdMeters,
+      highwayId: null,
+      highwayName: nearestDetected.highwayName,
+      highwayRef: nearestDetected.highwayRef,
+      distanceMeters: nearestDetected.distanceMeters
+    };
+  }
+
+  return {
+    status: 'OUT_OF_SERVICE',
+    thresholdMeters,
+    highwayId: null,
+    highwayName: null,
+    highwayRef: null,
+    distanceMeters: null
+  };
+}
+
 async function expandUrlHistory(initialUrl) {
   let currentUrl = initialUrl;
   const history = [currentUrl];

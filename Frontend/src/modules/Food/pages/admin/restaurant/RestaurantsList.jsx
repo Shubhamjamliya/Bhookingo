@@ -8,6 +8,9 @@ import { exportRestaurantsToPDF } from "@food/components/admin/restaurants/resta
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { getCurrentUser } from "@food/utils/auth"
 import { hasModulePermission } from "@food/utils/permissions"
+import { formatRoadDistance } from "@food/utils/formatRoadDistance"
+import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
+import { getFacilityAvailability } from "@food/utils/facilityHelpers"
 import ImageWithFallback from "@food/components/ImageWithFallback"
 const debugLog = (...args) => { }
 const debugWarn = (...args) => { }
@@ -1016,11 +1019,11 @@ export default function RestaurantsList() {
       closingTime: closingTimeValue,
       isActive: restaurant.isActive !== false,
       facilities: restaurant.facilities ? {
-        parking: restaurant.facilities.parking === true,
-        wifi: restaurant.facilities.wifi === true,
-        familyFriendly: restaurant.facilities.familyFriendly === true,
-        evCharging: restaurant.facilities.evCharging === true,
-        washroom: restaurant.facilities.washroom === true
+        parking: getFacilityAvailability(restaurant.facilities, "parking"),
+        wifi: getFacilityAvailability(restaurant.facilities, "wifi"),
+        familyFriendly: getFacilityAvailability(restaurant.facilities, "familyFriendly"),
+        evCharging: getFacilityAvailability(restaurant.facilities, "evCharging"),
+        washroom: getFacilityAvailability(restaurant.facilities, "washroom")
       } : {
         parking: false,
         wifi: false,
@@ -1033,16 +1036,18 @@ export default function RestaurantsList() {
 
   const handleStartEditDetails = () => {
     const source = getDetailsEditSource()
-    setDetailsForm(buildDetailsFormFromRestaurant(source))
-    setProfileImageFile(null)
-    const initialProf =
-      normalizeImageUrl(source?.profileImage) ||
-      normalizeImageUrl(source?.logo) ||
-      normalizeImageUrl(source?.restaurantImage) ||
-      getPrimaryRestaurantImage(source)
-    setProfileImagePreview(initialProf)
-    setIsEditingLocation(true)
-    setIsEditingDetails(true)
+    const restaurantId =
+      source?._id ||
+      source?.id ||
+      source?.restaurantId ||
+      selectedRestaurant?._id ||
+      selectedRestaurant?.id ||
+      selectedRestaurant?.restaurantId
+
+    if (!restaurantId) return
+
+    closeDetailsModal()
+    navigate(`/admin/food/restaurants/edit/${restaurantId}`)
   }
 
   const handleCancelEditDetails = () => {
@@ -1546,6 +1551,15 @@ export default function RestaurantsList() {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
+                              {canEdit && (
+                                <button
+                                  onClick={() => navigate(`/admin/food/restaurants/edit/${restaurant._id || restaurant.id || restaurant.restaurantId}`)}
+                                  className="p-1.5 rounded text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                  title="Edit Restaurant"
+                                >
+                                  <Settings className="w-4 h-4" />
+                                </button>
+                              )}
                               {canSuspend && (
                                 <button
                                   onClick={() => handleBanRestaurant(restaurant)}
@@ -1597,32 +1611,6 @@ export default function RestaurantsList() {
                 <p className="text-sm text-slate-500 mt-1">Detailed overview and information</p>
               </div>
               <div className="flex items-center gap-2">
-                {!isEditingDetails && canEdit ? (
-                  <button
-                    onClick={handleStartEditDetails}
-                    className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
-                  >
-                    Edit Details
-                  </button>
-                ) : !isEditingDetails ? null : (
-                  <>
-                    <button
-                      onClick={handleCancelEditDetails}
-                      disabled={savingDetails}
-                      className="px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-colors disabled:opacity-60"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveDetails}
-                      disabled={savingDetails}
-                      className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-60 flex items-center gap-2"
-                    >
-                      {savingDetails && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {savingDetails ? "Saving..." : "Save Changes"}
-                    </button>
-                  </>
-                )}
                 <button
                   onClick={closeDetailsModal}
                   className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all duration-200 bg-slate-50"
@@ -2148,32 +2136,32 @@ export default function RestaurantsList() {
                         <div className="space-y-2 max-w-xs">
                           <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
                             <span className="text-slate-500 font-medium">Parking</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.parking ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {r?.facilities?.parking ? "Available" : "Not Available"}
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getFacilityAvailability(r?.facilities, "parking") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {getFacilityAvailability(r?.facilities, "parking") ? "Available" : "Not Available"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
                             <span className="text-slate-500 font-medium">WiFi</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.wifi ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {r?.facilities?.wifi ? "Available" : "Not Available"}
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getFacilityAvailability(r?.facilities, "wifi") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {getFacilityAvailability(r?.facilities, "wifi") ? "Available" : "Not Available"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
                             <span className="text-slate-500 font-medium">Family Friendly</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.familyFriendly ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {r?.facilities?.familyFriendly ? "Yes" : "No"}
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getFacilityAvailability(r?.facilities, "familyFriendly") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {getFacilityAvailability(r?.facilities, "familyFriendly") ? "Yes" : "No"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
                             <span className="text-slate-500 font-medium">EV Charging</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.evCharging ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {r?.facilities?.evCharging ? "Available" : "Not Available"}
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getFacilityAvailability(r?.facilities, "evCharging") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {getFacilityAvailability(r?.facilities, "evCharging") ? "Available" : "Not Available"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
                             <span className="text-slate-500 font-medium">Washroom</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.washroom ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {r?.facilities?.washroom ? "Available" : "Not Available"}
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getFacilityAvailability(r?.facilities, "washroom") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {getFacilityAvailability(r?.facilities, "washroom") ? "Available" : "Not Available"}
                             </span>
                           </div>
                         </div>
@@ -2760,8 +2748,8 @@ export default function RestaurantsList() {
 
                           <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-4">
                             <div>
-                              <h5 className="text-sm font-semibold text-slate-900">Road Selection</h5>
-                              <p className="text-xs text-slate-500 mt-1">Auto-detect the nearest highway and refine the exact roadside pin if needed.</p>
+                              <h5 className="text-sm font-semibold text-slate-900">{HIGHWAY_DETECTION_COPY.sectionTitle}</h5>
+                              <p className="text-xs text-slate-500 mt-1">Auto-detect the nearest NH or SH and refine the exact roadside pin if needed.</p>
                             </div>
 
                             {(highwayInfo.loading || highwayInfo.status) && (
@@ -2775,33 +2763,33 @@ export default function RestaurantsList() {
                                 {highwayInfo.loading ? (
                                   <div className="flex items-center gap-2">
                                     <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                                    <span>Checking highway proximity...</span>
+                                    <span>{HIGHWAY_DETECTION_COPY.checking}</span>
                                   </div>
                                 ) : highwayInfo.status === "IN_SERVICE" ? (
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2 font-semibold">
                                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                      <span>Restaurant location verified. Located within highway range.</span>
+                                      <span>{HIGHWAY_DETECTION_COPY.success}</span>
                                     </div>
                                     <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                                      <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                                      {highwayInfo.highwayName && <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                                      <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                                      {highwayInfo.highwayName && <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
                                       {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
-                                      {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{(Number(highwayInfo.distanceMeters) / 1000).toFixed(1)} KM</span></p>}
+                                      {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>}
                                     </div>
                                   </div>
                                 ) : (
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2 font-semibold">
                                       <AlertCircle className="w-4 h-4 text-rose-600" />
-                                      <span>Restaurant should be close to the mapped highway route.</span>
+                                      <span>{HIGHWAY_DETECTION_COPY.error}</span>
                                     </div>
                                     {highwayInfo.highwayRef && (
                                       <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                                        <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                                        {highwayInfo.highwayName && <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                                        <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                                        {highwayInfo.highwayName && <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
                                         {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
-                                        {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{(Number(highwayInfo.distanceMeters) / 1000).toFixed(1)} KM</span></p>}
+                                        {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>}
                                       </div>
                                     )}
                                   </div>

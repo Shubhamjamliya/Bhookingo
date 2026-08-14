@@ -920,43 +920,43 @@ export default function JoiningRequest() {
                       <h4 className="text-lg font-semibold text-slate-900 mb-4">Facilities</h4>
                       <div className="flex flex-wrap gap-2.5">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
-                          r?.facilities?.parking
+                          getFacilityAvailability(r?.facilities, "parking")
                             ? "bg-green-50 text-green-700 border border-green-200"
                             : "bg-red-50 text-red-700 border border-red-200"
                         }`}>
-                          {r?.facilities?.parking ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
+                          {getFacilityAvailability(r?.facilities, "parking") ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
                           Parking Available
                         </span>
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
-                          r?.facilities?.wifi
+                          getFacilityAvailability(r?.facilities, "wifi")
                             ? "bg-green-50 text-green-700 border border-green-200"
                             : "bg-red-50 text-red-700 border border-red-200"
                         }`}>
-                          {r?.facilities?.wifi ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
+                          {getFacilityAvailability(r?.facilities, "wifi") ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
                           WiFi Available
                         </span>
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
-                          r?.facilities?.familyFriendly
+                          getFacilityAvailability(r?.facilities, "familyFriendly")
                             ? "bg-green-50 text-green-700 border border-green-200"
                             : "bg-red-50 text-red-700 border border-red-200"
                         }`}>
-                          {r?.facilities?.familyFriendly ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
+                          {getFacilityAvailability(r?.facilities, "familyFriendly") ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
                           Family Friendly
                         </span>
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
-                          r?.facilities?.evCharging
+                          getFacilityAvailability(r?.facilities, "evCharging")
                             ? "bg-green-50 text-green-700 border border-green-200"
                             : "bg-red-50 text-red-700 border border-red-200"
                         }`}>
-                          {r?.facilities?.evCharging ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
+                          {getFacilityAvailability(r?.facilities, "evCharging") ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
                           EV Charging
                         </span>
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
-                          r?.facilities?.washroom
+                          getFacilityAvailability(r?.facilities, "washroom")
                             ? "bg-green-50 text-green-700 border border-green-200"
                             : "bg-red-50 text-red-700 border border-red-200"
                         }`}>
-                          {r?.facilities?.washroom ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
+                          {getFacilityAvailability(r?.facilities, "washroom") ? <Check className="w-3.5 h-3.5 text-green-700" /> : <X className="w-3.5 h-3.5 text-red-700" />}
                           Washroom
                         </span>
                       </div>
@@ -1316,3 +1316,4 @@ export default function JoiningRequest() {
 }
 
 
+import { getFacilityAvailability } from "@food/utils/facilityHelpers"

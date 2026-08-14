@@ -10,6 +10,7 @@ import { getCurrentUser } from "@food/utils/auth"
 import { hasModulePermission } from "@food/utils/permissions"
 import { formatRoadDistance } from "@food/utils/formatRoadDistance"
 import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
+import { getFacilityAvailability } from "@food/utils/facilityHelpers"
 import ImageWithFallback from "@food/components/ImageWithFallback"
 const debugLog = (...args) => { }
 const debugWarn = (...args) => { }
@@ -1018,11 +1019,11 @@ export default function RestaurantsList() {
       closingTime: closingTimeValue,
       isActive: restaurant.isActive !== false,
       facilities: restaurant.facilities ? {
-        parking: restaurant.facilities.parking === true,
-        wifi: restaurant.facilities.wifi === true,
-        familyFriendly: restaurant.facilities.familyFriendly === true,
-        evCharging: restaurant.facilities.evCharging === true,
-        washroom: restaurant.facilities.washroom === true
+        parking: getFacilityAvailability(restaurant.facilities, "parking"),
+        wifi: getFacilityAvailability(restaurant.facilities, "wifi"),
+        familyFriendly: getFacilityAvailability(restaurant.facilities, "familyFriendly"),
+        evCharging: getFacilityAvailability(restaurant.facilities, "evCharging"),
+        washroom: getFacilityAvailability(restaurant.facilities, "washroom")
       } : {
         parking: false,
         wifi: false,
@@ -2135,32 +2136,32 @@ export default function RestaurantsList() {
                         <div className="space-y-2 max-w-xs">
                           <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
                             <span className="text-slate-500 font-medium">Parking</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.parking ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {r?.facilities?.parking ? "Available" : "Not Available"}
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getFacilityAvailability(r?.facilities, "parking") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {getFacilityAvailability(r?.facilities, "parking") ? "Available" : "Not Available"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
                             <span className="text-slate-500 font-medium">WiFi</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.wifi ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {r?.facilities?.wifi ? "Available" : "Not Available"}
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getFacilityAvailability(r?.facilities, "wifi") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {getFacilityAvailability(r?.facilities, "wifi") ? "Available" : "Not Available"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
                             <span className="text-slate-500 font-medium">Family Friendly</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.familyFriendly ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {r?.facilities?.familyFriendly ? "Yes" : "No"}
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getFacilityAvailability(r?.facilities, "familyFriendly") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {getFacilityAvailability(r?.facilities, "familyFriendly") ? "Yes" : "No"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
                             <span className="text-slate-500 font-medium">EV Charging</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.evCharging ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {r?.facilities?.evCharging ? "Available" : "Not Available"}
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getFacilityAvailability(r?.facilities, "evCharging") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {getFacilityAvailability(r?.facilities, "evCharging") ? "Available" : "Not Available"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between text-sm py-1 border-b border-slate-100 last:border-none">
                             <span className="text-slate-500 font-medium">Washroom</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${r?.facilities?.washroom ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                              {r?.facilities?.washroom ? "Available" : "Not Available"}
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getFacilityAvailability(r?.facilities, "washroom") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {getFacilityAvailability(r?.facilities, "washroom") ? "Available" : "Not Available"}
                             </span>
                           </div>
                         </div>

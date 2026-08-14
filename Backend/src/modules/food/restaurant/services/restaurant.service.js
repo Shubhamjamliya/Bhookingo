@@ -40,6 +40,27 @@ const normalizeTotalRatingsValue = (value) => {
     return Math.max(0, Math.floor(numeric));
 };
 
+const getFacilityAvailability = (facilities, key) => {
+    const entry = facilities?.[key];
+    if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        return entry.available === true;
+    }
+    return entry === true;
+};
+
+const buildFacilitiesPayload = (facilities) => {
+    if (!facilities || typeof facilities !== 'object') return undefined;
+    const toAvailable = (value) => value === true || value === 'true';
+    return {
+        parking: { available: toAvailable(facilities.parking), rating: { average: 0, count: 0 } },
+        wifi: { available: toAvailable(facilities.wifi), rating: { average: 0, count: 0 } },
+        familyFriendly: { available: toAvailable(facilities.familyFriendly), rating: { average: 0, count: 0 } },
+        evCharging: { available: toAvailable(facilities.evCharging), rating: { average: 0, count: 0 } },
+        washroom: { available: toAvailable(facilities.washroom), rating: { average: 0, count: 0 } },
+        overall: { rating: { average: 0, count: 0 } }
+    };
+};
+
 const toUrl = (v) => (v && (typeof v === 'string' ? v : v.url)) ? (typeof v === 'string' ? v : v.url) : '';
 
 const normalizeRestaurantTime = (value) => {
@@ -187,11 +208,11 @@ const toRestaurantProfile = (doc) => {
             isEnabled: doc.takeawaySettings?.isEnabled === true
         },
         facilities: doc.facilities ? {
-            parking: Boolean(doc.facilities.parking),
-            wifi: Boolean(doc.facilities.wifi),
-            familyFriendly: Boolean(doc.facilities.familyFriendly),
-            evCharging: Boolean(doc.facilities.evCharging),
-            washroom: Boolean(doc.facilities.washroom)
+            parking: getFacilityAvailability(doc.facilities, 'parking'),
+            wifi: getFacilityAvailability(doc.facilities, 'wifi'),
+            familyFriendly: getFacilityAvailability(doc.facilities, 'familyFriendly'),
+            evCharging: getFacilityAvailability(doc.facilities, 'evCharging'),
+            washroom: getFacilityAvailability(doc.facilities, 'washroom')
         } : {
             parking: false,
             wifi: false,
@@ -422,13 +443,7 @@ export const registerRestaurant = async (payload, files) => {
             takeawaySettings: {
                 isEnabled: isTakeawayEnabled === undefined ? true : (isTakeawayEnabled === 'true' || isTakeawayEnabled === true)
             },
-            facilities: facilities ? {
-                parking: facilities.parking === true || facilities.parking === 'true',
-                wifi: facilities.wifi === true || facilities.wifi === 'true',
-                familyFriendly: facilities.familyFriendly === true || facilities.familyFriendly === 'true',
-                evCharging: facilities.evCharging === true || facilities.evCharging === 'true',
-                washroom: facilities.washroom === true || facilities.washroom === 'true'
-            } : undefined,
+            facilities: buildFacilitiesPayload(facilities),
             ...images
         });
 
@@ -1586,7 +1601,6 @@ export const listApprovedRestaurants = async (query = {}) => {
         pureVegRestaurant: 1,
         createdAt: 1,
         facilities: 1,
-        facilityRatings: 1,
         location: 1,
         distance: 1,
         distanceInKm: 1,
@@ -1688,13 +1702,12 @@ export const listApprovedRestaurants = async (query = {}) => {
         rating: normalizeRatingValue(r.rating),
         totalRatings: normalizeTotalRatingsValue(r.totalRatings),
         facilities: r.facilities ? {
-            parking: Boolean(r.facilities.parking),
-            wifi: Boolean(r.facilities.wifi),
-            familyFriendly: Boolean(r.facilities.familyFriendly),
-            evCharging: Boolean(r.facilities.evCharging),
-            washroom: Boolean(r.facilities.washroom)
+            parking: getFacilityAvailability(r.facilities, 'parking'),
+            wifi: getFacilityAvailability(r.facilities, 'wifi'),
+            familyFriendly: getFacilityAvailability(r.facilities, 'familyFriendly'),
+            evCharging: getFacilityAvailability(r.facilities, 'evCharging'),
+            washroom: getFacilityAvailability(r.facilities, 'washroom')
         } : null,
-        facilityRatings: r.facilityRatings || null,
         profileImage: r.profileImage ? { url: r.profileImage } : null,
         coverImages: Array.isArray(r.coverImages) ? r.coverImages : [],
         openingTime: r.openingTime || null,

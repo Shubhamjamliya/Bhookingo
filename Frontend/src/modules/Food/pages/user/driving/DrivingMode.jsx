@@ -18,6 +18,7 @@ import { extractImages } from "@food/utils/common";
 import JourneyPlanner from "./components/JourneyPlanner";
 import { FACILITIES_CONFIG } from "../../../utils/facilitiesConfig";
 import { DrivingModeSkeleton } from "@food/components/ui/loading-skeletons";
+import { getFacilityAvailability, getFacilityRatingEntry, getOverallFacilityRatingEntry } from "@food/utils/facilityHelpers";
 
 const readSessionJson = (key, fallback = null) => {
   try {
@@ -1716,7 +1717,7 @@ export default function DrivingMode() {
                 <span className="truncate max-w-[120px]">{displayRestaurant.cuisines?.length ? displayRestaurant.cuisines.join(", ") : "North Indian, Punjabi"}</span>
                 <span className="text-gray-300 dark:text-neutral-800">•</span>
                 <span>₹₹</span>
-                {displayRestaurant.facilities?.familyFriendly && (
+                {getFacilityAvailability(displayRestaurant.facilities, "familyFriendly") && (
                   <>
                     <span className="text-gray-300 dark:text-neutral-800">•</span>
                     <span className="text-orange-600 dark:text-orange-400 font-extrabold flex items-center gap-1">
@@ -1728,13 +1729,13 @@ export default function DrivingMode() {
               </div>
 
               {/* Facilities Grid (Render only active dynamic cards) */}
-              {(displayRestaurant.facilities?.parking ||
-                displayRestaurant.facilities?.washroom ||
-                displayRestaurant.facilities?.evCharging ||
-                displayRestaurant.facilities?.wifi) && (
+              {(getFacilityAvailability(displayRestaurant.facilities, "parking") ||
+                getFacilityAvailability(displayRestaurant.facilities, "washroom") ||
+                getFacilityAvailability(displayRestaurant.facilities, "evCharging") ||
+                getFacilityAvailability(displayRestaurant.facilities, "wifi")) && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {/* Parking Card */}
-                    {displayRestaurant.facilities?.parking && (
+                    {getFacilityAvailability(displayRestaurant.facilities, "parking") && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                         <img src="/icons/carparking.png" alt="Parking" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Parking</span>
@@ -1742,7 +1743,7 @@ export default function DrivingMode() {
                     )}
 
                     {/* Washroom Card */}
-                    {displayRestaurant.facilities?.washroom && (
+                    {getFacilityAvailability(displayRestaurant.facilities, "washroom") && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                         <img src="/icons/washroom.png" alt="Washroom" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Washroom</span>
@@ -1750,7 +1751,7 @@ export default function DrivingMode() {
                     )}
 
                     {/* EV Charging Card */}
-                    {displayRestaurant.facilities?.evCharging && (
+                    {getFacilityAvailability(displayRestaurant.facilities, "evCharging") && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                         <img src="/icons/evcharging.png" alt="EV Charging" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">EV Charging</span>
@@ -1758,7 +1759,7 @@ export default function DrivingMode() {
                     )}
 
                     {/* Wi-Fi Card */}
-                    {displayRestaurant.facilities?.wifi && (
+                    {getFacilityAvailability(displayRestaurant.facilities, "wifi") && (
                       <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                         <img src="/icons/wifi.png" alt="Wi-Fi" className="w-5 h-5 object-contain rounded-full" />
                         <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Wi-Fi</span>
@@ -1786,12 +1787,12 @@ export default function DrivingMode() {
                   );
                 };
 
-                const overallFacilityRatingObj = displayRestaurant.facilityRatings?.overall;
-                const overallFacilityAvg = overallFacilityRatingObj?.average || 0;
-                const overallFacilityCount = overallFacilityRatingObj?.count || 0;
+                const overallFacilityRatingObj = getOverallFacilityRatingEntry(displayRestaurant);
+                const overallFacilityAvg = overallFacilityRatingObj.average || 0;
+                const overallFacilityCount = overallFacilityRatingObj.count || 0;
 
                 const restaurantFacilities = displayRestaurant.facilities || {};
-                const activeFacilities = FACILITIES_CONFIG.filter(f => restaurantFacilities[f.key] === true);
+                const activeFacilities = FACILITIES_CONFIG.filter(f => getFacilityAvailability(restaurantFacilities, f.key));
 
                 if (activeFacilities.length === 0) return null;
 
@@ -1814,7 +1815,7 @@ export default function DrivingMode() {
                     {/* Individual Facility Ratings */}
                     <div className="space-y-2">
                       {activeFacilities.map((fac) => {
-                        const stats = displayRestaurant.facilityRatings?.[fac.key] || {};
+                        const stats = getFacilityRatingEntry(displayRestaurant, fac.key);
                         const avg = stats.average || 0;
                         const count = stats.count || 0;
 

@@ -13,6 +13,7 @@ import { useCart } from "@food/context/CartContext"
 import PageNavbar from "@food/components/user/PageNavbar"
 import { useProfile } from "@food/context/ProfileContext"
 import { Avatar, AvatarFallback, AvatarImage } from "@food/components/ui/avatar"
+import { getFacilityAvailability } from "@food/utils/facilityHelpers"
 import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailability"
 import under250Banner from "@food/assets/under250_banner.jpg"
 import homeBannerRed from "@food/assets/home-banner-red-clean.png"
@@ -1121,27 +1122,27 @@ export default function Under250() {
 
                     {/* Facilities list */}
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {restaurant.facilities?.washroom && (
+                      {getFacilityAvailability(restaurant.facilities, "washroom") && (
                         <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-md">
                           Washroom
                         </span>
                       )}
-                      {restaurant.facilities?.evCharging && (
+                      {getFacilityAvailability(restaurant.facilities, "evCharging") && (
                         <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400 rounded-md">
                           EV Charging
                         </span>
                       )}
-                      {restaurant.facilities?.parking && (
+                      {getFacilityAvailability(restaurant.facilities, "parking") && (
                         <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 rounded-md">
                           Parking
                         </span>
                       )}
-                      {restaurant.facilities?.wifi && (
+                      {getFacilityAvailability(restaurant.facilities, "wifi") && (
                         <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 rounded-md">
                           WiFi
                         </span>
                       )}
-                      {restaurant.facilities?.familyFriendly && (
+                      {getFacilityAvailability(restaurant.facilities, "familyFriendly") && (
                         <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-md">
                           Family
                         </span>
@@ -1585,3 +1586,4 @@ export default function Under250() {
   )
 }
 
+import { getFacilityAvailability } from "@food/utils/facilityHelpers";

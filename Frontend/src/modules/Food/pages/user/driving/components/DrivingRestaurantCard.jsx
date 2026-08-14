@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { extractImages } from "@food/utils/common";
+import { getFacilityAvailability, getFacilityRatingEntry } from "@food/utils/facilityHelpers";
 
 const FOOD_IMAGE_FALLBACK =
   "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=80";
@@ -29,16 +30,10 @@ function formatRatingCount(count) {
   return `(${(n / 1000).toFixed(1).replace(/\.0$/, "")}K)`;
 }
 
-/* facilityRatings[key] → { average, count } or plain number */
-function resolveFacilityRating(facilityRatings, key) {
-  const entry = facilityRatings?.[key];
-  if (!entry) return null;
-  if (typeof entry === "object") {
-    const avg = safeNum(entry.average);
-    return avg !== null && avg > 0 ? avg : null;
-  }
-  const n = safeNum(entry);
-  return n !== null && n > 0 ? n : null;
+function resolveFacilityRating(restaurant, key) {
+  const entry = getFacilityRatingEntry(restaurant, key);
+  const avg = safeNum(entry.average);
+  return avg !== null && avg > 0 ? avg : null;
 }
 
 /* ── tiny inline SVGs (zero icon libs) ───────────────────────────── */
@@ -97,7 +92,6 @@ export default function DrivingRestaurantCard({ restaurant, onClick }) {
     etaMinutes,
     cuisines,
     facilities,
-    facilityRatings,
     highwayRef,
     isVerified,
   } = restaurant;
@@ -143,24 +137,19 @@ export default function DrivingRestaurantCard({ restaurant, onClick }) {
 
   /* amenity definitions */
   const AMENITY_DEFS = [
-    { key: "parking", name: "Parking", icon: "/icons/carparking.png", enabled: facilities?.parking !== false },
-    { key: "wifi", name: "WiFi", icon: "/icons/wifi.png", enabled: facilities?.wifi !== false },
-    { key: "familyFriendly", name: "Family Friendly", icon: "/icons/familyfriendly.png", enabled: facilities?.familyFriendly !== false },
-    { key: "evCharging", name: "EV Charging", icon: "/icons/evcharging.png", enabled: facilities?.evCharging === true },
-    { key: "washroom", name: "Washroom", icon: "/icons/washroom.png", enabled: facilities?.washroom !== false },
+    { key: "parking", name: "Parking", icon: "/icons/carparking.png", enabled: getFacilityAvailability(facilities, "parking") },
+    { key: "wifi", name: "WiFi", icon: "/icons/wifi.png", enabled: getFacilityAvailability(facilities, "wifi") },
+    { key: "familyFriendly", name: "Family Friendly", icon: "/icons/familyfriendly.png", enabled: getFacilityAvailability(facilities, "familyFriendly") },
+    { key: "evCharging", name: "EV Charging", icon: "/icons/evcharging.png", enabled: getFacilityAvailability(facilities, "evCharging") },
+    { key: "washroom", name: "Washroom", icon: "/icons/washroom.png", enabled: getFacilityAvailability(facilities, "washroom") },
   ];
 
   /* resolve avg + count for each amenity */
   const resolveFullRating = (key) => {
-    const entry = facilityRatings?.[key];
-    if (!entry) return { avg: null, count: 0 };
-    if (typeof entry === "object") {
-      const avg = safeNum(entry.average);
-      const count = safeNum(entry.count) ?? 0;
-      return { avg: avg && avg > 0 ? avg : null, count };
-    }
-    const n = safeNum(entry);
-    return { avg: n && n > 0 ? n : null, count: 0 };
+    const entry = getFacilityRatingEntry(restaurant, key);
+    const avg = safeNum(entry.average);
+    const count = safeNum(entry.count) ?? 0;
+    return { avg: avg && avg > 0 ? avg : null, count };
   };
 
   /* Row 2 icons: all enabled amenities */

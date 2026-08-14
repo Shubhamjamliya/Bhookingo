@@ -42,6 +42,22 @@ const geoPointSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const facilityRatingSummarySchema = new mongoose.Schema(
+  {
+    average: { type: Number, default: 0 },
+    count: { type: Number, default: 0 },
+  },
+  { _id: false },
+);
+
+const facilityDetailSchema = new mongoose.Schema(
+  {
+    available: { type: Boolean, default: false },
+    rating: { type: facilityRatingSummarySchema, default: () => ({}) },
+  },
+  { _id: false },
+);
+
 const restaurantSchema = new mongoose.Schema(
   {
     restaurantName: {
@@ -257,19 +273,6 @@ const restaurantSchema = new mongoose.Schema(
       set: normalizeRatingValue,
     },
     totalRatings: { type: Number, default: 0, min: 0 },
-    parkingRating: { type: Number, default: 0 },
-    wifiRating: { type: Number, default: 0 },
-    familyFriendlyRating: { type: Number, default: 0 },
-    evChargingRating: { type: Number, default: 0 },
-    washroomRating: { type: Number, default: 0 },
-    facilityRatings: {
-      parking: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-      wifi: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-      familyFriendly: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-      evCharging: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-      washroom: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-      overall: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
-    },
     diningSettings: {
       isEnabled: { type: Boolean, default: false },
       maxGuests: { type: Number, default: 6 },
@@ -279,26 +282,14 @@ const restaurantSchema = new mongoose.Schema(
       isEnabled: { type: Boolean, default: true },
     },
     facilities: {
-      parking: {
-        type: Boolean,
-        default: false
+      parking: { type: facilityDetailSchema, default: () => ({}) },
+      wifi: { type: facilityDetailSchema, default: () => ({}) },
+      familyFriendly: { type: facilityDetailSchema, default: () => ({}) },
+      evCharging: { type: facilityDetailSchema, default: () => ({}) },
+      washroom: { type: facilityDetailSchema, default: () => ({}) },
+      overall: {
+        rating: { type: facilityRatingSummarySchema, default: () => ({}) },
       },
-      wifi: {
-        type: Boolean,
-        default: false
-      },
-      familyFriendly: {
-        type: Boolean,
-        default: false
-      },
-      evCharging: {
-        type: Boolean,
-        default: false
-      },
-      washroom: {
-        type: Boolean,
-        default: false
-      }
     },
     menu: {
       sections: { type: Array, default: [] },
@@ -448,6 +439,48 @@ restaurantSchema.pre("validate", function normalizeDerivedFields(next) {
         this.location.landmark = this.landmark;
     }
   }
+
+  const facilityKeys = [
+    "parking",
+    "wifi",
+    "familyFriendly",
+    "evCharging",
+    "washroom",
+  ];
+  if (!this.facilities || typeof this.facilities !== "object") {
+    this.facilities = {};
+  }
+
+  facilityKeys.forEach((key) => {
+    const legacyFacilityValue = this.facilities?.[key];
+    const normalizedFacility =
+      legacyFacilityValue &&
+      typeof legacyFacilityValue === "object" &&
+      !Array.isArray(legacyFacilityValue)
+        ? legacyFacilityValue
+        : { available: legacyFacilityValue === true };
+
+    normalizedFacility.available = normalizedFacility.available === true;
+    normalizedFacility.rating = {
+      average: Number(normalizedFacility.rating?.average ?? 0) || 0,
+      count: Number(normalizedFacility.rating?.count ?? 0) || 0,
+    };
+
+    this.facilities[key] = normalizedFacility;
+  });
+
+  const overallRating =
+    this.facilities?.overall?.rating &&
+    typeof this.facilities.overall.rating === "object"
+      ? this.facilities.overall.rating
+      : {};
+
+  this.facilities.overall = {
+    rating: {
+      average: Number(overallRating.average || 0) || 0,
+      count: Number(overallRating.count || 0) || 0,
+    },
+  };
 
 
   next();

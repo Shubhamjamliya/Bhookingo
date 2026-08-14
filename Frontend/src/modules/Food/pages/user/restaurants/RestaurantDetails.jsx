@@ -7,6 +7,7 @@ import { API_BASE_URL } from "@food/api/config"
 import { toast } from "sonner"
 import { useLocation } from "@food/hooks/useLocation"
 import { useHighway as useZone } from "@food/hooks/useHighway"
+import { getFacilityRatingEntry } from "@food/utils/facilityHelpers"
 import {
   ArrowLeft,
   Search,
@@ -2864,11 +2865,11 @@ function RestaurantDetailsContent() {
               {/* Dynamic Facility Rating Averages */}
               {(() => {
                 const facStats = [
-                  { key: 'parking', label: 'Parking Rating', score: restaurant.parkingRating || 0 },
-                  { key: 'wifi', label: 'WiFi Rating', score: restaurant.wifiRating || 0 },
-                  { key: 'familyFriendly', label: 'Family Friendly', score: restaurant.familyFriendlyRating || 0 },
-                  { key: 'evCharging', label: 'EV Charging', score: restaurant.evChargingRating || 0 },
-                  { key: 'washroom', label: 'Washroom Rating', score: restaurant.washroomRating || 0 },
+                  { key: 'parking', label: 'Parking Rating', score: getFacilityRatingEntry(restaurant, 'parking').average },
+                  { key: 'wifi', label: 'WiFi Rating', score: getFacilityRatingEntry(restaurant, 'wifi').average },
+                  { key: 'familyFriendly', label: 'Family Friendly', score: getFacilityRatingEntry(restaurant, 'familyFriendly').average },
+                  { key: 'evCharging', label: 'EV Charging', score: getFacilityRatingEntry(restaurant, 'evCharging').average },
+                  { key: 'washroom', label: 'Washroom Rating', score: getFacilityRatingEntry(restaurant, 'washroom').average },
                 ];
 
                 const activeStats = facStats.filter(f => restaurant.facilities?.[f.key] === true);

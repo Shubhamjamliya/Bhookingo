@@ -7,6 +7,7 @@ import { Label } from "@food/components/ui/label"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { formatRoadDistance } from "@food/utils/formatRoadDistance"
 import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
+import { getFacilityAvailability } from "@food/utils/facilityHelpers"
 import { ArrowLeft, Loader2, MapPin, CheckCircle2, AlertCircle } from "lucide-react"
 
 const debugError = (..._args) => { }
@@ -123,11 +124,11 @@ const normalizeDetailsFormFromRestaurant = (restaurant) => {
     isActive: restaurant?.isActive !== false,
     takeawayEnabled: restaurant?.takeawaySettings?.isEnabled ?? false,
     facilities: restaurant?.facilities ? {
-      parking: restaurant.facilities.parking === true,
-      wifi: restaurant.facilities.wifi === true,
-      familyFriendly: restaurant.facilities.familyFriendly === true,
-      evCharging: restaurant.facilities.evCharging === true,
-      washroom: restaurant.facilities.washroom === true
+      parking: getFacilityAvailability(restaurant.facilities, "parking"),
+      wifi: getFacilityAvailability(restaurant.facilities, "wifi"),
+      familyFriendly: getFacilityAvailability(restaurant.facilities, "familyFriendly"),
+      evCharging: getFacilityAvailability(restaurant.facilities, "evCharging"),
+      washroom: getFacilityAvailability(restaurant.facilities, "washroom")
     } : {
       parking: false,
       wifi: false,

@@ -26,6 +26,7 @@ import { clearModuleAuth, clearAuthData, isModuleAuthenticated, getModuleToken }
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { formatRoadDistance } from "@food/utils/formatRoadDistance"
 import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
+import { getFacilityAvailability } from "@food/utils/facilityHelpers"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
 import { OnboardingSkeleton } from "@food/components/ui/loading-skeletons"
 const debugLog = (...args) => {}
@@ -1164,11 +1165,11 @@ export default function RestaurantOnboarding() {
             ownerPhone: s1.ownerPhone || apiData.phone || "",
             primaryContactNumber: s1.primaryContactNumber || apiData.primaryContactNumber || "",
             facilities: {
-              parking: s1.facilities?.parking ?? apiData.facilities?.parking ?? false,
-              wifi: s1.facilities?.wifi ?? apiData.facilities?.wifi ?? false,
-              familyFriendly: s1.facilities?.familyFriendly ?? apiData.facilities?.familyFriendly ?? false,
-              evCharging: s1.facilities?.evCharging ?? apiData.facilities?.evCharging ?? false,
-              washroom: s1.facilities?.washroom ?? apiData.facilities?.washroom ?? false
+              parking: s1.facilities?.parking ?? getFacilityAvailability(apiData.facilities, "parking") ?? false,
+              wifi: s1.facilities?.wifi ?? getFacilityAvailability(apiData.facilities, "wifi") ?? false,
+              familyFriendly: s1.facilities?.familyFriendly ?? getFacilityAvailability(apiData.facilities, "familyFriendly") ?? false,
+              evCharging: s1.facilities?.evCharging ?? getFacilityAvailability(apiData.facilities, "evCharging") ?? false,
+              washroom: s1.facilities?.washroom ?? getFacilityAvailability(apiData.facilities, "washroom") ?? false
             },
 
             locationSource: apiData.locationSource || s1.locationSource || "google_places",

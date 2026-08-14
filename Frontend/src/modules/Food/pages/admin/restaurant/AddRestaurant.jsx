@@ -9,6 +9,7 @@ import { Button } from "@food/components/ui/button"
 import { adminAPI, uploadAPI, highwayAPI } from "@food/api"
 import { toast } from "sonner"
 import { Switch } from "@food/components/ui/switch"
+import { formatRoadDistance } from "@food/utils/formatRoadDistance"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
 
 const debugLog = (...args) => { }
@@ -949,9 +950,9 @@ export default function AddRestaurant() {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       errors.push("Please search and select a location so map coordinates are captured.")
     } else if (step1.isHighwayRestaurant === true && highwayInfo.loading) {
-      errors.push("Checking highway proximity — please wait a moment.")
+      errors.push("Checking NH/SH proximity. Please wait a moment.")
     } else if (step1.isHighwayRestaurant === true && highwayInfo.status !== "IN_SERVICE") {
-      errors.push("Restaurant location is not near a detectable road.")
+      errors.push("Restaurant is not within 2 km from NH or SH.")
     }
     if (step1.isHighwayRestaurant === true && !step1.location?.roadName?.trim()) errors.push("Road name is required")
     return errors
@@ -1767,7 +1768,7 @@ export default function AddRestaurant() {
           {step1.isHighwayRestaurant === true && highwayInfo.loading && (
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 flex items-center gap-2 text-xs">
               <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-              <span>Checking highway proximity...</span>
+              <span>Checking NH/SH proximity...</span>
             </div>
           )}
 
@@ -1775,13 +1776,13 @@ export default function AddRestaurant() {
             <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md text-green-800 space-y-1 text-xs">
               <div className="flex items-center gap-2 font-semibold">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span>Restaurant location available</span>
+                <span>Restaurant location verified. Within 2 km of NH/SH.</span>
               </div>
               <div className="pl-6 text-gray-600 space-y-0.5">
-                <p>Nearest Road: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                {highwayInfo.highwayName && (<p>Road Name: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
+                <p>Nearest NH/SH: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                {highwayInfo.highwayName && (<p>Road Label: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
                 {highwayInfo.highwayId && (<p>Highway ID: <span className="font-medium text-gray-900">{String(highwayInfo.highwayId)}</span></p>)}
-                <p>Distance: <span className="font-medium text-gray-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                <p>Distance: <span className="font-medium text-gray-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
               </div>
             </div>
           )}
@@ -1790,14 +1791,14 @@ export default function AddRestaurant() {
             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 space-y-1 text-xs">
               <div className="flex items-center gap-2 font-semibold">
                 <X className="w-4 h-4 text-red-600" />
-                <span>Restaurant location is not near a detectable road.</span>
+                <span>Not within 2 km from NH or SH.</span>
               </div>
               {highwayInfo.highwayRef && (
                 <div className="pl-6 text-gray-600 space-y-0.5">
-                  <p>Nearest Road: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                  {highwayInfo.highwayName && (<p>Road Name: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
+                  <p>Nearest NH/SH: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                  {highwayInfo.highwayName && (<p>Road Label: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
                   {highwayInfo.highwayId && (<p>Highway ID: <span className="font-medium text-gray-900">{String(highwayInfo.highwayId)}</span></p>)}
-                  <p>Distance: <span className="font-medium text-gray-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                  <p>Distance: <span className="font-medium text-gray-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                 </div>
               )}
             </div>
@@ -1937,7 +1938,7 @@ export default function AddRestaurant() {
           />
           {step1.isHighwayRestaurant === true && (
             <div>
-              <Label className="text-xs text-gray-700">Road name*</Label>
+              <Label className="text-xs text-gray-700">Road label*</Label>
               <Input
                 value={step1.location?.roadName || ""}
                 onChange={(e) => {

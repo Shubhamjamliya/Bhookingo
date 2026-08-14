@@ -36,6 +36,7 @@ import OptimizedImage from "@food/components/OptimizedImage"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { isFlutterBridgeAvailable } from "@food/utils/imageUploadUtils"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
+import { formatRoadDistance } from "@food/utils/formatRoadDistance"
 import { toast } from "sonner"
 import { MobileTimePicker } from "@mui/x-date-pickers/MobileTimePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
@@ -1931,9 +1932,9 @@ export default function EditOwner() {
 
               <section className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
                 <div>
-                  <h3 className="text-base font-bold text-gray-900">Road Selection</h3>
+                  <h3 className="text-base font-bold text-gray-900">NH / SH Selection</h3>
                   <p className="mt-1 text-sm text-gray-600">
-                    We auto-detect the nearest highway from the selected address. You can point the location on the map and edit the road name if needed.
+                    We auto-detect the nearest NH or SH from the selected address. You can point the location on the map and refine the saved road label if needed.
                   </p>
                 </div>
 
@@ -1950,33 +1951,33 @@ export default function EditOwner() {
                     {highwayInfo.loading ? (
                       <div className="flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                        <span>Checking highway proximity...</span>
+                        <span>Checking NH/SH proximity...</span>
                       </div>
                     ) : highwayInfo.status === "IN_SERVICE" ? (
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 font-semibold">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                          <span>Restaurant location verified. Located within highway range.</span>
+                          <span>Restaurant location verified. Within 2 km of NH/SH.</span>
                         </div>
                         <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                          <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                          {highwayInfo.highwayName && <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                          <p>Nearest NH/SH: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                          {highwayInfo.highwayName && <p>Road Label: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
                           {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
-                          {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{(Number(highwayInfo.distanceMeters) / 1000).toFixed(1)} KM</span></p>}
+                          {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>}
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 font-semibold">
                           <AlertCircle className="w-4 h-4 text-rose-600" />
-                          <span>Restaurant should be close to the mapped highway route.</span>
+                          <span>Not within 2 km from NH or SH.</span>
                         </div>
                         {highwayInfo.highwayRef && (
                           <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                            <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                            {highwayInfo.highwayName && <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                            <p>Nearest NH/SH: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                            {highwayInfo.highwayName && <p>Road Label: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
                             {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
-                            {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{(Number(highwayInfo.distanceMeters) / 1000).toFixed(1)} KM</span></p>}
+                            {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>}
                           </div>
                         )}
                       </div>

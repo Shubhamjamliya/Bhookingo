@@ -5,6 +5,11 @@ import { getGoogleRouteHighway, getGoogleRouteHighwayOptions } from './googleRou
 import { getStoredDrivingSettingsConfig, saveDrivingSettingsConfig } from './drivingSettings.shared.js';
 import { decodePolyline } from '../../orders/utils/googleMaps.js';
 
+const DEBUG_ROUTE_RESTAURANT_IDS = new Set([
+    '6a7edae9123461a7ef2300af',
+    '6a7ec6864ff406632d2b9f3d'
+]);
+
 /**
  * Retrieve Driving Mode settings.
  * Returns settings stored in FoodSystemConfig or default settings.
@@ -163,6 +168,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, speed,
 
         for (const restaurant of candidates) {
             const loc = restaurant.location;
+            const restaurantId = restaurant?._id ? String(restaurant._id) : null;
             const rlat = typeof loc?.latitude === 'number'
                 ? loc.latitude
                 : (Array.isArray(loc?.coordinates) ? loc.coordinates[1] : null);
@@ -177,9 +183,35 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, speed,
             const R_proj = turf.nearestPointOnLine(line, rPoint, { units: 'kilometers' });
             const dist_R = R_proj.properties.location;
             const distToRouteKm = R_proj.properties.dist;
+            const distanceAheadKm = dist_R - dist_U;
+            const isRestaurantAhead = distanceAheadKm >= (-settings.googleRouteBackwardBufferKm);
+            const shouldIncludeRestaurant = settings.showAllRouteRestaurants === true
+                ? isRestaurantAhead
+                : (isRestaurantAhead && distanceAheadKm <= maxDiscoveryDistance);
+
+            if (restaurantId && DEBUG_ROUTE_RESTAURANT_IDS.has(restaurantId)) {
+                console.log('[DrivingMode][DebugRestaurant]', {
+                    restaurantId,
+                    restaurantName: restaurant.restaurantName || restaurant.name || null,
+                    highwayRef: restaurant.highwayRef || restaurant.highwayName || null,
+                    restaurantLat: rlat,
+                    restaurantLng: rlng,
+                    userLat: lat,
+                    userLng: lng,
+                    distToRouteKm: Number.isFinite(distToRouteKm) ? Number(distToRouteKm.toFixed(3)) : null,
+                    effectiveRoadCorridorKm,
+                    distanceAheadKm: Number.isFinite(distanceAheadKm) ? Number(distanceAheadKm.toFixed(3)) : null,
+                    backwardBufferKm: settings.googleRouteBackwardBufferKm,
+                    maxDiscoveryDistance,
+                    showAllRouteRestaurants: settings.showAllRouteRestaurants === true,
+                    isRestaurantAhead,
+                    shouldIncludeRestaurant
+                });
+            }
+
             if (!Number.isFinite(distToRouteKm) || distToRouteKm > effectiveRoadCorridorKm) {
                 console.log('[DrivingMode] Restaurant excluded by route corridor', {
-                    restaurantId: restaurant?._id ? String(restaurant._id) : null,
+                    restaurantId,
                     restaurantName: restaurant.restaurantName || restaurant.name || null,
                     highwayRef: restaurant.highwayRef || restaurant.highwayName || null,
                     restaurantLat: rlat,
@@ -189,15 +221,9 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, speed,
                 });
                 continue;
             }
-
-            const distanceAheadKm = dist_R - dist_U;
-            const isRestaurantAhead = distanceAheadKm >= (-settings.googleRouteBackwardBufferKm);
-            const shouldIncludeRestaurant = settings.showAllRouteRestaurants === true
-                ? isRestaurantAhead
-                : (isRestaurantAhead && distanceAheadKm <= maxDiscoveryDistance);
             if (!shouldIncludeRestaurant) {
                 console.log('[DrivingMode] Restaurant excluded by ahead/range rule', {
-                    restaurantId: restaurant?._id ? String(restaurant._id) : null,
+                    restaurantId,
                     restaurantName: restaurant.restaurantName || restaurant.name || null,
                     highwayRef: restaurant.highwayRef || restaurant.highwayName || null,
                     distanceAheadKm: Number.isFinite(distanceAheadKm) ? Number(distanceAheadKm.toFixed(3)) : null,
@@ -210,7 +236,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, speed,
             }
 
             console.log('[DrivingMode] Restaurant included on route', {
-                restaurantId: restaurant?._id ? String(restaurant._id) : null,
+                restaurantId,
                 restaurantName: restaurant.restaurantName || restaurant.name || null,
                 highwayRef: restaurant.highwayRef || restaurant.highwayName || null,
                 distanceAheadKm: Number.isFinite(distanceAheadKm) ? Number(distanceAheadKm.toFixed(3)) : null,

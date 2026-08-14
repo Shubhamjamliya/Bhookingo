@@ -2454,6 +2454,13 @@ export async function updateRestaurantLocation(id, body = {}) {
     const pincode = toStr(source.pincode || source.zipCode || source.postalCode);
     const landmark = toStr(source.landmark);
     const formattedAddress = toStr(source.formattedAddress || source.address || addressLine1);
+    const roadName = toStr(source.roadName);
+    const placeId = toStr(source.placeId || source.place_id);
+    const highwayRef = toStr(body.highwayRef || source.highwayRef);
+    const highwayName = toStr(body.highwayName || source.highwayName);
+    const isHighwayRestaurant = body.isHighwayRestaurant === undefined
+        ? doc.isHighwayRestaurant === true
+        : parseBooleanLike(body.isHighwayRestaurant, 'isHighwayRestaurant');
 
     if (!doc.location || typeof doc.location !== 'object') {
         doc.location = { type: 'Point' };
@@ -2473,6 +2480,8 @@ export async function updateRestaurantLocation(id, body = {}) {
     doc.location.state = state;
     doc.location.pincode = pincode;
     doc.location.landmark = landmark;
+    doc.location.roadName = roadName;
+    doc.location.placeId = placeId;
 
     // Keep flat fields in sync for legacy readers.
     doc.addressLine1 = addressLine1;
@@ -2482,6 +2491,10 @@ export async function updateRestaurantLocation(id, body = {}) {
     doc.state = state;
     doc.pincode = pincode;
     doc.landmark = landmark;
+    doc.highwayRef = isHighwayRestaurant ? (highwayRef || null) : null;
+    doc.highwayName = isHighwayRestaurant ? (highwayName || doc.highwayName || null) : null;
+    doc.isHighwayRestaurant = isHighwayRestaurant;
+    doc.restaurantType = isHighwayRestaurant ? 'highway' : 'normal';
 
     if (body.highwayId !== undefined) {
         const highwayId = String(body.highwayId || '').trim();
@@ -2495,8 +2508,6 @@ export async function updateRestaurantLocation(id, body = {}) {
     }
 
     await doc.save();
-    // Fire-and-forget highway re-assignment when location changes
-    setImmediate(() => assignHighwayToRestaurant(id).catch(() => { }));
     return FoodRestaurant.findById(id).select('-__v').lean();
 }
 

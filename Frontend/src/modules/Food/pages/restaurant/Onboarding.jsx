@@ -24,6 +24,7 @@ import { useCompanyName } from "@food/hooks/useCompanyName"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { clearModuleAuth, clearAuthData, isModuleAuthenticated, getModuleToken } from "@food/utils/auth"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
+import { formatRoadDistance } from "@food/utils/formatRoadDistance"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
 import { OnboardingSkeleton } from "@food/components/ui/loading-skeletons"
 const debugLog = (...args) => {}
@@ -1745,9 +1746,9 @@ export default function RestaurantOnboarding() {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       errors.push("Please search and select a location so map coordinates are captured")
     } else if (step1.isHighwayRestaurant === true && highwayInfo.loading) {
-      errors.push("Checking highway proximity — please wait a moment")
+      errors.push("Checking NH/SH proximity. Please wait a moment.")
     } else if (step1.isHighwayRestaurant === true && highwayInfo.status !== "IN_SERVICE") {
-      errors.push("Restaurant must be near a detectable road.")
+      errors.push("Restaurant is not within 2 km from NH or SH.")
     }
 
     return errors
@@ -2646,9 +2647,9 @@ export default function RestaurantOnboarding() {
       {step1.isHighwayRestaurant === true ? (
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-black">Road Selection</h2>
+          <h2 className="text-lg font-semibold text-black">NH / SH Selection</h2>
           <p className="mt-1 text-sm text-gray-600">
-            We auto-detect the nearest road from the selected address. You can point the location on the map and edit the road name if needed.
+            We auto-detect the nearest NH or SH from the selected address. You can point the location on the map and refine the saved road label if needed.
           </p>
         </div>
 
@@ -2665,41 +2666,41 @@ export default function RestaurantOnboarding() {
             {highwayInfo.loading ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                <span>Checking highway proximity...</span>
+                <span>Checking NH/SH proximity...</span>
               </div>
             ) : highwayInfo.status === "IN_SERVICE" ? (
               <div className="space-y-1">
                 <div className="flex items-center gap-2 font-semibold">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Restaurant location verified. Nearby road detected.</span>
+                  <span>Restaurant location verified. Within 2 km of NH/SH.</span>
                 </div>
                 <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                  <p>Nearest Road: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                  <p>Nearest NH/SH: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                   {highwayInfo.highwayName && (
-                    <p>Road Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
+                    <p>Road Label: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
                   )}
                   {highwayInfo.highwayId && (
                     <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
                   )}
-                  <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                  <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                 </div>
               </div>
             ) : (
               <div className="space-y-1">
                 <div className="flex items-center gap-2 font-semibold">
                   <AlertCircle className="w-4 h-4 text-rose-600" />
-                  <span>Restaurant must be near a detectable road.</span>
+                  <span>Not within 2 km from NH or SH.</span>
                 </div>
                 {highwayInfo.highwayRef && (
                   <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                    <p>Nearest Road: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                    <p>Nearest NH/SH: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                     {highwayInfo.highwayName && (
-                      <p>Road Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
+                      <p>Road Label: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
                     )}
                     {highwayInfo.highwayId && (
                       <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
                     )}
-                    <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                    <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                   </div>
                 )}
               </div>
@@ -2742,7 +2743,7 @@ export default function RestaurantOnboarding() {
         )}
 
         <div>
-              <Label className="text-xs text-gray-700">Road name*</Label>
+              <Label className="text-xs text-gray-700">Road label*</Label>
           <Input
             value={step1.location?.roadName || ""}
             onChange={(e) => {
@@ -2753,19 +2754,19 @@ export default function RestaurantOnboarding() {
               })
             }}
             className="mt-1 bg-white text-sm"
-            placeholder="Auto-detected road / highway"
+            placeholder="Auto-detected NH / SH"
             disabled={!isEditing}
           />
           <p className="text-[11px] text-gray-500 mt-1">
-            This is auto-filled from the detected NH / SH and you can still edit it to match the exact road shown on the pin.
+            This is auto-filled from the detected NH / SH. You can adjust the display label if needed.
           </p>
         </div>
       </section>
       ) : (
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-2">
-        <h2 className="text-lg font-semibold text-black">Road Selection</h2>
+        <h2 className="text-lg font-semibold text-black">NH / SH Selection</h2>
         <p className="text-sm text-gray-600">
-          Normal restaurant selected. Highway detection and highway-only road selection are skipped.
+          Normal restaurant selected. NH/SH detection is skipped.
         </p>
       </section>
       )}

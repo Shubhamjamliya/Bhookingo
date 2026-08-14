@@ -407,16 +407,21 @@ function extractRedirectFromHtml(html, baseUrl) {
   return null;
 }
 
-const GOOGLE_HIGHWAY_REGEX = /\b(?:NH[-\s]?(\d+[A-Z]?)|National Highway\s*(\d+[A-Z]?))\b/i;
+const GOOGLE_HIGHWAY_REGEX = /\b(?:NH[-\s]?(\d+[A-Z]?)|National Highway\s*(\d+[A-Z]?)|SH[-\s]?(\d+[A-Z]?)|State Highway\s*(\d+[A-Z]?))\b/i;
 const DEFAULT_GOOGLE_HIGHWAY_SEARCH_THRESHOLD_METERS = 2000;
+const DEFAULT_GOOGLE_HIGHWAY_NEAREST_SEARCH_METERS = 5000;
 const GOOGLE_HIGHWAY_ALIAS_PATTERNS = [
   {
     regex: /\b(?:AB\s*Road|AB\s*Rd|Agra\s*Bombay\s*Road|Bombay\s*Agra\s*Road)\b/i,
     highwayRef: 'NH-52',
     highwayName: 'National Highway 52'
+  },
+  {
+    regex: /\b(?:Agra\s*-\s*Mumbai\s*Highway|Agra\s*-\s*Mumbai\s*Hwy)\b/i,
+    highwayRef: 'NH-52',
+    highwayName: 'National Highway 52'
   }
 ];
-const GOOGLE_GENERIC_ROAD_REGEX = /\b(?:road|rd|marg|street|st|avenue|ave|bypass|expressway|highway|ring road|service road|link road)\b/i;
 
 const toRadians = (deg) => (Number(deg) * Math.PI) / 180;
 const toDegrees = (rad) => (Number(rad) * 180) / Math.PI;
@@ -432,8 +437,8 @@ const offsetCoordinatesMeters = (lat, lng, northMeters = 0, eastMeters = 0) => {
   };
 };
 
-const buildNearbyDetectionPoints = (lat, lng, thresholdMeters) => {
-  const distances = [0, 300, 750, 1200, thresholdMeters].filter((value, index, arr) => value > 0 ? arr.indexOf(value) === index : index === 0);
+const buildNearbyDetectionPoints = (lat, lng, maxSearchMeters) => {
+  const distances = [0, 300, 750, 1200, 2000, 3000, maxSearchMeters].filter((value, index, arr) => value > 0 ? arr.indexOf(value) === index : index === 0);
   const headings = [
     { north: 1, east: 0 },
     { north: -1, east: 0 },
@@ -484,20 +489,6 @@ const extractGoogleHighwayCandidates = (results = []) => {
   return Array.from(new Set(candidates));
 };
 
-const normalizeGenericRoadLabel = (value = '') => {
-  const raw = String(value || '').replace(/\s+/g, ' ').trim();
-  if (!raw) return null;
-  if (!GOOGLE_GENERIC_ROAD_REGEX.test(raw)) return null;
-  if (/^\d+$/.test(raw)) return null;
-  if (/^[A-Z0-9]{4,}\+[A-Z0-9]{2,}$/i.test(raw)) return null;
-  if (raw.length < 3) return null;
-
-  return {
-    highwayRef: raw,
-    highwayName: raw
-  };
-};
-
 const normalizeGoogleHighwayLabel = (value = '') => {
   const raw = String(value || '').replace(/\s+/g, ' ').trim();
   if (!raw) return { highwayRef: null, highwayName: null };
@@ -512,15 +503,20 @@ const normalizeGoogleHighwayLabel = (value = '') => {
   }
 
   const match = raw.match(GOOGLE_HIGHWAY_REGEX);
-  const highwayNumber = match?.[1] || match?.[2] || null;
-  if (!highwayNumber) {
-    const genericRoad = normalizeGenericRoadLabel(raw);
-    return genericRoad || { highwayRef: null, highwayName: null };
+  const nhNumber = match?.[1] || match?.[2] || null;
+  const shNumber = match?.[3] || match?.[4] || null;
+  if (!nhNumber && !shNumber) return { highwayRef: null, highwayName: null };
+
+  if (nhNumber) {
+    return {
+      highwayRef: `NH-${String(nhNumber).toUpperCase()}`,
+      highwayName: `National Highway ${String(nhNumber).toUpperCase()}`
+    };
   }
 
   return {
-    highwayRef: `NH-${String(highwayNumber).toUpperCase()}`,
-    highwayName: `National Highway ${String(highwayNumber).toUpperCase()}`
+    highwayRef: `SH-${String(shNumber).toUpperCase()}`,
+    highwayName: `State Highway ${String(shNumber).toUpperCase()}`
   };
 };
 
@@ -528,6 +524,7 @@ export async function detectHighwayUsingGoogleMaps(lat, lng) {
   const latitude = Number(lat);
   const longitude = Number(lng);
   const thresholdMeters = DEFAULT_GOOGLE_HIGHWAY_SEARCH_THRESHOLD_METERS;
+  const nearestSearchMeters = DEFAULT_GOOGLE_HIGHWAY_NEAREST_SEARCH_METERS;
 
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return {
@@ -553,8 +550,9 @@ export async function detectHighwayUsingGoogleMaps(lat, lng) {
     };
   }
 
-  const detectionPoints = buildNearbyDetectionPoints(latitude, longitude, thresholdMeters);
+  const detectionPoints = buildNearbyDetectionPoints(latitude, longitude, nearestSearchMeters);
   const scannedCandidates = [];
+  let nearestDetected = null;
 
   try {
     for (const point of detectionPoints) {
@@ -570,6 +568,20 @@ export async function detectHighwayUsingGoogleMaps(lat, lng) {
       for (const candidate of candidates) {
         const normalized = normalizeGoogleHighwayLabel(candidate);
         if (normalized.highwayRef) {
+          if (!nearestDetected || point.distanceMeters < nearestDetected.distanceMeters) {
+            nearestDetected = {
+              highwayId: null,
+              highwayName: normalized.highwayName,
+              highwayRef: normalized.highwayRef,
+              distanceMeters: point.distanceMeters,
+              matchedCandidate: candidate
+            };
+          }
+
+          if (point.distanceMeters > thresholdMeters) {
+            continue;
+          }
+
           console.log('[LocationService] Google nearby highway detected', {
             inputLat: latitude,
             inputLng: longitude,
@@ -601,9 +613,22 @@ export async function detectHighwayUsingGoogleMaps(lat, lng) {
     inputLat: latitude,
     inputLng: longitude,
     thresholdMeters,
+    nearestSearchMeters,
+    nearestDetected,
     scannedPointCount: detectionPoints.length,
     scannedCandidates: Array.from(new Set(scannedCandidates)).slice(0, 20)
   });
+
+  if (nearestDetected) {
+    return {
+      status: 'OUT_OF_SERVICE',
+      thresholdMeters,
+      highwayId: null,
+      highwayName: nearestDetected.highwayName,
+      highwayRef: nearestDetected.highwayRef,
+      distanceMeters: nearestDetected.distanceMeters
+    };
+  }
 
   return {
     status: 'OUT_OF_SERVICE',

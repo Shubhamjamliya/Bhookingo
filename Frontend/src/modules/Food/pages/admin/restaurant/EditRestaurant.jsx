@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { adminAPI, highwayAPI } from "@food/api"
 import { Input } from "@food/components/ui/input"
 import { Button } from "@food/components/ui/button"
 import { Label } from "@food/components/ui/label"
 import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
+import { formatRoadDistance } from "@food/utils/formatRoadDistance"
 import { ArrowLeft, Loader2, MapPin, CheckCircle2, AlertCircle } from "lucide-react"
 
 const debugError = (..._args) => { }
@@ -37,6 +38,24 @@ const parseGoogleAddressComponents = (components = []) => {
     pincode: get(["postal_code"]),
     roadName,
   }
+}
+
+const extractHighwayRef = (value = "") => {
+  const raw = String(value || "").trim()
+  if (!raw) return ""
+
+  const compactMatch = raw.match(/\b(NH|SH)\s*[- ]?\s*(\d+[A-Z]?)\b/i)
+  if (compactMatch) {
+    return `${compactMatch[1].toUpperCase()}-${compactMatch[2].toUpperCase()}`
+  }
+
+  const expandedMatch = raw.match(/\b(National|State)\s+Highway\s+(\d+[A-Z]?)\b/i)
+  if (expandedMatch) {
+    const prefix = expandedMatch[1].toLowerCase().startsWith("national") ? "NH" : "SH"
+    return `${prefix}-${expandedMatch[2].toUpperCase()}`
+  }
+
+  return ""
 }
 
 const normalizeLocationFormFromRestaurant = (restaurant) => {
@@ -76,6 +95,7 @@ const normalizeLocationFormFromRestaurant = (restaurant) => {
     landmark: loc?.landmark || restaurant?.landmark || "",
     placeId: loc?.placeId || restaurant?.placeId || "",
     roadName: loc?.roadName || restaurant?.roadName || "",
+    highwayRef: restaurant?.highwayRef || "",
     latitude: hasValidCoords ? lat : "",
     longitude: hasValidCoords ? lng : "",
   }
@@ -181,6 +201,7 @@ export default function EditRestaurant() {
     thresholdMeters: null,
   })
   const [isRoadNameDirty, setIsRoadNameDirty] = useState(false)
+  const [isHighwayRefDirty, setIsHighwayRefDirty] = useState(false)
   const [isMapsSdkReady, setIsMapsSdkReady] = useState(() => Boolean(window.google?.maps))
 
   const locationSearchInputRef = useRef(null)
@@ -539,69 +560,70 @@ export default function EditRestaurant() {
     }
   }, [isMapsSdkReady])
 
+  const detectHighwayForLocation = useCallback(async (lat, lng) => {
+    const latNum = Number(lat)
+    const lngNum = Number(lng)
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) {
+      setHighwayInfo({ loading: false, status: null, highwayId: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
+      return
+    }
+
+    setHighwayInfo((prev) => ({ ...prev, loading: true }))
+    try {
+      const res = await highwayAPI.detectHighway(latNum, lngNum)
+      const data = res?.data?.data
+      if (res?.data?.success && data) {
+        setHighwayInfo({
+          loading: false,
+          status: data.status,
+          highwayId: data.highwayId || null,
+          highwayName: data.highwayName || null,
+          highwayRef: data.highwayRef || null,
+          distanceMeters: data.distanceMeters ?? null,
+          thresholdMeters: data.thresholdMeters ?? null,
+        })
+      } else {
+        setHighwayInfo({ loading: false, status: "OUT_OF_SERVICE", highwayId: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
+      }
+    } catch {
+      setHighwayInfo((prev) => ({ ...prev, loading: false }))
+    }
+  }, [])
+
   useEffect(() => {
     if (detailsForm.isHighwayRestaurant !== true) {
       setHighwayInfo({ loading: false, status: null, highwayId: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
       return
     }
 
-    const lat = Number(locationForm.latitude)
-    const lng = Number(locationForm.longitude)
-    const address = locationForm.formattedAddress || locationForm.addressLine1 || ""
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !address.trim()) {
+    const lat = locationForm.latitude
+    const lng = locationForm.longitude
+    if (!lat || !lng) {
       setHighwayInfo({ loading: false, status: null, highwayId: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
       return
     }
 
-    let cancelled = false
-    const run = async () => {
-      setHighwayInfo((prev) => ({ ...prev, loading: true }))
-      try {
-        const res = await highwayAPI.detectHighway(lat, lng)
-        const data = res?.data?.data
-        if (cancelled) return
-        if (res?.data?.success && data) {
-          setHighwayInfo({
-            loading: false,
-            status: data.status,
-            highwayId: data.highwayId || null,
-            highwayName: data.highwayName || null,
-            highwayRef: data.highwayRef || null,
-            distanceMeters: data.distanceMeters ?? null,
-            thresholdMeters: data.thresholdMeters ?? null,
-          })
-        } else {
-          setHighwayInfo({ loading: false, status: "OUT_OF_SERVICE", highwayId: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
-        }
-      } catch {
-        if (!cancelled) {
-          setHighwayInfo({ loading: false, status: "OUT_OF_SERVICE", highwayId: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
-        }
-      }
-    }
-    run()
-    return () => { cancelled = true }
-  }, [detailsForm.isHighwayRestaurant, locationForm.latitude, locationForm.longitude, locationForm.formattedAddress, locationForm.addressLine1])
+    detectHighwayForLocation(lat, lng)
+  }, [detailsForm.isHighwayRestaurant, locationForm.latitude, locationForm.longitude, detectHighwayForLocation])
 
-  const autoDetectedRoadLabel = (() => {
-    if (highwayInfo.highwayRef) return `${highwayInfo.highwayRef}${highwayInfo.highwayName ? ` - ${highwayInfo.highwayName}` : ""}`
-    if (highwayInfo.highwayName) return String(highwayInfo.highwayName)
-    return ""
-  })()
+  const autoDetectedHighwayRef = extractHighwayRef(highwayInfo.highwayRef || highwayInfo.highwayName || "")
 
   useEffect(() => {
-    if (!autoDetectedRoadLabel) return
+    if (!autoDetectedHighwayRef) return
     setLocationForm((prev) => {
-      const currentRoadName = String(prev.roadName || "")
-      if (isRoadNameDirty && currentRoadName && currentRoadName !== lastAutoRoadNameRef.current) return prev
-      if (currentRoadName === autoDetectedRoadLabel) {
-        lastAutoRoadNameRef.current = autoDetectedRoadLabel
+      const currentHighwayRef = String(prev.highwayRef || "")
+      if (isHighwayRefDirty && currentHighwayRef && currentHighwayRef !== lastAutoRoadNameRef.current) return prev
+      if (currentHighwayRef === autoDetectedHighwayRef) {
+        lastAutoRoadNameRef.current = autoDetectedHighwayRef
         return prev
       }
-      lastAutoRoadNameRef.current = autoDetectedRoadLabel
-      return { ...prev, roadName: autoDetectedRoadLabel }
+      lastAutoRoadNameRef.current = autoDetectedHighwayRef
+      return { ...prev, highwayRef: autoDetectedHighwayRef }
     })
-  }, [autoDetectedRoadLabel, isRoadNameDirty])
+  }, [
+    autoDetectedHighwayRef,
+    isHighwayRefDirty,
+  ])
 
   const reverseGeocodePinnedLocation = async (lat, lng) => {
     if (!window.google?.maps?.Geocoder) return null
@@ -745,6 +767,10 @@ export default function EditRestaurant() {
         zipCode: locationForm.pincode || "",
         postalCode: locationForm.pincode || "",
         roadName: locationForm.roadName || "",
+        placeId: locationForm.placeId || "",
+        highwayRef: detailsForm.isHighwayRestaurant === true ? (locationForm.highwayRef || "") : "",
+        highwayName: detailsForm.isHighwayRestaurant === true ? (highwayInfo.highwayName || "") : "",
+        isHighwayRestaurant: detailsForm.isHighwayRestaurant === true,
         ...(detailsForm.isHighwayRestaurant === true && highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId ? { highwayId: String(highwayInfo.highwayId) } : {}),
       }
 
@@ -1231,33 +1257,33 @@ export default function EditRestaurant() {
                       {highwayInfo.loading ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                          <span>Checking road proximity...</span>
+                          <span>Checking NH/SH proximity...</span>
                         </div>
                       ) : highwayInfo.status === "IN_SERVICE" ? (
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 font-semibold">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            <span>Restaurant location available</span>
+                            <span>Restaurant location verified. Within 2 km of NH/SH.</span>
                           </div>
                           <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                            <p>Nearest Road: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                            {highwayInfo.highwayName && <p>Road Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                            <p>Nearest NH/SH: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                            {highwayInfo.highwayName && <p>Road Label: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
                             {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
-                            <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                            <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                           </div>
                         </div>
                       ) : (
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 font-semibold">
                             <AlertCircle className="w-4 h-4 text-rose-600" />
-                            <span>Restaurant location is not near a detectable road.</span>
+                            <span>Not within 2 km from NH or SH.</span>
                           </div>
                           {highwayInfo.highwayRef && (
                             <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                              <p>Nearest Road: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                              {highwayInfo.highwayName && <p>Road Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                              <p>Nearest NH/SH: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                              {highwayInfo.highwayName && <p>Road Label: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
                               {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
-                              <p>Distance: <span className="font-medium text-slate-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
+                              <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                             </div>
                           )}
                         </div>
@@ -1358,8 +1384,9 @@ export default function EditRestaurant() {
                   />
                 </div>
                 {detailsForm.isHighwayRestaurant === true && (
+                <>
                 <div className="md:col-span-2">
-                  <Label className="text-xs text-gray-700">Road name*</Label>
+                  <Label className="text-xs text-gray-700">Road label*</Label>
                   <Input
                     value={locationForm.roadName || ""}
                     onChange={(e) => {
@@ -1367,10 +1394,24 @@ export default function EditRestaurant() {
                       setLocationForm((p) => ({ ...p, roadName: e.target.value }))
                     }}
                     className="mt-1 bg-white text-sm"
-                    placeholder="Auto-detected road / highway"
+                    placeholder="Auto-detected road name"
                   />
-                  <p className="text-[11px] text-gray-500 mt-1">This is auto-filled from the detected NH / SH and you can edit it if needed.</p>
+                  <p className="text-[11px] text-gray-500 mt-1">This keeps the actual road or street name near the restaurant.</p>
                 </div>
+                <div>
+                  <Label className="text-xs text-gray-700">NH / SH reference</Label>
+                  <Input
+                    value={locationForm.highwayRef || ""}
+                    onChange={(e) => {
+                      setIsHighwayRefDirty(true)
+                      setLocationForm((p) => ({ ...p, highwayRef: e.target.value.toUpperCase() }))
+                    }}
+                    className="mt-1 bg-white text-sm"
+                    placeholder="Auto-filled if road is NH/SH"
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1">Examples: `NH-52`, `SH-27`. Leave empty for normal roads.</p>
+                </div>
+                </>
                 )}
               </div>
             </section>

@@ -16,11 +16,11 @@ export const detectHighwayPublicController = async (req, res, next) => {
 
         const result = await detectHighwayUsingGoogleMaps(lat, lng);
         console.log(`[Restaurant Onboarding] detectHighway API requested for lat: ${lat}, lng: ${lng}`);
-        console.log(`[Restaurant Onboarding] Result: Nearest road ${result.highwayRef}, Distance: ${result.distanceMeters}m, Threshold: ${result.thresholdMeters}m, Status: ${result.status}`);
+        console.log(`[Restaurant Onboarding] Result: Nearest NH/SH ${result.highwayRef}, Distance: ${result.distanceMeters}m, Threshold: ${result.thresholdMeters}m, Status: ${result.status}`);
 
         return res.status(200).json({
             success: true,
-            message: result.status === 'IN_SERVICE' ? 'Nearby road detected' : 'Out of service area',
+            message: result.status === 'IN_SERVICE' ? 'Nearby NH/SH detected' : 'Not within 2 km from NH or SH',
             data: {
                 status: result.status,
                 thresholdMeters: result.thresholdMeters,

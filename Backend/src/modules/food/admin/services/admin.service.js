@@ -3305,6 +3305,7 @@ export async function createRestaurantByAdmin(body) {
             : undefined,
         status: 'approved',
         approvedAt: new Date(),
+        restaurantType: proximity.status === 'IN_SERVICE' ? 'highway' : 'normal',
         highwayId: null,
         highwayName: proximity.highwayName,
         highwayRef: proximity.highwayRef,

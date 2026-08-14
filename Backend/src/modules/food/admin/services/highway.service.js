@@ -323,12 +323,14 @@ export async function assignHighwayToRestaurant(restaurantId, thresholdOverride 
 
         const update = result?.status === 'IN_SERVICE'
             ? {
+                restaurantType: 'highway',
                 highwayId: null,
                 highwayName: result.highwayName || null,
                 highwayRef: result.highwayRef || null,
                 isHighwayRestaurant: true
             }
             : {
+                restaurantType: 'normal',
                 highwayId: null,
                 highwayName: null,
                 highwayRef: null,

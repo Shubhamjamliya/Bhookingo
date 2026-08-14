@@ -161,7 +161,7 @@ export async function createOrder(userId, dto) {
   if (restaurant.isAcceptingOrders === false)
     throw new ValidationError("Restaurant not accepting orders");
 
-  if (restaurant.isHighwayRestaurant && restaurant.highwayId) {
+  if (restaurant.isHighwayRestaurant) {
     const { validateOrderDrivingRange } = await import('../../driving/services/driving.service.js');
     await validateOrderDrivingRange(restaurant, dto.userLocation);
   }

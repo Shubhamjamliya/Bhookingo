@@ -175,7 +175,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
                 : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
 
             if (!Number.isFinite(rlat) || !Number.isFinite(rlng)) continue;
-            if (restaurant.isHighwayRestaurant !== true || !restaurant.highwayId) continue;
+            if (restaurant.isHighwayRestaurant !== true) continue;
 
             const rPoint = turf.point([rlng, rlat]);
             const R_proj = turf.nearestPointOnLine(line, rPoint, { units: 'kilometers' });

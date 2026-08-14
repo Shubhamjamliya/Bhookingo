@@ -225,6 +225,12 @@ const restaurantSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    restaurantType: {
+      type: String,
+      enum: ["highway", "normal"],
+      default: "normal",
+      index: true,
+    },
     businessModel: {
       type: String,
       trim: true,

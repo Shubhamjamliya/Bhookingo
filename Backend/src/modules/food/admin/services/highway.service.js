@@ -307,7 +307,7 @@ export async function findNearestHighway(lat, lng, thresholdMeters) {
 export async function assignHighwayToRestaurant(restaurantId, thresholdOverride = null) {
     try {
         const restaurant = await FoodRestaurant.findById(restaurantId)
-            .select('location highwayId isHighwayRestaurant')
+            .select('location restaurantType')
             .lean();
         if (!restaurant) return;
 
@@ -324,17 +324,13 @@ export async function assignHighwayToRestaurant(restaurantId, thresholdOverride 
         const update = result?.status === 'IN_SERVICE'
             ? {
                 restaurantType: 'highway',
-                highwayId: null,
                 highwayName: result.highwayName || null,
-                highwayRef: result.highwayRef || null,
-                isHighwayRestaurant: true
+                highwayRef: result.highwayRef || null
             }
             : {
                 restaurantType: 'normal',
-                highwayId: null,
                 highwayName: null,
-                highwayRef: null,
-                isHighwayRestaurant: false
+                highwayRef: null
             };
 
         await FoodRestaurant.updateOne({ _id: restaurantId }, { $set: update });

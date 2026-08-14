@@ -231,11 +231,6 @@ const restaurantSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
-    isHighwayRestaurant: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
     restaurantType: {
       type: String,
       enum: ["highway", "normal"],
@@ -537,7 +532,7 @@ restaurantSchema.index({ status: 1, rating: -1, createdAt: -1 });
 restaurantSchema.index({ "takeawaySettings.isEnabled": 1 });
 restaurantSchema.index({ "diningSettings.isEnabled": 1 });
 
-restaurantSchema.index({ isHighwayRestaurant: 1, status: 1 });
+restaurantSchema.index({ restaurantType: 1, status: 1 });
 
 export const FoodRestaurant = mongoose.model(
   "FoodRestaurant",

@@ -204,10 +204,9 @@ const toRestaurantProfile = (doc) => {
         restaurantId: doc.restaurantId || undefined,
         name: doc.restaurantName || '',
         restaurantName: doc.restaurantName || '',
-        restaurantType: doc.restaurantType || (doc.isHighwayRestaurant ? 'highway' : 'normal'),
+        restaurantType: doc.restaurantType || 'normal',
         highwayName: doc.highwayName || '',
         highwayRef: doc.highwayRef || '',
-        isHighwayRestaurant: Boolean(doc.isHighwayRestaurant),
         cuisines: Array.isArray(doc.cuisines) ? doc.cuisines : [],
         location,
         locationSource: doc.locationSource || 'google_places',
@@ -345,7 +344,6 @@ export const registerRestaurant = async (payload, files) => {
         longitude,
         locationSource,
         placeId,
-        isHighwayRestaurant,
         restaurantType,
         cuisines,
         openingTime,
@@ -420,7 +418,7 @@ export const registerRestaurant = async (payload, files) => {
     try {
         const latNum = toFiniteNumber(latitude);
         const lngNum = toFiniteNumber(longitude);
-        const wantsHighwayRestaurant = isHighwayRestaurant !== false && restaurantType !== 'normal';
+        const wantsHighwayRestaurant = restaurantType !== 'normal';
         const googleHighwayDetection = wantsHighwayRestaurant && latNum !== null && lngNum !== null
             ? await detectHighwayUsingGoogleMaps(latNum, lngNum)
             : null;
@@ -443,7 +441,6 @@ export const registerRestaurant = async (payload, files) => {
             pureVegRestaurant: pureVegRestaurant === true,
             highwayName: wantsHighwayRestaurant ? (googleHighwayDetection?.highwayName || null) : null,
             highwayRef: wantsHighwayRestaurant ? (googleHighwayDetection?.highwayRef || null) : null,
-            isHighwayRestaurant: wantsHighwayRestaurant,
             locationSource: locationSource || 'google_places',
             // Store unified location object (geo + address).
             location: {
@@ -540,10 +537,14 @@ export const getCurrentRestaurantProfile = async (restaurantId) => {
                 'state',
                 'pincode',
                 'landmark',
+                'locationSource',
                 'ownerName',
                 'ownerEmail',
                 'ownerPhone',
                 'primaryContactNumber',
+                'restaurantType',
+                'highwayName',
+                'highwayRef',
                 'accountNumber',
                 'ifscCode',
                 'accountHolderName',
@@ -817,7 +818,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
     }
 
     const currentRestaurant = await FoodRestaurant.findById(restaurantId)
-        .select('restaurantName restaurantNameNormalized ownerPhone ownerPhoneDigits ownerPhoneLast10 primaryContactNumber status isHighwayRestaurant')
+        .select('restaurantName restaurantNameNormalized ownerPhone ownerPhoneDigits ownerPhoneLast10 primaryContactNumber status restaurantType')
         .lean();
 
     if (!currentRestaurant) {
@@ -826,7 +827,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
 
     const update = {};
     let shouldSyncHighwayAfterUpdate = false;
-    let nextIsHighwayRestaurant = currentRestaurant.isHighwayRestaurant;
+    let nextRestaurantType = currentRestaurant.restaurantType === 'normal' ? 'normal' : 'highway';
 
     // Owner/contact fields (used by restaurant Contact Details screens)
     if (body.ownerName !== undefined) {
@@ -918,28 +919,16 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         update.facilities = buildFacilitiesPayload(parsedFacilities);
     }
 
-    if (body.isHighwayRestaurant !== undefined) {
-        let parsedIsHighwayRestaurant;
-        if (typeof body.isHighwayRestaurant === 'boolean') {
-            parsedIsHighwayRestaurant = body.isHighwayRestaurant;
-        } else if (typeof body.isHighwayRestaurant === 'string') {
-            const normalized = body.isHighwayRestaurant.trim().toLowerCase();
-            if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
-                parsedIsHighwayRestaurant = true;
-            } else if (normalized === 'false' || normalized === '0' || normalized === 'no') {
-                parsedIsHighwayRestaurant = false;
-            } else {
-                throw new ValidationError('isHighwayRestaurant must be a boolean');
-            }
-        } else {
-            throw new ValidationError('isHighwayRestaurant must be a boolean');
+    if (body.restaurantType !== undefined) {
+        const normalizedRestaurantType = String(body.restaurantType || '').trim().toLowerCase();
+        if (normalizedRestaurantType !== 'highway' && normalizedRestaurantType !== 'normal') {
+            throw new ValidationError('restaurantType must be either "highway" or "normal"');
         }
 
-        nextIsHighwayRestaurant = parsedIsHighwayRestaurant;
-        update.isHighwayRestaurant = parsedIsHighwayRestaurant;
-        update.restaurantType = parsedIsHighwayRestaurant ? 'highway' : 'normal';
+        nextRestaurantType = normalizedRestaurantType;
+        update.restaurantType = normalizedRestaurantType;
 
-        if (!parsedIsHighwayRestaurant) {
+        if (nextRestaurantType !== 'highway') {
             update.highwayName = null;
             update.highwayRef = null;
         }
@@ -1029,7 +1018,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             roadName: toStr(loc.roadName),
             placeId: toStr(loc.placeId)
         };
-        shouldSyncHighwayAfterUpdate = nextIsHighwayRestaurant !== false;
+        shouldSyncHighwayAfterUpdate = nextRestaurantType === 'highway';
     }
 
     if (body.locationSource !== undefined) {
@@ -1269,7 +1258,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                         'upiQrImage',
                         'highwayName',
                         'highwayRef',
-                        'isHighwayRestaurant',
+                        'restaurantType',
                         'facilities',
                         'rejectionReason',
                         'rejectedAt',

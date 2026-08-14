@@ -711,7 +711,7 @@ export default function RestaurantOnboarding() {
 
   const [step1, setStep1] = useState({
     restaurantName: "",
-    isHighwayRestaurant: true,
+    restaurantType: "highway",
     pureVegRestaurant: null,
     ownerName: "",
     ownerEmail: "",
@@ -1434,7 +1434,7 @@ export default function RestaurantOnboarding() {
 
   useEffect(() => {
     if (step !== 1) return
-    if (step1.isHighwayRestaurant !== true) {
+    if (step1.restaurantType === "normal") {
       setHighwayInfo({
         loading: false,
         status: null,
@@ -1469,7 +1469,7 @@ export default function RestaurantOnboarding() {
     return () => {
       if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
     }
-  }, [step, step1.isHighwayRestaurant, step1.location?.latitude, step1.location?.longitude, detectHighwayForLocation])
+  }, [step, step1.restaurantType, step1.location?.latitude, step1.location?.longitude, detectHighwayForLocation])
 
   const autoDetectedRoadLabel = (() => {
     if (highwayInfo.highwayRef) {
@@ -1728,7 +1728,7 @@ export default function RestaurantOnboarding() {
     } else if (!/^\d{6}$/.test(normalizePincode(step1.location.pincode))) {
       errors.push("Pincode must be exactly 6 digits")
     }
-    if (step1.isHighwayRestaurant === true && !step1.location?.roadName?.trim()) {
+    if (step1.restaurantType !== "normal" && !step1.location?.roadName?.trim()) {
       errors.push("Road name is required")
     }
 
@@ -1736,9 +1736,9 @@ export default function RestaurantOnboarding() {
     const lng = Number(step1.location?.longitude)
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       errors.push("Please search and select a location so map coordinates are captured")
-    } else if (step1.isHighwayRestaurant === true && highwayInfo.loading) {
+    } else if (step1.restaurantType !== "normal" && highwayInfo.loading) {
       errors.push(HIGHWAY_DETECTION_COPY.validationPending)
-    } else if (step1.isHighwayRestaurant === true && highwayInfo.status !== "IN_SERVICE") {
+    } else if (step1.restaurantType !== "normal" && highwayInfo.status !== "IN_SERVICE") {
       errors.push(HIGHWAY_DETECTION_COPY.validationFailed)
     }
 
@@ -1985,7 +1985,7 @@ export default function RestaurantOnboarding() {
               placeId: step1.location?.placeId || "",
             },
             locationSource: step1.locationSource || "google_places",
-            isHighwayRestaurant: step1.isHighwayRestaurant === true,
+            restaurantType: step1.restaurantType === "normal" ? "normal" : "highway",
             cuisines: Array.isArray(step2.cuisines) ? step2.cuisines : [],
             openingTime: normalizeTimeValue(step2.openingTime) || "",
             closingTime: normalizeTimeValue(step2.closingTime) || "",
@@ -2043,7 +2043,7 @@ export default function RestaurantOnboarding() {
         formData.append("ownerEmail", (step1.ownerEmail || "").trim())
         formData.append("ownerPhone", normalizePhoneDigits(step1.ownerPhone))
         formData.append("primaryContactNumber", normalizePhoneDigits(step1.primaryContactNumber))
-        formData.append("isHighwayRestaurant", step1.isHighwayRestaurant === true ? "true" : "false")
+        formData.append("restaurantType", step1.restaurantType === "normal" ? "normal" : "highway")
         formData.append("facilities", JSON.stringify(step1.facilities || {
           parking: false,
           wifi: false,
@@ -2298,8 +2298,8 @@ export default function RestaurantOnboarding() {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setStep1((prev) => ({ ...prev, isHighwayRestaurant: true }))}
-                className={`px-3 py-1.5 text-xs rounded-full border ${step1.isHighwayRestaurant === true
+                onClick={() => setStep1((prev) => ({ ...prev, restaurantType: "highway" }))}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.restaurantType !== "normal"
                   ? "bg-orange-600 text-white border-orange-600"
                   : "bg-white text-gray-700 border-gray-200"
                   }`}
@@ -2308,8 +2308,8 @@ export default function RestaurantOnboarding() {
               </button>
               <button
                 type="button"
-                onClick={() => setStep1((prev) => ({ ...prev, isHighwayRestaurant: false }))}
-                className={`px-3 py-1.5 text-xs rounded-full border ${step1.isHighwayRestaurant === false
+                onClick={() => setStep1((prev) => ({ ...prev, restaurantType: "normal" }))}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.restaurantType === "normal"
                   ? "bg-gray-900 text-white border-gray-900"
                   : "bg-white text-gray-700 border-gray-200"
                   }`}
@@ -2401,7 +2401,7 @@ export default function RestaurantOnboarding() {
       </section>
 
       <RestaurantAddressHighwaySection
-        sectionTitle="Restaurant contact & location"
+        sectionTitle="Restaurant Location Address"
         inputsDisabled={!isEditing}
         isGoogleMapsValid={isGoogleMapsValid}
         isSearchingLocation={isSearchingLocation}
@@ -2446,7 +2446,7 @@ export default function RestaurantOnboarding() {
             locationSearchInputRef.current.blur()
           }
         }}
-        isHighwayRestaurant={step1.isHighwayRestaurant === true}
+        isHighwayRestaurant={step1.restaurantType !== "normal"}
         highwayInfo={highwayInfo}
         pinMapContainerRef={pinMapContainerRef}
         isMapsSdkReady={isMapsSdkReady}

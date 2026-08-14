@@ -3,6 +3,7 @@ import * as adminService from '../services/admin.service.js';
 import { resolveGoogleMapsLink } from '../../location/services/location.service.js';
 import { FoodRestaurant } from '../../restaurant/models/restaurant.model.js';
 import { validateCategoryListQuery, validateCategoryRejectDto, validateCategoryUpsertDto } from '../validators/category.validator.js';
+import { validateRestaurantCommissionUpsertDto } from '../validators/commission.validator.js';
 import { validateCreateOfferDto, validateUpdateOfferCartVisibilityDto } from '../validators/offer.validator.js';
 import { validateCheckCompletionsDto, validateEarningAddonHistoryActionDto, validateEarningAddonUpsertDto, validateToggleEarningAddonStatusDto } from '../validators/earningAddon.validator.js';
 import { validateFeeSettingsUpsertDto } from '../validators/feeSettings.validator.js';

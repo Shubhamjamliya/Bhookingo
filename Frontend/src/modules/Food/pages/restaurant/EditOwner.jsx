@@ -318,6 +318,7 @@ export default function EditOwner() {
     // Restaurant details
     restaurantName: "",
     pureVegRestaurant: false,
+    restaurantType: "highway",
     primaryContactNumber: "",
     locationSource: "google_places",
 
@@ -430,6 +431,7 @@ export default function EditOwner() {
 
         if (apiData) {
           // Backend can return location in flat profile fields or onboarding step data.
+          const onboardingStep1 = apiData.onboarding?.step1 || {}
           const onboardingLocation = apiData.onboarding?.step1?.location || {}
           const originalLocation = apiData.originalData?.location || {}
           const loc = apiData.location || onboardingLocation || originalLocation || {}
@@ -459,6 +461,23 @@ export default function EditOwner() {
 
             restaurantName: apiData.restaurantName || apiData.name || "",
             pureVegRestaurant: Boolean(apiData.pureVegRestaurant),
+            restaurantType:
+              String(
+                apiData.restaurantType ||
+                onboardingStep1.restaurantType ||
+                apiData.originalData?.restaurantType ||
+                (
+                  typeof apiData.isHighwayRestaurant === "boolean"
+                    ? (apiData.isHighwayRestaurant ? "highway" : "normal")
+                    : typeof onboardingStep1.isHighwayRestaurant === "boolean"
+                      ? (onboardingStep1.isHighwayRestaurant ? "highway" : "normal")
+                      : typeof apiData.originalData?.isHighwayRestaurant === "boolean"
+                        ? (apiData.originalData.isHighwayRestaurant ? "highway" : "normal")
+                        : "highway"
+                )
+              ).toLowerCase() === "normal"
+                ? "normal"
+                : "highway",
             primaryContactNumber: (apiData.primaryContactNumber || "").replace(/\D/g, "").slice(-10),
             locationSource: apiData.locationSource || "google_places",
 
@@ -1293,6 +1312,7 @@ export default function EditOwner() {
 
         restaurantName: formData.restaurantName.trim(),
         pureVegRestaurant: formData.pureVegRestaurant,
+        restaurantType: formData.restaurantType === "normal" ? "normal" : "highway",
         primaryContactNumber: formData.primaryContactNumber.trim(),
         locationSource: formData.locationSource || "google_places",
 
@@ -1577,6 +1597,39 @@ export default function EditOwner() {
                   </div>
                 </div>
 
+                <div className="pt-2 border-t border-gray-100">
+                  <label className="text-xs font-bold text-gray-700 block mb-2 uppercase tracking-wide">
+                    Restaurant Type
+                  </label>
+                  <p className="text-[11px] text-gray-500 mb-3">
+                    Highway restaurants use NH / SH road detection. Normal restaurants skip highway detection.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange("restaurantType", "highway")}
+                      className={`flex-1 px-3 py-2.5 text-xs font-semibold rounded-full border transition-all ${
+                        formData.restaurantType !== "normal"
+                          ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+                          : "bg-white text-gray-700 border-gray-200 hover:border-orange-400"
+                      }`}
+                    >
+                      Highway Restaurant
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange("restaurantType", "normal")}
+                      className={`flex-1 px-3 py-2.5 text-xs font-semibold rounded-full border transition-all ${
+                        formData.restaurantType === "normal"
+                          ? "bg-gray-900 text-white border-gray-900 shadow-sm"
+                          : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                      }`}
+                    >
+                      Normal Restaurant
+                    </button>
+                  </div>
+                </div>
+
 
               </div>
 
@@ -1760,7 +1813,7 @@ export default function EditOwner() {
           {activeTab === "address" && (
             <div className="space-y-6">
               <RestaurantAddressHighwaySection
-                sectionTitle="Address Details"
+                sectionTitle="Restaurant Location Address"
                 sectionDescription="Use the same address selection flow as onboarding so route discovery can place the restaurant correctly on travel roads."
                 isGoogleMapsValid
                 isSearchingLocation={isSearchingLocation}
@@ -1783,7 +1836,7 @@ export default function EditOwner() {
                   if (!suggestion?.rawPrediction) return
                   handleLocationPredictionSelect(suggestion.rawPrediction)
                 }}
-                isHighwayRestaurant={formData.isHighwayRestaurant === true}
+                isHighwayRestaurant={formData.restaurantType !== "normal"}
                 highwayInfo={highwayInfo}
                 pinMapContainerRef={pinMapContainerRef}
                 isMapsSdkReady={isMapsSdkReady}

@@ -6,7 +6,7 @@ import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
 import { formatRoadDistance } from "@food/utils/formatRoadDistance"
 
 export default function RestaurantAddressHighwaySection({
-  sectionTitle = "Restaurant contact & location",
+  sectionTitle = "Restaurant Location Address",
   sectionDescription = null,
   locationError = "",
   inputsDisabled = false,

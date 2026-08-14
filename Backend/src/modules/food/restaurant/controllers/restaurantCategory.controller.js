@@ -11,21 +11,12 @@ import { FoodRestaurant } from '../models/restaurant.model.js';
 export const listCategoriesController = async (req, res, next) => {
     try {
         const restaurantId = req.user?.userId;
-        // Default to restaurant's zone when caller doesn't pass highwayId.
-        // This returns (zone categories + global categories) instead of only global.
         const query = { ...(req.query || {}) };
         if (!restaurantId) {
-            // Public endpoint: no auth available. Return approved categories (zone-aware).
             const data = await listPublicCategories(query);
             return sendResponse(res, 200, 'Categories fetched successfully', data);
         }
 
-        if (!query.highwayId) {
-            const r = await FoodRestaurant.findById(restaurantId).select('highwayId').lean();
-            if (r?.highwayId) {
-                query.highwayId = String(r.highwayId);
-            }
-        }
         const data = await listRestaurantCategories(restaurantId, query);
         return sendResponse(res, 200, 'Categories fetched successfully', data);
     } catch (error) {

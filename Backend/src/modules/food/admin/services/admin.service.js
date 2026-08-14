@@ -397,8 +397,7 @@ export async function getRestaurants(query) {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .select('restaurantName location area city profileImage coverImages menuImages status ownerName ownerPhone highwayId facilities rating totalRatings')
-            .populate('highwayId', 'name ref')
+            .select('restaurantName location area city profileImage coverImages menuImages status ownerName ownerPhone highwayName highwayRef facilities rating totalRatings')
             .lean(),
         FoodRestaurant.countDocuments(filter)
     ]);
@@ -1157,8 +1156,7 @@ export async function getRestaurantReport(query = {}) {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .select('restaurantName profileImage rating totalRatings status highwayId')
-            .populate('highwayId', 'name ref')
+            .select('restaurantName profileImage rating totalRatings status highwayName highwayRef')
             .lean(),
         FoodRestaurant.countDocuments(restaurantFilter)
     ]);
@@ -1252,7 +1250,7 @@ export async function getRestaurantReport(query = {}) {
             averageRatings: Number(restaurant.rating || 0),
             reviews: Number(restaurant.totalRatings || 0),
             status: restaurant.status || 'pending',
-            highwayName: restaurant.highwayId?.name || restaurant.highwayId?.ref || ''
+            highwayName: restaurant.highwayRef || restaurant.highwayName || ''
         };
     });
 
@@ -2181,7 +2179,6 @@ export async function getRestaurantById(id) {
     if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
     const restaurant = await FoodRestaurant.findById(id)
         .select('-__v')
-        .populate('highwayId', 'name ref isActive')
         .lean();
     return serializeRestaurantDocumentsForResponse(restaurant);
 }
@@ -2335,7 +2332,6 @@ export async function updateRestaurantMenuById(id, menu) {
 
 export async function getPendingRestaurants() {
     const restaurants = await FoodRestaurant.find({ status: { $in: ['pending', 'rejected'] } })
-        .populate('highwayId', 'name ref')
         .sort({ createdAt: -1 })
         .lean();
     return restaurants.map((restaurant, i) => {
@@ -2343,7 +2339,7 @@ export async function getPendingRestaurants() {
         return {
         ...r,
         sl: i + 1,
-        highway: r.highwayId?.name || r.highwayId?.ref || null,
+        highway: r.highwayRef || r.highwayName || null,
     };
     });
 }
@@ -2477,7 +2473,7 @@ export async function updateRestaurantById(id, body = {}) {
     }
 
     await doc.save();
-    const restaurant = await FoodRestaurant.findById(id).select('-__v').populate('highwayId', 'name ref isActive').lean();
+    const restaurant = await FoodRestaurant.findById(id).select('-__v').lean();
     return serializeRestaurantDocumentsForResponse(restaurant);
 }
 

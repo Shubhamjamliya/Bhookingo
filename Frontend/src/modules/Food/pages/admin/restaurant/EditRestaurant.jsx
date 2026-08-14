@@ -105,10 +105,10 @@ const normalizeLocationFormFromRestaurant = (restaurant) => {
 const normalizeDetailsFormFromRestaurant = (restaurant) => {
   return {
     name: restaurant?.name || restaurant?.restaurantName || "",
-    isHighwayRestaurant:
-      typeof restaurant?.isHighwayRestaurant === "boolean"
-        ? restaurant.isHighwayRestaurant
-        : true,
+    restaurantType:
+      String(restaurant?.restaurantType || "").toLowerCase() === "normal"
+        ? "normal"
+        : "highway",
     pureVegRestaurant:
       typeof restaurant?.pureVegRestaurant === "boolean"
         ? restaurant.pureVegRestaurant
@@ -590,7 +590,7 @@ export default function EditRestaurant() {
   }, [])
 
   useEffect(() => {
-    if (detailsForm.isHighwayRestaurant !== true) {
+    if (detailsForm.restaurantType === "normal") {
       setHighwayInfo({ loading: false, status: null, highwayName: null, highwayRef: null, distanceMeters: null, thresholdMeters: null })
       return
     }
@@ -603,7 +603,7 @@ export default function EditRestaurant() {
     }
 
     detectHighwayForLocation(lat, lng)
-  }, [detailsForm.isHighwayRestaurant, locationForm.latitude, locationForm.longitude, detectHighwayForLocation])
+  }, [detailsForm.restaurantType, locationForm.latitude, locationForm.longitude, detectHighwayForLocation])
 
   const autoDetectedHighwayRef = extractHighwayRef(highwayInfo.highwayRef || highwayInfo.highwayName || "")
 
@@ -705,7 +705,7 @@ export default function EditRestaurant() {
 
       const payload = {
         name: detailsForm.name,
-        isHighwayRestaurant: detailsForm.isHighwayRestaurant === true,
+        restaurantType: detailsForm.restaurantType === "normal" ? "normal" : "highway",
         pureVegRestaurant: detailsForm.pureVegRestaurant === true,
         ownerName: detailsForm.ownerName,
         ownerEmail: detailsForm.ownerEmail,
@@ -767,9 +767,8 @@ export default function EditRestaurant() {
         postalCode: locationForm.pincode || "",
         roadName: locationForm.roadName || "",
         placeId: locationForm.placeId || "",
-        highwayRef: detailsForm.isHighwayRestaurant === true ? (locationForm.highwayRef || "") : "",
-        highwayName: detailsForm.isHighwayRestaurant === true ? (highwayInfo.highwayName || "") : "",
-        isHighwayRestaurant: detailsForm.isHighwayRestaurant === true,
+        highwayRef: detailsForm.restaurantType !== "normal" ? (locationForm.highwayRef || "") : "",
+        highwayName: detailsForm.restaurantType !== "normal" ? (highwayInfo.highwayName || "") : "",
       }
 
       const res = await adminAPI.updateRestaurantLocation(restaurantId, payload)
@@ -875,8 +874,8 @@ export default function EditRestaurant() {
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setDetailsForm((p) => ({ ...p, isHighwayRestaurant: true }))}
-                      className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.isHighwayRestaurant === true
+                      onClick={() => setDetailsForm((p) => ({ ...p, restaurantType: "highway" }))}
+                      className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.restaurantType !== "normal"
                           ? "bg-orange-600 text-white border-orange-600"
                           : "bg-white text-gray-700 border-gray-200"
                         }`}
@@ -885,8 +884,8 @@ export default function EditRestaurant() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDetailsForm((p) => ({ ...p, isHighwayRestaurant: false }))}
-                      className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.isHighwayRestaurant === false
+                      onClick={() => setDetailsForm((p) => ({ ...p, restaurantType: "normal" }))}
+                      className={`px-3 py-1.5 text-xs rounded-full border ${detailsForm.restaurantType === "normal"
                           ? "bg-gray-900 text-white border-gray-900"
                           : "bg-white text-gray-700 border-gray-200"
                         }`}
@@ -1167,7 +1166,7 @@ export default function EditRestaurant() {
             <section className="bg-white p-4 sm:p-6 rounded-md border border-slate-200 space-y-4">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-black">Restaurant contact & location</h2>
+                  <h2 className="text-lg font-semibold text-black">Restaurant Location Address</h2>
                 </div>
                 <Button onClick={handleSaveLocation} disabled={savingLocation}>
                   {savingLocation ? (
@@ -1197,7 +1196,7 @@ export default function EditRestaurant() {
                 locationSuggestionsVisible={!isGoogleMapsValid && locationSuggestions.length > 0}
                 searchPlaceholder="Start typing your restaurant address..."
                 searchHelpText="Select a suggestion from the dropdown to fill address + coordinates."
-                isHighwayRestaurant={detailsForm.isHighwayRestaurant === true}
+                isHighwayRestaurant={detailsForm.restaurantType !== "normal"}
                 highwayInfo={highwayInfo}
                 pinMapContainerRef={pinMapContainerRef}
                 isMapsSdkReady={isMapsSdkReady}
@@ -1224,7 +1223,7 @@ export default function EditRestaurant() {
                   </div>
                 }
                 extraHighwayField={
-                  detailsForm.isHighwayRestaurant === true ? (
+                  detailsForm.restaurantType !== "normal" ? (
                     <div>
                       <Label className="text-xs text-gray-700">NH / SH reference</Label>
                       <Input

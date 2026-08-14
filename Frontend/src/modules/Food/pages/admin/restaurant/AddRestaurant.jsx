@@ -428,7 +428,7 @@ export default function AddRestaurant() {
   // Step 1: Basic Info
   const [step1, setStep1] = useState({
     restaurantName: "",
-    isHighwayRestaurant: true,
+    restaurantType: "highway",
     pureVegRestaurant: null,
     ownerName: "",
     ownerEmail: "",
@@ -545,7 +545,7 @@ export default function AddRestaurant() {
   }, [])
 
   useEffect(() => {
-    if (step1.isHighwayRestaurant !== true) {
+    if (step1.restaurantType === "normal") {
       setHighwayInfo({
         loading: false,
         status: null,
@@ -580,7 +580,7 @@ export default function AddRestaurant() {
     return () => {
       if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
     }
-  }, [step1.isHighwayRestaurant, step1.location?.latitude, step1.location?.longitude, step1.location?.formattedAddress, step1.location?.addressLine1, detectHighwayForLocation])
+  }, [step1.restaurantType, step1.location?.latitude, step1.location?.longitude, step1.location?.formattedAddress, step1.location?.addressLine1, detectHighwayForLocation])
 
   const autoDetectedRoadLabel = (() => {
     if (highwayInfo.highwayRef) {
@@ -945,12 +945,12 @@ export default function AddRestaurant() {
     const lng = Number(step1.location?.longitude)
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       errors.push("Please search and select a location so map coordinates are captured.")
-    } else if (step1.isHighwayRestaurant === true && highwayInfo.loading) {
+    } else if (step1.restaurantType !== "normal" && highwayInfo.loading) {
       errors.push(HIGHWAY_DETECTION_COPY.validationPending)
-    } else if (step1.isHighwayRestaurant === true && highwayInfo.status !== "IN_SERVICE") {
+    } else if (step1.restaurantType !== "normal" && highwayInfo.status !== "IN_SERVICE") {
       errors.push(HIGHWAY_DETECTION_COPY.validationFailed)
     }
-    if (step1.isHighwayRestaurant === true && !step1.location?.roadName?.trim()) errors.push("Road name is required")
+    if (step1.restaurantType !== "normal" && !step1.location?.roadName?.trim()) errors.push("Road name is required")
     return errors
   }
 
@@ -1096,7 +1096,7 @@ export default function AddRestaurant() {
         ownerEmail: step1.ownerEmail,
         ownerPhone: step1.ownerPhone,
         primaryContactNumber: step1.primaryContactNumber,
-        isHighwayRestaurant: step1.isHighwayRestaurant === true,
+        restaurantType: step1.restaurantType === "normal" ? "normal" : "highway",
 
         location: step1.location,
         locationSource: step1.locationSource || "google_places",
@@ -1614,8 +1614,8 @@ export default function AddRestaurant() {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setStep1((prev) => ({ ...prev, isHighwayRestaurant: true }))}
-                className={`px-3 py-1.5 text-xs rounded-full border ${step1.isHighwayRestaurant === true
+                onClick={() => setStep1((prev) => ({ ...prev, restaurantType: "highway" }))}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.restaurantType !== "normal"
                   ? "bg-orange-600 text-white border-orange-600"
                   : "bg-white text-gray-700 border-gray-200"
                   }`}
@@ -1624,8 +1624,8 @@ export default function AddRestaurant() {
               </button>
               <button
                 type="button"
-                onClick={() => setStep1((prev) => ({ ...prev, isHighwayRestaurant: false }))}
-                className={`px-3 py-1.5 text-xs rounded-full border ${step1.isHighwayRestaurant === false
+                onClick={() => setStep1((prev) => ({ ...prev, restaurantType: "normal" }))}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.restaurantType === "normal"
                   ? "bg-gray-900 text-white border-gray-900"
                   : "bg-white text-gray-700 border-gray-200"
                   }`}
@@ -1677,7 +1677,7 @@ export default function AddRestaurant() {
       </section>
 
       <RestaurantAddressHighwaySection
-        sectionTitle="Restaurant contact & location"
+        sectionTitle="Restaurant Location Address"
         isGoogleMapsValid={isGoogleMapsValid}
         isSearchingLocation={isSearchingLocation}
         locationSearchValue={locationSearchValue}
@@ -1721,7 +1721,7 @@ export default function AddRestaurant() {
             locationSearchInputRef.current.blur()
           }
         }}
-        isHighwayRestaurant={step1.isHighwayRestaurant === true}
+        isHighwayRestaurant={step1.restaurantType !== "normal"}
         highwayInfo={highwayInfo}
         pinMapContainerRef={pinMapContainerRef}
         isMapsSdkReady={isMapsSdkReady}

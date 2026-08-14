@@ -153,7 +153,7 @@ export async function calculateOrder(userId, dto) {
 // ----- Create order -----
 export async function createOrder(userId, dto) {
   const restaurant = await FoodRestaurant.findById(dto.restaurantId)
-    .select("status restaurantName highwayId location isAcceptingOrders takeawaySettings diningSettings isHighwayRestaurant")
+    .select("status restaurantName restaurantType location isAcceptingOrders takeawaySettings diningSettings")
     .lean();
   if (!restaurant) throw new ValidationError("Restaurant not found");
   if (restaurant.status !== "approved")
@@ -161,7 +161,7 @@ export async function createOrder(userId, dto) {
   if (restaurant.isAcceptingOrders === false)
     throw new ValidationError("Restaurant not accepting orders");
 
-  if (restaurant.isHighwayRestaurant) {
+  if (restaurant.restaurantType === "highway") {
     const { validateOrderDrivingRange } = await import('../../driving/services/driving.service.js');
     await validateOrderDrivingRange(restaurant, dto.userLocation);
   }
@@ -358,7 +358,7 @@ export async function createOrder(userId, dto) {
     restaurantId: new mongoose.Types.ObjectId(dto.restaurantId),
     highwayId: dto.highwayId
       ? new mongoose.Types.ObjectId(dto.highwayId)
-      : restaurant.highwayId,
+      : null,
     items: dto.items,
     orderType,
     pricing: normalizedPricing,

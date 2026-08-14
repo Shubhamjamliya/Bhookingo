@@ -83,7 +83,6 @@ const restaurantRegisterSchema = z.object({
     longitude: z.string().optional(),
     locationSource: z.string().optional(),
     placeId: z.string().optional(),
-    isHighwayRestaurant: optionalBooleanSchema,
     restaurantType: z.enum(['highway', 'normal']).optional(),
     cuisines: z
         .string()
@@ -154,7 +153,6 @@ export const validateRestaurantRegisterDto = (body) => {
     return {
         ...data,
         gstRegistered: data.gstRegistered ?? false,
-        isHighwayRestaurant: data.isHighwayRestaurant ?? true,
         restaurantType: data.restaurantType || 'highway'
     };
 };

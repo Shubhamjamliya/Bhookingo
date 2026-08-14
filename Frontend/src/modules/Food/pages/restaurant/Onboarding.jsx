@@ -806,12 +806,10 @@ export default function RestaurantOnboarding() {
     loading: false,
     status: null,
     thresholdMeters: null,
-    highwayId: null,
     highwayName: null,
     highwayRef: null,
     distanceMeters: null,
   })
-  const [selectedHighwayId, setSelectedHighwayId] = useState("")
   const [isRoadNameDirty, setIsRoadNameDirty] = useState(false)
   const [isMapsSdkReady, setIsMapsSdkReady] = useState(() => Boolean(window.google?.maps))
   const highwayDetectTimerRef = useRef(null)
@@ -1399,7 +1397,6 @@ export default function RestaurantOnboarding() {
         loading: false,
         status: null,
         thresholdMeters: null,
-        highwayId: null,
         highwayName: null,
         highwayRef: null,
         distanceMeters: null,
@@ -1416,23 +1413,19 @@ export default function RestaurantOnboarding() {
           loading: false,
           status: data.status,
           thresholdMeters: data.thresholdMeters ?? null,
-          highwayId: data.highwayId || null,
           highwayName: data.highwayName || null,
           highwayRef: data.highwayRef || null,
           distanceMeters: data.distanceMeters ?? null,
         })
-        setSelectedHighwayId(data.highwayId ? String(data.highwayId) : "")
       } else {
         setHighwayInfo({
           loading: false,
           status: "OUT_OF_SERVICE",
           thresholdMeters: null,
-          highwayId: null,
           highwayName: null,
           highwayRef: null,
           distanceMeters: null,
         })
-        setSelectedHighwayId("")
       }
     } catch {
       setHighwayInfo((prev) => ({ ...prev, loading: false }))
@@ -1446,12 +1439,10 @@ export default function RestaurantOnboarding() {
         loading: false,
         status: null,
         thresholdMeters: null,
-        highwayId: null,
         highwayName: null,
         highwayRef: null,
         distanceMeters: null,
       })
-      setSelectedHighwayId("")
       return
     }
 
@@ -1462,12 +1453,10 @@ export default function RestaurantOnboarding() {
         loading: false,
         status: null,
         thresholdMeters: null,
-        highwayId: null,
         highwayName: null,
         highwayRef: null,
         distanceMeters: null,
       })
-      setSelectedHighwayId("")
       return
     }
 
@@ -1997,9 +1986,6 @@ export default function RestaurantOnboarding() {
             },
             locationSource: step1.locationSource || "google_places",
             isHighwayRestaurant: step1.isHighwayRestaurant === true,
-            ...(step1.isHighwayRestaurant === true && highwayInfo.status === "IN_SERVICE" && (selectedHighwayId || highwayInfo.highwayId)
-              ? { highwayId: String(selectedHighwayId || highwayInfo.highwayId) }
-              : {}),
             cuisines: Array.isArray(step2.cuisines) ? step2.cuisines : [],
             openingTime: normalizeTimeValue(step2.openingTime) || "",
             closingTime: normalizeTimeValue(step2.closingTime) || "",
@@ -2079,10 +2065,6 @@ export default function RestaurantOnboarding() {
         formData.append("longitude", String(step1.location?.longitude || ""))
         formData.append("locationSource", step1.locationSource || "google_places")
         formData.append("placeId", step1.location?.placeId || "")
-        if (step1.isHighwayRestaurant === true && highwayInfo.status === "IN_SERVICE" && (selectedHighwayId || highwayInfo.highwayId)) {
-          formData.append("highwayId", String(selectedHighwayId || highwayInfo.highwayId))
-        }
-
         // Step 2
         formData.append("cuisines", (step2.cuisines || []).join(","))
         formData.append("openingTime", normalizeTimeValue(step2.openingTime) || "")
@@ -2681,9 +2663,6 @@ export default function RestaurantOnboarding() {
                   {highwayInfo.highwayName && (
                     <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
                   )}
-                  {highwayInfo.highwayId && (
-                    <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
-                  )}
                   <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                 </div>
               </div>
@@ -2698,9 +2677,6 @@ export default function RestaurantOnboarding() {
                     <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                     {highwayInfo.highwayName && (
                       <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
-                    )}
-                    {highwayInfo.highwayId && (
-                      <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
                     )}
                     <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                   </div>

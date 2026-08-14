@@ -83,7 +83,6 @@ const restaurantRegisterSchema = z.object({
     longitude: z.string().optional(),
     locationSource: z.string().optional(),
     placeId: z.string().optional(),
-    highwayId: z.string().optional(),
     isHighwayRestaurant: optionalBooleanSchema,
     restaurantType: z.enum(['highway', 'normal']).optional(),
     cuisines: z

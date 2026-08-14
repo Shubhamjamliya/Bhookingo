@@ -204,7 +204,6 @@ const toRestaurantProfile = (doc) => {
         restaurantId: doc.restaurantId || undefined,
         name: doc.restaurantName || '',
         restaurantName: doc.restaurantName || '',
-        highwayId: doc.highwayId ? String(doc.highwayId) : '',
         restaurantType: doc.restaurantType || (doc.isHighwayRestaurant ? 'highway' : 'normal'),
         highwayName: doc.highwayName || '',
         highwayRef: doc.highwayRef || '',
@@ -346,7 +345,6 @@ export const registerRestaurant = async (payload, files) => {
         longitude,
         locationSource,
         placeId,
-        highwayId,
         isHighwayRestaurant,
         restaurantType,
         cuisines,
@@ -443,7 +441,6 @@ export const registerRestaurant = async (payload, files) => {
             primaryContactNumber,
             restaurantType: wantsHighwayRestaurant ? 'highway' : 'normal',
             pureVegRestaurant: pureVegRestaurant === true,
-            highwayId: null,
             highwayName: wantsHighwayRestaurant ? (googleHighwayDetection?.highwayName || null) : null,
             highwayRef: wantsHighwayRestaurant ? (googleHighwayDetection?.highwayRef || null) : null,
             isHighwayRestaurant: wantsHighwayRestaurant,
@@ -534,7 +531,6 @@ export const getCurrentRestaurantProfile = async (restaurantId) => {
             [
                 'restaurantName',
                 'restaurantId',
-                'highwayId',
                 'cuisines',
                 'location',
                 'addressLine1',
@@ -922,13 +918,6 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         update.facilities = buildFacilitiesPayload(parsedFacilities);
     }
 
-    if (body.highwayId !== undefined) {
-        const highwayId = String(body.highwayId || '').trim();
-        update.highwayId = highwayId && mongoose.Types.ObjectId.isValid(highwayId)
-            ? new mongoose.Types.ObjectId(highwayId)
-            : undefined;
-    }
-
     if (body.isHighwayRestaurant !== undefined) {
         let parsedIsHighwayRestaurant;
         if (typeof body.isHighwayRestaurant === 'boolean') {
@@ -951,7 +940,6 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         update.restaurantType = parsedIsHighwayRestaurant ? 'highway' : 'normal';
 
         if (!parsedIsHighwayRestaurant) {
-            update.highwayId = null;
             update.highwayName = null;
             update.highwayRef = null;
         }
@@ -1226,7 +1214,6 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                     'accountType',
                     'upiId',
                     'upiQrImage',
-                    'highwayId',
                     'facilities',
                     'rejectionReason',
                     'rejectedAt',
@@ -1280,7 +1267,6 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                         'accountType',
                         'upiId',
                         'upiQrImage',
-                        'highwayId',
                         'highwayName',
                         'highwayRef',
                         'isHighwayRestaurant',
@@ -1491,9 +1477,6 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}, o
         const matchConditions = [
             { distanceMeters: { $lte: radiusKm * 1000 } }
         ];
-        if (currentHighwayId && includeHighwayRestaurants && highwayUnlimitedDistance) {
-            matchConditions.push({ highwayId: currentHighwayId });
-        }
         pipeline.push({
             $match: {
                 $or: matchConditions
@@ -1503,9 +1486,7 @@ export const getNearbyRestaurantsPipeline = async (lat, lng, queryFilter = {}, o
         // Add fields for highway priority sorting and distance formatting
         pipeline.push({
             $addFields: {
-                isOnCurrentHighway: currentHighwayId
-                    ? { $cond: [{ $eq: ['$highwayId', currentHighwayId] }, 1, 0] }
-                    : 0,
+                isOnCurrentHighway: 0,
                 distanceInKm: { $round: [{ $divide: ['$distanceMeters', 1000] }, 2] },
                 distance: {
                     $cond: [

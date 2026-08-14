@@ -378,7 +378,6 @@ export default function EditOwner() {
   const [highwayInfo, setHighwayInfo] = useState({
     loading: false,
     status: null,
-    highwayId: null,
     highwayName: null,
     highwayRef: null,
     distanceMeters: null,
@@ -625,7 +624,6 @@ export default function EditOwner() {
       setHighwayInfo({
         loading: false,
         status: null,
-        highwayId: null,
         highwayName: null,
         highwayRef: null,
         distanceMeters: null,
@@ -645,7 +643,6 @@ export default function EditOwner() {
           setHighwayInfo({
             loading: false,
             status: data.status,
-            highwayId: data.highwayId || null,
             highwayName: data.highwayName || null,
             highwayRef: data.highwayRef || null,
             distanceMeters: data.distanceMeters ?? null,
@@ -655,7 +652,6 @@ export default function EditOwner() {
           setHighwayInfo({
             loading: false,
             status: "OUT_OF_SERVICE",
-            highwayId: null,
             highwayName: null,
             highwayRef: null,
             distanceMeters: null,
@@ -667,7 +663,6 @@ export default function EditOwner() {
           setHighwayInfo({
             loading: false,
             status: "OUT_OF_SERVICE",
-            highwayId: null,
             highwayName: null,
             highwayRef: null,
             distanceMeters: null,
@@ -1317,9 +1312,6 @@ export default function EditOwner() {
           roadName: formData.location.roadName.trim(),
           latitude: formData.location.latitude ? parseFloat(formData.location.latitude) : null,
           longitude: formData.location.longitude ? parseFloat(formData.location.longitude) : null,
-          ...(highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId
-            ? { highwayId: String(highwayInfo.highwayId) }
-            : {}),
         },
         cuisines: formData.cuisines,
         openingTime: formData.openingTime,
@@ -1963,7 +1955,6 @@ export default function EditOwner() {
                         <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
                           <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                           {highwayInfo.highwayName && <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
-                          {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
                           {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>}
                         </div>
                       </div>
@@ -1977,7 +1968,6 @@ export default function EditOwner() {
                           <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
                             <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                             {highwayInfo.highwayName && <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
-                            {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
                             {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>}
                           </div>
                         )}

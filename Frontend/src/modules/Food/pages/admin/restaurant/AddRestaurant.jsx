@@ -486,7 +486,6 @@ export default function AddRestaurant() {
   const [highwayInfo, setHighwayInfo] = useState({
     loading: false,
     status: null,
-    highwayId: null,
     highwayName: null,
     highwayRef: null,
     distanceMeters: null,
@@ -508,7 +507,6 @@ export default function AddRestaurant() {
       setHighwayInfo({
         loading: false,
         status: null,
-        highwayId: null,
         highwayName: null,
         highwayRef: null,
         distanceMeters: null,
@@ -525,7 +523,6 @@ export default function AddRestaurant() {
         setHighwayInfo({
           loading: false,
           status: data.status,
-          highwayId: data.highwayId || null,
           highwayName: data.highwayName || null,
           highwayRef: data.highwayRef || null,
           distanceMeters: data.distanceMeters ?? null,
@@ -535,7 +532,6 @@ export default function AddRestaurant() {
         setHighwayInfo({
           loading: false,
           status: "OUT_OF_SERVICE",
-          highwayId: null,
           highwayName: null,
           highwayRef: null,
           distanceMeters: null,
@@ -552,7 +548,6 @@ export default function AddRestaurant() {
       setHighwayInfo({
         loading: false,
         status: null,
-        highwayId: null,
         highwayName: null,
         highwayRef: null,
         distanceMeters: null,
@@ -567,7 +562,6 @@ export default function AddRestaurant() {
       setHighwayInfo({
         loading: false,
         status: null,
-        highwayId: null,
         highwayName: null,
         highwayRef: null,
         distanceMeters: null,
@@ -1105,7 +1099,6 @@ export default function AddRestaurant() {
 
         location: step1.location,
         locationSource: step1.locationSource || "google_places",
-        ...(step1.isHighwayRestaurant === true && highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId ? { highwayId: String(highwayInfo.highwayId) } : {}),
         // Step 2
         menuImages: menuImagesData,
         profileImage: profileImageData,
@@ -1782,7 +1775,6 @@ export default function AddRestaurant() {
               <div className="pl-6 text-gray-600 space-y-0.5">
                 <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                 {highwayInfo.highwayName && (<p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
-                {highwayInfo.highwayId && (<p>Highway ID: <span className="font-medium text-gray-900">{String(highwayInfo.highwayId)}</span></p>)}
                 <p>Distance: <span className="font-medium text-gray-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
               </div>
             </div>
@@ -1798,7 +1790,6 @@ export default function AddRestaurant() {
                 <div className="pl-6 text-gray-600 space-y-0.5">
                   <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                   {highwayInfo.highwayName && (<p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
-                  {highwayInfo.highwayId && (<p>Highway ID: <span className="font-medium text-gray-900">{String(highwayInfo.highwayId)}</span></p>)}
                   <p>Distance: <span className="font-medium text-gray-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>
                 </div>
               )}

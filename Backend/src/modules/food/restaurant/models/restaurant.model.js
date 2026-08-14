@@ -221,13 +221,6 @@ const restaurantSchema = new mongoose.Schema(
       default: "google_places",
     },
 
-    /** National Highway classification (auto-assigned from location). */
-    highwayId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "FoodHighway",
-      index: true,
-      default: null,
-    },
     highwayName: {
       type: String,
       trim: true,
@@ -544,7 +537,6 @@ restaurantSchema.index({ status: 1, rating: -1, createdAt: -1 });
 restaurantSchema.index({ "takeawaySettings.isEnabled": 1 });
 restaurantSchema.index({ "diningSettings.isEnabled": 1 });
 
-restaurantSchema.index({ highwayId: 1, status: 1 });
 restaurantSchema.index({ isHighwayRestaurant: 1, status: 1 });
 
 export const FoodRestaurant = mongoose.model(

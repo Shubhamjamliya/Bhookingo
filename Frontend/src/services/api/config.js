@@ -9,6 +9,14 @@ export const API_BASE_URL =
     ? String(import.meta.env.VITE_API_BASE_URL).replace(/\/$/, "")
     : "";
 
+export const SOCKET_URL =
+  typeof import.meta !== "undefined" && import.meta.env?.VITE_SOCKET_URL
+    ? String(import.meta.env.VITE_SOCKET_URL).replace(/\/$/, "")
+    : API_BASE_URL
+    ? API_BASE_URL.replace(/\/api\/v\d+\/?$/i, "").replace(/\/api\/?$/i, "").replace(/\/+$/, "")
+    : "";
+
+
 // Minimal shape so existing API_ENDPOINTS.* references do not break
 export const API_ENDPOINTS = {
   AUTH: { SEND_OTP: "", VERIFY_OTP: "", REGISTER: "", LOGIN: "", ME: "", LOGOUT: "", REFRESH_TOKEN: "" },
@@ -63,4 +71,4 @@ export const API_ENDPOINTS = {
   DINING: { RESTAURANTS: "", RESTAURANT_BY_SLUG: "", CATEGORIES: "", BOOKING_CREATE: "", BOOKING_MY: "", BOOKING_RESTAURANT: "", BOOKING_STATUS: "", BOOKING_STATUS_RESTAURANT: "", OFFER_BANNERS: "", REVIEW_CREATE: "" },
 };
 
-export default { API_BASE_URL, API_ENDPOINTS };
+export default { API_BASE_URL, SOCKET_URL, API_ENDPOINTS };

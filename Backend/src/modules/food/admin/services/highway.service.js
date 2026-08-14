@@ -23,6 +23,60 @@ import { detectHighwayUsingGoogleMaps } from '../../location/services/location.s
 const cloneCoordinate = (coord) => ({ lat: Number(coord?.lat), lng: Number(coord?.lng) });
 const cloneSegment = (segment = []) => segment.map(cloneCoordinate);
 
+const NEAREST_HIGHWAY_CACHE_TTL_MS = 5 * 60 * 1000;
+const NEAREST_HIGHWAY_CACHE_MAX_ENTRIES = 1000;
+const nearestHighwayCache = new Map();
+
+const segmentIntersectsSearchArea = (coordinates, lat, lng, paddingMeters) => {
+    if (!Array.isArray(coordinates) || coordinates.length < 2) return false;
+
+    const latitudePadding = paddingMeters / 111_000;
+    const longitudeScale = Math.max(Math.cos((lat * Math.PI) / 180), 0.1);
+    const longitudePadding = paddingMeters / (111_000 * longitudeScale);
+    const searchMinLat = lat - latitudePadding;
+    const searchMaxLat = lat + latitudePadding;
+    const searchMinLng = lng - longitudePadding;
+    const searchMaxLng = lng + longitudePadding;
+
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    let minLng = Infinity;
+    let maxLng = -Infinity;
+
+    for (const coordinate of coordinates) {
+        const coordinateLat = Number(coordinate?.lat ?? coordinate?.latitude);
+        const coordinateLng = Number(coordinate?.lng ?? coordinate?.longitude);
+        if (!Number.isFinite(coordinateLat) || !Number.isFinite(coordinateLng)) continue;
+
+        minLat = Math.min(minLat, coordinateLat);
+        maxLat = Math.max(maxLat, coordinateLat);
+        minLng = Math.min(minLng, coordinateLng);
+        maxLng = Math.max(maxLng, coordinateLng);
+    }
+
+    return Number.isFinite(minLat)
+        && maxLat >= searchMinLat
+        && minLat <= searchMaxLat
+        && maxLng >= searchMinLng
+        && minLng <= searchMaxLng;
+};
+
+const cacheNearestHighwayLookup = (key, lookup) => {
+    if (nearestHighwayCache.size >= NEAREST_HIGHWAY_CACHE_MAX_ENTRIES) {
+        const oldestKey = nearestHighwayCache.keys().next().value;
+        if (oldestKey !== undefined) nearestHighwayCache.delete(oldestKey);
+    }
+
+    const promise = Promise.resolve().then(lookup);
+    nearestHighwayCache.set(key, {
+        expiresAt: Date.now() + NEAREST_HIGHWAY_CACHE_TTL_MS,
+        promise
+    });
+
+    promise.catch(() => nearestHighwayCache.delete(key));
+    return promise;
+};
+
 const normalizeGeometryPayload = (geometry = {}) => {
     const coordinates = Array.isArray(geometry.coordinates)
         ? geometry.coordinates.map(cloneCoordinate).filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng))
@@ -219,6 +273,9 @@ export async function importHighwaysFromGeoJSON(geojson) {
         }
     }
 
+    // Highway geometry changed, so previously resolved location cells may be stale.
+    nearestHighwayCache.clear();
+
     return {
         inserted,
         updated,
@@ -231,14 +288,16 @@ export async function importHighwaysFromGeoJSON(geojson) {
 export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters = 7000) => {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
-    const paddingDeg = searchPaddingMeters / 111_000;
+    const latitudePadding = searchPaddingMeters / 111_000;
+    const longitudeScale = Math.max(Math.cos((lat * Math.PI) / 180), 0.1);
+    const longitudePadding = searchPaddingMeters / (111_000 * longitudeScale);
 
     const candidates = await FoodHighway.find({
         isActive: true,
-        'boundingBox.minLat': { $lte: lat + paddingDeg },
-        'boundingBox.maxLat': { $gte: lat - paddingDeg },
-        'boundingBox.minLng': { $lte: lng + paddingDeg },
-        'boundingBox.maxLng': { $gte: lng - paddingDeg }
+        'boundingBox.minLat': { $lte: lat + latitudePadding },
+        'boundingBox.maxLat': { $gte: lat - latitudePadding },
+        'boundingBox.minLng': { $lte: lng + longitudePadding },
+        'boundingBox.maxLng': { $gte: lng - longitudePadding }
     })
         .select('name ref geometryPath boundingBox')
         .lean();
@@ -268,6 +327,7 @@ export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters 
 
         for (const coords of segmentList) {
             if (!coords || coords.length < 2) continue;
+            if (!segmentIntersectsSearchArea(coords, lat, lng, searchPaddingMeters)) continue;
 
             const lineCoords = coords
                 .map((c) => [Number(c?.lng ?? c?.longitude), Number(c?.lat ?? c?.latitude)])
@@ -288,7 +348,9 @@ export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters 
 
             if (distMeters < nearestDistance) {
                 nearestDistance = distMeters;
-                nearest = hydratedHighway;
+                // The callers only need highway metadata. Avoid retaining or returning
+                // hundreds of thousands of hydrated coordinate objects.
+                nearest = candidate;
             }
         }
     }
@@ -299,9 +361,18 @@ export const findNearestHighwayUnchecked = async (lat, lng, searchPaddingMeters 
 
 export async function findNearestHighway(lat, lng, thresholdMeters) {
     const threshold = thresholdMeters || await getHighwayThresholdMeters();
-    const result = await findNearestHighwayUnchecked(lat, lng, threshold + 5000);
-    if (!result || result.distanceMeters > threshold) return null;
-    return result;
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(threshold)) return null;
+
+    const cacheKey = `${lat.toFixed(4)}:${lng.toFixed(4)}:${Math.round(threshold)}`;
+    const cached = nearestHighwayCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.promise;
+    if (cached) nearestHighwayCache.delete(cacheKey);
+
+    return cacheNearestHighwayLookup(cacheKey, async () => {
+        const result = await findNearestHighwayUnchecked(lat, lng, threshold + 5000);
+        if (!result || result.distanceMeters > threshold) return null;
+        return result;
+    });
 }
 
 export async function assignHighwayToRestaurant(restaurantId, thresholdOverride = null) {
@@ -430,7 +501,7 @@ export async function deleteHighway(id) {
     const existing = await FoodHighway.findById(id).select('geometryPath').lean();
     const result = await FoodHighway.findByIdAndDelete(id);
     if (!result) throw new ValidationError('Highway not found');
-    await deleteHighwayGeometry(existing?.geometryPath).catch(() => {});
+    await deleteHighwayGeometry(existing?.geometryPath).catch(() => { });
     return { deleted: true };
 }
 

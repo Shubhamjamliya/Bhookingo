@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
-import { API_BASE_URL } from '@food/api/config';
+import { API_BASE_URL, SOCKET_URL } from '@food/api/config';
 import { restaurantAPI } from '@food/api';
 const alertSound = '/restaurant_alert.mp3';
 import { dispatchNotificationInboxRefresh } from '@food/hooks/useNotificationInbox';
@@ -527,7 +527,7 @@ export const useRestaurantNotifications = () => {
     }
 
     // Backend uses default namespace; rooms handle role separation.
-    const socketUrl = `${socketOrigin}`;
+    const socketUrl = SOCKET_URL || `${socketOrigin}`;
     
     // Validate socket URL format
     try {

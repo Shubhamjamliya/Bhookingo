@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,6 +29,7 @@ import { useProfile } from "@food/context/ProfileContext";
 import { useLocation } from "@food/hooks/useLocation";
 import { restaurantAPI } from "@food/api";
 import { API_BASE_URL } from "@food/api/config";
+import { useQueryClient } from "@tanstack/react-query";
 import { useDelayedLoading } from "@food/hooks/useDelayedLoading";
 import BookingRangeBadge, { getRestaurantDistanceKm } from "@food/components/user/BookingRangeBadge";
 import { shouldShowRestaurantInVegMode } from "@food/utils/vegUtils";
@@ -37,7 +38,7 @@ import { getRestaurantAvailabilityStatus } from "@food/utils/restaurantAvailabil
 import HomeHeader from "@food/components/user/home/HomeHeader";
 import homeBannerRed from "@food/assets/home-banner-orange-clean.png";
 
-const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
+const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api(?:\/v\d+)?\/?$/i, "");
 
 const normalizeImageUrl = (imageUrl) => {
   if (typeof imageUrl !== "string" || !imageUrl.trim()) return "";
@@ -133,39 +134,8 @@ const formatRatingsDisplay = (ratingNum, totalRatingsNum) => {
   };
 };
 
-const WEBVIEW_SESSION_CACHE_BUSTER = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
 const RestaurantImageCarousel = React.memo(({ restaurant, priority = false }) => {
-  const webviewSessionKeyRef = useRef(WEBVIEW_SESSION_CACHE_BUSTER);
   const imageElementRef = useRef(null);
-
-  const withCacheBuster = useCallback((url) => {
-    if (typeof url !== "string" || !url) return "";
-    if (/^data:/i.test(url) || /^blob:/i.test(url)) return url;
-
-    const isRelative = !/^(https?:|\/\/|data:|blob:)/i.test(url.trim());
-    const resolvedUrl = isRelative
-      ? `${BACKEND_ORIGIN.replace(/\/$/, "")}${url.startsWith("/") ? url : `/${url}`}`
-      : url;
-
-    const hasSignedParams =
-      /[?&](X-Amz-|Signature=|Expires=|AWSAccessKeyId=|GoogleAccessId=|token=|sig=|se=|sp=|sv=)/i.test(resolvedUrl);
-    if (hasSignedParams) return resolvedUrl;
-
-    try {
-      const parsed = new URL(resolvedUrl, window.location.origin);
-      const currentHost = typeof window !== "undefined" ? window.location.hostname : "";
-      const isLocalHost = /^(localhost|127\.0\.0\.1)$/i.test(parsed.hostname);
-      const isSameHost = currentHost && parsed.hostname === currentHost;
-
-      if (isLocalHost || isSameHost) {
-        parsed.searchParams.set("_wv", webviewSessionKeyRef.current);
-      }
-      return parsed.toString();
-    } catch {
-      return resolvedUrl;
-    }
-  }, []);
 
   const images = React.useMemo(() => {
     const candidates = [
@@ -178,8 +148,8 @@ const RestaurantImageCarousel = React.memo(({ restaurant, priority = false }) =>
       restaurant?.image,
     ];
     const valid = candidates.filter((img) => typeof img === "string" && img.trim()).map((img) => img.trim());
-    return valid.length > 0 ? valid.map((img) => withCacheBuster(img)) : ["https://via.placeholder.com/400x300?text=Restaurant"];
-  }, [restaurant, withCacheBuster]);
+    return valid.length > 0 ? valid.map((img) => normalizeImageUrl(img)) : ["https://via.placeholder.com/400x300?text=Restaurant"];
+  }, [restaurant]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const safeIndex = images.length > 0 ? (currentIndex % images.length + images.length) % images.length : 0;
@@ -210,6 +180,7 @@ const RestaurantImageCarousel = React.memo(({ restaurant, priority = false }) =>
 });
 
 export default function Restaurants() {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { addFavorite, removeFavorite, isFavorite, orderType, vegMode, setVegMode, vegModeOption } = useProfile();
   const { location: userLocation } = useLocation();
@@ -242,18 +213,32 @@ export default function Restaurants() {
     const fetchPage = async () => {
       if (!hasMore && page !== 1) return;
       try {
-        setLoading(true);
         const params = {
           limit: 20,
-          page: page,
-          _ts: Date.now()
+          page: page
         };
         if (Number.isFinite(userLocation?.latitude) && Number.isFinite(userLocation?.longitude)) {
           params.lat = parseFloat(userLocation.latitude.toFixed(4));
           params.lng = parseFloat(userLocation.longitude.toFixed(4));
         }
 
-        const response = await restaurantAPI.getRestaurants(params, { noCache: true });
+        const queryKey = ['restaurants-tab', params];
+        const cachedData = queryClient.getQueryData(queryKey);
+        
+        if (!cachedData) {
+          setLoading(true);
+        }
+
+        const responseData = await queryClient.fetchQuery({
+          queryKey,
+          staleTime: 1000 * 60 * 5,
+          queryFn: async () => {
+            const res = await restaurantAPI.getRestaurants(params);
+            return res?.data;
+          }
+        });
+        
+        const response = { data: responseData };
         if (cancelled) return;
 
         const data = response?.data?.data || response?.data || {};
@@ -332,37 +317,13 @@ export default function Restaurants() {
 
   const filteredRestaurants = useMemo(() => {
     return restaurants.filter((r) => shouldShowRestaurantInVegMode(r, vegMode, vegModeOption));
-  }, [restaurants, vegMode, vegOption => vegModeOption]);
+  }, [restaurants, vegMode, vegModeOption]);
 
   const hasRestaurants = useMemo(() => filteredRestaurants.length > 0, [filteredRestaurants.length]);
 
   return (
     <AnimatedPage className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]">
-      {/* Orange Hero Banner Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#ff8100] via-[#ff6b00] to-[#e05300] text-white">
-        <div className="absolute inset-0 z-0 opacity-20">
-          <img
-            src={homeBannerRed}
-            alt="Hero Background"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/20" />
-        </div>
 
-        <div className="relative z-10">
-          <HomeHeader
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            location={userLocation}
-            handleSearchFocus={() => navigate("/food/user/search")}
-            placeholderIndex={0}
-            placeholders={["Search for restaurants, cuisines..."]}
-            vegMode={vegMode}
-            handleVegModeChange={setVegMode}
-            showBanner={true}
-          />
-        </div>
-      </div>
 
       {/* Main Content Body */}
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 pb-12">

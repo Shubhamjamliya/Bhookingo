@@ -7,7 +7,7 @@ import { jsPDF } from "jspdf"
 import autoTable from "jspdf-autotable"
 import { restaurantAPI } from "@food/api"
 import io from "socket.io-client"
-import { API_BASE_URL } from "@food/api/config"
+import { API_BASE_URL, SOCKET_URL } from "@food/api/config"
 import {
   ArrowLeft,
   Printer,
@@ -271,15 +271,7 @@ export default function OrderDetails() {
   useEffect(() => {
     if (!orderId) return;
 
-    let backendUrl = API_BASE_URL;
-    try {
-      backendUrl = new URL(backendUrl).origin;
-    } catch {
-      backendUrl = String(backendUrl || "")
-        .replace(/\/api\/v\d+\/?$/i, "")
-        .replace(/\/api\/?$/i, "")
-        .replace(/\/+$/, "");
-    }
+    const backendUrl = SOCKET_URL || API_BASE_URL.replace(/\/api\/?.*$/, "");
 
     const socket = io(backendUrl, {
       path: '/socket.io/',

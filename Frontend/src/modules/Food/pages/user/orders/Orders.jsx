@@ -4,6 +4,7 @@ import { ArrowLeft, Search, MoreVertical, ChevronRight, Star, RotateCcw, AlertCi
 import { orderAPI } from "@food/api"
 import { useCart } from "@food/context/CartContext"
 import { toast } from "sonner"
+import { useQueryClient } from "@tanstack/react-query"
 import { getCompanyNameAsync } from "@food/utils/businessSettings"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
@@ -11,6 +12,7 @@ const debugError = (...args) => {}
 
 
 export default function Orders() {
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { replaceCart } = useCart()
   const [orders, setOrders] = useState([])
@@ -230,8 +232,18 @@ export default function Orders() {
 
     const fetchOrders = async () => {
       try {
-        setLoading(true)
-        const ordersData = await fetchAllOrders()
+        const queryKey = ['user-orders']
+        const cachedOrders = queryClient.getQueryData(queryKey)
+        
+        if (!cachedOrders) {
+          setLoading(true)
+        }
+        
+        const ordersData = await queryClient.fetchQuery({
+          queryKey,
+          staleTime: 1000 * 60 * 5, // 5 min cache
+          queryFn: fetchAllOrders
+        })
 
         if (ordersData.length > 0) {
           debugLog('?? Raw orders from API:', ordersData.slice(0, 3).map(o => ({

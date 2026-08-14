@@ -21,13 +21,23 @@ const startOfToday = () => {
 
 const nextDay = (date) => new Date(date.getTime() + DAY_MS);
 
+const getFssaiData = (restaurant) => {
+    const documents = restaurant?.documents && typeof restaurant.documents === 'object' ? restaurant.documents : {};
+    const fssai = documents.fssai && typeof documents.fssai === 'object' ? documents.fssai : {};
+    return {
+        number: fssai.number || '',
+        expiry: fssai.expiry || null
+    };
+};
+
 const buildRestaurantNotificationPayload = (restaurant) => {
-    const expiryDate = restaurant?.fssaiExpiry ? new Date(restaurant.fssaiExpiry) : null;
+    const fssai = getFssaiData(restaurant);
+    const expiryDate = fssai.expiry ? new Date(fssai.expiry) : null;
     const restaurantName = restaurant?.restaurantName || 'Restaurant';
     const ownerName = restaurant?.ownerName || 'Restaurant owner';
     const expiryLabel = toDateLabel(expiryDate);
     const title = 'FSSAI License Expired';
-    const message = `${restaurantName} FSSAI license expired on ${expiryLabel}. Owner: ${ownerName}. FSSAI No: ${restaurant?.fssaiNumber || 'N/A'}.`;
+    const message = `${restaurantName} FSSAI license expired on ${expiryLabel}. Owner: ${ownerName}. FSSAI No: ${fssai.number || 'N/A'}.`;
 
     return {
         title,
@@ -40,14 +50,15 @@ const buildRestaurantNotificationPayload = (restaurant) => {
             restaurantName,
             ownerName,
             ownerPhone: restaurant?.ownerPhone || '',
-            fssaiNumber: restaurant?.fssaiNumber || '',
+            fssaiNumber: fssai.number || '',
             expiryDate: expiryDate ? expiryDate.toISOString() : null
         }
     };
 };
 
 const buildAdminSummary = (restaurant) => {
-    const expiryDate = restaurant?.fssaiExpiry ? new Date(restaurant.fssaiExpiry) : null;
+    const fssai = getFssaiData(restaurant);
+    const expiryDate = fssai.expiry ? new Date(fssai.expiry) : null;
     const expiryLabel = toDateLabel(expiryDate);
     return {
         id: `fssai-expired-${String(restaurant?._id || '')}`,
@@ -55,7 +66,7 @@ const buildAdminSummary = (restaurant) => {
         restaurantName: restaurant?.restaurantName || 'Restaurant',
         ownerName: restaurant?.ownerName || '',
         ownerPhone: restaurant?.ownerPhone || '',
-        fssaiNumber: restaurant?.fssaiNumber || '',
+        fssaiNumber: fssai.number || '',
         fssaiExpiry: expiryDate ? expiryDate.toISOString() : null,
         expiryLabel,
         title: 'FSSAI License Expired',
@@ -70,14 +81,14 @@ export const listExpiredFssaiRestaurants = async () => {
 
     const restaurants = await FoodRestaurant.find({
         status: 'approved',
-        fssaiExpiry: { $lt: nextDay(today) }
+        'documents.fssai.expiry': { $lt: nextDay(today) }
     })
-        .select('restaurantName ownerName ownerPhone fssaiNumber fssaiExpiry')
-        .sort({ fssaiExpiry: -1, updatedAt: -1 })
+        .select('restaurantName ownerName ownerPhone documents.fssai')
+        .sort({ 'documents.fssai.expiry': -1, updatedAt: -1 })
         .lean();
 
     return restaurants
-        .filter((restaurant) => restaurant?.fssaiExpiry)
+        .filter((restaurant) => getFssaiData(restaurant).expiry)
         .map(buildAdminSummary);
 };
 
@@ -95,8 +106,12 @@ export const syncExpiredFssaiNotifications = async () => {
             restaurantName: summary.restaurantName,
             ownerName: summary.ownerName,
             ownerPhone: summary.ownerPhone,
-            fssaiNumber: summary.fssaiNumber,
-            fssaiExpiry: expiryIso
+            documents: {
+                fssai: {
+                    number: summary.fssaiNumber,
+                    expiry: expiryIso
+                }
+            }
         });
 
         const existing = await FoodNotification.findOne({

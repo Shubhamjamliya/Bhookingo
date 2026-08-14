@@ -58,6 +58,29 @@ const facilityDetailSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const restaurantDocumentsSchema = new mongoose.Schema(
+  {
+    pan: {
+      number: { type: String, trim: true, default: "" },
+      name: { type: String, trim: true, default: "" },
+      image: { type: String, trim: true, default: "" },
+    },
+    gst: {
+      registered: { type: Boolean, default: false },
+      number: { type: String, trim: true, default: "" },
+      legalName: { type: String, trim: true, default: "" },
+      address: { type: String, trim: true, default: "" },
+      image: { type: String, trim: true, default: "" },
+    },
+    fssai: {
+      number: { type: String, trim: true, default: "" },
+      expiry: { type: Date, default: null },
+      image: { type: String, trim: true, default: "" },
+    },
+  },
+  { _id: false },
+);
+
 const restaurantSchema = new mongoose.Schema(
   {
     restaurantName: {
@@ -144,30 +167,9 @@ const restaurantSchema = new mongoose.Schema(
       default: true,
       index: true,
     },
-    panNumber: {
-      type: String,
-    },
-    nameOnPan: {
-      type: String,
-    },
-    gstRegistered: {
-      type: Boolean,
-      default: false,
-    },
-    gstNumber: {
-      type: String,
-    },
-    gstLegalName: {
-      type: String,
-    },
-    gstAddress: {
-      type: String,
-    },
-    fssaiNumber: {
-      type: String,
-    },
-    fssaiExpiry: {
-      type: Date,
+    documents: {
+      type: restaurantDocumentsSchema,
+      default: () => ({}),
     },
     accountNumber: {
       type: String,
@@ -250,15 +252,6 @@ const restaurantSchema = new mongoose.Schema(
     businessModel: {
       type: String,
       trim: true,
-    },
-    panImage: {
-      type: String,
-    },
-    gstImage: {
-      type: String,
-    },
-    fssaiImage: {
-      type: String,
     },
     featuredDish: { type: String },
     featuredPrice: { type: Number },
@@ -480,6 +473,45 @@ restaurantSchema.pre("validate", function normalizeDerivedFields(next) {
       average: Number(overallRating.average || 0) || 0,
       count: Number(overallRating.count || 0) || 0,
     },
+  };
+
+  if (!this.documents || typeof this.documents !== "object") {
+    this.documents = {};
+  }
+
+  const pan = this.documents.pan && typeof this.documents.pan === "object" ? this.documents.pan : {};
+  const gst = this.documents.gst && typeof this.documents.gst === "object" ? this.documents.gst : {};
+  const fssai =
+    this.documents.fssai && typeof this.documents.fssai === "object" ? this.documents.fssai : {};
+
+  this.documents.pan = {
+    number: typeof pan.number === "string" ? pan.number.trim().toUpperCase() : "",
+    name: typeof pan.name === "string" ? pan.name.trim() : "",
+    image: typeof pan.image === "string" ? pan.image.trim() : "",
+  };
+
+  this.documents.gst = {
+    registered: gst.registered === true,
+    number: typeof gst.number === "string" ? gst.number.trim().toUpperCase() : "",
+    legalName: typeof gst.legalName === "string" ? gst.legalName.trim() : "",
+    address: typeof gst.address === "string" ? gst.address.trim() : "",
+    image: typeof gst.image === "string" ? gst.image.trim() : "",
+  };
+
+  let normalizedFssaiExpiry = null;
+  if (fssai.expiry instanceof Date && !Number.isNaN(fssai.expiry.getTime())) {
+    normalizedFssaiExpiry = fssai.expiry;
+  } else if (fssai.expiry) {
+    const parsedExpiry = new Date(fssai.expiry);
+    if (!Number.isNaN(parsedExpiry.getTime())) {
+      normalizedFssaiExpiry = parsedExpiry;
+    }
+  }
+
+  this.documents.fssai = {
+    number: typeof fssai.number === "string" ? fssai.number.trim() : "",
+    expiry: normalizedFssaiExpiry,
+    image: typeof fssai.image === "string" ? fssai.image.trim() : "",
   };
 
 

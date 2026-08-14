@@ -63,6 +63,47 @@ const buildFacilitiesPayload = (facilities) => {
 
 const toUrl = (v) => (v && (typeof v === 'string' ? v : v.url)) ? (typeof v === 'string' ? v : v.url) : '';
 
+const getRestaurantDocuments = (doc) => {
+    const documents = doc?.documents && typeof doc.documents === 'object' ? doc.documents : {};
+    return {
+        pan: documents.pan && typeof documents.pan === 'object' ? documents.pan : {},
+        gst: documents.gst && typeof documents.gst === 'object' ? documents.gst : {},
+        fssai: documents.fssai && typeof documents.fssai === 'object' ? documents.fssai : {}
+    };
+};
+
+const buildDocumentsPayload = ({
+    panNumber,
+    nameOnPan,
+    panImage,
+    gstRegistered,
+    gstNumber,
+    gstLegalName,
+    gstAddress,
+    gstImage,
+    fssaiNumber,
+    fssaiExpiry,
+    fssaiImage
+}) => ({
+    pan: {
+        number: String(panNumber || '').trim().toUpperCase(),
+        name: String(nameOnPan || '').trim(),
+        image: toUrl(panImage) || ''
+    },
+    gst: {
+        registered: gstRegistered === true,
+        number: String(gstNumber || '').trim().toUpperCase(),
+        legalName: String(gstLegalName || '').trim(),
+        address: String(gstAddress || '').trim(),
+        image: toUrl(gstImage) || ''
+    },
+    fssai: {
+        number: String(fssaiNumber || '').trim(),
+        expiry: fssaiExpiry || null,
+        image: toUrl(fssaiImage) || ''
+    }
+});
+
 const normalizeRestaurantTime = (value) => {
     const raw = String(value || '').trim();
     if (!raw) return '';
@@ -112,6 +153,7 @@ const timeToMinutes = (value) => {
 
 const toRestaurantProfile = (doc) => {
     if (!doc) return null;
+    const documents = getRestaurantDocuments(doc);
     const loc = doc.location && typeof doc.location === 'object' ? doc.location : null;
     const location =
         (loc?.formattedAddress ||
@@ -174,17 +216,18 @@ const toRestaurantProfile = (doc) => {
         ownerEmail: doc.ownerEmail || '',
         ownerPhone: doc.ownerPhone || '',
         primaryContactNumber: doc.primaryContactNumber || '',
-        panNumber: doc.panNumber || '',
-        nameOnPan: doc.nameOnPan || '',
-        panImage: doc.panImage ? { url: doc.panImage } : null,
-        gstRegistered: Boolean(doc.gstRegistered),
-        gstNumber: doc.gstNumber || '',
-        gstLegalName: doc.gstLegalName || '',
-        gstAddress: doc.gstAddress || '',
-        gstImage: doc.gstImage ? { url: doc.gstImage } : null,
-        fssaiNumber: doc.fssaiNumber || '',
-        fssaiExpiry: doc.fssaiExpiry || null,
-        fssaiImage: doc.fssaiImage ? { url: doc.fssaiImage } : null,
+        documents,
+        panNumber: documents.pan.number || '',
+        nameOnPan: documents.pan.name || '',
+        panImage: documents.pan.image ? { url: documents.pan.image } : null,
+        gstRegistered: Boolean(documents.gst.registered),
+        gstNumber: documents.gst.number || '',
+        gstLegalName: documents.gst.legalName || '',
+        gstAddress: documents.gst.address || '',
+        gstImage: documents.gst.image ? { url: documents.gst.image } : null,
+        fssaiNumber: documents.fssai.number || '',
+        fssaiExpiry: documents.fssai.expiry || null,
+        fssaiImage: documents.fssai.image ? { url: documents.fssai.image } : null,
         accountNumber: doc.accountNumber || '',
         ifscCode: doc.ifscCode || '',
         accountHolderName: doc.accountHolderName || '',
@@ -427,14 +470,19 @@ export const registerRestaurant = async (payload, files) => {
             openingTime: normalizedOpeningTime || undefined,
             closingTime: normalizedClosingTime || undefined,
             openDays: openDays || [],
-            panNumber,
-            nameOnPan,
-            gstRegistered,
-            gstNumber,
-            gstLegalName,
-            gstAddress,
-            fssaiNumber,
-            fssaiExpiry,
+            documents: buildDocumentsPayload({
+                panNumber,
+                nameOnPan,
+                panImage: images.panImage,
+                gstRegistered,
+                gstNumber,
+                gstLegalName,
+                gstAddress,
+                gstImage: images.gstImage,
+                fssaiNumber,
+                fssaiExpiry,
+                fssaiImage: images.fssaiImage
+            }),
             accountNumber,
             ifscCode,
             accountHolderName,
@@ -444,7 +492,7 @@ export const registerRestaurant = async (payload, files) => {
                 isEnabled: isTakeawayEnabled === undefined ? true : (isTakeawayEnabled === 'true' || isTakeawayEnabled === true)
             },
             facilities: buildFacilitiesPayload(facilities),
-            ...images
+            profileImage: images.profileImage
         });
 
         // Re-check nearest highway from coordinates as a safety sync for future threshold changes.
@@ -516,17 +564,7 @@ export const getCurrentRestaurantProfile = async (restaurantId) => {
                 'diningSettings',
                 'takeawaySettings',
                 'isAcceptingOrders',
-                'panNumber',
-                'nameOnPan',
-                'panImage',
-                'gstRegistered',
-                'gstNumber',
-                'gstLegalName',
-                'gstAddress',
-                'gstImage',
-                'fssaiNumber',
-                'fssaiExpiry',
-                'fssaiImage',
+                'documents',
                 'rating',
                 'totalRatings',
                 'status',
@@ -881,13 +919,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                 parsedFacilities = {};
             }
         }
-        update.facilities = {
-            parking: parsedFacilities?.parking === true || parsedFacilities?.parking === 'true',
-            wifi: parsedFacilities?.wifi === true || parsedFacilities?.wifi === 'true',
-            familyFriendly: parsedFacilities?.familyFriendly === true || parsedFacilities?.familyFriendly === 'true',
-            evCharging: parsedFacilities?.evCharging === true || parsedFacilities?.evCharging === 'true',
-            washroom: parsedFacilities?.washroom === true || parsedFacilities?.washroom === 'true'
-        };
+        update.facilities = buildFacilitiesPayload(parsedFacilities);
     }
 
     if (body.highwayId !== undefined) {
@@ -1071,60 +1103,75 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         update.profileImage = toUrl(body.profileImage) || '';
     }
 
-    if (body.panNumber !== undefined) {
-        update.panNumber = String(body.panNumber || '').trim().toUpperCase();
+    const nextDocuments = {};
+    let hasDocumentUpdates = false;
+
+    if (body.panNumber !== undefined || body.nameOnPan !== undefined || body.panImage !== undefined) {
+        if (body.panNumber !== undefined) {
+            nextDocuments['documents.pan.number'] = String(body.panNumber || '').trim().toUpperCase();
+        }
+        if (body.nameOnPan !== undefined) {
+            nextDocuments['documents.pan.name'] = String(body.nameOnPan || '').trim();
+        }
+        if (body.panImage !== undefined) {
+            nextDocuments['documents.pan.image'] = toUrl(body.panImage) || '';
+        }
+        hasDocumentUpdates = true;
     }
-    if (body.nameOnPan !== undefined) {
-        update.nameOnPan = String(body.nameOnPan || '').trim();
-    }
-    if (body.panImage !== undefined) {
-        update.panImage = toUrl(body.panImage) || '';
-    }
-    if (body.gstRegistered !== undefined) {
-        if (typeof body.gstRegistered === 'boolean') {
-            update.gstRegistered = body.gstRegistered;
-        } else if (typeof body.gstRegistered === 'string') {
-            const normalized = body.gstRegistered.trim().toLowerCase();
-            if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
-                update.gstRegistered = true;
-            } else if (normalized === 'false' || normalized === '0' || normalized === 'no') {
-                update.gstRegistered = false;
+    if (body.gstRegistered !== undefined || body.gstNumber !== undefined || body.gstLegalName !== undefined || body.gstAddress !== undefined || body.gstImage !== undefined) {
+        if (body.gstRegistered !== undefined) {
+            if (typeof body.gstRegistered === 'boolean') {
+                nextDocuments['documents.gst.registered'] = body.gstRegistered;
+            } else if (typeof body.gstRegistered === 'string') {
+                const normalized = body.gstRegistered.trim().toLowerCase();
+                if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+                    nextDocuments['documents.gst.registered'] = true;
+                } else if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+                    nextDocuments['documents.gst.registered'] = false;
+                } else {
+                    throw new ValidationError('gstRegistered must be a boolean');
+                }
             } else {
                 throw new ValidationError('gstRegistered must be a boolean');
             }
-        } else {
-            throw new ValidationError('gstRegistered must be a boolean');
         }
+        if (body.gstNumber !== undefined) {
+            nextDocuments['documents.gst.number'] = String(body.gstNumber || '').trim().toUpperCase();
+        }
+        if (body.gstLegalName !== undefined) {
+            nextDocuments['documents.gst.legalName'] = String(body.gstLegalName || '').trim();
+        }
+        if (body.gstAddress !== undefined) {
+            nextDocuments['documents.gst.address'] = String(body.gstAddress || '').trim();
+        }
+        if (body.gstImage !== undefined) {
+            nextDocuments['documents.gst.image'] = toUrl(body.gstImage) || '';
+        }
+        hasDocumentUpdates = true;
     }
-    if (body.gstNumber !== undefined) {
-        update.gstNumber = String(body.gstNumber || '').trim().toUpperCase();
-    }
-    if (body.gstLegalName !== undefined) {
-        update.gstLegalName = String(body.gstLegalName || '').trim();
-    }
-    if (body.gstAddress !== undefined) {
-        update.gstAddress = String(body.gstAddress || '').trim();
-    }
-    if (body.gstImage !== undefined) {
-        update.gstImage = toUrl(body.gstImage) || '';
-    }
-    if (body.fssaiNumber !== undefined) {
-        update.fssaiNumber = String(body.fssaiNumber || '').trim();
-    }
-    if (body.fssaiExpiry !== undefined) {
-        const rawExpiry = String(body.fssaiExpiry || '').trim();
-        if (!rawExpiry) {
-            update.fssaiExpiry = null;
-        } else {
-            const parsedExpiry = new Date(rawExpiry);
-            if (Number.isNaN(parsedExpiry.getTime())) {
-                throw new ValidationError('FSSAI expiry date is invalid');
+    if (body.fssaiNumber !== undefined || body.fssaiExpiry !== undefined || body.fssaiImage !== undefined) {
+        if (body.fssaiNumber !== undefined) {
+            nextDocuments['documents.fssai.number'] = String(body.fssaiNumber || '').trim();
+        }
+        if (body.fssaiExpiry !== undefined) {
+            const rawExpiry = String(body.fssaiExpiry || '').trim();
+            if (!rawExpiry) {
+                nextDocuments['documents.fssai.expiry'] = null;
+            } else {
+                const parsedExpiry = new Date(rawExpiry);
+                if (Number.isNaN(parsedExpiry.getTime())) {
+                    throw new ValidationError('FSSAI expiry date is invalid');
+                }
+                nextDocuments['documents.fssai.expiry'] = parsedExpiry;
             }
-            update.fssaiExpiry = parsedExpiry;
         }
+        if (body.fssaiImage !== undefined) {
+            nextDocuments['documents.fssai.image'] = toUrl(body.fssaiImage) || '';
+        }
+        hasDocumentUpdates = true;
     }
-    if (body.fssaiImage !== undefined) {
-        update.fssaiImage = toUrl(body.fssaiImage) || '';
+    if (hasDocumentUpdates) {
+        Object.assign(update, nextDocuments);
     }
 
     if (!Object.keys(update).length) {
@@ -1172,17 +1219,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                     'status',
                     'createdAt',
                     'updatedAt',
-                    'panNumber',
-                    'nameOnPan',
-                    'panImage',
-                    'gstRegistered',
-                    'gstNumber',
-                    'gstLegalName',
-                    'gstAddress',
-                    'gstImage',
-                    'fssaiNumber',
-                    'fssaiExpiry',
-                    'fssaiImage',
+                    'documents',
                     'accountNumber',
                     'ifscCode',
                     'accountHolderName',
@@ -1236,17 +1273,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                         'status',
                         'createdAt',
                         'updatedAt',
-                        'panNumber',
-                        'nameOnPan',
-                        'panImage',
-                        'gstRegistered',
-                        'gstNumber',
-                        'gstLegalName',
-                        'gstAddress',
-                        'gstImage',
-                        'fssaiNumber',
-                        'fssaiExpiry',
-                        'fssaiImage',
+                        'documents',
                         'accountNumber',
                         'ifscCode',
                         'accountHolderName',

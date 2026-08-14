@@ -9,6 +9,7 @@ import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { getCurrentUser } from "@food/utils/auth"
 import { hasModulePermission } from "@food/utils/permissions"
 import { formatRoadDistance } from "@food/utils/formatRoadDistance"
+import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
 import ImageWithFallback from "@food/components/ImageWithFallback"
 const debugLog = (...args) => { }
 const debugWarn = (...args) => { }
@@ -2746,7 +2747,7 @@ export default function RestaurantsList() {
 
                           <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-4">
                             <div>
-                              <h5 className="text-sm font-semibold text-slate-900">NH / SH Selection</h5>
+                              <h5 className="text-sm font-semibold text-slate-900">{HIGHWAY_DETECTION_COPY.sectionTitle}</h5>
                               <p className="text-xs text-slate-500 mt-1">Auto-detect the nearest NH or SH and refine the exact roadside pin if needed.</p>
                             </div>
 
@@ -2761,17 +2762,17 @@ export default function RestaurantsList() {
                                 {highwayInfo.loading ? (
                                   <div className="flex items-center gap-2">
                                     <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                                    <span>Checking NH/SH proximity...</span>
+                                    <span>{HIGHWAY_DETECTION_COPY.checking}</span>
                                   </div>
                                 ) : highwayInfo.status === "IN_SERVICE" ? (
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2 font-semibold">
                                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                      <span>Restaurant location verified. Within 2 km of NH/SH.</span>
+                                      <span>{HIGHWAY_DETECTION_COPY.success}</span>
                                     </div>
                                     <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                                      <p>Nearest NH/SH: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                                      {highwayInfo.highwayName && <p>Road Label: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                                      <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                                      {highwayInfo.highwayName && <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
                                       {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
                                       {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>}
                                     </div>
@@ -2780,12 +2781,12 @@ export default function RestaurantsList() {
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2 font-semibold">
                                       <AlertCircle className="w-4 h-4 text-rose-600" />
-                                      <span>Not within 2 km from NH or SH.</span>
+                                      <span>{HIGHWAY_DETECTION_COPY.error}</span>
                                     </div>
                                     {highwayInfo.highwayRef && (
                                       <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                                        <p>Nearest NH/SH: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                                        {highwayInfo.highwayName && <p>Road Label: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
+                                        <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                                        {highwayInfo.highwayName && <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>}
                                         {highwayInfo.highwayId && <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>}
                                         {Number.isFinite(Number(highwayInfo.distanceMeters)) && <p>Distance: <span className="font-medium text-slate-900">{formatRoadDistance(highwayInfo.distanceMeters)}</span></p>}
                                       </div>

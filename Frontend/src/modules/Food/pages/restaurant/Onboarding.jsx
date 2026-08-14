@@ -25,6 +25,7 @@ import { getGoogleMapsApiKey } from "@food/utils/googleMapsApiKey"
 import { clearModuleAuth, clearAuthData, isModuleAuthenticated, getModuleToken } from "@food/utils/auth"
 import { ImageSourcePicker } from "@food/components/ImageSourcePicker"
 import { formatRoadDistance } from "@food/utils/formatRoadDistance"
+import { HIGHWAY_DETECTION_COPY } from "@food/utils/highwayDetectionCopy"
 import { EMAIL_REGEX } from "@/shared/utils/emailValidation"
 import { OnboardingSkeleton } from "@food/components/ui/loading-skeletons"
 const debugLog = (...args) => {}
@@ -1746,9 +1747,9 @@ export default function RestaurantOnboarding() {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       errors.push("Please search and select a location so map coordinates are captured")
     } else if (step1.isHighwayRestaurant === true && highwayInfo.loading) {
-      errors.push("Checking NH/SH proximity. Please wait a moment.")
+      errors.push(HIGHWAY_DETECTION_COPY.validationPending)
     } else if (step1.isHighwayRestaurant === true && highwayInfo.status !== "IN_SERVICE") {
-      errors.push("Restaurant is not within 2 km from NH or SH.")
+      errors.push(HIGHWAY_DETECTION_COPY.validationFailed)
     }
 
     return errors
@@ -2647,7 +2648,7 @@ export default function RestaurantOnboarding() {
       {step1.isHighwayRestaurant === true ? (
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-black">NH / SH Selection</h2>
+          <h2 className="text-lg font-semibold text-black">{HIGHWAY_DETECTION_COPY.sectionTitle}</h2>
           <p className="mt-1 text-sm text-gray-600">
             We auto-detect the nearest NH or SH from the selected address. You can point the location on the map and refine the saved road label if needed.
           </p>
@@ -2666,18 +2667,18 @@ export default function RestaurantOnboarding() {
             {highwayInfo.loading ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                <span>Checking NH/SH proximity...</span>
+                <span>{HIGHWAY_DETECTION_COPY.checking}</span>
               </div>
             ) : highwayInfo.status === "IN_SERVICE" ? (
               <div className="space-y-1">
                 <div className="flex items-center gap-2 font-semibold">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Restaurant location verified. Within 2 km of NH/SH.</span>
+                  <span>{HIGHWAY_DETECTION_COPY.success}</span>
                 </div>
                 <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                  <p>Nearest NH/SH: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                  <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                   {highwayInfo.highwayName && (
-                    <p>Road Label: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
+                    <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
                   )}
                   {highwayInfo.highwayId && (
                     <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
@@ -2689,13 +2690,13 @@ export default function RestaurantOnboarding() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 font-semibold">
                   <AlertCircle className="w-4 h-4 text-rose-600" />
-                  <span>Not within 2 km from NH or SH.</span>
+                  <span>{HIGHWAY_DETECTION_COPY.error}</span>
                 </div>
                 {highwayInfo.highwayRef && (
                   <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                    <p>Nearest NH/SH: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                    <p>{HIGHWAY_DETECTION_COPY.nearestLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                     {highwayInfo.highwayName && (
-                      <p>Road Label: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
+                      <p>{HIGHWAY_DETECTION_COPY.roadLabel}: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
                     )}
                     {highwayInfo.highwayId && (
                       <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
@@ -2743,7 +2744,7 @@ export default function RestaurantOnboarding() {
         )}
 
         <div>
-              <Label className="text-xs text-gray-700">Road label*</Label>
+              <Label className="text-xs text-gray-700">{HIGHWAY_DETECTION_COPY.roadFieldLabel}</Label>
           <Input
             value={step1.location?.roadName || ""}
             onChange={(e) => {
@@ -2754,19 +2755,19 @@ export default function RestaurantOnboarding() {
               })
             }}
             className="mt-1 bg-white text-sm"
-            placeholder="Auto-detected NH / SH"
+            placeholder={HIGHWAY_DETECTION_COPY.roadFieldPlaceholder}
             disabled={!isEditing}
           />
           <p className="text-[11px] text-gray-500 mt-1">
-            This is auto-filled from the detected NH / SH. You can adjust the display label if needed.
+            {HIGHWAY_DETECTION_COPY.manualHint}
           </p>
         </div>
       </section>
       ) : (
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-2">
-        <h2 className="text-lg font-semibold text-black">NH / SH Selection</h2>
+        <h2 className="text-lg font-semibold text-black">{HIGHWAY_DETECTION_COPY.sectionTitle}</h2>
         <p className="text-sm text-gray-600">
-          Normal restaurant selected. NH/SH detection is skipped.
+          {HIGHWAY_DETECTION_COPY.skipped}
         </p>
       </section>
       )}

@@ -1,4 +1,4 @@
-import { getDrivingSettings, updateDrivingSettings, getRestaurantsAhead, getConnectingHighways, getGoogleRouteHighwayPreview } from '../services/driving.service.js';
+import { getDrivingSettings, updateDrivingSettings, getRestaurantsAhead, getGoogleRouteHighwayPreview } from '../services/driving.service.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 
 const toFinite = (v) => {
@@ -15,15 +15,11 @@ export const getPublicDrivingModeSettingsController = async (req, res, next) => 
         return res.status(200).json({
             success: true,
             data: {
-                refreshInterval: settings.locationRefreshIntervalMinutes,
-                rangeKm: settings.restaurantSearchRadiusKm,
                 enabled: settings.enabled,
                 highwayEntryRadiusMeters: settings.highwayEntryRadiusMeters,
-                restaurantSearchRadiusKm: settings.restaurantSearchRadiusKm,
                 googleRouteSearchRadiusKm: settings.googleRouteSearchRadiusKm,
                 googleRouteForwardRangeKm: settings.googleRouteForwardRangeKm,
                 googleRouteBackwardBufferKm: settings.googleRouteBackwardBufferKm,
-                storedHighwayMatchRadiusKm: settings.storedHighwayMatchRadiusKm,
                 showAllRouteRestaurants: settings.showAllRouteRestaurants === true
             }
         });
@@ -43,7 +39,6 @@ export const getRestaurantsAheadController = async (req, res, next) => {
         const heading = source.heading !== undefined ? toFinite(source.heading) : null;
         const speed = source.speed !== undefined ? toFinite(source.speed) : null;
         const highwayId = source.highwayId || null;
-        const rangeKm = source.rangeKm !== undefined ? toFinite(source.rangeKm) : null;
         const destLat = source.destLat !== undefined ? toFinite(source.destLat) : null;
         const destLng = source.destLng !== undefined ? toFinite(source.destLng) : null;
         const routePolyline = typeof source.routePolyline === 'string' && source.routePolyline.trim()
@@ -62,7 +57,6 @@ export const getRestaurantsAheadController = async (req, res, next) => {
             lng,
             heading,
             highwayId,
-            rangeKm,
             speed,
             destLat,
             destLng,
@@ -109,43 +103,6 @@ export const updateDrivingModeSettingsController = async (req, res, next) => {
         next(error);
     }
 };
-
-/**
- * GET /food/driving-mode/connecting-highways
- */
-export const getConnectingHighwaysController = async (req, res, next) => {
-    try {
-        const startLat = toFinite(req.query.startLat);
-        const startLng = toFinite(req.query.startLng);
-        const endLat = toFinite(req.query.endLat);
-        const endLng = toFinite(req.query.endLng);
-
-        if (startLat === null || startLng === null || endLat === null || endLng === null) {
-            return res.status(400).json({
-                success: false,
-                message: 'startLat, startLng, endLat, and endLng are required'
-            });
-        }
-
-        const searchRadiusKm = toFinite(req.query.searchRadiusKm);
-
-        const highways = await getConnectingHighways({
-            startLat,
-            startLng,
-            endLat,
-            endLng,
-            searchRadiusKm: searchRadiusKm !== null ? searchRadiusKm : undefined
-        });
-
-        return res.status(200).json({
-            success: true,
-            data: highways
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
 
 /**
  * GET /food/driving-mode/google-route-highway

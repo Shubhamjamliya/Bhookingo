@@ -5,9 +5,6 @@ import { getGoogleRouteHighway, getGoogleRouteHighwayOptions } from './googleRou
 import { getStoredDrivingSettingsConfig, saveDrivingSettingsConfig } from './drivingSettings.shared.js';
 import { decodePolyline } from '../../orders/utils/googleMaps.js';
 
-// Constants
-export const HIGHWAY_CONNECTIVITY_SEARCH_RADIUS_KM = 50;
-
 /**
  * Retrieve Driving Mode settings.
  * Returns settings stored in FoodSystemConfig or default settings.
@@ -26,7 +23,7 @@ export async function updateDrivingSettings(settings, adminId = null) {
 /**
  * Find restaurants ahead of user on their current highway route.
  */
-export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeKm, speed, destLat, destLng, routePolyline }) {
+export async function getRestaurantsAhead({ lat, lng, heading, highwayId, speed, destLat, destLng, routePolyline }) {
     const settings = await getDrivingSettings();
 
     if (!settings.enabled) {
@@ -62,8 +59,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
         } else {
             googleRoute = await getGoogleRouteHighway({
                 origin: { lat, lng },
-                destination: { lat: destLat, lng: destLng },
-                includeStoredHighways: false
+                destination: { lat: destLat, lng: destLng }
             });
         }
 
@@ -110,7 +106,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
 
         const lineCoords = decodedCoordinates.map((coordinate) => [coordinate.lng, coordinate.lat]);
         const line = turf.lineString(lineCoords);
-        const effectiveRoadCorridorKm = settings.googleRouteSearchRadiusKm;
+        const effectiveRoadCorridorKm = Number(settings.googleRouteSearchRadiusKm) || 0;
         let minLat = Infinity;
         let maxLat = -Infinity;
         let minLng = Infinity;
@@ -136,7 +132,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
 
         const U_proj = turf.nearestPointOnLine(line, userPoint, { units: 'kilometers' });
         const dist_U = U_proj.properties.location;
-        const maxDiscoveryDistance = rangeKm ? Number(rangeKm) : settings.googleRouteForwardRangeKm;
+        const maxDiscoveryDistance = Number(settings.googleRouteForwardRangeKm) || 0;
 
         const candidates = await FoodRestaurant.find(candidateFilter)
             .select({
@@ -181,14 +177,46 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, rangeK
             const R_proj = turf.nearestPointOnLine(line, rPoint, { units: 'kilometers' });
             const dist_R = R_proj.properties.location;
             const distToRouteKm = R_proj.properties.dist;
-            if (!Number.isFinite(distToRouteKm) || distToRouteKm > effectiveRoadCorridorKm) continue;
+            if (!Number.isFinite(distToRouteKm) || distToRouteKm > effectiveRoadCorridorKm) {
+                console.log('[DrivingMode] Restaurant excluded by route corridor', {
+                    restaurantId: restaurant?._id ? String(restaurant._id) : null,
+                    restaurantName: restaurant.restaurantName || restaurant.name || null,
+                    highwayRef: restaurant.highwayRef || restaurant.highwayName || null,
+                    restaurantLat: rlat,
+                    restaurantLng: rlng,
+                    distToRouteKm: Number.isFinite(distToRouteKm) ? Number(distToRouteKm.toFixed(3)) : null,
+                    effectiveRoadCorridorKm
+                });
+                continue;
+            }
 
             const distanceAheadKm = dist_R - dist_U;
             const isRestaurantAhead = distanceAheadKm >= (-settings.googleRouteBackwardBufferKm);
             const shouldIncludeRestaurant = settings.showAllRouteRestaurants === true
                 ? isRestaurantAhead
                 : (isRestaurantAhead && distanceAheadKm <= maxDiscoveryDistance);
-            if (!shouldIncludeRestaurant) continue;
+            if (!shouldIncludeRestaurant) {
+                console.log('[DrivingMode] Restaurant excluded by ahead/range rule', {
+                    restaurantId: restaurant?._id ? String(restaurant._id) : null,
+                    restaurantName: restaurant.restaurantName || restaurant.name || null,
+                    highwayRef: restaurant.highwayRef || restaurant.highwayName || null,
+                    distanceAheadKm: Number.isFinite(distanceAheadKm) ? Number(distanceAheadKm.toFixed(3)) : null,
+                    backwardBufferKm: settings.googleRouteBackwardBufferKm,
+                    maxDiscoveryDistance,
+                    showAllRouteRestaurants: settings.showAllRouteRestaurants === true,
+                    isRestaurantAhead
+                });
+                continue;
+            }
+
+            console.log('[DrivingMode] Restaurant included on route', {
+                restaurantId: restaurant?._id ? String(restaurant._id) : null,
+                restaurantName: restaurant.restaurantName || restaurant.name || null,
+                highwayRef: restaurant.highwayRef || restaurant.highwayName || null,
+                distanceAheadKm: Number.isFinite(distanceAheadKm) ? Number(distanceAheadKm.toFixed(3)) : null,
+                distToRouteKm: Number.isFinite(distToRouteKm) ? Number(distToRouteKm.toFixed(3)) : null,
+                maxDiscoveryDistance
+            });
 
             const etaHours = distanceAheadKm / userSpeed;
             const etaMinutes = Math.max(1, Math.round(etaHours * 60));
@@ -263,31 +291,10 @@ export async function validateOrderDrivingRange(restaurant, userLocation) {
         turf.point([rLng, rLat]),
         { units: 'kilometers' }
     );
-    if (distanceKm > settings.restaurantSearchRadiusKm) {
-        throw new ValidationError(`Restaurant is outside your driving range. Allowed: ${settings.restaurantSearchRadiusKm} KM, Actual: ${distanceKm.toFixed(1)} KM.`);
+    const allowedDistanceKm = Number(settings.googleRouteForwardRangeKm) || 0;
+    if (distanceKm > allowedDistanceKm) {
+        throw new ValidationError(`Restaurant is outside your driving range. Allowed: ${allowedDistanceKm} KM, Actual: ${distanceKm.toFixed(1)} KM.`);
     }
-}
-
-export async function getConnectingHighways({ startLat, startLng, endLat, endLng, searchRadiusKm }) {
-    const routePreview = await getGoogleRouteHighwayOptions({
-        origin: { lat: startLat, lng: startLng },
-        destination: { lat: endLat, lng: endLng },
-        includeStoredHighways: false,
-        corridorRadiusKm: Number(searchRadiusKm) || HIGHWAY_CONNECTIVITY_SEARCH_RADIUS_KM,
-        includeAlternatives: true,
-        includeRestaurantCounts: true
-    });
-
-    const routes = Array.isArray(routePreview?.routes) ? routePreview.routes : [];
-    return routes.map((route) => ({
-        _id: route.routeId,
-        name: route.name || 'Google Maps Route',
-        ref: route.summary || route.name || 'Google Maps Route',
-        restaurantCount: Number(route.restaurantCount) || 0,
-        approxDistanceKm: Number(route.route?.distanceKm) || 0,
-        approxTravelTimeMinutes: Number(route.route?.durationMinutes) || 0,
-        badges: route.badges || []
-    }));
 }
 
 export async function getGoogleRouteHighwayPreview({
@@ -297,13 +304,11 @@ export async function getGoogleRouteHighwayPreview({
     endLng,
     corridorRadiusKm,
     includeAlternatives = true,
-    includeRestaurantCounts = false,
-    includeStoredHighways = false
+    includeRestaurantCounts = false
 }) {
     const routeOptions = await getGoogleRouteHighwayOptions({
         origin: { lat: startLat, lng: startLng },
         destination: { lat: endLat, lng: endLng },
-        includeStoredHighways,
         corridorRadiusKm,
         includeAlternatives,
         includeRestaurantCounts

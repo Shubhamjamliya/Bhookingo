@@ -1033,16 +1033,18 @@ export default function RestaurantsList() {
 
   const handleStartEditDetails = () => {
     const source = getDetailsEditSource()
-    setDetailsForm(buildDetailsFormFromRestaurant(source))
-    setProfileImageFile(null)
-    const initialProf =
-      normalizeImageUrl(source?.profileImage) ||
-      normalizeImageUrl(source?.logo) ||
-      normalizeImageUrl(source?.restaurantImage) ||
-      getPrimaryRestaurantImage(source)
-    setProfileImagePreview(initialProf)
-    setIsEditingLocation(true)
-    setIsEditingDetails(true)
+    const restaurantId =
+      source?._id ||
+      source?.id ||
+      source?.restaurantId ||
+      selectedRestaurant?._id ||
+      selectedRestaurant?.id ||
+      selectedRestaurant?.restaurantId
+
+    if (!restaurantId) return
+
+    closeDetailsModal()
+    navigate(`/admin/food/restaurants/edit/${restaurantId}`)
   }
 
   const handleCancelEditDetails = () => {
@@ -1546,6 +1548,15 @@ export default function RestaurantsList() {
                               >
                                 <Eye className="w-4 h-4" />
                               </button>
+                              {canEdit && (
+                                <button
+                                  onClick={() => navigate(`/admin/food/restaurants/edit/${restaurant._id || restaurant.id || restaurant.restaurantId}`)}
+                                  className="p-1.5 rounded text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                  title="Edit Restaurant"
+                                >
+                                  <Settings className="w-4 h-4" />
+                                </button>
+                              )}
                               {canSuspend && (
                                 <button
                                   onClick={() => handleBanRestaurant(restaurant)}
@@ -1597,32 +1608,6 @@ export default function RestaurantsList() {
                 <p className="text-sm text-slate-500 mt-1">Detailed overview and information</p>
               </div>
               <div className="flex items-center gap-2">
-                {!isEditingDetails && canEdit ? (
-                  <button
-                    onClick={handleStartEditDetails}
-                    className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
-                  >
-                    Edit Details
-                  </button>
-                ) : !isEditingDetails ? null : (
-                  <>
-                    <button
-                      onClick={handleCancelEditDetails}
-                      disabled={savingDetails}
-                      className="px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium transition-colors disabled:opacity-60"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveDetails}
-                      disabled={savingDetails}
-                      className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-60 flex items-center gap-2"
-                    >
-                      {savingDetails && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {savingDetails ? "Saving..." : "Save Changes"}
-                    </button>
-                  </>
-                )}
                 <button
                   onClick={closeDetailsModal}
                   className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all duration-200 bg-slate-50"

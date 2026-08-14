@@ -39,6 +39,7 @@ const NEXT_STOP_ALERT_DISTANCE_KM = 2.5;
 const NEXT_STOP_ALERT_COOLDOWN_MS = 90000;
 const PASSED_RESTAURANT_BUFFER_KM = 0.8;
 const ROUTE_SNAP_MAX_DISTANCE_KM = 3;
+const DRIVING_REFRESH_INTERVAL_MINUTES = 5;
 
 const buildRouteCacheKey = (journeyLike) => {
   if (!journeyLike) return "";
@@ -466,7 +467,7 @@ export default function DrivingMode() {
   // View States
   const [viewMode, setViewMode] = useState("map"); // "map" | "list"
   const [activeFacilityFilter, setActiveFacilityFilter] = useState("all");
-  const [activeDistanceLimit, setActiveDistanceLimit] = useState(50); // in KM
+  const [activeDistanceLimit, setActiveDistanceLimit] = useState(null); // null means show all returned route restaurants
   const [sortBy, setSortBy] = useState("distance"); // "distance" | "eta" | "rating"
 
   // Details Modal State
@@ -479,6 +480,29 @@ export default function DrivingMode() {
 
   const profileContext = useProfile?.() || {};
   const { isFavorite, addFavorite, removeFavorite } = profileContext;
+  const distanceFilterOptions = React.useMemo(() => {
+    if (!settings) return [];
+
+    const options = [];
+    if (settings.showAllRouteRestaurants === true) {
+      options.push(null);
+    }
+
+    const numericOptions = [Number(settings.googleRouteForwardRangeKm)]
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .filter((value, index, array) => array.indexOf(value) === index)
+      .sort((a, b) => a - b);
+
+    options.push(...numericOptions);
+    return options;
+  }, [settings]);
+
+  useEffect(() => {
+    if (!distanceFilterOptions.length) return;
+    if (activeDistanceLimit === null && distanceFilterOptions.includes(null)) return;
+    if (activeDistanceLimit !== null && distanceFilterOptions.includes(activeDistanceLimit)) return;
+    setActiveDistanceLimit(distanceFilterOptions[0] ?? null);
+  }, [distanceFilterOptions, activeDistanceLimit]);
 
   useEffect(() => {
     if (!selectedRestaurant) {
@@ -665,7 +689,6 @@ export default function DrivingMode() {
       if (res?.data?.success) {
         const s = res.data.data;
         setSettings(s);
-        if (s.rangeKm) setActiveDistanceLimit(s.rangeKm);
         if (s.enabled === false) {
           setSettingsError("disabled");
           setStatus("disabled");
@@ -936,14 +959,14 @@ export default function DrivingMode() {
 
   // Periodic polling interval
   useEffect(() => {
-    if (!currentLocation || !settings?.refreshInterval || status !== "AVAILABLE") return;
+    if (!currentLocation || status !== "AVAILABLE") return;
 
     const intervalId = setInterval(() => {
       fetchRestaurantsAhead(false);
-    }, settings.refreshInterval * 60 * 1000);
+    }, DRIVING_REFRESH_INTERVAL_MINUTES * 60 * 1000);
 
     return () => clearInterval(intervalId);
-  }, [currentLocation?.latitude, currentLocation?.longitude, settings?.refreshInterval, fetchRestaurantsAhead, status]);
+  }, [currentLocation?.latitude, currentLocation?.longitude, fetchRestaurantsAhead, status]);
 
   // Handle Retry button
   const handleRetry = async () => {
@@ -1052,9 +1075,13 @@ export default function DrivingMode() {
 
     let list = [...resultData.restaurants];
 
-    // Render all visible restaurants returned by backend (up to 100 km)
+    if (Number.isFinite(activeDistanceLimit) && activeDistanceLimit > 0) {
+      list = list.filter((restaurant) => {
+        const distanceKm = Number(restaurant?.distanceKm);
+        return Number.isFinite(distanceKm) && distanceKm <= activeDistanceLimit;
+      });
+    }
 
-    // 2. Facilities tags filter
     if (activeFacilityFilter !== "all") {
       if (activeFacilityFilter === "veg") {
         list = list.filter((r) => r.pureVegRestaurant === true);
@@ -1063,7 +1090,6 @@ export default function DrivingMode() {
       }
     }
 
-    // 3. Sorting
     list.sort((a, b) => {
       if (sortBy === "eta") return a.etaMinutes - b.etaMinutes;
       if (sortBy === "rating") return b.rating - a.rating;
@@ -1071,7 +1097,48 @@ export default function DrivingMode() {
     });
 
     return list;
-  }, [resultData?.restaurants, activeFacilityFilter, sortBy]);
+  }, [resultData?.restaurants, activeDistanceLimit, activeFacilityFilter, sortBy]);
+
+  useEffect(() => {
+    if (!Array.isArray(resultData?.restaurants)) return;
+    console.groupCollapsed(`[DrivingMode][Browser] API restaurants (${resultData.restaurants.length})`);
+    console.table(
+      resultData.restaurants.map((restaurant, index) => ({
+        index: index + 1,
+        id: restaurant?._id || restaurant?.id || "-",
+        name: restaurant?.restaurantName || restaurant?.name || "-",
+        highwayRef: restaurant?.highwayRef || restaurant?.highwayName || "-",
+        distanceKm: restaurant?.distanceKm,
+        etaMinutes: restaurant?.etaMinutes,
+        routeOffsetKm: restaurant?.routeOffsetKm,
+        city: restaurant?.city || "-",
+        isHighwayRestaurant: restaurant?.isHighwayRestaurant,
+      }))
+    );
+    console.groupEnd();
+  }, [resultData?.restaurants]);
+
+  useEffect(() => {
+    console.groupCollapsed(`[DrivingMode][Browser] Filtered restaurants (${filteredRestaurants.length})`);
+    console.log("filters", {
+      activeDistanceLimit,
+      activeFacilityFilter,
+      sortBy,
+    });
+    console.table(
+      filteredRestaurants.map((restaurant, index) => ({
+        index: index + 1,
+        id: restaurant?._id || restaurant?.id || "-",
+        name: restaurant?.restaurantName || restaurant?.name || "-",
+        highwayRef: restaurant?.highwayRef || restaurant?.highwayName || "-",
+        distanceKm: restaurant?.distanceKm,
+        etaMinutes: restaurant?.etaMinutes,
+        routeOffsetKm: restaurant?.routeOffsetKm,
+        city: restaurant?.city || "-",
+      }))
+    );
+    console.groupEnd();
+  }, [filteredRestaurants, activeDistanceLimit, activeFacilityFilter, sortBy]);
 
   const effectiveTravelPosition = React.useMemo(() => liveTravelPosition || (journey?.origin ? { lat: journey.origin.lat, lng: journey.origin.lng } : currentLocation), [liveTravelPosition, journey?.origin?.lat, journey?.origin?.lng, currentLocation]);
   const activeRouteMetrics = React.useMemo(() => buildRoutePathMetrics(getJourneyActivePath(journey)), [journey]);
@@ -1080,7 +1147,7 @@ export default function DrivingMode() {
     if (!activeRouteMetrics || !effectiveTravelPosition) return filteredRestaurants[0] || null;
 
     const userProgress = getRouteProgressSnapshot(activeRouteMetrics, effectiveTravelPosition);
-    if (!userProgress) return filteredRestaurants[0] || null;
+    if (!userProgress) return null;
 
     const rankedStops = filteredRestaurants
       .map((restaurant) => {
@@ -1108,8 +1175,21 @@ export default function DrivingMode() {
     const firstAheadStop = rankedStops.find(({ routeProgress, liveDistanceKm }) => (routeProgress.distanceAlongKm - userProgress.distanceAlongKm) >= -PASSED_RESTAURANT_BUFFER_KM || liveDistanceKm < 1.2);
     if (firstAheadStop) return firstAheadStop.restaurant;
 
-    return rankedStops[0]?.restaurant || filteredRestaurants[0] || null;
+    return rankedStops[0]?.restaurant || null;
   }, [filteredRestaurants, activeRouteMetrics, effectiveTravelPosition]);
+
+  useEffect(() => {
+    console.log("[DrivingMode][Browser] Next stop", nextStop
+      ? {
+          id: nextStop?._id || nextStop?.id || "-",
+          name: nextStop?.restaurantName || nextStop?.name || "-",
+          highwayRef: nextStop?.highwayRef || nextStop?.highwayName || "-",
+          distanceKm: nextStop?.distanceKm,
+          etaMinutes: nextStop?.etaMinutes,
+          routeOffsetKm: nextStop?.routeOffsetKm,
+        }
+      : null);
+  }, [nextStop]);
   const nextStopId = nextStop?._id || nextStop?.id || nextStop?.restaurantSlug || null;
   const nextStopLiveDistanceKm = getDistanceBetweenKm(effectiveTravelPosition, getRestaurantLatLng(nextStop));
   const nextStopLiveEtaMinutes = React.useMemo(() => {
@@ -1138,8 +1218,6 @@ export default function DrivingMode() {
     })
     : []), [journey?.availableRoutes]);
   const hasMultipleRoutes = visibleRouteOptions.length > 1;
-  const rangeLimit = settings?.restaurantSearchRadiusKm || 50;
-
   useEffect(() => {
     if (!journey || status !== "AVAILABLE") return undefined;
     const intervalId = window.setInterval(() => {
@@ -1390,16 +1468,16 @@ export default function DrivingMode() {
               <div className="flex items-center justify-between gap-4 pb-2">
                 {/* Range Filters */}
                 <div className="flex gap-1.5 overflow-x-auto">
-                  {[5, 10, 20, 50].map((d) => (
+                  {distanceFilterOptions.map((d) => (
                     <button
-                      key={d}
+                      key={d ?? "all"}
                       onClick={() => setActiveDistanceLimit(d)}
                       className={`px-3 py-1 text-xs font-bold rounded-full border transition-all shrink-0 ${activeDistanceLimit === d
                         ? "bg-orange-600 text-white border-orange-600 shadow-sm"
                         : "bg-white text-gray-600 border-gray-200 dark:bg-neutral-900 dark:text-neutral-400"
                         }`}
                     >
-                      {d} km
+                      {d === null ? "All" : `${d} km`}
                     </button>
                   ))}
                 </div>
@@ -1518,7 +1596,7 @@ export default function DrivingMode() {
             {/* Header Row */}
             <div className="flex items-center justify-between py-3 border-b dark:border-neutral-900/60 mb-3 bg-white dark:bg-[#111111] sticky top-0 z-10">
               <h3 className="font-extrabold text-sm text-gray-900 dark:text-white">
-                Restaurants Ahead ({activeDistanceLimit} km)
+                Restaurants Ahead ({activeDistanceLimit === null ? "All" : `${activeDistanceLimit} km`})
               </h3>
 
               {/* Sort Select */}

@@ -99,32 +99,6 @@ const normalizeRouteResponse = ({
     bounds: bounds || computeBoundingBoxFromCoordinates(decodedCoordinates)
 });
 
-const getSampledRoutePoints = (coordinates = []) => {
-    if (coordinates.length <= MAX_ROUTE_SAMPLE_POINTS) return coordinates;
-
-    const sampled = [];
-    const step = Math.max(1, Math.floor(coordinates.length / MAX_ROUTE_SAMPLE_POINTS));
-    for (let index = 0; index < coordinates.length; index += step) {
-        sampled.push(coordinates[index]);
-    }
-
-    const lastCoordinate = coordinates[coordinates.length - 1];
-    const sampledLast = sampled[sampled.length - 1];
-    if (
-        lastCoordinate &&
-        sampledLast &&
-        (lastCoordinate.lat !== sampledLast.lat || lastCoordinate.lng !== sampledLast.lng)
-    ) {
-        sampled.push(lastCoordinate);
-    }
-
-    return sampled;
-};
-
-export async function matchStoredHighwaysAlongRoute(decodedCoordinates, corridorRadiusKm) {
-    return [];
-}
-
 async function countRestaurantsAlongRoute(decodedCoordinates, corridorRadiusKm) {
     if (!Array.isArray(decodedCoordinates) || decodedCoordinates.length < 2) {
         return 0;
@@ -336,45 +310,34 @@ function decorateRouteOptions(routeOptions, { includeRestaurantCounts = true } =
     const durationValues = routeOptions.map((route) => Number(route.route.durationSeconds) || Infinity);
     const distanceValues = routeOptions.map((route) => Number(route.route.distanceMeters) || Infinity);
     const restaurantValues = routeOptions.map((route) => Number(route.restaurantCount) || 0);
-    const highwayValues = routeOptions.map((route) => Number(route.storedHighwayCount) || 0);
 
     const fastestDuration = Math.min(...durationValues);
     const shortestDistance = Math.min(...distanceValues);
     const maxRestaurants = Math.max(...restaurantValues);
-    const maxCoverage = Math.max(...highwayValues);
 
     const scoredRoutes = routeOptions.map((route, index) => {
         const durationSeconds = Number(route.route.durationSeconds) || Infinity;
         const distanceMeters = Number(route.route.distanceMeters) || Infinity;
         const restaurantCount = Number(route.restaurantCount) || 0;
-        const storedHighwayCount = Number(route.storedHighwayCount) || 0;
 
         const score =
             (durationSeconds === fastestDuration ? 55 : 0) +
             (distanceMeters === shortestDistance ? 20 : 0) +
             (restaurantCount * 3) +
-            (storedHighwayCount * 12) -
             Math.round(durationSeconds / 1800) -
             Math.round(distanceMeters / 25000);
 
         const badges = [];
         if (durationSeconds === fastestDuration) badges.push('Fastest');
         if (includeRestaurantCounts && restaurantCount === maxRestaurants && restaurantCount > 0) badges.push('Best for Food Stops');
-        if (storedHighwayCount === maxCoverage && storedHighwayCount > 0) badges.push('Best Highway Coverage');
 
         const routeName = `Route ${index + 1}`;
-        const roadNames = route.storedHighways.length
-            ? route.storedHighways.slice(0, 5).map((highway) => highway.ref || highway.name).filter(Boolean)
-            : [];
-        const summary = roadNames.length
-            ? roadNames.slice(0, 3).join(' -> ')
-            : route.route.distanceText || routeName;
+        const summary = route.route.distanceText || routeName;
 
         return {
             ...route,
             name: routeName,
             summary,
-            roadNames,
             badges,
             score
         };
@@ -396,7 +359,6 @@ function decorateRouteOptions(routeOptions, { includeRestaurantCounts = true } =
 export async function getGoogleRouteHighwayOptions({
     origin,
     destination,
-    includeStoredHighways = true,
     corridorRadiusKm,
     includeAlternatives = true,
     includeRestaurantCounts = true
@@ -410,7 +372,7 @@ export async function getGoogleRouteHighwayOptions({
 
     const settings = await getStoredDrivingSettingsConfig();
     const effectiveCorridorRadiusKm = clamp(
-        Number(corridorRadiusKm) || settings.storedHighwayMatchRadiusKm,
+        Number(corridorRadiusKm) || settings.googleRouteSearchRadiusKm,
         1,
         25
     );
@@ -447,20 +409,13 @@ export async function getGoogleRouteHighwayOptions({
     }
 
     const rawRoutes = await Promise.all(normalizedRoutes.map(async (normalizedRoute, index) => {
-        const [storedHighways, restaurantCount] = await Promise.all([
-            includeStoredHighways
-                ? matchStoredHighwaysAlongRoute(normalizedRoute.decodedCoordinates, effectiveCorridorRadiusKm)
-                : Promise.resolve([]),
-            includeRestaurantCounts
-                ? countRestaurantsAlongRoute(normalizedRoute.decodedCoordinates, effectiveCorridorRadiusKm)
-                : Promise.resolve(0)
-        ]);
+        const restaurantCount = includeRestaurantCounts
+            ? await countRestaurantsAlongRoute(normalizedRoute.decodedCoordinates, effectiveCorridorRadiusKm)
+            : 0;
 
         return {
             routeId: `google_route_${index + 1}`,
             restaurantCount,
-            storedHighwayCount: storedHighways.length,
-            storedHighways,
             highway: {
                 id: 'custom_google_route',
                 name: 'Google Maps Route',
@@ -492,13 +447,11 @@ export async function getGoogleRouteHighwayOptions({
 export async function getGoogleRouteHighway({
     origin,
     destination,
-    includeStoredHighways = true,
     corridorRadiusKm
 }) {
     const routeOptions = await getGoogleRouteHighwayOptions({
         origin,
         destination,
-        includeStoredHighways,
         corridorRadiusKm,
         includeAlternatives: true,
         includeRestaurantCounts: true
@@ -517,14 +470,11 @@ export async function getGoogleRouteHighway({
         routes: routeOptions.routes,
         highway: recommendedRoute.highway,
         route: recommendedRoute.route,
-        storedHighways: recommendedRoute.storedHighways,
         routeId: recommendedRoute.routeId,
         restaurantCount: recommendedRoute.restaurantCount,
-        storedHighwayCount: recommendedRoute.storedHighwayCount,
         badges: recommendedRoute.badges,
         name: recommendedRoute.name,
-        summary: recommendedRoute.summary,
-        roadNames: recommendedRoute.roadNames
+        summary: recommendedRoute.summary
     };
 }
 

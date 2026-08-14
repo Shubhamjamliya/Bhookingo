@@ -1493,8 +1493,6 @@ export const userAPI = {
       timeout: 45000,
       ...config,
     }),
-  getConnectingHighways: (params) =>
-    apiClient.get("/food/driving-mode/connecting-highways", { params, contextModule: "user" }),
   getGoogleRouteHighway: (params) =>
     apiClient.get("/food/driving-mode/google-route-highway", { params, contextModule: "user" }),
   /** Get current user profile (Bearer USER). */

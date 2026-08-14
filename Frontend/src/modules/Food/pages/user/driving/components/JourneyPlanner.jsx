@@ -430,14 +430,11 @@ export default function JourneyPlanner({
     distanceText: route.route?.distanceText || "",
     durationText: route.route?.durationText || "",
     restaurantCount: route.restaurantCount || 0,
-    storedHighwayCount: route.storedHighwayCount || 0,
     badges: Array.isArray(route.badges) ? route.badges : [],
     polyline: route.highway?.polyline || "",
     coordinates: Array.isArray(route.highway?.coordinates) ? route.highway.coordinates : [],
     boundingBox: route.highway?.boundingBox || null,
-    storedHighways: Array.isArray(route.storedHighways) ? route.storedHighways : [],
-    viaRoute: route.summary || route.name || `Route ${index + 1}`,
-    roadNames: Array.isArray(route.roadNames) ? route.roadNames : []
+    viaRoute: route.summary || route.name || `Route ${index + 1}`
   });
 
   const handleContinue = async () => {
@@ -1243,7 +1240,7 @@ export default function JourneyPlanner({
             <div className="text-center">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Choose Route Option</h3>
               <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1 leading-normal">
-                After choosing source and destination, select the route you want to follow. We are showing the via route and road names here.
+                After choosing source and destination, select the route you want to follow. We are showing the route summary here.
               </p>
             </div>
 
@@ -1270,10 +1267,6 @@ export default function JourneyPlanner({
                   <div className="rounded-2xl border border-orange-100 bg-white/70 px-3 py-2 text-xs dark:border-neutral-800 dark:bg-neutral-900/70">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600">Via Route</div>
                     <div className="mt-1 font-semibold text-gray-900 dark:text-white">{hw.viaRoute || hw.ref || hw.name}</div>
-                    <div className="mt-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-neutral-500">Road Names</div>
-                    <div className="mt-1 text-[11px] font-medium text-gray-600 dark:text-neutral-300">
-                      {hw.roadNames?.length ? hw.roadNames.join(', ') : (hw.ref || hw.name)}
-                    </div>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2 border-t border-gray-200/60 dark:border-neutral-800/80 pt-2 text-[10px] font-medium text-gray-500 dark:text-gray-400">

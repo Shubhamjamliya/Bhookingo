@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import { toast } from 'sonner';
-import { API_BASE_URL } from '@food/api/config';
+import { API_BASE_URL, SOCKET_URL } from '@food/api/config';
 import { userAPI } from '@food/api';
 import { dispatchNotificationInboxRefresh } from '@food/hooks/useNotificationInbox';
 
@@ -52,18 +52,7 @@ export const useUserNotifications = () => {
       return;
     }
 
-    // Normalize backend URL
-    let backendUrl = API_BASE_URL;
-    try {
-      backendUrl = new URL(backendUrl).origin;
-    } catch {
-      backendUrl = String(backendUrl || "")
-        .replace(/\/api\/v\d+\/?$/i, "")
-        .replace(/\/api\/?$/i, "")
-        .replace(/\/+$/, "");
-    }
-
-    const socketUrl = `${backendUrl}`;
+    const socketUrl = SOCKET_URL || API_BASE_URL;
     
     // Auth token
     const token = localStorage.getItem('user_accessToken') || localStorage.getItem('accessToken');

@@ -64,8 +64,9 @@ import {
 } from "@food/components/ui/dialog";
 import { authAPI, userAPI } from "@food/api";
 import { firebaseAuth } from "@food/firebase";
-import { clearModuleAuth } from "@food/utils/auth";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { clearModuleAuth } from "@food/utils/auth";
 import { showAccountDeletedToast } from "@/shared/utils/customToasts";
 import { registerWebPushForCurrentModule } from "@food/utils/firebaseMessaging";
 
@@ -76,6 +77,7 @@ const USER_SESSION_PREFERENCE_KEYS = ["userVegMode", "food-under-250-filters"];
 
 
 export default function Profile() {
+  const queryClient = useQueryClient();
   const { userProfile, vegMode, setVegMode, getDefaultAddress, addresses, updateUserProfile } =
     useProfile();
   const { openLocationSelector } = useLocationSelector();
@@ -283,28 +285,32 @@ export default function Profile() {
   const isComplete = profileCompletion === 100;
   useEffect(() => {
     let mounted = true;
-    userAPI
-      .getReferralStats()
-      .then((res) => {
-        const reward = res?.data?.data?.stats?.rewardAmount;
-        if (mounted) setReferralReward(Number(reward) || 0);
-      })
-      .catch(() => { });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    
+    // Referral Stats
+    queryClient.fetchQuery({
+      queryKey: ['user-referral-stats'],
+      staleTime: 1000 * 60 * 5,
+      queryFn: async () => {
+        const res = await userAPI.getReferralStats();
+        return res?.data?.data?.stats?.rewardAmount || 0;
+      }
+    }).then(reward => {
+      if (mounted) setReferralReward(Number(reward) || 0);
+    }).catch(() => {});
 
-  useEffect(() => {
-    let mounted = true;
-    userAPI
-      .getWallet()
-      .then((res) => {
-        const w = res?.data?.data?.wallet || res?.data?.wallet;
-        const bal = Number(w?.balance);
-        if (mounted) setWalletBalance(Number.isFinite(bal) ? bal : 0);
-      })
-      .catch(() => { });
+    // Wallet Balance
+    queryClient.fetchQuery({
+      queryKey: ['user-wallet-balance'],
+      staleTime: 1000 * 60 * 5,
+      queryFn: async () => {
+        const res = await userAPI.getWallet();
+        return res?.data?.data?.wallet || res?.data?.wallet || { balance: 0 };
+      }
+    }).then(w => {
+      const bal = Number(w?.balance);
+      if (mounted) setWalletBalance(Number.isFinite(bal) ? bal : 0);
+    }).catch(() => {});
+
     return () => {
       mounted = false;
     };

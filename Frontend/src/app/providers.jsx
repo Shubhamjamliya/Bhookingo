@@ -4,6 +4,18 @@ import { StrictMode } from 'react'
 import { Provider as ReduxProvider } from 'react-redux'
 import { store } from './store'
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 1000 * 60 * 5, // 5 minutes before data is considered stale
+    },
+  },
+})
+
 function shouldUseHashRouter() {
   if (typeof window === 'undefined') return false
 
@@ -25,10 +37,12 @@ export function AppProviders({ children }) {
   return (
     <StrictMode>
       <ReduxProvider store={store}>
-        <Router>
-          {children}
-          <Toaster position="top-center" richColors offset="80px" />
-        </Router>
+        <QueryClientProvider client={queryClient}>
+          <Router>
+            {children}
+            <Toaster position="top-center" richColors offset="80px" />
+          </Router>
+        </QueryClientProvider>
       </ReduxProvider>
     </StrictMode>
   )

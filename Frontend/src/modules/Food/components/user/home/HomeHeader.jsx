@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, ChevronDown, Search, Mic, CheckCircle2, Tag, Gift, AlertCircle, Clock, X, IndianRupee, User, Wallet, Utensils, Soup } from 'lucide-react';
+import { MapPin, ChevronDown, Search, Mic, CheckCircle2, Tag, Gift, AlertCircle, Clock, X, IndianRupee, User, Wallet, Utensils, Soup, Bell } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@food/components/ui/avatar";
 import { useProfile } from "@food/context/ProfileContext";
 import useNotificationInbox from "@food/hooks/useNotificationInbox";
 import VoiceSearchOverlay from "@food/components/user/VoiceSearchOverlay";
 import { useNavigate } from 'react-router-dom';
 import { isModuleAuthenticated } from "@food/utils/auth";
+import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 
 // Images for banner - exactly as in FestBanner.jsx
 const bannerImages = {
@@ -54,6 +55,7 @@ export default function HomeHeader({
   const navigate = useNavigate();
   const { userProfile } = useProfile();
   const [isVoiceOverlayOpen, setIsVoiceOverlayOpen] = useState(false);
+  const { unreadCount } = useNotificationInbox("user", { autoload: true });
 
   // FestBanner Logic
   const [imgIndex, setImgIndex] = useState(0);
@@ -84,22 +86,30 @@ export default function HomeHeader({
   }, [userProfile]);
 
   return (
-    <div className="relative pt-2 pb-4 px-4 transition-all duration-700 overflow-hidden bg-transparent shadow-none">
+    <div className="relative transition-all duration-700 overflow-hidden bg-orange-50/40 dark:bg-orange-950/10 shadow-none pb-1">
       {/* Main Header Content */}
-      <div className="relative z-10 space-y-2.5">
-        <div className="flex items-start gap-3">
-          {/* Left: Location Selector */}
-          <Link
-            to="/food/user/address-selector"
-            state={{ from: window.location.pathname }}
-            className="flex items-center gap-2 cursor-pointer group min-w-0 flex-1 relative z-50 text-left no-underline"
-          >
-            <div className="bg-white/10 p-1.5 rounded-xl group-active:scale-95 transition-all">
-              <MapPin className="h-4 w-4 text-white/90 fill-white/20" />
-            </div>
-            <div className="flex flex-col min-w-0">
+      <div className="relative z-10">
+        <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-3">
+          {/* Left Side: Logo + Location */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            {/* Logo */}
+            <Link to="/food/user" className="flex-shrink-0 active:scale-95 transition-transform">
+              <img
+                src="https://res.cloudinary.com/dvjameabp/image/upload/v1786610214/business/logos/omyyclzpgjpzit8ho8ma.png"
+                alt="Logo"
+                className="h-8 w-auto object-contain rounded-[0.5rem]"
+              />
+            </Link>
+
+            {/* Left: Location Selector */}
+            <Link
+              to="/food/user/address-selector"
+              state={{ from: window.location.pathname }}
+              className="flex items-center gap-2 cursor-pointer group min-w-0 flex-1 relative z-50 text-left no-underline pl-1"
+            >
+              <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-1">
-                <span className="text-[15px] font-black text-white truncate drop-shadow-sm">
+                <span className="text-[15px] font-black text-text-primary dark:text-white truncate">
                   {(() => {
                     const area = location?.area || location?.subLocality || location?.mainTitle || location?.neighborhood;
                     const city = (location?.city || "").toLowerCase();
@@ -129,11 +139,16 @@ export default function HomeHeader({
                     return location?.area || location?.city || "Select Location";
                   })()}
                 </span>
-                <ChevronDown className="h-3 w-3 text-white/70" />
+                <ChevronDown className="h-3 w-3 text-text-secondary dark:text-gray-400" />
               </div>
 
-              <span className="text-[10px] font-medium text-white/80 truncate leading-tight mt-0.5">
+              <span className="text-[11px] font-medium text-text-secondary dark:text-gray-400 truncate leading-tight mt-0.5">
                 {(() => {
+                  const addr = location?.address || "";
+                  if (addr && addr !== "Select location") {
+                    return addr;
+                  }
+
                   const state = location?.state || "";
                   const pincode = location?.pincode || "";
 
@@ -141,65 +156,36 @@ export default function HomeHeader({
                   if (state) return state;
                   if (pincode) return pincode;
 
-                  const addr = location?.address || "";
-                  if (addr && addr.length > 10) {
-                    return addr.split(',').slice(1, 3).join(',').trim() || "Pinpoint location";
-                  }
-
                   return "Pinpoint location";
                 })()}
               </span>
             </div>
           </Link>
+          </div>
 
-          {/* Right: Actions Column (Wallet, Profile, Veg Toggle) */}
-          <div className="flex flex-col items-end gap-3 shrink-0">
-            {/* Row 1: Wallet and Profile */}
-            <div className="flex items-center gap-3">
-              <Link
-                to="/food/user/wallet"
-                state={{ from: '/food/user' }}
-                onClick={(e) => {
-                  if (!isModuleAuthenticated('user')) {
-                    e.preventDefault();
-                    window.dispatchEvent(new CustomEvent('show-login-required'));
-                  }
-                }}
-                className="flex items-center justify-center p-1.5 active:scale-90 transition-all transform-gpu translate-z-0"
-              >
-                <Wallet className="h-[26px] w-[26px] text-white antialiased" strokeWidth={2.2} />
-              </Link>
-
-              {/* Profile Photo - Increased size for better clarity */}
-              <Link
-                to="/food/user/profile"
-                onClick={(e) => {
-                  if (!isModuleAuthenticated('user')) {
-                    e.preventDefault();
-                    window.dispatchEvent(new CustomEvent('show-login-required'));
-                  }
-                }}
-                className="h-9 w-9 relative flex items-center justify-center rounded-full border-[1.5px] border-white shadow-none cursor-pointer active:scale-95 transition-all overflow-hidden transform-gpu translate-z-0"
-              >
-                <Avatar className="h-full w-full bg-[#FFF5E6]">
-                  {userProfile?.profileImage && (
-                    <AvatarImage 
-                      src={userProfile.profileImage} 
-                      alt="Profile" 
-                      className="object-cover"
-                    />
-                  )}
-                  <AvatarFallback className="bg-[#FFF5E6] text-[20px] font-black text-[var(--primary)] leading-none tracking-tighter antialiased">
-                    {initials || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-            </div>
+          {/* Right: Actions Column (Bell) */}
+          <div className="flex items-center gap-3 shrink-0 pt-0.5">
+            {/* Row 1: Notifications */}
+            <Link
+              to="/food/user/notifications"
+              onClick={(e) => {
+                if (!isModuleAuthenticated('user')) {
+                  e.preventDefault();
+                  window.dispatchEvent(new CustomEvent('show-login-required'));
+                }
+              }}
+              className="relative flex items-center justify-center p-2.5 bg-white dark:bg-[#1a1a1a] rounded-[0.85rem] shadow-sm active:scale-90 transition-all transform-gpu translate-z-0"
+            >
+              <Bell className="h-[18px] w-[18px] text-text-primary dark:text-white antialiased" strokeWidth={2.2} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border-[1.5px] border-white dark:border-gray-900 shadow-sm" />
+              )}
+            </Link>
           </div>
         </div>
 
         {/* Row 2: Search Bar and Veg Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 px-4 pb-4">
           <div
             className="flex-1 relative bg-surface rounded-2xl flex items-center px-4 py-3 shadow-xl border border-black/5 cursor-pointer active:scale-[0.98] transition-all duration-300"
             onClick={handleSearchFocus}
@@ -247,9 +233,9 @@ export default function HomeHeader({
             ref={vegModeToggleRef}
             className="flex flex-col items-center gap-1 shrink-0 antialiased"
           >
-            <span className="text-[9px] font-black text-white uppercase tracking-[0.1em] drop-shadow-md leading-none">Veg Mode</span>
+            <span className="text-[9px] font-black text-text-primary dark:text-white uppercase tracking-[0.1em] leading-none">Veg Mode</span>
             <div
-              className={`w-11 h-5 rounded-full relative transition-all duration-500 cursor-pointer border border-white/20 shadow-lg ${vegMode ? 'bg-[#48c479]' : 'bg-gray-500/60'}`}
+              className={`w-11 h-5 rounded-full relative transition-all duration-500 cursor-pointer border border-gray-200 dark:border-gray-700 shadow-sm ${vegMode ? 'bg-[#48c479]' : 'bg-gray-300 dark:bg-gray-700'}`}
               onClick={(e) => {
                 e.stopPropagation();
                 handleVegModeChange?.(!vegMode);

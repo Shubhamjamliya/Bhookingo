@@ -17,6 +17,7 @@ import { extractImages } from "@food/utils/common";
 import JourneyPlanner from "./components/JourneyPlanner";
 import { FACILITIES_CONFIG } from "../../../utils/facilitiesConfig";
 import { DrivingModeSkeleton } from "@food/components/ui/loading-skeletons";
+import { useQueryClient } from "@tanstack/react-query";
 
 const readSessionJson = (key, fallback = null) => {
   try {
@@ -251,6 +252,7 @@ function RestaurantImageCarousel({ restaurant }) {
 }
 
 export default function DrivingMode() {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { setOrderType } = useProfile();
 
@@ -850,9 +852,18 @@ export default function DrivingMode() {
         queryParams.highwayId = currentJourney.selectedHighway._id;
       }
 
-      const res = await userAPI.getRestaurantsAhead(queryParams, {
-        signal: controller.signal
+      const queryKey = ['driving-restaurants', queryParams];
+      const resData = await queryClient.fetchQuery({
+        queryKey,
+        staleTime: 1000 * 60 * 5, // 5 min cache
+        queryFn: async () => {
+          const res = await userAPI.getRestaurantsAhead(queryParams, {
+            signal: controller.signal
+          });
+          return res?.data;
+        }
       });
+      const res = { data: resData };
 
       // Clear the timeout upon receiving the response
       clearTimeout(timeoutIdRef.current);

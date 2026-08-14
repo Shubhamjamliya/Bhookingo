@@ -11,11 +11,7 @@ export default function BottomNavigation() {
   const [under250PriceLimit, setUnder250PriceLimit] = useState(250)
 
   const [isVisible, setIsVisible] = useState(true)
-  const lastScrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0)
-  const accumulatedScrollUpRef = useRef(0)
-  const accumulatedScrollDownRef = useRef(0)
-  const isVisibleRef = useRef(true)
-
+  
   // Fetch landing settings to get dynamic price limit
   useEffect(() => {
     let cancelled = false
@@ -33,59 +29,7 @@ export default function BottomNavigation() {
     return () => { cancelled = true }
   }, [])
 
-  // Scroll logic to hide/show footer - uses refs to avoid listener re-registration
-  useEffect(() => {
-    const SHOW_THRESHOLD = 150 // Pixels to scroll up to show
-    const HIDE_THRESHOLD = 80  // Pixels to scroll down to hide
-
-    const controlNavbar = () => {
-      const currentScrollY = window.scrollY
-      const lastScrollY = lastScrollYRef.current
-
-      // If we are at the top of the page, always show the footer
-      if (currentScrollY < 50) {
-        accumulatedScrollDownRef.current = 0
-        accumulatedScrollUpRef.current = 0
-        lastScrollYRef.current = currentScrollY
-        if (!isVisibleRef.current) {
-          isVisibleRef.current = true
-          setIsVisible(true)
-        }
-        return
-      }
-
-      if (currentScrollY > lastScrollY) {
-        // Scrolling Down
-        const delta = currentScrollY - lastScrollY
-        accumulatedScrollDownRef.current += delta
-        accumulatedScrollUpRef.current = 0
-
-        if (accumulatedScrollDownRef.current > HIDE_THRESHOLD && currentScrollY > 100) {
-          if (isVisibleRef.current) {
-            isVisibleRef.current = false
-            setIsVisible(false)
-          }
-        }
-      } else {
-        // Scrolling Up
-        const delta = lastScrollY - currentScrollY
-        accumulatedScrollUpRef.current += delta
-        accumulatedScrollDownRef.current = 0
-
-        if (accumulatedScrollUpRef.current > SHOW_THRESHOLD) {
-          if (!isVisibleRef.current) {
-            isVisibleRef.current = true
-            setIsVisible(true)
-          }
-        }
-      }
-
-      lastScrollYRef.current = currentScrollY
-    }
-
-    window.addEventListener('scroll', controlNavbar, { passive: true })
-    return () => window.removeEventListener('scroll', controlNavbar)
-  }, []) // Empty deps â€” listener registers only ONCE, no re-add on every scroll
+  // Scroll logic removed so the navbar stays permanently visible
 
   // Normalize pathname by removing trailing slash for consistent comparison
   const normalizedPath = pathname.replace(/\/$/, "") || "/";
@@ -166,34 +110,34 @@ export default function BottomNavigation() {
             ease: [0.22, 1, 0.36, 1],
             duration: 0.5
           }}
-          className="md:hidden fixed bottom-0 left-0 right-0 z-50"
+          className="md:hidden fixed bottom-4 left-4 right-4 z-50"
         >
           <div 
-            className="w-full h-18 bg-surface dark:bg-[#1a1a1a] border-t-2 border-orange-500 rounded-t-[20px] shadow-[0_-10px_30px_rgba(0,0,0,0.12)] flex items-center justify-around px-2 overflow-hidden"
+            className="w-full h-16 bg-white dark:bg-[#1a1a1a] rounded-full shadow-[0_4px_25px_rgba(0,0,0,0.1)] flex items-center justify-around px-2"
           >
             {navItems.map((item) => (
               <Link
                 key={item.id}
                 to={item.to}
                 onClick={item.onClick}
-                className={`flex flex-col items-center justify-center gap-1 h-14 w-full relative transition-all duration-300 ${
-                  item.active ? "text-[var(--primary)]" : "text-text-secondary dark:text-text-secondary"
+                className={`flex flex-col items-center justify-center gap-1 h-[3.25rem] w-full relative transition-all duration-300 ${
+                  item.active ? "text-[#c22031] dark:text-red-400" : "text-slate-500 dark:text-slate-400"
                 }`}
               >
                 {item.active && (
                   <motion.div
                     layoutId="active-nav-bg"
-                    className="absolute inset-x-1 inset-y-1 bg-primary-light/15 dark:bg-[var(--primary)]/10 rounded-[1.5rem] z-0"
+                    className="absolute inset-0 bg-[#fff0f2] dark:bg-red-500/10 rounded-full z-0"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
                 
                 <div className="relative z-10 flex flex-col items-center gap-0.5">
                   <item.icon 
-                    className={`h-5 w-5 transition-transform duration-300 ${item.active ? "scale-110" : ""}`} 
-                    strokeWidth={item.active ? 2.5 : 2} 
+                    className={`h-[22px] w-[22px] transition-transform duration-300 ${item.active ? "scale-105" : ""}`} 
+                    strokeWidth={item.active ? 2 : 1.75} 
                   />
-                  <span className={`text-[10px] font-black tracking-tight uppercase leading-none ${item.active ? "opacity-100" : "text-text-primary/70 dark:text-gray-300/60"}`}>
+                  <span className={`text-[10px] font-semibold tracking-wide ${item.active ? "opacity-100" : "opacity-90"}`}>
                     {item.id === 'under250' ? 'Under 250' : item.label}
                   </span>
                 </div>

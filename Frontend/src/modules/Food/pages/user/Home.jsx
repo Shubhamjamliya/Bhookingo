@@ -38,6 +38,9 @@ import {
   Share2,
   Zap,
   Users,
+  Sparkles,
+  ArrowRight,
+  ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Footer from "@food/components/user/Footer";
@@ -177,8 +180,10 @@ import QuickSection from "@food/components/user/home/QuickSection";
 import PromoRow from "@food/components/user/home/PromoRow";
 import FestBanner from "@food/components/user/home/FestBanner";
 import { clearCategoryCache } from "../../utils/categoryCache";
+import { useQueryClient } from '@tanstack/react-query';
 
 // Persistence for back-navigation and refresh speed
+
 const getSessionCache = (key) => {
   try {
     const cached = sessionStorage.getItem(key);
@@ -447,29 +452,6 @@ const RestaurantImageCarousel = React.memo(
           })}
         </div>
 
-        {/* Dish Recommended Badge Floating Left Top */}
-        {currentSlide?.dish && (
-          <div className="absolute top-3 left-3 z-10 max-w-[90%] pointer-events-none">
-            <div className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-2.5 shadow-xl border border-white/10">
-              {!vegMode && (
-                currentSlide.dish.foodType === 'Veg' ? (
-                  <div className="flex-shrink-0 w-3 h-3 border border-green-600 bg-surface rounded-[2px] flex items-center justify-center p-[1px]">
-                    <div className="w-full h-full bg-green-600 rounded-full" />
-                  </div>
-                ) : (
-                  <div className="flex-shrink-0 w-3 h-3 border border-primary bg-surface rounded-[2px] flex items-center justify-center p-[1px]">
-                    <div className="w-full h-full bg-primary rounded-full" />
-                  </div>
-                )
-              )}
-              <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-                <span className="text-white font-bold text-[11px] tracking-tight truncate max-w-[150px]">{currentSlide.dish.name}</span>
-                <span className="text-white/60 font-bold text-[11px]">•</span>
-                <span className="text-white font-black text-[11px]">₹{currentSlide.dish.price}</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {isImageUnavailable && (
           <div className="absolute inset-0 z-[2] flex items-center justify-center bg-gray-100">
@@ -503,10 +485,11 @@ const RestaurantImageCarousel = React.memo(
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
       </div>
     );
-  },
+  }
 );
 
 export default function Home() {
+  const queryClient = useQueryClient();
   const HERO_BANNER_AUTO_SLIDE_MS = 3500;
   const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
   const navigate = useNavigate();
@@ -904,10 +887,19 @@ export default function Home() {
   }, [landingCategories, normalizeImageUrl, slugifyCategory]);
 
   const displayCategories = useMemo(() => {
-    if (realCategories.length > 0) return realCategories;
-    if (menuCategories.length > 0) return menuCategories;
+    const normalizeList = (list) => {
+      return (list || []).map((category, index) => ({
+        id: category.id || category._id || `category-${index}`,
+        name: category.name || category.label || "Category",
+        image: normalizeImageUrl(category.image?.url || category.imageUrl || category.image) || foodImages[index % foodImages.length] || foodImages[0],
+        slug: category.slug || slugifyCategory(category.name || category.label || ""),
+      }));
+    };
+
+    if (realCategories.length > 0) return normalizeList(realCategories);
+    if (menuCategories.length > 0) return normalizeList(menuCategories);
     return normalizedLandingCategories;
-  }, [menuCategories, realCategories, normalizedLandingCategories]);
+  }, [menuCategories, realCategories, normalizedLandingCategories, normalizeImageUrl, slugifyCategory]);
 
   // Swipe functionality for hero banner carousel
   const touchStartX = useRef(0);
@@ -1414,29 +1406,26 @@ export default function Home() {
           return;
         }
 
-        setLoadingRealCategories(true);
-        const promise = (async () => {
-          const res = await adminAPI.getPublicCategories(zoneId ? { zoneId } : {});
-          const list =
-            res?.data?.data?.categories ||
-            res?.data?.categories ||
-            [];
-          const categories = Array.isArray(list)
-            ? list.map((cat, idx) => ({
+        const queryKey = ['categories', zoneKey];
+        const cachedCategories = queryClient.getQueryData(queryKey);
+
+        if (!cachedCategories && !cancelled) setLoadingRealCategories(true);
+
+        const promise = queryClient.fetchQuery({
+          queryKey,
+          queryFn: async () => {
+            const res = await publicGetOnce(`/food/categories/public/zone/${zoneKey}`);
+            const list = res?.data?.data?.categories || res?.data?.categories || [];
+            return Array.isArray(list) ? list.map((cat, idx) => ({
               id: String(cat?.id || cat?._id || cat?.slug || idx),
               name: cat?.name || "",
               slug: cat?.slug || String(cat?.name || "").toLowerCase().replace(/\s+/g, "-"),
-              image:
-                normalizeImageUrl(cat?.image || cat?.imageUrl) ||
-                foodImages[idx % foodImages.length] ||
-                foodImages[0],
+              image: normalizeImageUrl(cat?.image || cat?.imageUrl) || foodImages[idx % foodImages.length] || foodImages[0],
               type: cat?.type || "",
-            }))
-            : [];
-
-          publicCategoriesCacheRef.current.set(zoneKey, categories);
-          return categories;
-        })();
+            })) : [];
+          },
+          staleTime: 1000 * 60 * 5, // 5 min cache
+        });
 
         publicCategoriesInFlightRef.current.set(zoneKey, promise);
         const categories = await promise;
@@ -1444,8 +1433,6 @@ export default function Home() {
 
         if (!cancelled) {
           setRealCategories(categories);
-          HOME_CATEGORIES_CACHE = categories;
-          setSessionCache('food_home_categories', categories);
         }
       } catch (err) {
         debugWarn("Failed to fetch categories:", err);
@@ -1537,11 +1524,6 @@ export default function Home() {
       const requestSeq = ++restaurantsRequestSeqRef.current;
       try {
         const isCacheEmpty = !HOME_RESTAURANTS_CACHE || (Array.isArray(HOME_RESTAURANTS_CACHE) && HOME_RESTAURANTS_CACHE.length === 0);
-        if (isCacheEmpty || filters.activeFilters || filters.sortBy || filters.selectedCuisine || orderType) {
-          setLoadingRestaurants(true);
-        }
-
-        // Backend disconnected - new backend in progress. Skip health check.
 
         // Build query parameters from filters
         const params = {};
@@ -1564,8 +1546,6 @@ export default function Home() {
         if (filters.sortBy || sortBy) {
           params.sortBy = filters.sortBy || sortBy;
         }
-
-
 
         // Cuisine
         if (filters.selectedCuisine) {
@@ -1607,11 +1587,27 @@ export default function Home() {
           params.trusted = "true";
         }
 
+        const queryKey = ['restaurants', params];
+        const cachedData = queryClient.getQueryData(queryKey);
 
+        if (!cachedData && (isCacheEmpty || filters.activeFilters || filters.sortBy || filters.selectedCuisine || orderType)) {
+          setLoadingRestaurants(true);
+        }
 
         debugLog("Fetching restaurants with params:", params);
-        const response = await restaurantAPI.getRestaurants(params);
-        debugLog("Restaurants API response:", response.data);
+        
+        const responseData = await queryClient.fetchQuery({
+          queryKey,
+          queryFn: async () => {
+             const response = await restaurantAPI.getRestaurants(params);
+             return response.data;
+          },
+          staleTime: 1000 * 60 * 5, // 5 mins
+        });
+        
+        debugLog("Restaurants API response:", responseData);
+        
+        const response = { data: responseData };
 
         // If a newer request started, ignore this response to avoid races/flicker.
         if (requestSeq !== restaurantsRequestSeqRef.current) return;
@@ -2422,35 +2418,10 @@ export default function Home() {
         </div>
 
         <div className="md:hidden relative overflow-x-clip bg-surface dark:bg-[#0a0a0a]">
-          {/* Brand Top Section (Red Theme) */}
-          <div className="relative overflow-hidden rounded-b-[2rem] shadow-lg mb-2 bg-[var(--primary-light)]">
-            {/* Background Image */}
-            <div className="absolute inset-0 z-0">
-              <img
-                src={homeBannerRed}
-                alt="Banner Background"
-                className="w-full h-full object-cover"
-                loading="eager"
-                fetchPriority="high"
-                decoding="sync"
-              />
-              {/* Optional overlay to ensure text readability if needed */}
-              <div className="absolute inset-0 bg-black/10" />
-            </div>
+          {/* Brand Top Section */}
+          <div className="relative overflow-hidden mb-2 bg-surface dark:bg-[#0a0a0a]">
 
-            {festVideoActive && (
-              <div className="absolute inset-0 z-0">
-                <video
-                  src={festBannerVideoUrl}
-                  className="w-full h-full object-cover"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                />
-                <div className="absolute inset-0 bg-black/40" />
-              </div>
-            )}
+
             <div className="relative z-10">
               <HomeHeader
                 activeTab={activeTab}
@@ -2463,10 +2434,45 @@ export default function Home() {
                 handleVegModeChange={handleVegModeChange}
                 vegModeToggleRef={vegModeToggleRef}
                 // Pass Banner Props to Unified Component
-                showBanner={activeTab === "food"}
+                showBanner={false}
                 videoUrl={festVideoActive ? "" : festBannerVideoUrl}
                 hideFoodImages={festVideoActive}
               />
+              
+              {/* Promo Banner Card */}
+              <div className="px-4 pb-4">
+                <div className="w-full relative bg-[#b94411] rounded-[1.25rem] overflow-hidden shadow-lg aspect-[21/9] min-h-[140px]">
+                  
+                  {/* Full Width Image/Video area */}
+                  <div className="absolute inset-0">
+                    {festVideoActive ? (
+                      <video 
+                        src={normalizeImageUrl(festBannerVideoUrl)} 
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                      />
+                    ) : (
+                      <img 
+                        src="https://images.unsplash.com/photo-1516100882582-96c3a05fe590?w=800&h=400&fit=crop" 
+                        alt="Promo Food" 
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+
+                  {/* Pagination dots */}
+                  <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+                    <div className="w-4 h-1.5 bg-white rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+                    <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+                  </div>
+
+                </div>
+              </div>
 
             </div>
           </div>
@@ -2481,87 +2487,76 @@ export default function Home() {
                 transition={{ duration: 0.3 }}
                 className="bg-transparent dark:bg-transparent"
               >
-                {(orderType === "takeaway" || isTakeawayPage) && (
-                  <div className="px-4 pt-4 pb-2 bg-surface dark:bg-[#0a0a0a]">
-                    <div className="flex flex-col gap-1">
-                      <h1 className="text-lg sm:text-xl font-bold text-text-primary dark:text-white flex items-center gap-2">
-                        <span className="p-2 bg-green-100 dark:bg-green-900/30 rounded-xl">
-                          <ShoppingBag className="h-6 w-6 text-green-600" />
-                        </span>
-                        Pickup Restaurants
-                      </h1>
-                      <p className="text-[13px] text-text-secondary font-medium flex items-center gap-1.5 ml-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-                        Order online, skip the queue & pickup yourself
-                      </p>
-                    </div>
-                    <div className="h-[1px] bg-gradient-to-r from-gray-100 via-gray-200 to-transparent dark:from-gray-800 dark:via-gray-700 dark:to-transparent mt-5 mb-2"></div>
-                  </div>
-                )}
+
                 {/* "What's on your mind today?" Section */}
-                {orderType !== "takeaway" && !isTakeawayPage && (
                   <div
                     id="categories-section"
                     className="px-4 py-2.5 space-y-3 bg-surface dark:bg-[#0a0a0a]"
                   >
 
 
+                    {/* Categories Header */}
+                    <div className="flex items-center justify-between mb-3 px-1">
+                      <h2 className="text-lg font-black text-text-primary dark:text-white">Explore Categories</h2>
+                      <Link to="/food/user/categories" className="text-sm font-bold text-gray-600 dark:text-gray-400 flex items-center gap-1 active:scale-95 transition-transform">
+                        View All
+                        <div className="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-700 flex items-center justify-center ml-0.5">
+                          <ChevronRight className="w-3 h-3" strokeWidth={3} />
+                        </div>
+                      </Link>
+                    </div>
+
                     {/* Categories Horizontal Slider */}
-                    <div className="flex overflow-x-auto gap-1.5 pb-2 scrollbar-hide -mx-4 px-4 mask-edge-fade">
-                      {displayCategories.slice(0, 12).map((category, index) => (
+                    <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide -mx-4 px-4 mask-edge-fade">
+                      
+                      {/* "All" Item (Active) */}
+                      <Link
+                        to="/food/user"
+                        className="flex-shrink-0 flex flex-col items-center gap-1.5 group w-[68px]"
+                      >
+                        <div className="relative w-[68px] h-[68px] rounded-full bg-white dark:bg-[#1a1a1a] flex items-center justify-center border-2 border-green-500 shadow-[0_4px_12px_rgba(34,197,94,0.15)] group-active:scale-95 transition-all duration-300 p-1">
+                          <div className="w-full h-full rounded-full overflow-hidden bg-green-50/50">
+                             <img 
+                              src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200&h=200&fit=crop" 
+                              alt="All Categories" 
+                              className="w-full h-full object-cover rounded-full transform group-hover:scale-110 transition-transform duration-500" 
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center mt-0.5">
+                          <span className="text-[11px] font-bold text-green-600 text-center leading-tight line-clamp-1 w-full px-0.5">
+                            All
+                          </span>
+                          <div className="w-3 h-[3px] bg-green-500 rounded-full mt-1"></div>
+                        </div>
+                      </Link>
+
+                      {/* Dynamic Categories */}
+                      {displayCategories.map((category, index) => (
                         <Link
                           key={category.id || index}
                           to={`/food/user/category/${category.slug}`}
                           state={{ from: '/food/user' }}
-                          className="flex-shrink-0 flex flex-col items-center gap-2.5 group w-[92px]"
+                          className="flex-shrink-0 flex flex-col items-center gap-1.5 group w-[68px]"
                         >
-                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shadow-md border-2 border-border dark:border-gray-800 bg-surface dark:bg-[#1a1a1a] group-active:scale-95 transition-all duration-300">
-                            {/* Shining Glint Effect */}
-                            <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
-                              <motion.div
-                                animate={{
-                                  x: ['-200%', '200%'],
-                                }}
-                                transition={{
-                                  duration: 2,
-                                  repeat: Infinity,
-                                  repeatDelay: 3 + index * 0.5,
-                                  ease: "easeInOut"
-                                }}
-                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-[-20deg] w-[150%] h-full"
+                          <div className="relative w-[68px] h-[68px] rounded-full bg-white dark:bg-[#1a1a1a] flex items-center justify-center border border-gray-200 dark:border-gray-800 shadow-[0_2px_8px_rgba(0,0,0,0.04)] group-hover:border-orange-400 group-hover:shadow-[0_4px_12px_rgba(249,115,22,0.15)] group-active:scale-95 transition-all duration-300 p-1">
+                            <div className="w-full h-full rounded-full overflow-hidden bg-gray-50 dark:bg-gray-800/50">
+                              <OptimizedImage
+                                src={category.image}
+                                alt={category.name}
+                                className="w-full h-full object-cover rounded-full transform group-hover:scale-110 transition-transform duration-500"
                               />
                             </div>
-
-                            <OptimizedImage
-                              src={category.image}
-                              alt={category.name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                            />
                           </div>
-                          <span className="text-[10px] font-bold text-text-secondary dark:text-gray-300 text-center leading-tight line-clamp-1 w-full px-0.5">
-                            {category.name}
-                          </span>
+                          <div className="flex flex-col items-center mt-0.5">
+                            <span className="text-[11px] font-bold text-text-primary dark:text-gray-300 text-center leading-tight line-clamp-1 w-full px-0.5">
+                              {category.name}
+                            </span>
+                          </div>
                         </Link>
                       ))}
-
-                      {/* See All Card */}
-                      {displayCategories.length > 0 && (
-                        <Link
-                          to="/food/user/categories"
-                          state={{ from: '/food/user' }}
-                          className="flex-shrink-0 flex flex-col items-center gap-2.5 group w-[92px]"
-                        >
-                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shadow-md border-2 border-red-100 dark:border-red-950/30 bg-primary-light/10 dark:bg-red-950/20 flex items-center justify-center group-active:scale-95 transition-all duration-300">
-                            <UtensilsCrossed className="w-8 h-8 sm:w-10 sm:h-10 text-red-500" />
-                          </div>
-                          <span className="text-[10px] font-bold text-text-secondary dark:text-gray-300 text-center leading-tight flex items-center justify-center gap-1 w-full px-0.5 group-hover:text-red-500 transition-colors">
-                            See all <span className="text-[7px] text-red-500">▼</span>
-                          </span>
-                        </Link>
-                      )}
                     </div>
                   </div>
-                )}
 
                 {/* Dynamic Sticky Header (Search + Slider + Filters) */}
                 <AnimatePresence initial={false}>
@@ -2571,7 +2566,7 @@ export default function Home() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="fixed top-0 left-0 right-0 z-[100] bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-md shadow-lg border-b border-white/10 dark:border-white/5 safe-top"
+                      className="fixed top-0 left-0 right-0 z-[100] bg-white dark:bg-[#0a0a0a] shadow-sm border-b border-gray-100 dark:border-white/5 safe-top"
                     >
                       {/* Search Bar + Veg Mode Row (Always visible when sticky) */}
                       <AnimatePresence>
@@ -2580,19 +2575,19 @@ export default function Home() {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="px-4 pt-3 pb-2 flex items-center gap-3"
+                            className="px-4 pt-2 pb-1.5 flex items-center gap-3"
                           >
                             <div
-                              className="bg-surface dark:bg-[#1a1a1a] flex-1 rounded-2xl flex items-center px-4 py-3 cursor-pointer border-2 border-[var(--primary)]/30 dark:border-[var(--primary)]/50 shadow-md"
+                              className="bg-surface dark:bg-[#1a1a1a] flex-1 rounded-2xl flex items-center px-4 py-2 cursor-pointer border border-[var(--primary)]/30 dark:border-[var(--primary)]/50 shadow-sm"
                               onClick={handleSearchFocus}
                             >
-                              <Search className="h-5 w-5 text-[var(--primary)] dark:text-[#a14b84] mr-3" strokeWidth={2.5} />
+                              <Search className="h-4 w-4 text-[var(--primary)] dark:text-[#a14b84] mr-2" strokeWidth={2.5} />
                               <div className="flex-1 relative h-5 overflow-hidden">
-                                <span className="absolute inset-0 text-base text-text-secondary font-medium">Search "biryani"</span>
+                                <span className="absolute inset-0 text-[14px] text-text-secondary font-medium">Search "biryani"</span>
                               </div>
-                              <div className="h-5 w-[1px] bg-gray-200 dark:bg-white/10 mx-2" />
+                              <div className="h-4 w-[1px] bg-gray-200 dark:bg-white/10 mx-2" />
                               <Mic
-                                className="h-5 w-5 text-[var(--primary)] dark:text-[#a14b84]"
+                                className="h-4 w-4 text-[var(--primary)] dark:text-[#a14b84]"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setIsVoiceOverlayOpen(true);
@@ -2625,21 +2620,21 @@ export default function Home() {
                       </AnimatePresence>
 
                       {/* Categories Slider (Increased Icon Size) */}
-                      <div className="flex overflow-x-auto gap-5 py-3 pb-2 scrollbar-hide px-4 mask-edge-fade">
+                      <div className="flex overflow-x-auto gap-4 py-1.5 pb-1.5 scrollbar-hide px-4 mask-edge-fade">
                         {displayCategories.slice(0, 12).map((category, index) => (
                           <Link
                             key={`sticky-${category.id || index}`}
                             to={`/food/user/category/${category.slug}`}
-                            className="flex-shrink-0 flex flex-col items-center gap-1.5 group w-[74px]"
+                            className="flex-shrink-0 flex flex-col items-center gap-1 group w-[52px]"
                           >
-                            <div className="w-18 h-18 rounded-full overflow-hidden border-2 border-border dark:border-white/10 shadow-md bg-surface dark:bg-white/5 transition-transform group-active:scale-95">
+                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-border dark:border-white/10 shadow-md bg-surface dark:bg-white/5 transition-transform group-active:scale-95">
                               <OptimizedImage
                                 src={category.image}
                                 alt={category.name}
                                 className="w-full h-full object-cover"
                               />
                             </div>
-                            <span className="text-[9px] font-bold text-gray-700 dark:text-gray-300 text-center truncate w-full uppercase tracking-tighter">
+                            <span className="text-[8px] font-bold text-gray-700 dark:text-gray-300 text-center truncate w-full uppercase tracking-tighter">
                               {category.name}
                             </span>
                           </Link>
@@ -2650,13 +2645,13 @@ export default function Home() {
                           <Link
                             to="/food/user/categories"
                             state={{ from: '/food/user' }}
-                            className="flex-shrink-0 flex flex-col items-center gap-1.5 group w-[74px]"
+                            className="flex-shrink-0 flex flex-col items-center gap-1 group w-[52px]"
                           >
-                            <div className="w-18 h-18 rounded-full overflow-hidden border-2 border-red-100 dark:border-red-950/30 bg-primary-light/10 dark:bg-red-950/20 flex items-center justify-center transition-transform group-active:scale-95">
-                              <UtensilsCrossed className="w-7 h-7 text-red-500" />
+                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-red-100 dark:border-red-950/30 bg-primary-light/10 dark:bg-red-950/20 flex items-center justify-center transition-transform group-active:scale-95">
+                              <UtensilsCrossed className="w-5 h-5 text-red-500" />
                             </div>
-                            <span className="text-[9px] font-bold text-gray-700 dark:text-gray-300 text-center truncate w-full uppercase tracking-tighter flex items-center justify-center gap-0.5 group-hover:text-red-500 transition-colors">
-                              See all <span className="text-[7px] text-red-500">▼</span>
+                            <span className="text-[8px] font-bold text-gray-700 dark:text-gray-300 text-center truncate w-full uppercase tracking-tighter flex items-center justify-center gap-0.5 group-hover:text-red-500 transition-colors">
+                              See all <span className="text-[6px] text-red-500">▼</span>
                             </span>
                           </Link>
                         )}
@@ -2993,15 +2988,7 @@ export default function Home() {
                           <div className="relative overflow-hidden rounded-t-[24px] sm:rounded-t-[28px]">
                             <BookingRangeBadge restaurant={restaurant} className="top-3 left-3 z-10" />
                             
-                            {/* Featured Dish Pill over Image (Top Left) */}
-                            {featuredDishText && (
-                              <div className="absolute top-3 left-3 z-10 bg-black/75 backdrop-blur-md text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-semibold shadow-md max-w-[70%]">
-                                <div className="w-4 h-4 rounded bg-[#ff8100] flex items-center justify-center text-[9px] font-bold shrink-0">
-                                  🍱
-                                </div>
-                                <span className="truncate">{featuredDishText}</span>
-                              </div>
-                            )}
+
 
                             <RestaurantImageCarousel
                               restaurant={restaurant}
@@ -3051,110 +3038,73 @@ export default function Home() {
                           </div>
 
                           {/* Content Section */}
-                          <CardContent className="p-4 sm:p-5 flex flex-col flex-grow justify-between gap-3 bg-surface dark:bg-[#1a1a1a]">
-                            {/* Restaurant Information */}
-                            <div className="space-y-1.5">
-                              <h3 className="text-xl sm:text-2xl font-bold text-[#1c1c1c] dark:text-white line-clamp-1 leading-tight tracking-tight transition-colors duration-300 group-hover:text-[#ff8100]">
-                                {restaurant.name}
-                              </h3>
-
-                              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium line-clamp-1">
+                          <CardContent className="p-3.5 flex flex-col gap-2.5 bg-white dark:bg-[#1a1a1a]">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <h3 className="text-base sm:text-lg font-black text-gray-900 dark:text-white line-clamp-1 truncate tracking-tight">
+                                  {restaurant.name}
+                                </h3>
+                                {restaurant.offer ? (
+                                  <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">
+                                    {restaurant.offer}
+                                  </span>
+                                ) : (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium truncate">
                                 {cuisineStr}
                               </p>
+                            </div>
 
-                              <div className="flex items-center gap-2 pt-1 text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                                <Zap className="h-4 w-4 fill-emerald-600 text-emerald-600 shrink-0" strokeWidth={2.5} />
+                            <div className="flex items-center gap-3 text-xs font-bold text-gray-700 dark:text-gray-300">
+                              <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                <Zap className="w-3.5 h-3.5 fill-current" />
                                 <span>{restaurant.distance}</span>
-                                <span className="text-gray-300 dark:text-gray-600">•</span>
+                              </div>
+                              <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700"></span>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-orange-500" />
                                 <span>{restaurant.time}</span>
                               </div>
-
-                              {/* Availability Status */}
-                              {(!availability.isOpen || availability.closingCountdownLabel) && (
-                                <div className="pt-1">
-                                  {availability.isOpen && availability.closingCountdownLabel && (
-                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800 text-[10px] font-black uppercase tracking-widest">
-                                      <Timer className="h-3.5 w-3.5 flex-shrink-0 text-indigo-500 dark:text-indigo-400" strokeWidth={3} />
-                                      <span>{availability.closingCountdownLabel}</span>
-                                    </div>
-                                  )}
-                                  {!availability.isOpen && availability.openingTime && (
-                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-text-secondary border border-border dark:border-gray-700 text-[10px] font-black uppercase tracking-widest">
-                                      <Clock className="h-3 w-3 flex-shrink-0" />
-                                      <span>Opens at {availability.openingTime}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
                             </div>
 
-                            {/* Dynamic Amenities Row */}
                             {activeAmenities.length > 0 && (
-                              <div className="pt-2.5 sm:pt-3 border-t border-border/60 dark:border-gray-800/80">
-                                <div className="flex items-stretch justify-between gap-1 sm:gap-1.5 w-full">
-                                  {activeAmenities.map((amenity) => {
-                                    const ratingInfo = getFacilityRatingInfo(restaurant, amenity.key);
-                                    return (
-                                      <div
-                                        key={amenity.key}
-                                        className="flex-1 min-w-0 bg-[#fafafa] dark:bg-[#222222] border border-gray-200/60 dark:border-gray-800/80 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 flex flex-col justify-between items-center text-center shadow-2xs hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-200"
-                                      >
-                                        {/* Icon + Title */}
-                                        <div className="flex flex-col items-center gap-1 w-full min-w-0">
-                                          <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full ${amenity.bgClass} p-1 flex items-center justify-center shrink-0 overflow-hidden`}>
-                                            <img
-                                              src={amenity.icon}
-                                              alt={amenity.label}
-                                              className="w-full h-full object-cover rounded-full"
-                                              onError={(e) => {
-                                                e.target.style.display = 'none';
-                                              }}
-                                            />
-                                          </div>
-                                          <span className="text-[10px] sm:text-xs font-bold text-gray-800 dark:text-gray-100 leading-tight truncate w-full px-0.5">
-                                            {amenity.label}
-                                          </span>
-                                        </div>
-
-                                        {/* Rating & Count */}
-                                        <div className="mt-1 flex flex-col items-center gap-0.5 w-full">
-                                          <div className="flex items-center justify-center gap-0.5 text-[10px] sm:text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
-                                            <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-emerald-600 dark:fill-emerald-400 text-emerald-600 dark:text-emerald-400" strokeWidth={0} />
-                                            <span>{ratingInfo.ratingText}</span>
-                                          </div>
-                                          {ratingInfo.countText && (
-                                            <div className="flex items-center justify-center gap-0.5 text-[9px] sm:text-[10px] font-semibold text-gray-500 dark:text-gray-400">
-                                              <span>{ratingInfo.countText}</span>
-                                              <Users className="w-2.5 h-2.5 shrink-0" />
-                                            </div>
-                                          )}
-                                        </div>
+                              <>
+                                <div className="h-[1px] w-full bg-gray-100 dark:bg-gray-800"></div>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                                  {activeAmenities.slice(0, 4).map(amenity => (
+                                    <div key={amenity.key} className="flex items-center gap-1 text-[10px] font-semibold text-gray-600 dark:text-gray-400">
+                                      <div className={`w-4 h-4 rounded-full ${amenity.bgClass} flex items-center justify-center shrink-0`}>
+                                        <img src={amenity.icon} alt="" className="w-2.5 h-2.5" onError={(e) => e.target.style.display = 'none'} />
                                       </div>
-                                    );
-                                  })}
+                                      <span>{amenity.label}</span>
+                                    </div>
+                                  ))}
+                                  {activeAmenities.length > 4 && (
+                                    <span className="text-[10px] font-medium text-gray-400">+{activeAmenities.length - 4}</span>
+                                  )}
                                 </div>
-                              </div>
+                              </>
                             )}
 
-                            {/* Card Footer Badges */}
-                            <div className="flex items-center justify-between pt-2.5 border-t border-border/60 dark:border-gray-800/80 text-[11px] font-semibold">
-                              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
-                                <span>Hygiene Rated</span>
+                            {/* Availability Status */}
+                            {(!availability.isOpen || availability.closingCountdownLabel) && (
+                              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                                {availability.isOpen && availability.closingCountdownLabel && (
+                                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold uppercase tracking-wide">
+                                    <Timer className="h-3 w-3" strokeWidth={2.5} />
+                                    <span>{availability.closingCountdownLabel}</span>
+                                  </div>
+                                )}
+                                {!availability.isOpen && availability.openingTime && (
+                                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-[10px] font-bold uppercase tracking-wide">
+                                    <Clock className="h-3 w-3" strokeWidth={2.5} />
+                                    <span>Opens {availability.openingTime}</span>
+                                  </div>
+                                )}
                               </div>
-
-                              {restaurant.offer ? (
-                                <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
-                                  <BadgePercent className="h-4 w-4 shrink-0 text-amber-600" strokeWidth={2.5} />
-                                  <span className="uppercase tracking-wider font-bold">{restaurant.offer}</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                                  <span>Verified Partner</span>
-                                </div>
-                              )}
-                            </div>
+                            )}
                           </CardContent>
 
                           {/* Border Glow Effect */}

@@ -409,6 +409,14 @@ function extractRedirectFromHtml(html, baseUrl) {
 
 const GOOGLE_HIGHWAY_REGEX = /\b(?:NH[-\s]?(\d+[A-Z]?)|National Highway\s*(\d+[A-Z]?))\b/i;
 const DEFAULT_GOOGLE_HIGHWAY_SEARCH_THRESHOLD_METERS = 2000;
+const GOOGLE_HIGHWAY_ALIAS_PATTERNS = [
+  {
+    regex: /\b(?:AB\s*Road|AB\s*Rd|Agra\s*Bombay\s*Road|Bombay\s*Agra\s*Road)\b/i,
+    highwayRef: 'NH-52',
+    highwayName: 'National Highway 52'
+  }
+];
+const GOOGLE_GENERIC_ROAD_REGEX = /\b(?:road|rd|marg|street|st|avenue|ave|bypass|expressway|highway|ring road|service road|link road)\b/i;
 
 const toRadians = (deg) => (Number(deg) * Math.PI) / 180;
 const toDegrees = (rad) => (Number(rad) * 180) / Math.PI;
@@ -476,14 +484,38 @@ const extractGoogleHighwayCandidates = (results = []) => {
   return Array.from(new Set(candidates));
 };
 
+const normalizeGenericRoadLabel = (value = '') => {
+  const raw = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!raw) return null;
+  if (!GOOGLE_GENERIC_ROAD_REGEX.test(raw)) return null;
+  if (/^\d+$/.test(raw)) return null;
+  if (/^[A-Z0-9]{4,}\+[A-Z0-9]{2,}$/i.test(raw)) return null;
+  if (raw.length < 3) return null;
+
+  return {
+    highwayRef: raw,
+    highwayName: raw
+  };
+};
+
 const normalizeGoogleHighwayLabel = (value = '') => {
   const raw = String(value || '').replace(/\s+/g, ' ').trim();
   if (!raw) return { highwayRef: null, highwayName: null };
 
+  for (const alias of GOOGLE_HIGHWAY_ALIAS_PATTERNS) {
+    if (alias.regex.test(raw)) {
+      return {
+        highwayRef: alias.highwayRef,
+        highwayName: alias.highwayName
+      };
+    }
+  }
+
   const match = raw.match(GOOGLE_HIGHWAY_REGEX);
   const highwayNumber = match?.[1] || match?.[2] || null;
   if (!highwayNumber) {
-    return { highwayRef: null, highwayName: null };
+    const genericRoad = normalizeGenericRoadLabel(raw);
+    return genericRoad || { highwayRef: null, highwayName: null };
   }
 
   return {

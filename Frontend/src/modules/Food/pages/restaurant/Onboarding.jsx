@@ -708,6 +708,7 @@ export default function RestaurantOnboarding() {
 
   const [step1, setStep1] = useState({
     restaurantName: "",
+    isHighwayRestaurant: true,
     pureVegRestaurant: null,
     ownerName: "",
     ownerEmail: "",
@@ -1437,6 +1438,19 @@ export default function RestaurantOnboarding() {
 
   useEffect(() => {
     if (step !== 1) return
+    if (step1.isHighwayRestaurant !== true) {
+      setHighwayInfo({
+        loading: false,
+        status: null,
+        thresholdMeters: null,
+        highwayId: null,
+        highwayName: null,
+        highwayRef: null,
+        distanceMeters: null,
+      })
+      setSelectedHighwayId("")
+      return
+    }
 
     const lat = step1.location?.latitude
     const lng = step1.location?.longitude
@@ -1463,7 +1477,7 @@ export default function RestaurantOnboarding() {
     return () => {
       if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
     }
-  }, [step, step1.location?.latitude, step1.location?.longitude, detectHighwayForLocation])
+  }, [step, step1.isHighwayRestaurant, step1.location?.latitude, step1.location?.longitude, detectHighwayForLocation])
 
   const autoDetectedRoadLabel = (() => {
     if (highwayInfo.highwayRef) {
@@ -1722,18 +1736,18 @@ export default function RestaurantOnboarding() {
     } else if (!/^\d{6}$/.test(normalizePincode(step1.location.pincode))) {
       errors.push("Pincode must be exactly 6 digits")
     }
-    if (!step1.location?.roadName?.trim()) {
-      errors.push("Road / Highway name is required")
+    if (step1.isHighwayRestaurant === true && !step1.location?.roadName?.trim()) {
+      errors.push("Road name is required")
     }
 
     const lat = Number(step1.location?.latitude)
     const lng = Number(step1.location?.longitude)
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       errors.push("Please search and select a location so map coordinates are captured")
-    } else if (highwayInfo.loading) {
+    } else if (step1.isHighwayRestaurant === true && highwayInfo.loading) {
       errors.push("Checking highway proximity — please wait a moment")
-    } else if (highwayInfo.status !== "IN_SERVICE") {
-      errors.push("Restaurant must be within 2 KM of a highway.")
+    } else if (step1.isHighwayRestaurant === true && highwayInfo.status !== "IN_SERVICE") {
+      errors.push("Restaurant must be near a detectable road.")
     }
 
     return errors
@@ -1979,7 +1993,8 @@ export default function RestaurantOnboarding() {
               placeId: step1.location?.placeId || "",
             },
             locationSource: step1.locationSource || "google_places",
-            ...(highwayInfo.status === "IN_SERVICE" && (selectedHighwayId || highwayInfo.highwayId)
+            isHighwayRestaurant: step1.isHighwayRestaurant === true,
+            ...(step1.isHighwayRestaurant === true && highwayInfo.status === "IN_SERVICE" && (selectedHighwayId || highwayInfo.highwayId)
               ? { highwayId: String(selectedHighwayId || highwayInfo.highwayId) }
               : {}),
             cuisines: Array.isArray(step2.cuisines) ? step2.cuisines : [],
@@ -2039,6 +2054,7 @@ export default function RestaurantOnboarding() {
         formData.append("ownerEmail", (step1.ownerEmail || "").trim())
         formData.append("ownerPhone", normalizePhoneDigits(step1.ownerPhone))
         formData.append("primaryContactNumber", normalizePhoneDigits(step1.primaryContactNumber))
+        formData.append("isHighwayRestaurant", step1.isHighwayRestaurant === true ? "true" : "false")
         formData.append("facilities", JSON.stringify(step1.facilities || {
           parking: false,
           wifi: false,
@@ -2060,7 +2076,7 @@ export default function RestaurantOnboarding() {
         formData.append("longitude", String(step1.location?.longitude || ""))
         formData.append("locationSource", step1.locationSource || "google_places")
         formData.append("placeId", step1.location?.placeId || "")
-        if (highwayInfo.status === "IN_SERVICE" && (selectedHighwayId || highwayInfo.highwayId)) {
+        if (step1.isHighwayRestaurant === true && highwayInfo.status === "IN_SERVICE" && (selectedHighwayId || highwayInfo.highwayId)) {
           formData.append("highwayId", String(selectedHighwayId || highwayInfo.highwayId))
         }
 
@@ -2292,6 +2308,34 @@ export default function RestaurantOnboarding() {
               This helps users filter restaurants by dietary preference.
             </p>
           </div>
+          <div>
+            <Label className="text-xs text-gray-700">Restaurant type*</Label>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setStep1((prev) => ({ ...prev, isHighwayRestaurant: true }))}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.isHighwayRestaurant === true
+                  ? "bg-orange-600 text-white border-orange-600"
+                  : "bg-white text-gray-700 border-gray-200"
+                  }`}
+              >
+                Highway Restaurant
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep1((prev) => ({ ...prev, isHighwayRestaurant: false }))}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.isHighwayRestaurant === false
+                  ? "bg-gray-900 text-white border-gray-900"
+                  : "bg-white text-gray-700 border-gray-200"
+                  }`}
+              >
+                Normal Restaurant
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1">
+              Highway restaurants require highway verification. Normal restaurants skip highway detection.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -2341,40 +2385,39 @@ export default function RestaurantOnboarding() {
               disabled={!isEditing}
             />
           </div>
+          <div>
+            <Label className="text-xs text-gray-700">Primary contact number*</Label>
+            <Input
+              value={step1.primaryContactNumber || ""}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "").slice(0, 10)
+                setStep1({ ...step1, primaryContactNumber: val })
+              }}
+              onKeyDown={(e) => {
+                const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"]
+                if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault()
+                if (/^\d$/.test(e.key) && (step1.primaryContactNumber || "").length >= 10) e.preventDefault()
+              }}
+              onPaste={(e) => {
+                e.preventDefault()
+                const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 10)
+                setStep1({ ...step1, primaryContactNumber: pasted })
+              }}
+              inputMode="numeric"
+              className="mt-1 bg-white text-sm"
+              placeholder="Restaurant's primary contact number"
+              disabled={!isEditing}
+            />
+            <p className="text-[11px] text-gray-500 mt-1">
+              Used for restaurant support and customer contact.
+            </p>
+          </div>
         </div>
       </section>
 
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <h2 className="text-lg font-semibold text-black">Restaurant contact & location</h2>
         <div className="space-y-4">
-          <div>
-          <Label className="text-xs text-gray-700">Primary contact number*</Label>
-          <Input
-            value={step1.primaryContactNumber || ""}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "").slice(0, 10)
-              setStep1({ ...step1, primaryContactNumber: val })
-            }}
-            onKeyDown={(e) => {
-              const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Enter"]
-              if (!allowed.includes(e.key) && !/^\d$/.test(e.key)) e.preventDefault()
-              if (/^\d$/.test(e.key) && (step1.primaryContactNumber || "").length >= 10) e.preventDefault()
-            }}
-            onPaste={(e) => {
-              e.preventDefault()
-              const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 10)
-              setStep1({ ...step1, primaryContactNumber: pasted })
-            }}
-            inputMode="numeric"
-            className="mt-1 bg-white text-sm"
-            placeholder="Restaurant's primary contact number"
-            disabled={!isEditing}
-          />
-          <p className="text-[11px] text-gray-500 mt-1">
-            support.
-          </p>
-        </div>
-
           <div className="relative">
             <Label className="text-xs text-gray-700">Search location</Label>
             <div className="relative">
@@ -2545,33 +2588,30 @@ export default function RestaurantOnboarding() {
             className="bg-white text-sm"
             placeholder="Area / Sector / Locality*"
           />
-          <Select
-            value={step1.location?.city || ""}
-            onValueChange={(value) =>
-              setStep1({
-                ...step1,
-                location: { ...step1.location, city: value },
-              })
-            }
-          >
-            <SelectTrigger className="bg-white text-sm text-gray-700">
-              <SelectValue placeholder="Select City*" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Indore">Indore</SelectItem>
-              <SelectItem value="Bhopal">Bhopal</SelectItem>
-              <SelectItem value="Gwalior">Gwalior</SelectItem>
-              <SelectItem value="Jabalpur">Jabalpur</SelectItem>
-              <SelectItem value="Mumbai">Mumbai</SelectItem>
-              <SelectItem value="Pune">Pune</SelectItem>
-              <SelectItem value="Delhi">Delhi</SelectItem>
-              <SelectItem value="Bangalore">Bangalore</SelectItem>
-              <SelectItem value="Ahmedabad">Ahmedabad</SelectItem>
-              <SelectItem value="Hyderabad">Hyderabad</SelectItem>
-              <SelectItem value="Chennai">Chennai</SelectItem>
-              <SelectItem value="Kolkata">Kolkata</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs text-gray-700">City*</Label>
+              {step1.location?.city?.trim() ? (
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                  Auto-detected
+                </span>
+              ) : null}
+            </div>
+            <Input
+              value={step1.location?.city || ""}
+              onChange={(e) =>
+                setStep1({
+                  ...step1,
+                  location: { ...step1.location, city: e.target.value },
+                })
+              }
+              className="bg-white text-sm"
+              placeholder="City*"
+            />
+            <p className="text-[11px] text-gray-500">
+              This is auto-filled from the selected location. You can change it if needed.
+            </p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               value={step1.location?.state || ""}
@@ -2603,11 +2643,12 @@ export default function RestaurantOnboarding() {
         </div>
       </section>
 
+      {step1.isHighwayRestaurant === true ? (
       <section className="bg-white p-4 sm:p-6 rounded-md space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-black">Road Selection</h2>
           <p className="mt-1 text-sm text-gray-600">
-            We auto-detect the nearest highway from the selected address. You can point the location on the map and edit the road name if needed.
+            We auto-detect the nearest road from the selected address. You can point the location on the map and edit the road name if needed.
           </p>
         </div>
 
@@ -2630,12 +2671,12 @@ export default function RestaurantOnboarding() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 font-semibold">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Restaurant location verified. Located within highway range.</span>
+                  <span>Restaurant location verified. Nearby road detected.</span>
                 </div>
                 <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                  <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                  <p>Nearest Road: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                   {highwayInfo.highwayName && (
-                    <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
+                    <p>Road Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
                   )}
                   {highwayInfo.highwayId && (
                     <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
@@ -2647,13 +2688,13 @@ export default function RestaurantOnboarding() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 font-semibold">
                   <AlertCircle className="w-4 h-4 text-rose-600" />
-                  <span>Restaurant must be within 2 KM of a highway.</span>
+                  <span>Restaurant must be near a detectable road.</span>
                 </div>
                 {highwayInfo.highwayRef && (
                   <div className="pl-6 text-slate-600 space-y-0.5 text-xs">
-                    <p>Nearest Highway: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                    <p>Nearest Road: <span className="font-medium text-slate-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
                     {highwayInfo.highwayName && (
-                      <p>Highway Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
+                      <p>Road Name: <span className="font-medium text-slate-900">{highwayInfo.highwayName}</span></p>
                     )}
                     {highwayInfo.highwayId && (
                       <p>Highway ID: <span className="font-medium text-slate-900">{String(highwayInfo.highwayId)}</span></p>
@@ -2701,7 +2742,7 @@ export default function RestaurantOnboarding() {
         )}
 
         <div>
-          <Label className="text-xs text-gray-700">Road / Highway name*</Label>
+              <Label className="text-xs text-gray-700">Road name*</Label>
           <Input
             value={step1.location?.roadName || ""}
             onChange={(e) => {
@@ -2720,6 +2761,14 @@ export default function RestaurantOnboarding() {
           </p>
         </div>
       </section>
+      ) : (
+      <section className="bg-white p-4 sm:p-6 rounded-md space-y-2">
+        <h2 className="text-lg font-semibold text-black">Road Selection</h2>
+        <p className="text-sm text-gray-600">
+          Normal restaurant selected. Highway detection and highway-only road selection are skipped.
+        </p>
+      </section>
+      )}
 
       <section className="bg-white p-4 sm:p-6 rounded-md">
         <h2 className="text-lg font-semibold text-black mb-4">Restaurant Facilities</h2>
@@ -3024,11 +3073,17 @@ export default function RestaurantOnboarding() {
       }
 
       const ok = await loadMaps()
-      if (!ok || cancelled || !inputElement) return
+      if (!ok || cancelled || !inputElement) {
+        if (!cancelled) {
+          setIsGoogleMapsValid(false)
+        }
+        return
+      }
 
       // Double-verify that Google Maps and places library are fully loaded
       if (!window.google?.maps?.places) {
         debugError("Google Maps Places API not loaded.")
+        setIsGoogleMapsValid(false)
         return
       }
 
@@ -3140,6 +3195,7 @@ export default function RestaurantOnboarding() {
         })
       } catch (e) {
         debugError("Autocomplete error:", e)
+        setIsGoogleMapsValid(false)
       }
     }
 

@@ -3223,12 +3223,26 @@ export async function createRestaurantByAdmin(body) {
     const latitude = toFiniteNumber(loc.latitude ?? latFromCoordinates);
     const longitude = toFiniteNumber(loc.longitude ?? lngFromCoordinates);
 
-    if (latitude === null || longitude === null) {
+    const wantsHighwayRestaurant = body.isHighwayRestaurant === undefined
+        ? true
+        : parseBooleanLike(body.isHighwayRestaurant, 'isHighwayRestaurant');
+
+    if (wantsHighwayRestaurant && (latitude === null || longitude === null)) {
         throw new ValidationError('Latitude and longitude coordinates are required for highway proximity validation.');
     }
 
-    const proximity = await detectHighwayUsingGoogleMaps(latitude, longitude);
-    if (proximity.status !== 'IN_SERVICE') {
+    const proximity = wantsHighwayRestaurant
+        ? await detectHighwayUsingGoogleMaps(latitude, longitude)
+        : {
+            status: 'NORMAL_RESTAURANT',
+            highwayId: null,
+            highwayName: null,
+            highwayRef: null,
+            distanceMeters: null,
+            thresholdMeters: null
+        };
+
+    if (wantsHighwayRestaurant && proximity.status !== 'IN_SERVICE') {
         console.log('[Admin Create Restaurant] Highway validation failed', {
             latitude,
             longitude,
@@ -3240,7 +3254,7 @@ export async function createRestaurantByAdmin(body) {
             nearestHighwayRef: proximity.highwayRef ?? null
         });
 
-        const error = new ValidationError('Restaurant location is not within the allowed National Highway range.');
+        const error = new ValidationError('Restaurant location is not near a detectable road.');
         error.highwayCheck = false;
         error.nearestHighway = proximity.highwayRef || null;
         error.distance = proximity.distanceMeters || null;
@@ -3305,11 +3319,11 @@ export async function createRestaurantByAdmin(body) {
             : undefined,
         status: 'approved',
         approvedAt: new Date(),
-        restaurantType: proximity.status === 'IN_SERVICE' ? 'highway' : 'normal',
+        restaurantType: wantsHighwayRestaurant ? 'highway' : 'normal',
         highwayId: null,
-        highwayName: proximity.highwayName,
-        highwayRef: proximity.highwayRef,
-        isHighwayRestaurant: proximity.status === 'IN_SERVICE',
+        highwayName: wantsHighwayRestaurant ? proximity.highwayName : null,
+        highwayRef: wantsHighwayRestaurant ? proximity.highwayRef : null,
+        isHighwayRestaurant: wantsHighwayRestaurant,
         locationSource: locationSource
     };
 

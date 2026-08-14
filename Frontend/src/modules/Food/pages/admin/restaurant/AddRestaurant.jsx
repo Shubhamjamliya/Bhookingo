@@ -425,6 +425,7 @@ export default function AddRestaurant() {
   // Step 1: Basic Info
   const [step1, setStep1] = useState({
     restaurantName: "",
+    isHighwayRestaurant: true,
     pureVegRestaurant: null,
     ownerName: "",
     ownerEmail: "",
@@ -545,6 +546,18 @@ export default function AddRestaurant() {
   }, [])
 
   useEffect(() => {
+    if (step1.isHighwayRestaurant !== true) {
+      setHighwayInfo({
+        loading: false,
+        status: null,
+        highwayId: null,
+        highwayName: null,
+        highwayRef: null,
+        distanceMeters: null,
+        thresholdMeters: null,
+      })
+      return
+    }
     const lat = step1.location?.latitude
     const lng = step1.location?.longitude
     const address = step1.location?.formattedAddress || step1.location?.addressLine1 || ""
@@ -570,7 +583,7 @@ export default function AddRestaurant() {
     return () => {
       if (highwayDetectTimerRef.current) clearTimeout(highwayDetectTimerRef.current)
     }
-  }, [step1.location?.latitude, step1.location?.longitude, step1.location?.formattedAddress, step1.location?.addressLine1, detectHighwayForLocation])
+  }, [step1.isHighwayRestaurant, step1.location?.latitude, step1.location?.longitude, step1.location?.formattedAddress, step1.location?.addressLine1, detectHighwayForLocation])
 
   const autoDetectedRoadLabel = (() => {
     if (highwayInfo.highwayRef) {
@@ -935,12 +948,12 @@ export default function AddRestaurant() {
     const lng = Number(step1.location?.longitude)
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
       errors.push("Please search and select a location so map coordinates are captured.")
-    } else if (highwayInfo.loading) {
+    } else if (step1.isHighwayRestaurant === true && highwayInfo.loading) {
       errors.push("Checking highway proximity — please wait a moment.")
-    } else if (highwayInfo.status !== "IN_SERVICE") {
-      errors.push("Restaurant location is not within the allowed National Highway range.")
+    } else if (step1.isHighwayRestaurant === true && highwayInfo.status !== "IN_SERVICE") {
+      errors.push("Restaurant location is not near a detectable road.")
     }
-    if (!step1.location?.roadName?.trim()) errors.push("Road / highway name is required")
+    if (step1.isHighwayRestaurant === true && !step1.location?.roadName?.trim()) errors.push("Road name is required")
     return errors
   }
 
@@ -1086,10 +1099,11 @@ export default function AddRestaurant() {
         ownerEmail: step1.ownerEmail,
         ownerPhone: step1.ownerPhone,
         primaryContactNumber: step1.primaryContactNumber,
+        isHighwayRestaurant: step1.isHighwayRestaurant === true,
 
         location: step1.location,
         locationSource: step1.locationSource || "google_places",
-        ...(highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId ? { highwayId: String(highwayInfo.highwayId) } : {}),
+        ...(step1.isHighwayRestaurant === true && highwayInfo.status === "IN_SERVICE" && highwayInfo.highwayId ? { highwayId: String(highwayInfo.highwayId) } : {}),
         // Step 2
         menuImages: menuImagesData,
         profileImage: profileImageData,
@@ -1599,6 +1613,34 @@ export default function AddRestaurant() {
               This helps users filter restaurants by dietary preference.
             </p>
           </div>
+          <div>
+            <Label className="text-xs text-gray-700">Restaurant type*</Label>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setStep1((prev) => ({ ...prev, isHighwayRestaurant: true }))}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.isHighwayRestaurant === true
+                  ? "bg-orange-600 text-white border-orange-600"
+                  : "bg-white text-gray-700 border-gray-200"
+                  }`}
+              >
+                Highway Restaurant
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep1((prev) => ({ ...prev, isHighwayRestaurant: false }))}
+                className={`px-3 py-1.5 text-xs rounded-full border ${step1.isHighwayRestaurant === false
+                  ? "bg-gray-900 text-white border-gray-900"
+                  : "bg-white text-gray-700 border-gray-200"
+                  }`}
+              >
+                Normal Restaurant
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1">
+              Highway restaurants require highway verification. Normal restaurants skip highway detection.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -1722,42 +1764,47 @@ export default function AddRestaurant() {
             Search to auto-fill Area, City, State, Pincode and coordinates.
           </p>
 
-          {highwayInfo.loading && (
+          {step1.isHighwayRestaurant === true && highwayInfo.loading && (
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 flex items-center gap-2 text-xs">
               <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
               <span>Checking highway proximity...</span>
             </div>
           )}
 
-          {!highwayInfo.loading && highwayInfo.status === "IN_SERVICE" && (
+          {step1.isHighwayRestaurant === true && !highwayInfo.loading && highwayInfo.status === "IN_SERVICE" && (
             <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md text-green-800 space-y-1 text-xs">
               <div className="flex items-center gap-2 font-semibold">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
                 <span>Restaurant location available</span>
               </div>
               <div className="pl-6 text-gray-600 space-y-0.5">
-                <p>Nearest Highway: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                {highwayInfo.highwayName && (<p>Highway Name: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
+                <p>Nearest Road: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                {highwayInfo.highwayName && (<p>Road Name: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
                 {highwayInfo.highwayId && (<p>Highway ID: <span className="font-medium text-gray-900">{String(highwayInfo.highwayId)}</span></p>)}
                 <p>Distance: <span className="font-medium text-gray-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
               </div>
             </div>
           )}
 
-          {!highwayInfo.loading && highwayInfo.status === "OUT_OF_SERVICE" && (
+          {step1.isHighwayRestaurant === true && !highwayInfo.loading && highwayInfo.status === "OUT_OF_SERVICE" && (
             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md text-red-800 space-y-1 text-xs">
               <div className="flex items-center gap-2 font-semibold">
                 <X className="w-4 h-4 text-red-600" />
-                <span>Restaurant location is not within the allowed National Highway range.</span>
+                <span>Restaurant location is not near a detectable road.</span>
               </div>
               {highwayInfo.highwayRef && (
                 <div className="pl-6 text-gray-600 space-y-0.5">
-                  <p>Nearest Highway: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
-                  {highwayInfo.highwayName && (<p>Highway Name: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
+                  <p>Nearest Road: <span className="font-medium text-gray-900">{highwayInfo.highwayRef || highwayInfo.highwayName || "-"}</span></p>
+                  {highwayInfo.highwayName && (<p>Road Name: <span className="font-medium text-gray-900">{highwayInfo.highwayName}</span></p>)}
                   {highwayInfo.highwayId && (<p>Highway ID: <span className="font-medium text-gray-900">{String(highwayInfo.highwayId)}</span></p>)}
                   <p>Distance: <span className="font-medium text-gray-900">{(highwayInfo.distanceMeters / 1000).toFixed(1)} KM</span></p>
                 </div>
               )}
+            </div>
+          )}
+          {step1.isHighwayRestaurant !== true && (
+            <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-md text-slate-700 text-xs">
+              Normal restaurant selected. Highway detection is skipped.
             </div>
           )}
       
@@ -1888,21 +1935,23 @@ export default function AddRestaurant() {
             className="bg-white text-sm"
             placeholder="Nearby landmark (optional)"
           />
-          <div>
-            <Label className="text-xs text-gray-700">Road / Highway name*</Label>
-            <Input
-              value={step1.location?.roadName || ""}
-              onChange={(e) => {
-                setIsRoadNameDirty(true)
-                setStep1({ ...step1, location: { ...step1.location, roadName: e.target.value } })
-              }}
-              className="mt-1 bg-white text-sm"
-              placeholder="Auto-detected road / highway"
-            />
-            <p className="text-[11px] text-gray-500 mt-1">
-              This is auto-filled from the detected NH / SH and you can edit it if needed.
-            </p>
-          </div>
+          {step1.isHighwayRestaurant === true && (
+            <div>
+              <Label className="text-xs text-gray-700">Road name*</Label>
+              <Input
+                value={step1.location?.roadName || ""}
+                onChange={(e) => {
+                  setIsRoadNameDirty(true)
+                  setStep1({ ...step1, location: { ...step1.location, roadName: e.target.value } })
+                }}
+                className="mt-1 bg-white text-sm"
+                placeholder="Auto-detected road / highway"
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                This is auto-filled from the detected NH / SH and you can edit it if needed.
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </div>

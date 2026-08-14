@@ -283,6 +283,7 @@ export const registerRestaurant = async (payload, files) => {
         locationSource,
         placeId,
         highwayId,
+        isHighwayRestaurant,
         restaurantType,
         cuisines,
         openingTime,
@@ -357,12 +358,13 @@ export const registerRestaurant = async (payload, files) => {
     try {
         const latNum = toFiniteNumber(latitude);
         const lngNum = toFiniteNumber(longitude);
-        const googleHighwayDetection = (latNum !== null && lngNum !== null)
+        const wantsHighwayRestaurant = isHighwayRestaurant !== false && restaurantType !== 'normal';
+        const googleHighwayDetection = wantsHighwayRestaurant && latNum !== null && lngNum !== null
             ? await detectHighwayUsingGoogleMaps(latNum, lngNum)
             : null;
 
-        if (!googleHighwayDetection || googleHighwayDetection.status !== 'IN_SERVICE') {
-            throw new ValidationError('Restaurant location is not within the allowed National Highway range.');
+        if (wantsHighwayRestaurant && (!googleHighwayDetection || googleHighwayDetection.status !== 'IN_SERVICE')) {
+            throw new ValidationError('Restaurant location is not near a detectable road.');
         }
 
         const restaurant = await FoodRestaurant.create({
@@ -375,12 +377,12 @@ export const registerRestaurant = async (payload, files) => {
             ownerPhoneDigits,
             ownerPhoneLast10,
             primaryContactNumber,
-            restaurantType: restaurantType === 'normal' ? 'normal' : 'highway',
+            restaurantType: wantsHighwayRestaurant ? 'highway' : 'normal',
             pureVegRestaurant: pureVegRestaurant === true,
             highwayId: null,
-            highwayName: googleHighwayDetection.highwayName || null,
-            highwayRef: googleHighwayDetection.highwayRef || null,
-            isHighwayRestaurant: true,
+            highwayName: wantsHighwayRestaurant ? (googleHighwayDetection?.highwayName || null) : null,
+            highwayRef: wantsHighwayRestaurant ? (googleHighwayDetection?.highwayRef || null) : null,
+            isHighwayRestaurant: wantsHighwayRestaurant,
             locationSource: locationSource || 'google_places',
             // Store unified location object (geo + address).
             location: {
@@ -431,7 +433,9 @@ export const registerRestaurant = async (payload, files) => {
         });
 
         // Re-check nearest highway from coordinates as a safety sync for future threshold changes.
-        await assignHighwayToRestaurant(restaurant._id);
+        if (wantsHighwayRestaurant) {
+            await assignHighwayToRestaurant(restaurant._id);
+        }
 
         const refreshed = await FoodRestaurant.findById(restaurant._id).lean();
 
@@ -764,7 +768,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
     }
 
     const currentRestaurant = await FoodRestaurant.findById(restaurantId)
-        .select('restaurantName restaurantNameNormalized ownerPhone ownerPhoneDigits ownerPhoneLast10 primaryContactNumber status')
+        .select('restaurantName restaurantNameNormalized ownerPhone ownerPhoneDigits ownerPhoneLast10 primaryContactNumber status isHighwayRestaurant')
         .lean();
 
     if (!currentRestaurant) {
@@ -772,6 +776,8 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
     }
 
     const update = {};
+    let shouldSyncHighwayAfterUpdate = false;
+    let nextIsHighwayRestaurant = currentRestaurant.isHighwayRestaurant;
 
     // Owner/contact fields (used by restaurant Contact Details screens)
     if (body.ownerName !== undefined) {
@@ -876,6 +882,34 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             : undefined;
     }
 
+    if (body.isHighwayRestaurant !== undefined) {
+        let parsedIsHighwayRestaurant;
+        if (typeof body.isHighwayRestaurant === 'boolean') {
+            parsedIsHighwayRestaurant = body.isHighwayRestaurant;
+        } else if (typeof body.isHighwayRestaurant === 'string') {
+            const normalized = body.isHighwayRestaurant.trim().toLowerCase();
+            if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+                parsedIsHighwayRestaurant = true;
+            } else if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+                parsedIsHighwayRestaurant = false;
+            } else {
+                throw new ValidationError('isHighwayRestaurant must be a boolean');
+            }
+        } else {
+            throw new ValidationError('isHighwayRestaurant must be a boolean');
+        }
+
+        nextIsHighwayRestaurant = parsedIsHighwayRestaurant;
+        update.isHighwayRestaurant = parsedIsHighwayRestaurant;
+        update.restaurantType = parsedIsHighwayRestaurant ? 'highway' : 'normal';
+
+        if (!parsedIsHighwayRestaurant) {
+            update.highwayId = null;
+            update.highwayName = null;
+            update.highwayRef = null;
+        }
+    }
+
     // Bank + UPI fields (Explore -> Update Bank Details page)
     if (body.accountHolderName !== undefined) {
         update.accountHolderName = String(body.accountHolderName || '').trim();
@@ -960,6 +994,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
             roadName: toStr(loc.roadName),
             placeId: toStr(loc.placeId)
         };
+        shouldSyncHighwayAfterUpdate = nextIsHighwayRestaurant !== false;
     }
 
     if (body.locationSource !== undefined) {
@@ -1157,7 +1192,7 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         }
 
         // Re-assign highway when location changes (replaces legacy zone tracing)
-        if (body.location !== undefined) {
+        if (shouldSyncHighwayAfterUpdate) {
             await assignHighwayToRestaurant(restaurantId);
             const refreshed = await FoodRestaurant.findById(restaurantId)
                 .select(

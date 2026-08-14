@@ -17,6 +17,16 @@ const requiredBooleanSchema = z.preprocess((value) => {
     return value;
 }, z.boolean({ required_error: 'Please select whether the restaurant is pure veg' }));
 
+const optionalBooleanSchema = z.preprocess((value) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true;
+        if (normalized === 'false' || normalized === '0' || normalized === 'no') return false;
+    }
+    return value;
+}, z.boolean().optional());
+
 const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 
 const normalizeTimeValue = (value) => {
@@ -74,6 +84,7 @@ const restaurantRegisterSchema = z.object({
     locationSource: z.string().optional(),
     placeId: z.string().optional(),
     highwayId: z.string().optional(),
+    isHighwayRestaurant: optionalBooleanSchema,
     restaurantType: z.enum(['highway', 'normal']).optional(),
     cuisines: z
         .string()
@@ -144,6 +155,7 @@ export const validateRestaurantRegisterDto = (body) => {
     return {
         ...data,
         gstRegistered: data.gstRegistered ?? false,
+        isHighwayRestaurant: data.isHighwayRestaurant ?? true,
         restaurantType: data.restaurantType || 'highway'
     };
 };

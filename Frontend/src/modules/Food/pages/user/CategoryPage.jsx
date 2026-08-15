@@ -14,7 +14,7 @@ import {
 
 // Import shared food images - prevents duplication
 import { foodImages } from "@food/constants/images"
-import api, { restaurantAPI, getPublicCategories, getPublicFoods } from "@food/api"
+import { adminAPI, restaurantAPI } from "@food/api"
 import { API_BASE_URL } from "@food/api/config"
 import { useProfile } from "@food/context/ProfileContext"
 import { useAppLocation } from "@food/hooks/useAppLocation"
@@ -202,19 +202,8 @@ export default function CategoryPage() {
 
     approvedFoodsInFlightRef.current = (async () => {
       try {
-        const params = { limit: 50 }
-        if (zoneId) params.zoneId = zoneId
-        const data = await getPublicFoods(params)
-        const list = data?.foods || []
-        const approvedFoods = Array.isArray(list)
-          ? list.filter((food) =>
-              String(food?.approvalStatus || "").toLowerCase() === "approved" &&
-              food?.isAvailable !== false
-            )
-          : []
-
-        approvedFoodsCacheRef.current = approvedFoods
-        return approvedFoods
+        approvedFoodsCacheRef.current = []
+        return []
       } catch {
         approvedFoodsCacheRef.current = []
         return []
@@ -558,11 +547,14 @@ export default function CategoryPage() {
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true)
-        const data = await getPublicCategories(zoneId || null)
+        const response = await adminAPI.getPublicCategories(zoneId ? { zoneId } : {})
 
         if (isCancelled) return;
 
-        const categoriesArray = data?.categories || []
+        const categoriesArray =
+          response?.data?.data?.categories ||
+          response?.data?.categories ||
+          []
 
         if (Array.isArray(categoriesArray) && categoriesArray.length > 0) {
           const transformedCategories = [

@@ -1,38 +1,38 @@
-﻿import { useLocationContext } from '../context/locationContext';
+import { useLocation } from './useLocation'
+import { useHighway as useZone } from './useHighway'
 
 /**
- * Read centralized location + zone from LocationProvider.
- * Use this in pages/components instead of mounting the geo engine directly.
+ * Read centralized location + zone information from the active hooks.
+ * Keeps the old hook contract for callers that still import useAppLocation.
  */
 export function useAppLocation() {
-  const ctx = useLocationContext();
-  if (!ctx) {
-    return {
-      isLocationResolved: false,
-      location: null,
-      effectiveLocation: null,
-      zoneId: null,
-      address: null,
-      zoneStatus: 'loading',
-      loading: true,
-      isOutOfService: false,
-      deliveryAddressMode: 'saved',
-    };
-  }
+  const {
+    location,
+    effectiveLocation,
+    loading: locationLoading,
+    requestLocation,
+  } = useLocation()
+  const {
+    zoneId,
+    zoneStatus,
+    loading: zoneLoading,
+    isOutOfService,
+    refreshZone,
+  } = useZone(location)
 
   return {
-    isLocationResolved: ctx.isLocationResolved,
-    location: ctx.location,
-    effectiveLocation: ctx.effectiveLocation,
-    zoneId: ctx.zoneId,
-    address: ctx.address,
-    zoneStatus: ctx.zoneStatus,
-    loading: ctx.loading,
-    isOutOfService: ctx.isOutOfService,
-    deliveryAddressMode: ctx.deliveryAddressMode,
-    requestLocation: ctx.requestLocation,
-    setSavedLocation: ctx.setSavedLocation,
-    setDeliveryAddressMode: ctx.setDeliveryAddressMode,
-    refreshZone: ctx.refreshZone,
-  };
+    isLocationResolved: Boolean(location?.latitude && location?.longitude),
+    location,
+    effectiveLocation,
+    zoneId,
+    address: location?.address || location?.formattedAddress || null,
+    zoneStatus,
+    loading: locationLoading || zoneLoading,
+    isOutOfService,
+    deliveryAddressMode: 'saved',
+    requestLocation,
+    setSavedLocation: () => {},
+    setDeliveryAddressMode: () => {},
+    refreshZone,
+  }
 }

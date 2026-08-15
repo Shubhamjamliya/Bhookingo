@@ -280,6 +280,7 @@ export default function DrivingMap({
   onRestaurantClick,
   onRouteSelect,
   onUserPositionChange,
+  allowLiveSimulation = false,
   recenterBottomOffset = "bottom-[140px]",
   orderedRestaurantIds = new Set()
 }) {
@@ -833,6 +834,16 @@ export default function DrivingMap({
 
 
   useEffect(() => {
+    if (allowLiveSimulation) return;
+    if (isSimulationRunning) {
+      setIsSimulationRunning(false);
+    }
+    if (simulationIndex !== 0) {
+      setSimulationIndex(0);
+    }
+  }, [allowLiveSimulation, isSimulationRunning, simulationIndex]);
+
+  useEffect(() => {
     if (!Array.isArray(localRoutePath) || localRoutePath.length < 2) {
       setIsSimulationRunning(false);
       setSimulationIndex(0);
@@ -1193,18 +1204,20 @@ export default function DrivingMap({
         >
           <Navigation className="h-4 w-4" />
         </button>
-        <button
-          type="button"
-          onClick={handleToggleSimulation}
-          disabled={localRoutePath.length < 2}
-          className={`pointer-events-auto flex h-11 min-w-[44px] items-center justify-center rounded-full border px-3 shadow-xl transition-all ${isSimulationRunning
-            ? "border-sky-300 bg-sky-500 text-white"
-            : "border-gray-200/80 bg-white text-gray-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white"
-            } ${localRoutePath.length < 2 ? "cursor-not-allowed opacity-50" : ""}`}
-          title="Simulate route"
-        >
-          {isSimulationRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-        </button>
+        {allowLiveSimulation && (
+          <button
+            type="button"
+            onClick={handleToggleSimulation}
+            disabled={localRoutePath.length < 2}
+            className={`pointer-events-auto flex h-11 min-w-[44px] items-center justify-center rounded-full border px-3 shadow-xl transition-all ${isSimulationRunning
+              ? "border-sky-300 bg-sky-500 text-white"
+              : "border-gray-200/80 bg-white text-gray-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white"
+              } ${localRoutePath.length < 2 ? "cursor-not-allowed opacity-50" : ""}`}
+            title="Simulate route"
+          >
+            {isSimulationRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </button>
+        )}
       </div>
 
       {/* Floating Recenter GPS Button */}

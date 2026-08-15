@@ -27,6 +27,7 @@ export default function DrivingModeSettings() {
   const loadToastShownRef = useRef(false);
 
   const [enabled, setEnabled] = useState(true);
+  const [enableLiveSimulation, setEnableLiveSimulation] = useState(false);
   const [googleRouteSearchRadiusKm, setGoogleRouteSearchRadiusKm] = useState(15);
   const [googleRouteForwardRangeKm, setGoogleRouteForwardRangeKm] = useState(100);
   const [googleRouteBackwardBufferKm, setGoogleRouteBackwardBufferKm] = useState(0.5);
@@ -43,6 +44,7 @@ export default function DrivingModeSettings() {
         if (!cancelled) {
           const data = res?.data?.data || {};
           setEnabled(data.enabled !== false);
+          setEnableLiveSimulation(data.enableLiveSimulation === true);
           setOnboardingRoadRangeKm((Number(data.highwayEntryRadiusMeters) || 2000) / 1000);
           setGoogleRouteSearchRadiusKm(Number(data.googleRouteSearchRadiusKm) || 15);
           setGoogleRouteForwardRangeKm(Number(data.googleRouteForwardRangeKm) || 100);
@@ -79,6 +81,7 @@ export default function DrivingModeSettings() {
     try {
       const payload = {
         enabled,
+        enableLiveSimulation,
         highwayEntryRadiusMeters: Math.round(Number(onboardingRoadRangeKm || 0) * 1000),
         googleRouteSearchRadiusKm,
         googleRouteForwardRangeKm,
@@ -152,6 +155,20 @@ export default function DrivingModeSettings() {
               <Switch
                 checked={enabled}
                 onCheckedChange={setEnabled}
+                className="scale-95 data-[state=checked]:bg-[#16a34a] data-[state=unchecked]:bg-zinc-400 shadow-sm"
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-4 p-4 border rounded-xl bg-neutral-50/50 dark:bg-neutral-900/50 dark:border-neutral-800">
+              <div className="space-y-1">
+                <Label className="text-base font-bold dark:text-neutral-200">Enable Live Simulation Button</Label>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-snug">
+                  Shows the play or pause simulation control on the live driving map for testing. Keep this OFF for real GPS tracking only.
+                </p>
+              </div>
+              <Switch
+                checked={enableLiveSimulation}
+                onCheckedChange={setEnableLiveSimulation}
                 className="scale-95 data-[state=checked]:bg-[#16a34a] data-[state=unchecked]:bg-zinc-400 shadow-sm"
               />
             </div>

@@ -1152,7 +1152,19 @@ export default function DrivingMode() {
     console.groupEnd();
   }, [filteredRestaurants, activeDistanceLimit, activeFacilityFilter, sortBy]);
 
-  const effectiveTravelPosition = React.useMemo(() => liveTravelPosition || (journey?.origin ? { lat: journey.origin.lat, lng: journey.origin.lng } : currentLocation), [liveTravelPosition, journey?.origin?.lat, journey?.origin?.lng, currentLocation]);
+  const effectiveTravelPosition = React.useMemo(() => {
+    if (liveTravelPosition) return liveTravelPosition;
+    if (currentLocation?.latitude != null && currentLocation?.longitude != null) {
+      return {
+        lat: currentLocation.latitude,
+        lng: currentLocation.longitude
+      };
+    }
+    if (journey?.origin) {
+      return { lat: journey.origin.lat, lng: journey.origin.lng };
+    }
+    return null;
+  }, [liveTravelPosition, currentLocation, journey?.origin?.lat, journey?.origin?.lng]);
   const activeRouteMetrics = React.useMemo(() => buildRoutePathMetrics(getJourneyActivePath(journey)), [journey]);
   const nextStop = React.useMemo(() => {
     if (!filteredRestaurants.length) return null;
@@ -1453,7 +1465,7 @@ export default function DrivingMode() {
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             >
               <DrivingMap
-                userLocation={journey?.origin ? { latitude: journey.origin.lat, longitude: journey.origin.lng } : currentLocation}
+                userLocation={currentLocation || (journey?.origin ? { latitude: journey.origin.lat, longitude: journey.origin.lng } : null)}
                 destinationLocation={journey?.destination}
                 journey={journey}
                 onRouteCalculated={handleRouteCalculated}
@@ -1463,6 +1475,7 @@ export default function DrivingMode() {
                 onRestaurantClick={setSelectedRestaurant}
                 onRouteSelect={handleSelectRouteOption}
                 onUserPositionChange={handleLiveTravelPositionChange}
+                allowLiveSimulation={settings?.enableLiveSimulation === true}
                 recenterBottomOffset={isDrawerExpanded ? "hidden" : "bottom-[230px]"}
                 orderedRestaurantIds={orderedRestaurantIds}
               />

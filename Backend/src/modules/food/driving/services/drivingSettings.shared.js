@@ -6,6 +6,7 @@ export const DRIVING_SETTINGS_KEY = 'driving_mode_settings';
 
 export const DEFAULT_DRIVING_SETTINGS = {
     enabled: true,
+    enableLiveSimulation: false,
     highwayEntryRadiusMeters: 2000,
     googleRouteSearchRadiusKm: 1,
     googleRouteForwardRangeKm: 100,
@@ -31,6 +32,7 @@ const normalizeNonNegativeNumber = (value, fallback) => {
 export function normalizeDrivingSettings(rawSettings = {}) {
     return {
         enabled: rawSettings.enabled !== false,
+        enableLiveSimulation: rawSettings.enableLiveSimulation === true,
         highwayEntryRadiusMeters: normalizePositiveNumber(
             rawSettings.highwayEntryRadiusMeters,
             DEFAULT_DRIVING_SETTINGS.highwayEntryRadiusMeters
@@ -70,6 +72,7 @@ export async function saveDrivingSettingsConfig(settings, adminId = null, option
 
     const payload = {
         enabled: mergedSettings.enabled !== false,
+        enableLiveSimulation: settings.enableLiveSimulation ?? mergedSettings.enableLiveSimulation,
         highwayEntryRadiusMeters: Number(settings.highwayEntryRadiusMeters ?? mergedSettings.highwayEntryRadiusMeters),
         googleRouteSearchRadiusKm: Number(settings.googleRouteSearchRadiusKm ?? mergedSettings.googleRouteSearchRadiusKm),
         googleRouteForwardRangeKm: Number(settings.googleRouteForwardRangeKm ?? mergedSettings.googleRouteForwardRangeKm),

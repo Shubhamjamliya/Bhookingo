@@ -8,6 +8,7 @@ import { useLocationSelector } from "./UserLayout"
 import { FaLocationDot } from "react-icons/fa6"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
+import BhookingoWordmark from "@/shared/components/BhookingoWordmark"
 import { Avatar, AvatarFallback, AvatarImage } from "@food/components/ui/avatar"
 import { useProfile } from "@food/context/ProfileContext"
 import { isModuleAuthenticated } from "@food/utils/auth"
@@ -328,27 +329,14 @@ export default function PageNavbar({
         {/* Left: Company Logo */}
         {showLogo && (
           <Link to="/food/user" className="flex-shrink-0 mr-3 sm:mr-4">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={companyName || "Company Logo"}
-                className="h-9 w-auto sm:h-12 md:h-14 object-contain scale-[1.6] sm:scale-[1.8] origin-left"
-                crossOrigin="anonymous"
-                onError={(e) => {
-                  e.target.style.display = 'none'
-                }}
-              />
-            ) : companyName ? (
-              <span className={`text-lg font-bold ${finalTextColorClass}`}>
-                {companyName}
-              </span>
-            ) : (
-              <img
-                src={bhookingoLogo}
-                alt="Logo"
-                className="h-9 w-auto sm:h-12 md:h-14 object-contain scale-[1.6] sm:scale-[1.8] origin-left"
-              />
-            )}
+            <BhookingoWordmark
+              logoSrc={logoUrl || bhookingoLogo}
+              companyName={companyName || "Bhookingo"}
+              accentClassName="text-[#E0332F]"
+              textClassName={`text-lg sm:text-xl font-black tracking-tight ${finalTextColorClass} leading-none`}
+              logoClassName="h-9 w-9 sm:h-11 sm:w-11 md:h-12 md:w-12 object-contain rounded-xl"
+              gapClassName="gap-2"
+            />
           </Link>
         )}
 

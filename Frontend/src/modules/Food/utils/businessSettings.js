@@ -9,6 +9,50 @@ import { publicGetOnce } from "@food/api";
 
 const SETTINGS_KEY = 'bhookingo_business_settings';
 
+const getCurrentBrandSurface = () => {
+  if (typeof window === "undefined") return "default";
+
+  const pathname = String(window.location?.pathname || "").toLowerCase();
+
+  if (pathname.startsWith("/food/restaurant") || pathname.startsWith("/restaurant")) {
+    return "restaurant";
+  }
+
+  if (pathname.startsWith("/food/delivery") || pathname.startsWith("/delivery")) {
+    return "delivery";
+  }
+
+  if (
+    pathname.startsWith("/food/user") ||
+    pathname.startsWith("/user") ||
+    pathname.startsWith("/food/user/auth")
+  ) {
+    return "user";
+  }
+
+  return "default";
+};
+
+const getLogoForCurrentSurface = (settings) => {
+  if (!settings) return null;
+
+  const surface = getCurrentBrandSurface();
+
+  if (surface === "restaurant") {
+    return settings.restaurantLogo?.url || settings.logo?.url || settings.favicon?.url || null;
+  }
+
+  if (surface === "delivery") {
+    return settings.deliveryLogo?.url || settings.logo?.url || settings.favicon?.url || null;
+  }
+
+  if (surface === "user") {
+    return settings.userLogo?.url || settings.logo?.url || settings.favicon?.url || null;
+  }
+
+  return settings.logo?.url || settings.favicon?.url || null;
+};
+
 // Initialize from localStorage immediately so it's available for components on mount
 let cachedSettings = (() => {
   try {
@@ -22,7 +66,7 @@ let cachedSettings = (() => {
 // Apply cached settings immediately on module load if they exist
 if (cachedSettings) {
   setTimeout(() => {
-    updateFavicon(cachedSettings.favicon?.url);
+    updateFavicon(getLogoForCurrentSurface(cachedSettings));
     updateTitle(cachedSettings.companyName);
   }, 0);
 }
@@ -57,7 +101,7 @@ export const loadBusinessSettings = async () => {
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
         } catch (e) {}
         
-        updateFavicon(settings.favicon?.url);
+        updateFavicon(getLogoForCurrentSurface(settings));
         updateTitle(settings.companyName);
         return settings;
       }
@@ -112,7 +156,7 @@ export const setCachedSettings = (settings) => {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     } catch (e) {}
     
-    updateFavicon(settings.favicon?.url);
+    updateFavicon(getLogoForCurrentSurface(settings));
     updateTitle(settings.companyName);
   }
 };

@@ -12,6 +12,7 @@ import { FaLocationDot } from "react-icons/fa6"
 import { AnimatePresence, motion } from "framer-motion"
 import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
+import BhookingoWordmark from "@/shared/components/BhookingoWordmark"
 import api from "@food/api"
 import { isModuleAuthenticated } from "@food/utils/auth"
 const debugLog = (...args) => {}
@@ -203,20 +204,14 @@ export default function DesktopNavbar({ showLogo = true }) {
                             {/* Logo */}
                             {showLogo && (
                                 <Link to="/" className="flex items-center justify-center flex-shrink-0">
-                                    {logoUrl || companyName ? (
-                                        <img
-                                            src={logoUrl || bhookingoLogo}
-                                            alt={companyName || "Company Logo"}
-                                            className="h-10 w-auto md:h-14 lg:h-16 object-contain"
-                                            onError={(e) => {
-                                                if (e.target.src !== bhookingoLogo) {
-                                                    e.target.src = bhookingoLogo
-                                                }
-                                            }}
-                                        />
-                                    ) : (
-                                        <img src={bhookingoLogo} alt={companyName || "Logo"} className="h-10 w-auto md:h-14 lg:h-16 object-contain" />
-                                    )}
+                                    <BhookingoWordmark
+                                        logoSrc={logoUrl || bhookingoLogo}
+                                        companyName={companyName || "Bhookingo"}
+                                        accentClassName="text-[#E0332F]"
+                                        textClassName="text-lg md:text-xl lg:text-2xl font-black tracking-tight text-text-primary dark:text-white leading-none"
+                                        logoClassName="h-10 w-10 md:h-12 md:w-12 lg:h-14 lg:w-14 object-contain rounded-xl"
+                                        gapClassName="gap-2"
+                                    />
                                 </Link>
                             )}
 

@@ -1290,6 +1290,15 @@ export default function AddRestaurant() {
 
     let cancelled = false
     let autocomplete = null
+    const hidePacContainers = () => {
+      const containers = document.querySelectorAll('.pac-container')
+      containers.forEach(container => {
+        if (container) {
+          container.style.display = 'none'
+          container.style.visibility = 'hidden'
+        }
+      })
+    }
 
     const init = async () => {
       // Wait for the input ref to be attached
@@ -1460,24 +1469,12 @@ export default function AddRestaurant() {
         const pacContainerFix = () => {
           if (cancelled) return
           if (isPlaceSelectedRef.current) {
-            const containers = document.querySelectorAll('.pac-container')
-            containers.forEach(container => {
-              if (container) {
-                container.style.display = 'none'
-                container.style.visibility = 'hidden'
-              }
-            })
+            hidePacContainers()
             return
           }
           const applyFix = () => {
             if (cancelled || isPlaceSelectedRef.current) {
-              const containers = document.querySelectorAll('.pac-container')
-              containers.forEach(container => {
-                if (container) {
-                  container.style.display = 'none'
-                  container.style.visibility = 'hidden'
-                }
-              })
+              hidePacContainers()
               return
             }
             const containers = document.querySelectorAll('.pac-container')
@@ -1507,6 +1504,8 @@ export default function AddRestaurant() {
           isPlaceSelectedRef.current = false
           pacContainerFix()
         })
+
+        window.addEventListener('scroll', hidePacContainers, true)
       } catch (e) {
         debugError("Autocomplete error:", e)
       }
@@ -1522,6 +1521,7 @@ export default function AddRestaurant() {
       if (locationSearchInputRef.current) {
         locationSearchInputRef.current.removeAttribute('data-google-places-initialized')
       }
+      window.removeEventListener('scroll', hidePacContainers, true)
       placesAutocompleteRef.current = null
     }
   }, [step])

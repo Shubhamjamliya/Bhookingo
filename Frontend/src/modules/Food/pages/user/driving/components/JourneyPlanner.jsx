@@ -16,6 +16,9 @@ import {
 import { Button } from "@food/components/ui/button";
 import { toast } from "sonner";
 import { userAPI } from "@food/api";
+import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
+import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings";
+import BhookingoWordmark from "@/shared/components/BhookingoWordmark";
 
 const GEOCODE_SEARCH_CACHE_KEY = "bh_geocode_search_cache";
 const REVERSE_GEOCODE_CACHE_KEY = "bh_reverse_geocode_cache";
@@ -45,6 +48,39 @@ export default function JourneyPlanner({
   onJourneyPlanSelected, 
   onGoHome 
 }) {
+  const [logoUrl, setLogoUrl] = useState(() => {
+    const cached = getCachedSettings();
+    return cached?.userLogo?.url || cached?.logo?.url || bhookingoLogo;
+  });
+  const [companyName, setCompanyName] = useState(() => {
+    const cached = getCachedSettings();
+    return cached?.companyName || "Bhookingo";
+  });
+
+  useEffect(() => {
+    const applySettings = (settings) => {
+      if (!settings) return;
+      setLogoUrl(settings.userLogo?.url || settings.logo?.url || bhookingoLogo);
+      if (settings.companyName) {
+        setCompanyName(settings.companyName);
+      }
+    };
+
+    const cached = getCachedSettings();
+    if (cached) {
+      applySettings(cached);
+    }
+
+    loadBusinessSettings().then(applySettings).catch(() => {});
+
+    const handleSettingsUpdate = () => {
+      applySettings(getCachedSettings());
+    };
+
+    window.addEventListener("businessSettingsUpdated", handleSettingsUpdate);
+    return () => window.removeEventListener("businessSettingsUpdated", handleSettingsUpdate);
+  }, []);
+
   // Session storage loads
   const [originInput, setOriginInput] = useState(() => {
     return localStorage.getItem("bh_origin_input") || "";
@@ -706,16 +742,15 @@ export default function JourneyPlanner({
 
       {/* Top Header Bar (Matching Image) */}
       <div className="w-full max-w-md flex items-center justify-between py-2 px-1 mb-1 animate-slide-in">
-        <div className="flex items-center gap-2 mx-auto pr-6">
-          {/* Logo Icon */}
-          <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white font-black text-sm shadow-sm">
-            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-            </svg>
-          </div>
-          <span className="font-extrabold text-2xl tracking-tight text-gray-900 dark:text-white">
-            Bhook<span className="text-orange-600">ingo</span>
-          </span>
+        <div className="mx-auto pr-6">
+          <BhookingoWordmark
+            logoSrc={logoUrl || bhookingoLogo}
+            companyName={companyName || "Bhookingo"}
+            accentClassName="text-[#E0332F]"
+            textClassName="font-extrabold text-2xl tracking-tight text-gray-900 dark:text-white leading-none"
+            logoClassName="w-8 h-8 object-contain rounded-lg"
+            gapClassName="gap-2"
+          />
         </div>
         
         <button 

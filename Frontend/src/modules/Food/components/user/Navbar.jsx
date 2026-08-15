@@ -15,10 +15,10 @@ import { useLocationSelector } from "./UserLayout"
 import { useProfile } from "@food/context/ProfileContext"
 import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
 import { isModuleAuthenticated } from "@food/utils/auth"
+import BhookingoWordmark from "@/shared/components/BhookingoWordmark"
 const debugLog = (...args) => {}
 const debugWarn = (...args) => {}
 const debugError = (...args) => {}
-
 
 import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 
@@ -131,23 +131,14 @@ export default function Navbar() {
 
           {/* Company Logo or Name - Centered between sections */}
           <Link to="/food/user" className="flex items-center justify-center flex-shrink-0">
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={companyName || "Company Logo"}
-                className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain"
-                onError={(e) => {
-                  // Hide image if it fails to load
-                  e.target.style.display = 'none'
-                }}
-              />
-            ) : companyName ? (
-              <span className="text-sm sm:text-base md:text-lg font-bold text-text-primary">
-                {companyName}
-              </span>
-            ) : (
-              <img src={bhookingoLogo} alt="Logo" className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain" />
-            )}
+            <BhookingoWordmark
+              logoSrc={logoUrl || bhookingoLogo}
+              companyName={companyName || "Bhookingo"}
+              accentClassName="text-[#E0332F]"
+              textClassName="text-sm sm:text-base md:text-lg font-black tracking-tight text-text-primary leading-none"
+              logoClassName="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain rounded-xl"
+              gapClassName="gap-1.5 sm:gap-2"
+            />
           </Link>
 
           {/* Right Side Actions - Profile, Points, Cart */}

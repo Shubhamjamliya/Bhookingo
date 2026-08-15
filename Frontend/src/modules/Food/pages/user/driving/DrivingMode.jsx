@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Compass, Loader2, Navigation, AlertTriangle, List, Map, ShieldAlert, CheckCircle, Clock, ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Share2, Heart, Wifi, Star, Car, ShieldCheck, BellRing, MapPin } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { userAPI, restaurantAPI, orderAPI } from "@food/api";
 import { useProfile } from "@food/context/ProfileContext";

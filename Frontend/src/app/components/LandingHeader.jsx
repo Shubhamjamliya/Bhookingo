@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Smartphone, Menu, X } from 'lucide-react';
 import { BHOOKINGO_LOGO as bhookingoLogo } from "@/constants/branding";
 import { loadBusinessSettings } from "@food/utils/businessSettings";
+import BhookingoWordmark from "@/shared/components/BhookingoWordmark";
 
 export default function LandingHeader() {
   const navigate = useNavigate();
@@ -49,13 +50,11 @@ export default function LandingHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5">
-          <img src={headerInfo.logo} className="w-14 h-14 object-contain rounded-xl" alt={`${headerInfo.companyName} Logo`} />
-          <div className="flex flex-col">
-            <span className="text-2xl font-black tracking-tight text-gray-900 leading-none">
-              <span className="text-[#E0332F]">{headerInfo.companyName.charAt(0)}</span>
-              {headerInfo.companyName.slice(1)}
-            </span>
-          </div>
+          <BhookingoWordmark
+            logoSrc={headerInfo.logo}
+            companyName={headerInfo.companyName}
+            accentClassName="text-[#E0332F]"
+          />
         </Link>
 
         {/* Center Navigation Links */}

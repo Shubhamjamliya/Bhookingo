@@ -380,7 +380,7 @@ export default function RestaurantNavbar({
 
   return (
     <>
-      <div className="w-full bg-gradient-to-br from-restaurant-primary to-restaurant-secondary rounded-b-[35px] flex flex-col shadow-xl shadow-restaurant-primary/25 pb-2 relative z-10">
+      <div className="w-full bg-white rounded-b-[35px] flex flex-col shadow-lg shadow-emerald-100/40 border-b-4 border-[#22C55E] pb-2 relative z-10">
         {/* Top Navbar */}
         <div className="px-4 py-3 flex items-center justify-between">
           {/* Left Side - Restaurant Info */}
@@ -391,14 +391,14 @@ export default function RestaurantNavbar({
                 {logoUrl && (
                   <img src={logoUrl} alt="Logo" className="h-7 w-auto object-contain shrink-0 rounded" />
                 )}
-                <h1 className="text-[17px] font-bold text-white truncate tracking-tight leading-none">
+                <h1 className="text-[17px] font-bold text-slate-900 truncate tracking-tight leading-none">
                   {loading ? "Loading..." : (restaurantName || "Restaurant")}
                 </h1>
               </div>
               {!loading && restaurantAddress && restaurantAddress.trim() !== "" && (
                 <div className="flex items-center gap-1 mt-1.5 opacity-90">
-                  <MapPin className="w-2.5 h-2.5 text-white/80 shrink-0" />
-                  <p className="text-[11px] text-white/90 truncate font-medium" title={restaurantAddress}>
+                  <MapPin className="w-2.5 h-2.5 text-[#22C55E] shrink-0" />
+                  <p className="text-[11px] text-slate-600 truncate font-medium" title={restaurantAddress}>
                     {restaurantAddress}
                   </p>
                 </div>
@@ -412,18 +412,18 @@ export default function RestaurantNavbar({
             {showOfflineOnlineTag && (
               <button
                 onClick={handleStatusClick}
-                className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300 backdrop-blur-md border ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300 border ${
                   status === "Online" 
-                    ? "bg-white/15 border-white/20 text-white" 
-                    : "bg-gradient-to-br from-restaurant-primary to-restaurant-secondary/20 border-white/10 text-white/70"
-                } active:scale-95 shadow-sm hover:bg-white/25`}
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-700" 
+                    : "bg-slate-50 border-slate-200 text-slate-500"
+                } active:scale-95 shadow-sm hover:bg-emerald-50/80`}
               >
                 <div className="relative flex items-center justify-center">
                   <span className={`w-1.5 h-1.5 rounded-full ${
-                    status === "Online" ? "bg-emerald-400" : "bg-white/30"
+                    status === "Online" ? "bg-emerald-500" : "bg-slate-300"
                   }`}></span>
                   {status === "Online" && (
-                    <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping opacity-60"></span>
+                    <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping opacity-60"></span>
                   )}
                 </div>
                 <span className="text-[11px] font-bold tracking-tight px-0.5">
@@ -436,12 +436,12 @@ export default function RestaurantNavbar({
             {showNotifications && (
               <button
                 onClick={handleNotificationsClick}
-                className="relative p-2.5 hover:bg-white/10 rounded-full transition-colors group"
+                className="relative p-2.5 hover:bg-emerald-50 rounded-full transition-colors group"
                 aria-label="Notifications"
               >
-                <Bell className="w-5 h-5 text-white" />
+                <Bell className="w-5 h-5 text-slate-700" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-2 right-2.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-restaurant-primary shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
+                  <span className="absolute top-2 right-2.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white shadow-[0_0_8px_rgba(34,197,94,0.35)]" />
                 )}
               </button>
             )}

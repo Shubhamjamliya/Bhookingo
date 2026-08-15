@@ -88,9 +88,15 @@ export default function MasterLandingPage() {
 
               {/* Headline */}
               <div className="space-y-2">
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white leading-none">
-                  Bhookingo = <br />
-                  <span className="text-[#E0332F]">Bhookh + In + Go</span> <br />
+                <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] xl:text-[3.5rem] font-black tracking-tight text-white leading-none">
+                  <span className="whitespace-nowrap">
+                    <span className="text-white">Bhookingo</span>{" "}
+                    <span className="text-[#E0332F]">=</span>{" "}
+                  </span>
+                  <span className="text-[#E0332F] text-2xl sm:text-3xl lg:text-[2.35rem] xl:text-[2.6rem] font-extrabold tracking-[0.04em] whitespace-nowrap">
+                    Bhook + in + Go
+                  </span>
+                  <br />
                   <span className="text-white text-3xl sm:text-4xl lg:text-5xl font-extrabold block mt-2">
                     Highway Takeaway & Dine-In
                   </span>

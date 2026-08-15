@@ -8,6 +8,9 @@ import {
   setAuthData as setRestaurantAuthData,
   setRestaurantPendingPhone,
 } from "@food/utils/auth"
+import { BHOOKINGO_LOGO as defaultLogo } from "@/constants/branding"
+import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
+import BhookingoWordmark from "@/shared/components/BhookingoWordmark"
 import { clearOnboardingFromLocalStorage, clearAllFilesFromDB, checkOnboardingStatus, isRestaurantOnboardingComplete } from "@/modules/Food/utils/onboardingUtils"
 const DEFAULT_COUNTRY_CODE = "+91"
 
@@ -37,6 +40,8 @@ export default function RestaurantLogin() {
   const [contactInfo, setContactInfo] = useState("")
   const [showRestorePopup, setShowRestorePopup] = useState(false)
   const [deletedAccountData, setDeletedAccountData] = useState(null)
+  const [logoUrl, setLogoUrl] = useState(() => getCachedSettings()?.restaurantLogo?.url || getCachedSettings()?.logo?.url || defaultLogo)
+  const [companyName, setCompanyName] = useState(() => getCachedSettings()?.companyName || "Bhookingo")
   const inputRefs = useRef([])
   const hasSubmittedRef = useRef(false)
   const isSuccessRef = useRef(false)
@@ -145,6 +150,35 @@ export default function RestaurantLogin() {
       return () => clearTimeout(timer)
     }
   }, [isOtpStep])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const applySettings = (settings) => {
+      if (!isMounted || !settings) return
+      setLogoUrl(settings.restaurantLogo?.url || settings.logo?.url || defaultLogo)
+      if (settings.companyName) {
+        setCompanyName(settings.companyName)
+      }
+    }
+
+    const cached = getCachedSettings()
+    if (cached) {
+      applySettings(cached)
+    }
+
+    loadBusinessSettings().then(applySettings).catch(() => {})
+
+    const handleSettingsUpdate = () => {
+      applySettings(getCachedSettings())
+    }
+
+    window.addEventListener("businessSettingsUpdated", handleSettingsUpdate)
+    return () => {
+      isMounted = false
+      window.removeEventListener("businessSettingsUpdated", handleSettingsUpdate)
+    }
+  }, [])
 
   const validatePhone = (num) => {
     const digits = num.replace(/\D/g, "")
@@ -481,10 +515,14 @@ export default function RestaurantLogin() {
 
           {/* Logo & Header */}
           <div className="mb-5 text-center flex flex-col items-center">
-            <img
-              src="/bhookingo-logo.png"
-              alt="Bhookingo Logo"
-              className="h-24 mt-8 -mb-4 object-contain drop-shadow-md rounded-xl"
+            <BhookingoWordmark
+              logoSrc={logoUrl || defaultLogo}
+              companyName={companyName || "Bhookingo"}
+              accentClassName="text-[#22C55E]"
+              wrapperClassName="mt-8 mb-1"
+              textClassName="text-3xl font-black tracking-tight text-slate-900 leading-none font-['Outfit']"
+              logoClassName="h-16 w-16 object-contain drop-shadow-md rounded-xl"
+              gapClassName="gap-2.5"
             />
             <h2 className="text-[20px] mt-2 font-extrabold text-restaurant-primary dark:text-red-400 tracking-tight font-['Outfit']">
               Restaurant Partner

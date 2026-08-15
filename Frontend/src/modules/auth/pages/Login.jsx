@@ -5,7 +5,9 @@ import { Phone, ArrowRight, ShieldCheck, Loader2, Utensils, Star, Heart, X, User
 import { toast } from "sonner"
 import { authAPI, userAPI } from "@food/api"
 import { setAuthData } from "@food/utils/auth"
-import logoNew from "@/assets/logo.webp"
+import { BHOOKINGO_LOGO as defaultLogo } from "@/constants/branding"
+import { getCachedSettings, loadBusinessSettings } from "@food/utils/businessSettings"
+import BhookingoWordmark from "@/shared/components/BhookingoWordmark"
 import {
   Dialog,
   DialogContent,
@@ -34,6 +36,8 @@ export default function UnifiedOTPFastLogin() {
   const [showRestorePopup, setShowRestorePopup] = useState(false)
   const [deletedAccountData, setDeletedAccountData] = useState(null)
   const [blockTimer, setBlockTimer] = useState(0)
+  const [logoUrl, setLogoUrl] = useState(() => getCachedSettings()?.logo?.url || defaultLogo)
+  const [companyName, setCompanyName] = useState(() => getCachedSettings()?.companyName || "Bhookingo")
   const navigate = useNavigate()
   const submitting = useRef(false)
 
@@ -74,6 +78,45 @@ export default function UnifiedOTPFastLogin() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    let isMounted = true
+
+    const applySettings = (settings) => {
+      if (!isMounted || !settings) return
+      if (settings.logo?.url) {
+        setLogoUrl(settings.logo.url)
+      } else {
+        setLogoUrl(defaultLogo)
+      }
+      if (settings.companyName) {
+        setCompanyName(settings.companyName)
+      }
+    }
+
+    const cached = getCachedSettings()
+    if (cached) {
+      applySettings(cached)
+    }
+
+    loadBusinessSettings()
+      .then(applySettings)
+      .catch(() => {
+        if (isMounted) {
+          setLogoUrl((current) => current || defaultLogo)
+        }
+      })
+
+    const handleSettingsUpdate = () => {
+      applySettings(getCachedSettings())
+    }
+
+    window.addEventListener("businessSettingsUpdated", handleSettingsUpdate)
+    return () => {
+      isMounted = false
+      window.removeEventListener("businessSettingsUpdated", handleSettingsUpdate)
+    }
+  }, [])
 
   // Persist state on change
   useEffect(() => {
@@ -546,11 +589,15 @@ export default function UnifiedOTPFastLogin() {
       {/* Top Navbar (Desktop View) */}
       <nav className="hidden sm:flex w-full h-[68px] bg-white/85 backdrop-blur-md border-b border-border sticky top-0 z-50 px-6 items-center select-none">
         <div className="w-full max-w-[1440px] mx-auto flex items-center justify-center">
-          <Link to="/food/user" className="flex items-center">
-            <img
-              src="/bhookingo-logo-red.png"
-              alt="bhookingo"
-              className="w-[200px] h-auto object-contain"
+          <Link to="/food/user" className="flex items-center gap-2.5">
+            <BhookingoWordmark
+              logoSrc={logoUrl || defaultLogo}
+              companyName={companyName || "Bhookingo"}
+              accentClassName="text-[#E0332F]"
+              wrapperClassName=""
+              textClassName="text-2xl font-black tracking-tight text-gray-900 leading-none"
+              logoClassName="w-14 h-14 object-contain rounded-xl"
+              gapClassName="gap-2.5"
             />
           </Link>
         </div>
@@ -634,10 +681,13 @@ export default function UnifiedOTPFastLogin() {
 
             {/* Logo Section */}
             <div className="flex justify-center mb-1">
-              <img
-                src="/bhookingo-logo-red.png"
-                alt="bhookingo"
-                className="h-20 lg:h-28 object-contain mobile-logo-size"
+              <BhookingoWordmark
+                logoSrc={logoUrl || defaultLogo}
+                companyName={companyName || "Bhookingo"}
+                accentClassName="text-[#E0332F]"
+                textClassName="text-2xl lg:text-3xl font-black tracking-tight text-text-primary leading-none"
+                logoClassName="h-16 w-16 lg:h-20 lg:w-20 object-contain rounded-xl mobile-logo-size"
+                gapClassName="gap-2.5"
               />
             </div>
             {/* Heading Description */}
@@ -720,8 +770,9 @@ export default function UnifiedOTPFastLogin() {
               <h3 className="text-lg md:text-xl font-bold text-text-primary leading-tight tracking-tight" style={{ fontWeight: 700 }}>
                 Welcome to
               </h3>
-              <h2 className="text-[32px] md:text-4xl font-black text-[var(--primary)] leading-none mt-0.5" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 1000, letterSpacing: '-0.02em' }}>
-                bhookingo!
+              <h2 className="text-[32px] md:text-4xl font-black text-text-primary leading-none mt-0.5" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 1000, letterSpacing: '-0.02em' }}>
+                <span className="text-[#E0332F]">{(companyName || "Bhookingo").charAt(0)}</span>
+                {(companyName || "Bhookingo").slice(1)}!
               </h2>
               <p className="text-[10px] font-semibold text-text-secondary mt-1.5">
                 {step === 1 ? (

@@ -103,12 +103,26 @@ const normalizeLocationFormFromRestaurant = (restaurant) => {
 }
 
 const normalizeDetailsFormFromRestaurant = (restaurant) => {
+  const location =
+    restaurant?.location ||
+    restaurant?.onboarding?.step1?.location ||
+    {}
+
+  const rawRestaurantType = String(restaurant?.restaurantType || "").toLowerCase()
+  const hasHighwaySignals = Boolean(
+    restaurant?.isHighwayRestaurant === true ||
+    restaurant?.highwayRef ||
+    restaurant?.highwayName ||
+    location?.highwayRef ||
+    location?.highwayName
+  )
+
   return {
     name: restaurant?.name || restaurant?.restaurantName || "",
     restaurantType:
-      String(restaurant?.restaurantType || "").toLowerCase() === "normal"
+      rawRestaurantType === "normal"
         ? "normal"
-        : "highway",
+        : (rawRestaurantType === "highway" || hasHighwaySignals ? "highway" : "normal"),
     pureVegRestaurant:
       typeof restaurant?.pureVegRestaurant === "boolean"
         ? restaurant.pureVegRestaurant
@@ -706,6 +720,7 @@ export default function EditRestaurant() {
       const payload = {
         name: detailsForm.name,
         restaurantType: detailsForm.restaurantType === "normal" ? "normal" : "highway",
+        isHighwayRestaurant: detailsForm.restaurantType !== "normal",
         pureVegRestaurant: detailsForm.pureVegRestaurant === true,
         ownerName: detailsForm.ownerName,
         ownerEmail: detailsForm.ownerEmail,
@@ -751,6 +766,7 @@ export default function EditRestaurant() {
       setSavingLocation(true)
       const payload = {
         zoneId: locationForm.zoneId,
+        isHighwayRestaurant: detailsForm.restaurantType !== "normal",
         latitude,
         longitude,
         coordinates: [longitude, latitude],

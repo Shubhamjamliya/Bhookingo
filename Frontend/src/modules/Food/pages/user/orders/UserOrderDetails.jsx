@@ -357,7 +357,7 @@ export default function UserOrderDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-24 font-sans relative">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] pb-24 font-['Poppins'] relative">
       {/* Header */}
       <div className="bg-surface dark:bg-[#121212] p-4 flex items-center sticky top-0 z-20 shadow-sm border-b dark:border-gray-800">
         <div className="flex items-center gap-3">
@@ -401,9 +401,9 @@ export default function UserOrderDetails() {
 
         {/* Pickup OTP Card */}
         {(order.status === 'ready_for_pickup' || order.orderStatus === 'ready_for_pickup') && order.pickupOtp?.code && (
-          <div className="bg-[#f5f6ff] dark:bg-indigo-950/20 border border-[#e1e4ff] dark:border-indigo-900/30 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
+          <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-[#e8eaff] dark:bg-indigo-950/50 flex items-center justify-center text-[#4f46e5] flex-shrink-0">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0">
                 <Shield className="w-6 h-6 stroke-[2]" />
               </div>
               <div className="text-left">
@@ -414,7 +414,7 @@ export default function UserOrderDetails() {
               </div>
             </div>
             <div className="flex items-center flex-shrink-0">
-              <div className="border border-[#e1e4ff] dark:border-indigo-900/40 bg-white dark:bg-neutral-900 font-mono font-black text-xl text-[#4f46e5] px-4 py-2.5 rounded-l-xl select-all leading-none h-11 flex items-center">
+              <div className="border border-emerald-200 dark:border-emerald-900/40 bg-white dark:bg-neutral-900 font-['Poppins'] font-black text-xl text-emerald-600 dark:text-emerald-400 px-4 py-2.5 rounded-l-xl select-all leading-none h-11 flex items-center">
                 {order.pickupOtp.code}
               </div>
               <button
@@ -422,7 +422,7 @@ export default function UserOrderDetails() {
                   navigator.clipboard.writeText(String(order.pickupOtp.code));
                   toast.success("OTP copied to clipboard!");
                 }}
-                className="border-y border-r border-[#e1e4ff] dark:border-indigo-900/40 bg-[#f5f6ff] dark:bg-indigo-950/40 hover:bg-[#e8eaff] dark:hover:bg-indigo-900/50 text-[#4f46e5] p-3 rounded-r-xl transition-colors cursor-pointer flex items-center justify-center h-11"
+                className="border-y border-r border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 p-3 rounded-r-xl transition-colors cursor-pointer flex items-center justify-center h-11"
                 title="Copy OTP"
               >
                 <Copy className="w-4 h-4" />

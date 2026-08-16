@@ -1166,41 +1166,45 @@ export default function DrivingMode() {
     return null;
   }, [liveTravelPosition, currentLocation, journey?.origin?.lat, journey?.origin?.lng]);
   const activeRouteMetrics = React.useMemo(() => buildRoutePathMetrics(getJourneyActivePath(journey)), [journey]);
-  const nextStop = React.useMemo(() => {
-    if (!filteredRestaurants.length) return null;
-    if (!activeRouteMetrics || !effectiveTravelPosition) return filteredRestaurants[0] || null;
+  const nextStopMeta = React.useMemo(() => {
+    if (!filteredRestaurants.length || !activeRouteMetrics || !effectiveTravelPosition) return null;
 
     const userProgress = getRouteProgressSnapshot(activeRouteMetrics, effectiveTravelPosition);
     if (!userProgress) return null;
 
-    const rankedStops = filteredRestaurants
+    const rankedAheadStops = filteredRestaurants
       .map((restaurant) => {
         const restaurantLocation = getRestaurantLatLng(restaurant);
         const routeProgress = getRouteProgressSnapshot(activeRouteMetrics, restaurantLocation);
         const liveDistanceKm = getDistanceBetweenKm(effectiveTravelPosition, restaurantLocation);
+        const routeDistanceKm = routeProgress
+          ? Math.max(0, routeProgress.distanceAlongKm - userProgress.distanceAlongKm)
+          : Number.POSITIVE_INFINITY;
+
         return {
           restaurant,
           routeProgress,
+          routeDistanceKm,
           liveDistanceKm: Number.isFinite(liveDistanceKm) ? liveDistanceKm : Number.POSITIVE_INFINITY
         };
       })
-      .filter(({ routeProgress }) => routeProgress && routeProgress.lateralDistanceKm <= ROUTE_SNAP_MAX_DISTANCE_KM)
+      .filter(({ routeProgress, routeDistanceKm }) => (
+        routeProgress &&
+        routeProgress.lateralDistanceKm <= ROUTE_SNAP_MAX_DISTANCE_KM &&
+        routeDistanceKm <= Number.POSITIVE_INFINITY &&
+        (routeProgress.distanceAlongKm - userProgress.distanceAlongKm) >= 0
+      ))
       .sort((a, b) => {
-        const progressDeltaA = a.routeProgress.distanceAlongKm - userProgress.distanceAlongKm;
-        const progressDeltaB = b.routeProgress.distanceAlongKm - userProgress.distanceAlongKm;
-        const aIsAhead = progressDeltaA >= -PASSED_RESTAURANT_BUFFER_KM;
-        const bIsAhead = progressDeltaB >= -PASSED_RESTAURANT_BUFFER_KM;
-
-        if (aIsAhead !== bIsAhead) return aIsAhead ? -1 : 1;
-        if (aIsAhead && bIsAhead) return progressDeltaA - progressDeltaB;
+        if (a.routeDistanceKm !== b.routeDistanceKm) return a.routeDistanceKm - b.routeDistanceKm;
+        if (a.routeProgress.lateralDistanceKm !== b.routeProgress.lateralDistanceKm) {
+          return a.routeProgress.lateralDistanceKm - b.routeProgress.lateralDistanceKm;
+        }
         return a.liveDistanceKm - b.liveDistanceKm;
       });
 
-    const firstAheadStop = rankedStops.find(({ routeProgress, liveDistanceKm }) => (routeProgress.distanceAlongKm - userProgress.distanceAlongKm) >= -PASSED_RESTAURANT_BUFFER_KM || liveDistanceKm < 1.2);
-    if (firstAheadStop) return firstAheadStop.restaurant;
-
-    return rankedStops[0]?.restaurant || null;
+    return rankedAheadStops[0] || null;
   }, [filteredRestaurants, activeRouteMetrics, effectiveTravelPosition]);
+  const nextStop = nextStopMeta?.restaurant || null;
 
   useEffect(() => {
     console.log("[DrivingMode][Browser] Next stop", nextStop
@@ -1215,22 +1219,23 @@ export default function DrivingMode() {
       : null);
   }, [nextStop]);
   const nextStopId = nextStop?._id || nextStop?.id || nextStop?.restaurantSlug || null;
-  const nextStopLiveDistanceKm = getDistanceBetweenKm(effectiveTravelPosition, getRestaurantLatLng(nextStop));
+  const nextStopLiveDistanceKm = Number.isFinite(nextStopMeta?.liveDistanceKm) ? nextStopMeta.liveDistanceKm : null;
+  const nextStopRouteDistanceKm = Number.isFinite(nextStopMeta?.routeDistanceKm) ? nextStopMeta.routeDistanceKm : null;
   const nextStopLiveEtaMinutes = React.useMemo(() => {
     if (!nextStop) return null;
-    if (Number.isFinite(nextStopLiveDistanceKm)) {
+    if (Number.isFinite(nextStopRouteDistanceKm)) {
       const speedKmh = Number.isFinite(speed) && speed > 0 ? speed * 3.6 : null;
       if (speedKmh && speedKmh > 3) {
-        return Math.max(0, Math.round((nextStopLiveDistanceKm / speedKmh) * 60));
+        return Math.max(0, Math.round((nextStopRouteDistanceKm / speedKmh) * 60));
       }
       const baseDistanceKm = Number(nextStop?.distanceKm);
       const baseEtaMinutes = Number(nextStop?.etaMinutes);
       if (Number.isFinite(baseDistanceKm) && baseDistanceKm > 0 && Number.isFinite(baseEtaMinutes) && baseEtaMinutes >= 0) {
-        return Math.max(0, Math.round((nextStopLiveDistanceKm / baseDistanceKm) * baseEtaMinutes));
+        return Math.max(0, Math.round((nextStopRouteDistanceKm / baseDistanceKm) * baseEtaMinutes));
       }
     }
     return Number.isFinite(Number(nextStop?.etaMinutes)) ? Number(nextStop.etaMinutes) : null;
-  }, [nextStop, nextStopLiveDistanceKm, speed]);
+  }, [nextStop, nextStopRouteDistanceKm, speed]);
   const visibleRouteOptions = React.useMemo(() => (Array.isArray(journey?.availableRoutes)
     ? journey.availableRoutes.filter((routeOption, index, routes) => {
       const routeKey = routeOption?.routeId || routeOption?._id;
@@ -1259,7 +1264,7 @@ export default function DrivingMode() {
     // Use a larger threshold for orders so the alert comes out earlier
     const alertThreshold = isOrdered ? 5.0 : NEXT_STOP_ALERT_DISTANCE_KM;
 
-    if (!nextStop || !Number.isFinite(nextStopLiveDistanceKm) || nextStopLiveDistanceKm > alertThreshold) {
+    if (!nextStop || !Number.isFinite(nextStopRouteDistanceKm) || nextStopRouteDistanceKm > alertThreshold) {
       return;
     }
 
@@ -1276,8 +1281,8 @@ export default function DrivingMode() {
       announcedAt: now
     };
 
-    playNextStopAlert(nextStop.restaurantName || nextStop.name, nextStopLiveDistanceKm, isOrdered);
-  }, [nextStop, nextStopLiveDistanceKm, playNextStopAlert, orderedRestaurantIds]);
+    playNextStopAlert(nextStop.restaurantName || nextStop.name, nextStopRouteDistanceKm, isOrdered);
+  }, [nextStop, nextStopRouteDistanceKm, playNextStopAlert, orderedRestaurantIds]);
 
 
 
@@ -1346,7 +1351,7 @@ export default function DrivingMode() {
         <div className="w-full max-w-md pointer-events-auto">
           <DrivingSummaryCard
             highwayRef={journey?.selectedHighway?.name || resultData?.highway?.ref || journey?.selectedHighway?.ref}
-            distanceAhead={Number.isFinite(nextStopLiveDistanceKm) ? Number(nextStopLiveDistanceKm.toFixed(nextStopLiveDistanceKm >= 10 ? 0 : 1)) : (nextStop?.distanceKm ?? null)}
+            distanceAhead={Number.isFinite(nextStopRouteDistanceKm) ? Number(nextStopRouteDistanceKm.toFixed(nextStopRouteDistanceKm >= 10 ? 0 : 1)) : null}
             nextStopEta={nextStopLiveEtaMinutes}
             restaurantCount={filteredRestaurants.length}
             onExit={handleExitDriving}
@@ -1391,7 +1396,7 @@ export default function DrivingMode() {
                         </div>
                         <div className="text-[11px] font-medium text-gray-500 dark:text-neutral-400">
                           {nextStop
-                            ? `is ${Number.isFinite(nextStopLiveDistanceKm) ? nextStopLiveDistanceKm.toFixed(nextStopLiveDistanceKm >= 10 ? 0 : 1) : nextStop?.distanceKm ?? "-"} km from current location`
+                            ? `is ${Number.isFinite(nextStopRouteDistanceKm) ? nextStopRouteDistanceKm.toFixed(nextStopRouteDistanceKm >= 10 ? 0 : 1) : "NA"} km ahead on your route`
                             : "No nearby restaurant on this route"}
                         </div>
                       </div>

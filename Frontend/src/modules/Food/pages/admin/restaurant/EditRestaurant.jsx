@@ -122,7 +122,9 @@ const normalizeDetailsFormFromRestaurant = (restaurant) => {
     restaurantType:
       rawRestaurantType === "normal"
         ? "normal"
-        : (rawRestaurantType === "highway" || hasHighwaySignals ? "highway" : "normal"),
+        : rawRestaurantType === "highway"
+          ? "highway"
+          : (hasHighwaySignals ? "highway" : "normal"),
     pureVegRestaurant:
       typeof restaurant?.pureVegRestaurant === "boolean"
         ? restaurant.pureVegRestaurant
@@ -707,6 +709,39 @@ export default function EditRestaurant() {
     return z?.name || z?.zoneName || ""
   }, [locationForm.zoneId, zones])
 
+  const buildLocationPayload = useCallback(() => {
+    const latitude = Number(locationForm.latitude)
+    const longitude = Number(locationForm.longitude)
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !locationForm.formattedAddress) {
+      return null
+    }
+
+    return {
+      zoneId: locationForm.zoneId,
+      restaurantType: detailsForm.restaurantType === "normal" ? "normal" : "highway",
+      isHighwayRestaurant: detailsForm.restaurantType !== "normal",
+      latitude,
+      longitude,
+      coordinates: [longitude, latitude],
+      formattedAddress: locationForm.formattedAddress || "",
+      address: locationForm.formattedAddress || "",
+      addressLine1: locationForm.addressLine1 || locationForm.formattedAddress || "",
+      addressLine2: locationForm.addressLine2 || "",
+      area: locationForm.area || "",
+      city: locationForm.city || "",
+      state: locationForm.state || "",
+      landmark: locationForm.landmark || "",
+      pincode: locationForm.pincode || "",
+      zipCode: locationForm.pincode || "",
+      postalCode: locationForm.pincode || "",
+      roadName: locationForm.roadName || "",
+      placeId: locationForm.placeId || "",
+      highwayRef: detailsForm.restaurantType !== "normal" ? (locationForm.highwayRef || "") : "",
+      highwayName: detailsForm.restaurantType !== "normal" ? (highwayInfo.highwayName || "") : "",
+    }
+  }, [detailsForm.restaurantType, highwayInfo.highwayName, locationForm])
+
   const handleSaveDetails = async () => {
     if (!restaurantId) return
     try {
@@ -738,10 +773,20 @@ export default function EditRestaurant() {
         facilities: detailsForm.facilities,
       }
 
-      const res = await adminAPI.updateRestaurant(restaurantId, payload)
-      const updated = res?.data?.data?.restaurant || res?.data?.data || null
+      const detailsRes = await adminAPI.updateRestaurant(restaurantId, payload)
+      let updated = detailsRes?.data?.data?.restaurant || detailsRes?.data?.data || null
+
+      const locationPayload = buildLocationPayload()
+      if (locationPayload) {
+        const locationRes = await adminAPI.updateRestaurantLocation(restaurantId, locationPayload)
+        const locationUpdated = locationRes?.data?.data?.restaurant || null
+        if (locationUpdated) {
+          updated = locationUpdated
+        }
+      }
+
       if (updated) {
-        setRestaurant((prev) => ({ ...(prev || {}), ...updated }))
+        setRestaurant(updated)
       }
       alert("Restaurant details updated successfully")
     } catch (e) {
@@ -753,44 +798,18 @@ export default function EditRestaurant() {
 
   const handleSaveLocation = async () => {
     if (!restaurantId) return
-
-    const latitude = Number(locationForm.latitude)
-    const longitude = Number(locationForm.longitude)
-
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !locationForm.formattedAddress) {
+    const payload = buildLocationPayload()
+    if (!payload) {
       alert("Please select a location from dropdown")
       return
     }
 
     try {
       setSavingLocation(true)
-      const payload = {
-        zoneId: locationForm.zoneId,
-        isHighwayRestaurant: detailsForm.restaurantType !== "normal",
-        latitude,
-        longitude,
-        coordinates: [longitude, latitude],
-        formattedAddress: locationForm.formattedAddress || "",
-        address: locationForm.formattedAddress || "",
-        addressLine1: locationForm.addressLine1 || locationForm.formattedAddress || "",
-        addressLine2: locationForm.addressLine2 || "",
-        area: locationForm.area || "",
-        city: locationForm.city || "",
-        state: locationForm.state || "",
-        landmark: locationForm.landmark || "",
-        pincode: locationForm.pincode || "",
-        zipCode: locationForm.pincode || "",
-        postalCode: locationForm.pincode || "",
-        roadName: locationForm.roadName || "",
-        placeId: locationForm.placeId || "",
-        highwayRef: detailsForm.restaurantType !== "normal" ? (locationForm.highwayRef || "") : "",
-        highwayName: detailsForm.restaurantType !== "normal" ? (highwayInfo.highwayName || "") : "",
-      }
-
       const res = await adminAPI.updateRestaurantLocation(restaurantId, payload)
       const updatedRestaurant = res?.data?.data?.restaurant || null
       if (updatedRestaurant) {
-        setRestaurant((prev) => ({ ...(prev || {}), ...updatedRestaurant }))
+        setRestaurant(updatedRestaurant)
       }
       alert("Restaurant location updated successfully")
     } catch (e) {

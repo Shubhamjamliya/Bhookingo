@@ -114,7 +114,7 @@ async function countRestaurantsAlongRoute(decodedCoordinates, corridorRadiusKm) 
     const candidates = await FoodRestaurant.find({
         status: 'approved',
         isAcceptingOrders: true,
-        isHighwayRestaurant: true,
+        restaurantType: 'highway',
         'location.latitude': { $gte: bounds.minLat - paddingDeg, $lte: bounds.maxLat + paddingDeg },
         'location.longitude': { $gte: bounds.minLng - paddingDeg, $lte: bounds.maxLng + paddingDeg }
     })

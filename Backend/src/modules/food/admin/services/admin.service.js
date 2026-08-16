@@ -2410,6 +2410,26 @@ export async function updateRestaurantById(id, body = {}) {
     }
     if (body.offer !== undefined) doc.offer = toStr(body.offer);
 
+    if (body.restaurantType !== undefined || body.isHighwayRestaurant !== undefined) {
+        const normalizedRestaurantType = String(
+            body.restaurantType !== undefined
+                ? body.restaurantType
+                : (parseBooleanLike(body.isHighwayRestaurant, 'isHighwayRestaurant') ? 'highway' : 'normal')
+        ).trim().toLowerCase();
+
+        if (normalizedRestaurantType !== 'highway' && normalizedRestaurantType !== 'normal') {
+            throw new ValidationError('restaurantType must be either "highway" or "normal"');
+        }
+
+        doc.restaurantType = normalizedRestaurantType;
+        if (normalizedRestaurantType === 'normal') {
+            doc.highwayRef = null;
+            doc.highwayName = null;
+        }
+        doc.set('isHighwayRestaurant', undefined, { strict: false });
+        doc.highwayId = undefined;
+    }
+
     if (body.facilities !== undefined) {
         let parsedFacilities = body.facilities;
         if (typeof parsedFacilities === 'string') {
@@ -2534,9 +2554,14 @@ export async function updateRestaurantLocation(id, body = {}) {
     const placeId = toStr(source.placeId || source.place_id);
     const highwayRef = toStr(body.highwayRef || source.highwayRef);
     const highwayName = toStr(body.highwayName || source.highwayName);
-    const isHighwayRestaurant = body.isHighwayRestaurant === undefined
-        ? doc.isHighwayRestaurant === true
-        : parseBooleanLike(body.isHighwayRestaurant, 'isHighwayRestaurant');
+    const normalizedRestaurantType = String(
+        body.restaurantType !== undefined
+            ? body.restaurantType
+            : (body.isHighwayRestaurant !== undefined
+                ? (parseBooleanLike(body.isHighwayRestaurant, 'isHighwayRestaurant') ? 'highway' : 'normal')
+                : (doc.restaurantType || 'normal'))
+    ).trim().toLowerCase();
+    const isHighwayRestaurant = normalizedRestaurantType !== 'normal';
 
     if (!doc.location || typeof doc.location !== 'object') {
         doc.location = { type: 'Point' };
@@ -2568,9 +2593,8 @@ export async function updateRestaurantLocation(id, body = {}) {
     doc.landmark = undefined;
     doc.highwayRef = isHighwayRestaurant ? (highwayRef || null) : null;
     doc.highwayName = isHighwayRestaurant ? (highwayName || doc.highwayName || null) : null;
-    doc.isHighwayRestaurant = isHighwayRestaurant;
     doc.restaurantType = isHighwayRestaurant ? 'highway' : 'normal';
-
+    doc.set('isHighwayRestaurant', undefined, { strict: false });
     doc.highwayId = undefined;
 
     await doc.save();
@@ -3301,9 +3325,14 @@ export async function createRestaurantByAdmin(body) {
     const latitude = toFiniteNumber(loc.latitude ?? latFromCoordinates);
     const longitude = toFiniteNumber(loc.longitude ?? lngFromCoordinates);
 
-    const wantsHighwayRestaurant = body.isHighwayRestaurant === undefined
-        ? true
-        : parseBooleanLike(body.isHighwayRestaurant, 'isHighwayRestaurant');
+    const normalizedRestaurantType = String(
+        body.restaurantType !== undefined
+            ? body.restaurantType
+            : (body.isHighwayRestaurant !== undefined
+                ? (parseBooleanLike(body.isHighwayRestaurant, 'isHighwayRestaurant') ? 'highway' : 'normal')
+                : 'highway')
+    ).trim().toLowerCase();
+    const wantsHighwayRestaurant = normalizedRestaurantType !== 'normal';
 
     if (wantsHighwayRestaurant && (latitude === null || longitude === null)) {
         throw new ValidationError('Latitude and longitude coordinates are required for highway proximity validation.');
@@ -3383,7 +3412,6 @@ export async function createRestaurantByAdmin(body) {
         restaurantType: wantsHighwayRestaurant ? 'highway' : 'normal',
         highwayName: wantsHighwayRestaurant ? proximity.highwayName : null,
         highwayRef: wantsHighwayRestaurant ? proximity.highwayRef : null,
-        isHighwayRestaurant: wantsHighwayRestaurant,
         locationSource: locationSource
     };
 

@@ -130,7 +130,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, speed,
         const candidateFilter = {
             status: 'approved',
             isAcceptingOrders: true,
-            isHighwayRestaurant: true,
+            restaurantType: 'highway',
             'location.latitude': { $gte: minLat - paddingDeg, $lte: maxLat + paddingDeg },
             'location.longitude': { $gte: minLng - paddingDeg, $lte: maxLng + paddingDeg }
         };
@@ -154,7 +154,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, speed,
                 rating: 1,
                 status: 1,
                 isAcceptingOrders: 1,
-                isHighwayRestaurant: 1,
+                restaurantType: 1,
                 highwayName: 1,
                 highwayRef: 1,
                 roadName: 1,
@@ -177,7 +177,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, speed,
                 : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : null);
 
             if (!Number.isFinite(rlat) || !Number.isFinite(rlng)) continue;
-            if (restaurant.isHighwayRestaurant !== true) continue;
+            if (restaurant.restaurantType !== 'highway') continue;
 
             const rPoint = turf.point([rlng, rlat]);
             const R_proj = turf.nearestPointOnLine(line, rPoint, { units: 'kilometers' });

@@ -28,6 +28,7 @@ export default function DrivingModeSettings() {
 
   const [enabled, setEnabled] = useState(true);
   const [enableLiveSimulation, setEnableLiveSimulation] = useState(false);
+  const [normalModeDiscoveryRadiusKm, setNormalModeDiscoveryRadiusKm] = useState(100);
   const [googleRouteSearchRadiusKm, setGoogleRouteSearchRadiusKm] = useState(15);
   const [googleRouteForwardRangeKm, setGoogleRouteForwardRangeKm] = useState(100);
   const [googleRouteBackwardBufferKm, setGoogleRouteBackwardBufferKm] = useState(0.5);
@@ -45,6 +46,7 @@ export default function DrivingModeSettings() {
           const data = res?.data?.data || {};
           setEnabled(data.enabled !== false);
           setEnableLiveSimulation(data.enableLiveSimulation === true);
+          setNormalModeDiscoveryRadiusKm(Number(data.normalModeDiscoveryRadiusKm) || 100);
           setOnboardingRoadRangeKm((Number(data.highwayEntryRadiusMeters) || 2000) / 1000);
           setGoogleRouteSearchRadiusKm(Number(data.googleRouteSearchRadiusKm) || 15);
           setGoogleRouteForwardRangeKm(Number(data.googleRouteForwardRangeKm) || 100);
@@ -82,6 +84,7 @@ export default function DrivingModeSettings() {
       const payload = {
         enabled,
         enableLiveSimulation,
+        normalModeDiscoveryRadiusKm,
         highwayEntryRadiusMeters: Math.round(Number(onboardingRoadRangeKm || 0) * 1000),
         googleRouteSearchRadiusKm,
         googleRouteForwardRangeKm,
@@ -171,6 +174,25 @@ export default function DrivingModeSettings() {
                 onCheckedChange={setEnableLiveSimulation}
                 className="scale-95 data-[state=checked]:bg-[#16a34a] data-[state=unchecked]:bg-zinc-400 shadow-sm"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <Navigation className="w-4 h-4 text-gray-500" />
+                Radius To Show Rest In User App In Normal Mode (KM)
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                max={500}
+                required
+                value={normalModeDiscoveryRadiusKm}
+                onChange={(e) => setNormalModeDiscoveryRadiusKm(Number(e.target.value))}
+                className="max-w-md bg-white border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 h-10 transition-all"
+              />
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Approved restaurants within this radius from the user location are shown on the normal user restaurants page.
+              </p>
             </div>
 
             <div className="space-y-2">

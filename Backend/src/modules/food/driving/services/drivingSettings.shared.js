@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { FoodSystemConfig } from '../../admin/models/systemConfig.model.js';
+import { FoodDrivingModeSettings } from '../models/drivingModeSettings.model.js';
 import { ValidationError } from '../../../../core/auth/errors.js';
 
 export const DRIVING_SETTINGS_KEY = 'driving_mode_settings';
@@ -7,6 +7,7 @@ export const DRIVING_SETTINGS_KEY = 'driving_mode_settings';
 export const DEFAULT_DRIVING_SETTINGS = {
     enabled: true,
     enableLiveSimulation: false,
+    normalModeDiscoveryRadiusKm: 100,
     highwayEntryRadiusMeters: 2000,
     googleRouteSearchRadiusKm: 1,
     googleRouteForwardRangeKm: 100,
@@ -33,6 +34,10 @@ export function normalizeDrivingSettings(rawSettings = {}) {
     return {
         enabled: rawSettings.enabled !== false,
         enableLiveSimulation: rawSettings.enableLiveSimulation === true,
+        normalModeDiscoveryRadiusKm: normalizePositiveNumber(
+            rawSettings.normalModeDiscoveryRadiusKm,
+            DEFAULT_DRIVING_SETTINGS.normalModeDiscoveryRadiusKm
+        ),
         highwayEntryRadiusMeters: normalizePositiveNumber(
             rawSettings.highwayEntryRadiusMeters,
             DEFAULT_DRIVING_SETTINGS.highwayEntryRadiusMeters
@@ -55,8 +60,8 @@ export function normalizeDrivingSettings(rawSettings = {}) {
 
 export async function getStoredDrivingSettingsConfig() {
     try {
-        const config = await FoodSystemConfig.findOne({ key: DRIVING_SETTINGS_KEY }).lean();
-        return normalizeDrivingSettings(config?.value || {});
+        const dedicatedConfig = await FoodDrivingModeSettings.findOne({ key: DRIVING_SETTINGS_KEY }).lean();
+        return normalizeDrivingSettings(dedicatedConfig || {});
     } catch {
         return { ...DEFAULT_DRIVING_SETTINGS };
     }
@@ -73,6 +78,7 @@ export async function saveDrivingSettingsConfig(settings, adminId = null, option
     const payload = {
         enabled: mergedSettings.enabled !== false,
         enableLiveSimulation: settings.enableLiveSimulation ?? mergedSettings.enableLiveSimulation,
+        normalModeDiscoveryRadiusKm: Number(settings.normalModeDiscoveryRadiusKm ?? mergedSettings.normalModeDiscoveryRadiusKm),
         highwayEntryRadiusMeters: Number(settings.highwayEntryRadiusMeters ?? mergedSettings.highwayEntryRadiusMeters),
         googleRouteSearchRadiusKm: Number(settings.googleRouteSearchRadiusKm ?? mergedSettings.googleRouteSearchRadiusKm),
         googleRouteForwardRangeKm: Number(settings.googleRouteForwardRangeKm ?? mergedSettings.googleRouteForwardRangeKm),
@@ -80,6 +86,9 @@ export async function saveDrivingSettingsConfig(settings, adminId = null, option
         showAllRouteRestaurants: settings.showAllRouteRestaurants ?? mergedSettings.showAllRouteRestaurants
     };
 
+    if (!Number.isFinite(payload.normalModeDiscoveryRadiusKm) || payload.normalModeDiscoveryRadiusKm <= 0) {
+        throw new ValidationError('Normal mode user app restaurant radius must be a positive number in KM');
+    }
     if (!Number.isFinite(payload.highwayEntryRadiusMeters) || payload.highwayEntryRadiusMeters <= 0) {
         throw new ValidationError('Highway entry radius must be a positive number in meters');
     }
@@ -93,13 +102,12 @@ export async function saveDrivingSettingsConfig(settings, adminId = null, option
         throw new ValidationError('Google route backward tolerance must be zero or a positive number in KM');
     }
 
-    await FoodSystemConfig.findOneAndUpdate(
+    await FoodDrivingModeSettings.findOneAndUpdate(
         { key: DRIVING_SETTINGS_KEY },
         {
             $set: {
                 key: DRIVING_SETTINGS_KEY,
-                value: payload,
-                description: 'Driving mode validation, route corridor and map refresh configuration',
+                ...payload,
                 updatedBy: adminId
                     ? { role: 'ADMIN', adminId: new mongoose.Types.ObjectId(adminId), at: new Date() }
                     : undefined

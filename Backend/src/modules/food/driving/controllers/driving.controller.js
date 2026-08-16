@@ -17,6 +17,7 @@ export const getPublicDrivingModeSettingsController = async (req, res, next) => 
             data: {
                 enabled: settings.enabled,
                 enableLiveSimulation: settings.enableLiveSimulation === true,
+                normalModeDiscoveryRadiusKm: settings.normalModeDiscoveryRadiusKm,
                 highwayEntryRadiusMeters: settings.highwayEntryRadiusMeters,
                 googleRouteSearchRadiusKm: settings.googleRouteSearchRadiusKm,
                 googleRouteForwardRangeKm: settings.googleRouteForwardRangeKm,

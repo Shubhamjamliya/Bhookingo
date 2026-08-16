@@ -10,8 +10,9 @@ import { getFoodDisplayPrice } from '../../admin/services/foodVariant.service.js
 import { FoodOrder } from '../../orders/models/order.model.js';
 import { assignHighwayToRestaurant } from '../../admin/services/highway.service.js';
 import { FoodRestaurantOutletTimings } from '../models/outletTimings.model.js';
-import { DISCOVERY_RADIUS_KM, UNDER250_RADIUS_KM } from '../../orders/services/order.helpers.js';
+import { UNDER250_RADIUS_KM } from '../../orders/services/order.helpers.js';
 import { detectHighwayUsingGoogleMaps } from '../../location/services/location.service.js';
+import { getStoredDrivingSettingsConfig } from '../../driving/services/drivingSettings.shared.js';
 
 const normalizeName = (value) =>
     String(value || '')
@@ -1586,10 +1587,11 @@ export const listApprovedRestaurants = async (query = {}) => {
 
 
     const sortBy = parseSortBy(query.sortBy);
+    const drivingSettings = await getStoredDrivingSettingsConfig();
 
     // Call the shared helper function
     const { pipeline } = await getNearbyRestaurantsPipeline(lat, lng, filter, {
-        radiusKm: DISCOVERY_RADIUS_KM
+        radiusKm: drivingSettings.normalModeDiscoveryRadiusKm
     });
 
     const projection = {

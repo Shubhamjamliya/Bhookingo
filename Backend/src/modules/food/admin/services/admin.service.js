@@ -145,9 +145,20 @@ const serializeRestaurantDocumentsForResponse = (restaurant) => {
     const pan = documents.pan && typeof documents.pan === 'object' ? documents.pan : {};
     const gst = documents.gst && typeof documents.gst === 'object' ? documents.gst : {};
     const fssai = documents.fssai && typeof documents.fssai === 'object' ? documents.fssai : {};
+    const location = restaurant.location && typeof restaurant.location === 'object' ? restaurant.location : {};
+    const flatAddress = {
+        addressLine1: location.addressLine1 || restaurant.addressLine1 || '',
+        addressLine2: location.addressLine2 || restaurant.addressLine2 || '',
+        area: location.area || restaurant.area || '',
+        city: location.city || restaurant.city || '',
+        state: location.state || restaurant.state || '',
+        pincode: location.pincode || restaurant.pincode || '',
+        landmark: location.landmark || restaurant.landmark || ''
+    };
 
     return {
         ...restaurant,
+        ...flatAddress,
         documents,
         panNumber: pan.number || '',
         nameOnPan: pan.name || '',
@@ -2548,29 +2559,19 @@ export async function updateRestaurantLocation(id, body = {}) {
     doc.location.roadName = roadName;
     doc.location.placeId = placeId;
 
-    // Keep flat fields in sync for legacy readers.
-    doc.addressLine1 = addressLine1;
-    doc.addressLine2 = addressLine2;
-    doc.area = area;
-    doc.city = city;
-    doc.state = state;
-    doc.pincode = pincode;
-    doc.landmark = landmark;
+    doc.addressLine1 = undefined;
+    doc.addressLine2 = undefined;
+    doc.area = undefined;
+    doc.city = undefined;
+    doc.state = undefined;
+    doc.pincode = undefined;
+    doc.landmark = undefined;
     doc.highwayRef = isHighwayRestaurant ? (highwayRef || null) : null;
     doc.highwayName = isHighwayRestaurant ? (highwayName || doc.highwayName || null) : null;
     doc.isHighwayRestaurant = isHighwayRestaurant;
     doc.restaurantType = isHighwayRestaurant ? 'highway' : 'normal';
 
-    if (body.highwayId !== undefined) {
-        const highwayId = String(body.highwayId || '').trim();
-        if (!highwayId) {
-            doc.highwayId = undefined;
-        } else if (!mongoose.Types.ObjectId.isValid(highwayId)) {
-            throw new ValidationError('Invalid highwayId');
-        } else {
-            doc.highwayId = new mongoose.Types.ObjectId(highwayId);
-        }
-    }
+    doc.highwayId = undefined;
 
     await doc.save();
     const restaurant = await FoodRestaurant.findById(id).select('-__v').lean();
@@ -3356,13 +3357,6 @@ export async function createRestaurantByAdmin(body) {
         pureVegRestaurant: body.pureVegRestaurant !== undefined
             ? parseBooleanLike(body.pureVegRestaurant, 'pureVegRestaurant')
             : false,
-        addressLine1: toStr(loc.addressLine1),
-        addressLine2: toStr(loc.addressLine2),
-        area: toStr(loc.area),
-        city: toStr(loc.city),
-        state: toStr(loc.state),
-        pincode: toStr(loc.pincode),
-        landmark: toStr(loc.landmark),
         cuisines: Array.isArray(body.cuisines) ? body.cuisines : [],
         openingTime: normalizedOpeningTime,
         closingTime: normalizedClosingTime,
@@ -3387,7 +3381,6 @@ export async function createRestaurantByAdmin(body) {
         status: 'approved',
         approvedAt: new Date(),
         restaurantType: wantsHighwayRestaurant ? 'highway' : 'normal',
-        highwayId: null,
         highwayName: wantsHighwayRestaurant ? proximity.highwayName : null,
         highwayRef: wantsHighwayRestaurant ? proximity.highwayRef : null,
         isHighwayRestaurant: wantsHighwayRestaurant,

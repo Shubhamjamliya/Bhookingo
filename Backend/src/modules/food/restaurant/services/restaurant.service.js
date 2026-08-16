@@ -149,12 +149,24 @@ const timeToMinutes = (value) => {
     return h * 60 + m;
 };
 
-
+const deriveFlatAddressFields = (doc) => {
+    const loc = doc?.location && typeof doc.location === 'object' ? doc.location : {};
+    return {
+        addressLine1: loc.addressLine1 || doc?.addressLine1 || '',
+        addressLine2: loc.addressLine2 || doc?.addressLine2 || '',
+        area: loc.area || doc?.area || '',
+        city: loc.city || doc?.city || '',
+        state: loc.state || doc?.state || '',
+        pincode: loc.pincode || doc?.pincode || '',
+        landmark: loc.landmark || doc?.landmark || ''
+    };
+};
 
 const toRestaurantProfile = (doc) => {
     if (!doc) return null;
     const documents = getRestaurantDocuments(doc);
     const loc = doc.location && typeof doc.location === 'object' ? doc.location : null;
+    const flatAddress = deriveFlatAddressFields(doc);
     const location =
         (loc?.formattedAddress ||
             loc?.address ||
@@ -165,13 +177,13 @@ const toRestaurantProfile = (doc) => {
             loc?.state ||
             loc?.pincode ||
             loc?.landmark ||
-            doc.addressLine1 ||
-            doc.addressLine2 ||
-            doc.area ||
-            doc.city ||
-            doc.state ||
-            doc.pincode ||
-            doc.landmark)
+            flatAddress.addressLine1 ||
+            flatAddress.addressLine2 ||
+            flatAddress.area ||
+            flatAddress.city ||
+            flatAddress.state ||
+            flatAddress.pincode ||
+            flatAddress.landmark)
             ? {
                 type: loc?.type || 'Point',
                 coordinates: Array.isArray(loc?.coordinates) ? loc.coordinates : undefined,
@@ -179,13 +191,13 @@ const toRestaurantProfile = (doc) => {
                 longitude: typeof loc?.longitude === 'number' ? loc.longitude : (Array.isArray(loc?.coordinates) ? loc.coordinates[0] : undefined),
                 formattedAddress: loc?.formattedAddress || loc?.address || '',
                 address: loc?.address || loc?.formattedAddress || '',
-                addressLine1: loc?.addressLine1 || doc.addressLine1 || '',
-                addressLine2: loc?.addressLine2 || doc.addressLine2 || '',
-                area: loc?.area || doc.area || '',
-                city: loc?.city || doc.city || '',
-                state: loc?.state || doc.state || '',
-                pincode: loc?.pincode || doc.pincode || '',
-                landmark: loc?.landmark || doc.landmark || '',
+                addressLine1: flatAddress.addressLine1,
+                addressLine2: flatAddress.addressLine2,
+                area: flatAddress.area,
+                city: flatAddress.city,
+                state: flatAddress.state,
+                pincode: flatAddress.pincode,
+                landmark: flatAddress.landmark,
                 roadName: loc?.roadName || '',
                 placeId: loc?.placeId || ''
             }
@@ -204,6 +216,7 @@ const toRestaurantProfile = (doc) => {
         restaurantId: doc.restaurantId || undefined,
         name: doc.restaurantName || '',
         restaurantName: doc.restaurantName || '',
+        ...flatAddress,
         restaurantType: doc.restaurantType || 'normal',
         highwayName: doc.highwayName || '',
         highwayRef: doc.highwayRef || '',
@@ -990,14 +1003,6 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
         }
         const toStr = (v) => (v != null ? String(v).trim() : '');
         const formattedAddress = toStr(loc.formattedAddress || loc.address);
-        update.addressLine1 = toStr(loc.addressLine1);
-        update.addressLine2 = toStr(loc.addressLine2);
-        update.area = toStr(loc.area);
-        update.city = toStr(loc.city);
-        update.state = toStr(loc.state);
-        update.pincode = toStr(loc.pincode);
-        update.landmark = toStr(loc.landmark);
-
         // Optional geo coords for server-side distance filtering.
         const lat = toFiniteNumber(loc.latitude);
         const lng = toFiniteNumber(loc.longitude);
@@ -1165,7 +1170,14 @@ export const updateRestaurantProfile = async (restaurantId, body = {}) => {
                 $unset: {
                     approvedAt: 1,
                     rejectedAt: 1,
-                    rejectionReason: 1
+                    rejectionReason: 1,
+                    addressLine1: 1,
+                    addressLine2: 1,
+                    area: 1,
+                    city: 1,
+                    state: 1,
+                    pincode: 1,
+                    landmark: 1
                 }
             },
             {

@@ -36,6 +36,24 @@ function resolveFacilityRating(restaurant, key) {
   return avg !== null && avg > 0 ? avg : null;
 }
 
+function hasDrivingFacility(facilities, key) {
+  if (!facilities || typeof facilities !== "object") return false;
+  if (getFacilityAvailability(facilities, key)) return true;
+
+  if (key === "parking") return facilities.carparking === true || facilities.carparking === "true";
+  if (key === "familyFriendly") {
+    return (
+      facilities.family_friendly === true ||
+      facilities.family_friendly === "true" ||
+      facilities.family === true ||
+      facilities.family === "true"
+    );
+  }
+  if (key === "evCharging") return facilities.ev_charging === true || facilities.ev_charging === "true";
+
+  return false;
+}
+
 /* ── tiny inline SVGs (zero icon libs) ───────────────────────────── */
 const StarSVG = () => (
   <svg width={11} height={11} viewBox="0 0 24 24" className="fill-amber-400 shrink-0">
@@ -137,11 +155,11 @@ export default function DrivingRestaurantCard({ restaurant, onClick }) {
 
   /* amenity definitions */
   const AMENITY_DEFS = [
-    { key: "parking", name: "Parking", icon: "/icons/carparking.png", enabled: getFacilityAvailability(facilities, "parking") },
-    { key: "wifi", name: "WiFi", icon: "/icons/wifi.png", enabled: getFacilityAvailability(facilities, "wifi") },
-    { key: "familyFriendly", name: "Family Friendly", icon: "/icons/familyfriendly.png", enabled: getFacilityAvailability(facilities, "familyFriendly") },
-    { key: "evCharging", name: "EV Charging", icon: "/icons/evcharging.png", enabled: getFacilityAvailability(facilities, "evCharging") },
-    { key: "washroom", name: "Washroom", icon: "/icons/washroom.png", enabled: getFacilityAvailability(facilities, "washroom") },
+    { key: "parking", name: "Parking", icon: "/icons/carparking.png", enabled: hasDrivingFacility(facilities, "parking") },
+    { key: "wifi", name: "WiFi", icon: "/icons/wifi.png", enabled: hasDrivingFacility(facilities, "wifi") },
+    { key: "familyFriendly", name: "Family Friendly", icon: "/icons/familyfriendly.png", enabled: hasDrivingFacility(facilities, "familyFriendly") },
+    { key: "evCharging", name: "EV Charging", icon: "/icons/evcharging.png", enabled: hasDrivingFacility(facilities, "evCharging") },
+    { key: "washroom", name: "Washroom", icon: "/icons/washroom.png", enabled: hasDrivingFacility(facilities, "washroom") },
   ];
 
   /* resolve avg + count for each amenity */

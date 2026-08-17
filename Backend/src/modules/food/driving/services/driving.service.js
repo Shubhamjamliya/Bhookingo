@@ -10,6 +10,48 @@ const DEBUG_ROUTE_RESTAURANT_IDS = new Set([
     '6a7ec6864ff406632d2b9f3d'
 ]);
 
+const isTruthyValue = (value) =>
+    value === true || value === 'true' || value === 1 || value === '1';
+
+const normalizeFacilityEntry = (entry, fallback = false) => {
+    if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        const rating = entry.rating && typeof entry.rating === 'object' ? entry.rating : {};
+        return {
+            available: entry.available === true,
+            rating: {
+                average: Number(rating.average || 0) || 0,
+                count: Number(rating.count || 0) || 0
+            }
+        };
+    }
+
+    return {
+        available: isTruthyValue(entry) || fallback === true,
+        rating: { average: 0, count: 0 }
+    };
+};
+
+const normalizeRestaurantFacilities = (facilities) => {
+    const source = facilities && typeof facilities === 'object' ? facilities : {};
+
+    return {
+        parking: normalizeFacilityEntry(source.parking, isTruthyValue(source.carparking)),
+        wifi: normalizeFacilityEntry(source.wifi),
+        familyFriendly: normalizeFacilityEntry(
+            source.familyFriendly,
+            isTruthyValue(source.family_friendly) || isTruthyValue(source.family)
+        ),
+        evCharging: normalizeFacilityEntry(source.evCharging, isTruthyValue(source.ev_charging)),
+        washroom: normalizeFacilityEntry(source.washroom),
+        overall: {
+            rating: {
+                average: Number(source?.overall?.rating?.average || 0) || 0,
+                count: Number(source?.overall?.rating?.count || 0) || 0
+            }
+        }
+    };
+};
+
 /**
  * Retrieve Driving Mode settings.
  * Returns settings stored in FoodSystemConfig or default settings.
@@ -249,6 +291,7 @@ export async function getRestaurantsAhead({ lat, lng, heading, highwayId, speed,
 
             aheadRestaurants.push({
                 ...restaurant,
+                facilities: normalizeRestaurantFacilities(restaurant.facilities),
                 roadName: loc?.roadName || restaurant.roadName || '',
                 distanceKm: Number(Math.max(0, distanceAheadKm).toFixed(1)),
                 etaMinutes,

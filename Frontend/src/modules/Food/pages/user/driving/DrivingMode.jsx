@@ -122,6 +122,24 @@ const getJourneyActivePath = (journeyLike) => {
   return [];
 };
 
+const hasDrivingFacility = (facilities, key) => {
+  if (!facilities || typeof facilities !== "object") return false;
+  if (getFacilityAvailability(facilities, key)) return true;
+
+  if (key === "parking") return facilities.carparking === true || facilities.carparking === "true";
+  if (key === "familyFriendly") {
+    return (
+      facilities.family_friendly === true ||
+      facilities.family_friendly === "true" ||
+      facilities.family === true ||
+      facilities.family === "true"
+    );
+  }
+  if (key === "evCharging") return facilities.ev_charging === true || facilities.ev_charging === "true";
+
+  return false;
+};
+
 const buildRoutePathMetrics = (path = []) => {
   if (!Array.isArray(path) || path.length < 2) return null;
 
@@ -666,7 +684,7 @@ export default function DrivingMode() {
 
   // React-side Safety Timeout for Location Acquisition
   useEffect(() => {
-    if (status !== "CHECKING_LOCATION" || journey?.origin) {
+    if (status !== "CHECKING_LOCATION") {
       return;
     }
 
@@ -679,7 +697,7 @@ export default function DrivingMode() {
     }, GEOLOCATION_TIMEOUT_MS);
 
     return () => clearTimeout(timer);
-  }, [journey?.origin, status]);
+  }, [status]);
 
   // Fetch settings from API
   const fetchSettings = async (isRetry = false) => {
@@ -717,7 +735,7 @@ export default function DrivingMode() {
 
   // Watch GPS Location
   useEffect(() => {
-    if (settingsError || loadingSettings || settings?.enabled === false || journey?.origin) return;
+    if (settingsError || loadingSettings || settings?.enabled === false) return;
 
     if (!navigator.geolocation) {
       setLocationError("location_denied");
@@ -779,7 +797,7 @@ export default function DrivingMode() {
         geoWatchIdRef.current = null;
       }
     };
-  }, [settingsError, loadingSettings, settings, journey?.origin]);
+  }, [settingsError, loadingSettings, settings]);
 
   // Restaurants Query Logic with AbortController and 20s loading timeout
   const fetchRestaurantsAhead = useCallback(async (isInitial = false, activeJourney = null) => {
@@ -1098,7 +1116,7 @@ export default function DrivingMode() {
       if (activeFacilityFilter === "veg") {
         list = list.filter((r) => r.pureVegRestaurant === true);
       } else {
-        list = list.filter((r) => r.facilities?.[activeFacilityFilter] === true);
+        list = list.filter((r) => hasDrivingFacility(r.facilities, activeFacilityFilter));
       }
     }
 
@@ -1746,7 +1764,7 @@ export default function DrivingMode() {
                   <span className="truncate max-w-[120px]">{displayRestaurant.cuisines?.length ? displayRestaurant.cuisines.join(", ") : "North Indian, Punjabi"}</span>
                   <span className="text-gray-300 dark:text-neutral-800">•</span>
                   <span>₹₹</span>
-                  {getFacilityAvailability(displayRestaurant.facilities, "familyFriendly") && (
+                  {hasDrivingFacility(displayRestaurant.facilities, "familyFriendly") && (
                     <>
                       <span className="text-gray-300 dark:text-neutral-800">•</span>
                       <span className="text-orange-600 dark:text-orange-400 font-extrabold flex items-center gap-1">
@@ -1758,13 +1776,13 @@ export default function DrivingMode() {
                 </div>
 
                 {/* Facilities Grid (Render only active dynamic cards) */}
-                {(getFacilityAvailability(displayRestaurant.facilities, "parking") ||
-                  getFacilityAvailability(displayRestaurant.facilities, "washroom") ||
-                  getFacilityAvailability(displayRestaurant.facilities, "evCharging") ||
-                  getFacilityAvailability(displayRestaurant.facilities, "wifi")) && (
+                {(hasDrivingFacility(displayRestaurant.facilities, "parking") ||
+                  hasDrivingFacility(displayRestaurant.facilities, "washroom") ||
+                  hasDrivingFacility(displayRestaurant.facilities, "evCharging") ||
+                  hasDrivingFacility(displayRestaurant.facilities, "wifi")) && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {/* Parking Card */}
-                      {getFacilityAvailability(displayRestaurant.facilities, "parking") && (
+                      {hasDrivingFacility(displayRestaurant.facilities, "parking") && (
                         <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                           <img src="/icons/carparking.png" alt="Parking" className="w-5 h-5 object-contain rounded-full" />
                           <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Parking</span>
@@ -1772,7 +1790,7 @@ export default function DrivingMode() {
                       )}
 
                       {/* Washroom Card */}
-                      {getFacilityAvailability(displayRestaurant.facilities, "washroom") && (
+                      {hasDrivingFacility(displayRestaurant.facilities, "washroom") && (
                         <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                           <img src="/icons/washroom.png" alt="Washroom" className="w-5 h-5 object-contain rounded-full" />
                           <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Washroom</span>
@@ -1780,7 +1798,7 @@ export default function DrivingMode() {
                       )}
 
                       {/* EV Charging Card */}
-                      {getFacilityAvailability(displayRestaurant.facilities, "evCharging") && (
+                      {hasDrivingFacility(displayRestaurant.facilities, "evCharging") && (
                         <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                           <img src="/icons/evcharging.png" alt="EV Charging" className="w-5 h-5 object-contain rounded-full" />
                           <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">EV Charging</span>
@@ -1788,7 +1806,7 @@ export default function DrivingMode() {
                       )}
 
                       {/* Wi-Fi Card */}
-                      {getFacilityAvailability(displayRestaurant.facilities, "wifi") && (
+                      {hasDrivingFacility(displayRestaurant.facilities, "wifi") && (
                         <div className="flex flex-col items-center justify-between p-2 rounded-xl border border-gray-100 dark:border-neutral-900/60 bg-gray-50/30 dark:bg-[#151515] text-center min-w-[72px] flex-1 min-h-[64px]">
                           <img src="/icons/wifi.png" alt="Wi-Fi" className="w-5 h-5 object-contain rounded-full" />
                           <span className="text-[9px] font-bold text-gray-700 dark:text-neutral-300 mt-1">Wi-Fi</span>
@@ -1821,7 +1839,9 @@ export default function DrivingMode() {
                   const overallFacilityCount = overallFacilityRatingObj.count || 0;
 
                   const restaurantFacilities = displayRestaurant.facilities || {};
-                  const activeFacilities = FACILITIES_CONFIG.filter(f => getFacilityAvailability(restaurantFacilities, f.key));
+                  const activeFacilities = FACILITIES_CONFIG.filter((facility) =>
+                    hasDrivingFacility(restaurantFacilities, facility.key)
+                  );
 
                   if (activeFacilities.length === 0) return null;
 

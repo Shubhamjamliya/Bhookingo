@@ -447,11 +447,13 @@ export default function JourneyPlanner({
   });
 
   const handleContinue = async () => {
-    const originText = String(originInput || "").trim();
     const destinationText = String(destinationInput || "").trim();
+    const gpsLat = Number(currentLocation?.latitude);
+    const gpsLng = Number(currentLocation?.longitude);
+    const hasCurrentGps = Number.isFinite(gpsLat) && Number.isFinite(gpsLng);
 
-    if (!originText) {
-      toast.error("Please enter a valid starting location.");
+    if (!hasCurrentGps) {
+      toast.error("Please allow location access so we can use your current location as the trip start.");
       return;
     }
     if (!destinationText) {
@@ -462,19 +464,11 @@ export default function JourneyPlanner({
     try {
       setLoadingHighways(true);
 
-      let resolvedOrigin = originCoords;
+      const resolvedOrigin = { lat: gpsLat, lng: gpsLng };
       let resolvedDestination = destinationCoords;
 
-      if (!resolvedOrigin) {
-        const originMatch = await resolveLocationInput(originText, originCoords);
-        if (!originMatch?.lat || !originMatch?.lng) {
-          toast.error("Please choose a valid starting location.");
-          return;
-        }
-        resolvedOrigin = { lat: originMatch.lat, lng: originMatch.lng };
-        setOriginCoords(resolvedOrigin);
-        if (originMatch.label) setOriginInput(originMatch.label);
-      }
+      setOriginCoords(resolvedOrigin);
+      setOriginInput("Current Location");
 
       if (!resolvedDestination) {
         const destinationMatch = await resolveLocationInput(destinationText, destinationCoords);
@@ -552,9 +546,18 @@ export default function JourneyPlanner({
   };
 
   const handleStartRoadTrip = () => {
-    if (!originCoords || !destinationCoords || !selectedHighway) return;
+    const gpsLat = Number(currentLocation?.latitude);
+    const gpsLng = Number(currentLocation?.longitude);
+    if (!Number.isFinite(gpsLat) || !Number.isFinite(gpsLng)) {
+      toast.error("Current location is required to start live tracking.");
+      return;
+    }
+    if (!destinationCoords || !selectedHighway) return;
+    const resolvedOrigin = { lat: gpsLat, lng: gpsLng };
+    setOriginCoords(resolvedOrigin);
+    setOriginInput("Current Location");
     onJourneyPlanSelected({
-      origin: originCoords,
+      origin: resolvedOrigin,
       destination: destinationCoords,
       highway: selectedHighway,
       availableRoutes: availableHighways.length ? availableHighways : [selectedHighway]

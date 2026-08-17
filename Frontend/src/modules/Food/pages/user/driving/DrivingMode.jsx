@@ -365,6 +365,7 @@ export default function DrivingMode() {
   const [resultData, setResultData] = useState(() => restoredResultData);
   const [loadingRestaurants, setLoadingRestaurants] = useState(false);
   const hasFetchedInitial = useRef(Boolean(restoredJourney && restoredResultData));
+  const hasSyncedPlannedJourneyToLiveLocationRef = useRef(false);
 
   // Unified State Machine
   // "CHECKING_LOCATION" | "CHECKING_HIGHWAY" | "LOADING_RESTAURANTS" | "AVAILABLE" | "OUTSIDE_HIGHWAY" | "NO_RESTAURANTS" | "AUTH_ERROR" | "ERROR" | "location_denied" | "PERMISSION_REQUIRED" | "disabled"
@@ -986,6 +987,19 @@ export default function DrivingMode() {
       fetchRestaurantsAhead(true, journey);
     }
   }, [currentLocation, settings, fetchRestaurantsAhead, journey]);
+
+  useEffect(() => {
+    hasSyncedPlannedJourneyToLiveLocationRef.current = false;
+  }, [journey?.createdAt, journey?.destination?.lat, journey?.destination?.lng, journey?.selectedRouteId]);
+
+  useEffect(() => {
+    if (!journey || !settings?.enabled) return;
+    if (!Number.isFinite(currentLocation?.latitude) || !Number.isFinite(currentLocation?.longitude)) return;
+    if (hasSyncedPlannedJourneyToLiveLocationRef.current) return;
+
+    hasSyncedPlannedJourneyToLiveLocationRef.current = true;
+    fetchRestaurantsAhead(false, journey);
+  }, [currentLocation?.latitude, currentLocation?.longitude, journey, settings?.enabled, fetchRestaurantsAhead]);
 
   // Periodic polling interval
   useEffect(() => {

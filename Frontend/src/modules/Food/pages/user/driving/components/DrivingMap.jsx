@@ -11,6 +11,8 @@ const DEFAULT_CENTER = { lat: 20.5937, lng: 78.9629 };
 const GOOGLE_MAPS_LIBRARIES = ["geometry", "drawing", "places"];
 const ALT_ROUTE_STROKE = "#9ca3af";
 const NAVIGATION_ZOOM = 11;
+const LIVE_ROUTE_REFRESH_DISTANCE_METERS = 80;
+const MOVEMENT_HEADING_MIN_DISTANCE_METERS = 8;
 const MUTED_MAP_STYLES = [
   {
     featureType: "all",
@@ -132,6 +134,11 @@ function getBearing(from, to) {
   const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLng);
   const bearing = (Math.atan2(y, x) * 180) / Math.PI;
   return (bearing + 360) % 360;
+}
+
+function normalizeHeadingDegrees(value) {
+  const headingValue = Number(value);
+  return Number.isFinite(headingValue) ? (headingValue + 360) % 360 : null;
 }
 
 function offsetLatLng(point, headingDeg = 0, distanceMeters = 0) {
@@ -297,6 +304,7 @@ export default function DrivingMap({
   const arrowMarkerRef = useRef(null);
   const lastStateUpdateRef = useRef(0);
   const lastHeadingUpdateRef = useRef(0);
+  const lastLiveMovementSampleRef = useRef(null);
 
   const [localRoutePath, setLocalRoutePath] = useState([]);
   const [alternateRoutePaths, setAlternateRoutePaths] = useState([]);
@@ -306,6 +314,7 @@ export default function DrivingMap({
   const [isFollowingUser, setIsFollowingUser] = useState(true);
   const [displayedUserPosition, setDisplayedUserPosition] = useState(null);
   const [displayedHeading, setDisplayedHeading] = useState(0);
+  const [derivedHeading, setDerivedHeading] = useState(null);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -335,6 +344,30 @@ export default function DrivingMap({
     }
     return null;
   }, [simulationPosition?.lat, simulationPosition?.lng, hasUserLocation, userLat, userLng]);
+
+  useEffect(() => {
+    if (simulationPosition || !effectiveUserPosition) return;
+
+    const previousSample = lastLiveMovementSampleRef.current;
+    if (previousSample) {
+      const movedDistanceMeters = getApproxDistanceMeters(previousSample, effectiveUserPosition);
+      if (movedDistanceMeters >= MOVEMENT_HEADING_MIN_DISTANCE_METERS) {
+        const nextHeading = getBearing(previousSample, effectiveUserPosition);
+        setDerivedHeading((prev) => {
+          if (!Number.isFinite(prev) || Math.abs(prev - nextHeading) > 0.5) {
+            return nextHeading;
+          }
+          return prev;
+        });
+        lastLiveMovementSampleRef.current = effectiveUserPosition;
+        return;
+      }
+    }
+
+    if (!previousSample) {
+      lastLiveMovementSampleRef.current = effectiveUserPosition;
+    }
+  }, [effectiveUserPosition, simulationPosition]);
 
   const navigationTargetInfo = useMemo(() => {
     if (!effectiveUserPosition) return null;
@@ -377,14 +410,23 @@ export default function DrivingMap({
       return getBearing(currentPoint, nextPoint);
     }
 
+    const browserHeading = normalizeHeadingDegrees(heading);
+    if (browserHeading !== null) {
+      return browserHeading;
+    }
+
+    if (Number.isFinite(derivedHeading)) {
+      return derivedHeading;
+    }
+
     if (navigationTargetInfo && localRoutePath.length >= 2) {
       const startPoint = localRoutePath[navigationTargetInfo.segmentIndex] || navigationTargetPosition;
       const endPoint = localRoutePath[Math.min((navigationTargetInfo.segmentIndex ?? 0) + 1, localRoutePath.length - 1)] || navigationTargetPosition;
       return getBearing(startPoint, endPoint);
     }
 
-    return typeof heading === "number" && !Number.isNaN(heading) ? heading : 0;
-  }, [simulationPosition, localRoutePath, simulationIndex, heading, navigationTargetInfo, navigationTargetPosition]);
+    return 0;
+  }, [simulationPosition, localRoutePath, simulationIndex, heading, derivedHeading, navigationTargetInfo, navigationTargetPosition]);
 
   const preferredCenter = useMemo(() => {
     return displayedUserPosition || navigationTargetPosition || DEFAULT_CENTER;
@@ -645,7 +687,12 @@ export default function DrivingMap({
 
     const routeKey = `${userLat.toFixed(3)}_${userLng.toFixed(3)}_${destLat.toFixed(3)}_${destLng.toFixed(3)}_${selectedRouteIndex}`;
     const cachedActivePath = selectedRouteId ? journey?.routeGeometryCache?.[selectedRouteId]?.activePath : null;
-    if (Array.isArray(cachedActivePath) && cachedActivePath.length >= 2) {
+    const cachedPathStart = Array.isArray(cachedActivePath) && cachedActivePath.length > 0 ? cachedActivePath[0] : null;
+    const canReuseCachedPath = Array.isArray(cachedActivePath)
+      && cachedActivePath.length >= 2
+      && (!hasUserLocation || getApproxDistanceMeters(cachedPathStart, { lat: userLat, lng: userLng }) <= LIVE_ROUTE_REFRESH_DISTANCE_METERS);
+
+    if (canReuseCachedPath) {
       setLocalRoutePath(cachedActivePath);
       if (Array.isArray(journey?.availableRoutes) && journey.availableRoutes.length > 1) {
         const fallbackPaths = journey.availableRoutes

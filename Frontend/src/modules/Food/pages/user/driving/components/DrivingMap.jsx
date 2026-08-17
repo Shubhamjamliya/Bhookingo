@@ -353,6 +353,12 @@ export default function DrivingMap({
       const movedDistanceMeters = getApproxDistanceMeters(previousSample, effectiveUserPosition);
       if (movedDistanceMeters >= MOVEMENT_HEADING_MIN_DISTANCE_METERS) {
         const nextHeading = getBearing(previousSample, effectiveUserPosition);
+        console.log("[DrivingMap][Heading] derived from movement", {
+          from: previousSample,
+          to: effectiveUserPosition,
+          nextHeading,
+          movedDistanceMeters
+        });
         setDerivedHeading((prev) => {
           if (!Number.isFinite(prev) || Math.abs(prev - nextHeading) > 0.5) {
             return nextHeading;
@@ -431,6 +437,27 @@ export default function DrivingMap({
   const preferredCenter = useMemo(() => {
     return displayedUserPosition || navigationTargetPosition || DEFAULT_CENTER;
   }, [displayedUserPosition, navigationTargetPosition]);
+
+  useEffect(() => {
+    console.log("[DrivingMap][Live] effectiveUserPosition", effectiveUserPosition);
+  }, [effectiveUserPosition]);
+
+  useEffect(() => {
+    console.log("[DrivingMap][Live] navigationTargetPosition", navigationTargetPosition);
+  }, [navigationTargetPosition]);
+
+  useEffect(() => {
+    console.log("[DrivingMap][Cursor] displayedUserPosition", displayedUserPosition);
+  }, [displayedUserPosition]);
+
+  useEffect(() => {
+    console.log("[DrivingMap][Cursor] effectiveHeading", {
+      headingProp: heading,
+      derivedHeading,
+      displayedHeading,
+      simulationRunning: isSimulationRunning
+    });
+  }, [heading, derivedHeading, displayedHeading, isSimulationRunning]);
 
   useEffect(() => {
     if (!navigationTargetPosition) {
@@ -677,15 +704,14 @@ export default function DrivingMap({
     }
   }, [displayedUserPosition, navigationTargetPosition]);
 
-  // Fetch navigation path via Google Directions Service so the visible route follows actual roads.
+  // Use the route geometry that was already resolved during journey planning/live route sync.
   useEffect(() => {
-    if (!isLoaded || !hasUserLocation || !hasDestLocation || !window.google) {
+    if (!hasDestLocation) {
       setLocalRoutePath([]);
       setAlternateRoutePaths([]);
       return;
     }
 
-    const routeKey = `${userLat.toFixed(3)}_${userLng.toFixed(3)}_${destLat.toFixed(3)}_${destLng.toFixed(3)}_${selectedRouteIndex}`;
     const cachedActivePath = selectedRouteId ? journey?.routeGeometryCache?.[selectedRouteId]?.activePath : null;
     const cachedPathStart = Array.isArray(cachedActivePath) && cachedActivePath.length > 0 ? cachedActivePath[0] : null;
     const canReuseCachedPath = Array.isArray(cachedActivePath)
@@ -710,162 +736,48 @@ export default function DrivingMap({
       } else {
         setAlternateRoutePaths([]);
       }
-      routeRequestedRef.current = routeKey;
       return;
     }
-    if (routeRequestedRef.current === routeKey) {
-      return;
-    }
-    routeRequestedRef.current = routeKey;
 
-    const directionsService = new window.google.maps.DirectionsService();
-    directionsService.route(
-      {
-        origin: { lat: userLat, lng: userLng },
-        destination: { lat: destLat, lng: destLng },
-        travelMode: window.google.maps.TravelMode.DRIVING,
-        provideRouteAlternatives: true
-      },
-      (result, status) => {
-        if (status === window.google.maps.DirectionsStatus.OK) {
-          const availableRoutes = Array.isArray(result?.routes) ? result.routes : [];
-          const decodedRoutePaths = availableRoutes.map((routeItem) => {
-            let routePath = [];
+    if (Array.isArray(journey?.availableRoutes) && journey.availableRoutes.length > 0) {
+      const routePaths = journey.availableRoutes
+        .map((routeOption) => Array.isArray(routeOption.coordinates) ? routeOption.coordinates : [])
+        .filter((routePath) => routePath.length >= 2);
 
-            if (routeItem?.legs && routeItem.legs.length > 0) {
-              routeItem.legs.forEach((leg) => {
-                if (leg?.steps && leg.steps.length > 0) {
-                  leg.steps.forEach((step) => {
-                    let stepPts = [];
-                    const rawPoly = step.polyline?.points || (typeof step.polyline === "string" ? step.polyline : null);
-                    if (rawPoly) {
-                      stepPts = decodePolyline(rawPoly);
-                    } else if (step.path && Array.isArray(step.path)) {
-                      stepPts = step.path.map((p) => ({
-                        lat: typeof p.lat === "function" ? p.lat() : p.lat,
-                        lng: typeof p.lng === "function" ? p.lng() : p.lng
-                      }));
-                    } else if (step.lat_lngs && Array.isArray(step.lat_lngs)) {
-                      stepPts = step.lat_lngs.map((p) => ({
-                        lat: typeof p.lat === "function" ? p.lat() : p.lat,
-                        lng: typeof p.lng === "function" ? p.lng() : p.lng
-                      }));
-                    }
-
-                    stepPts.forEach((pt) => {
-                      if (routePath.length === 0) {
-                        routePath.push(pt);
-                      } else {
-                        const prev = routePath[routePath.length - 1];
-                        if (Math.abs(prev.lat - pt.lat) > 1e-7 || Math.abs(prev.lng - pt.lng) > 1e-7) {
-                          routePath.push(pt);
-                        }
-                      }
-                    });
-                  });
-                }
-              });
-            }
-
-            if (routePath.length === 0) {
-              const overviewRaw = routeItem?.overview_polyline?.points || (typeof routeItem?.overview_polyline === "string" ? routeItem.overview_polyline : null);
-              if (overviewRaw) {
-                routePath = decodePolyline(overviewRaw);
-              } else if (routeItem?.overview_path && Array.isArray(routeItem.overview_path)) {
-                routePath = routeItem.overview_path.map((p) => ({
-                  lat: typeof p.lat === "function" ? p.lat() : p.lat,
-                  lng: typeof p.lng === "function" ? p.lng() : p.lng
-                }));
-              }
-            }
-
-            return routePath;
-          }).filter((routePath) => Array.isArray(routePath) && routePath.length >= 2);
-
-          const route = availableRoutes[selectedRouteIndex] || availableRoutes[0];
-          const detailedPath = decodedRoutePaths[selectedRouteIndex] || decodedRoutePaths[0] || [];
-
-
-          if (detailedPath.length >= 2) {
-            const routePolyline = detailedPath;
-            const estimatedDistance = route?.legs?.[0]?.distance?.text || "";
-            const estimatedDuration = route?.legs?.[0]?.duration?.text || "";
-
-            setLocalRoutePath(routePolyline);
-            setAlternateRoutePaths(
-              decodedRoutePaths
-                .map((path, index) => ({
-                  path,
-                  routeOption: Array.isArray(journey?.availableRoutes) ? journey.availableRoutes[index] : null,
-                  routeIndex: index
-                }))
-                .filter((routeEntry) => routeEntry.routeIndex !== selectedRouteIndex && Array.isArray(routeEntry.path) && routeEntry.path.length >= 2)
-            );
-
-            if (onRouteCalculated) {
-              const allRoutes = {};
-              decodedRoutePaths.forEach((path, index) => {
-                const routeOption = Array.isArray(journey?.availableRoutes) ? journey.availableRoutes[index] : null;
-                const routeId = routeOption?.routeId || routeOption?._id;
-                if (!routeId || !Array.isArray(path) || path.length < 2) return;
-                allRoutes[routeId] = { activePath: path };
-              });
-
-              onRouteCalculated({
-                routePolyline,
-                estimatedDistance,
-                estimatedDuration,
-                routeBounds: route?.bounds || null,
-                routeGeometryCacheEntry: {
-                  routeId: selectedRouteId,
-                  activePath: routePolyline,
-                  allRoutes
-                }
-              });
-            }
-            return;
-          }
-        }
-
-        if (Array.isArray(journey?.availableRoutes) && journey.availableRoutes.length > 1) {
-          const fallbackPaths = journey.availableRoutes
-            .map((routeOption) => Array.isArray(routeOption.coordinates) ? routeOption.coordinates : [])
-            .filter((routePath) => routePath.length >= 2);
-          const activeFallbackPath = fallbackPaths[selectedRouteIndex] || fallbackPaths[0] || [];
-          setLocalRoutePath(activeFallbackPath);
-          setAlternateRoutePaths(
-            fallbackPaths
-              .map((path, index) => ({
-                path,
-                routeOption: Array.isArray(journey?.availableRoutes) ? journey.availableRoutes[index] : null,
-                routeIndex: index
-              }))
-              .filter((routeEntry) => routeEntry.routeIndex !== selectedRouteIndex && Array.isArray(routeEntry.path) && routeEntry.path.length >= 2)
-          );
-        } else if (journey?.routePolyline && Array.isArray(journey.routePolyline) && journey.routePolyline.length >= 2) {
-          setLocalRoutePath(journey.routePolyline);
-          setAlternateRoutePaths([]);
-        } else {
-          setLocalRoutePath([]);
-          setAlternateRoutePaths([]);
-        }
-        console.warn("Directions request failed:", status);
+      if (routePaths.length > 0) {
+        const activeRoutePath = routePaths[selectedRouteIndex] || routePaths[0] || [];
+        setLocalRoutePath(activeRoutePath);
+        setAlternateRoutePaths(
+          routePaths
+            .map((path, index) => ({
+              path,
+              routeOption: Array.isArray(journey?.availableRoutes) ? journey.availableRoutes[index] : null,
+              routeIndex: index
+            }))
+            .filter((routeEntry) => routeEntry.routeIndex !== selectedRouteIndex && Array.isArray(routeEntry.path) && routeEntry.path.length >= 2)
+        );
+        return;
       }
-    );
+    }
+
+    if (journey?.routePolyline && Array.isArray(journey.routePolyline) && journey.routePolyline.length >= 2) {
+      setLocalRoutePath(journey.routePolyline);
+      setAlternateRoutePaths([]);
+      return;
+    }
+
+    setLocalRoutePath([]);
+    setAlternateRoutePaths([]);
   }, [
-    isLoaded,
     hasUserLocation,
     userLat,
     userLng,
     hasDestLocation,
-    destLat,
-    destLng,
     selectedRouteIndex,
     journey?.routePolyline,
     journey?.routeGeometryCache,
     journey?.availableRoutes,
-    selectedRouteId,
-    onRouteCalculated
+    selectedRouteId
   ]);
 
   // Fit bounds when route context changes, not on every user position update.

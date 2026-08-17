@@ -750,6 +750,14 @@ export default function DrivingMode() {
       geoWatchIdRef.current = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude, heading: h, speed: s } = position.coords;
+          console.log("[DrivingMode][GPS] watchPosition update", {
+            latitude,
+            longitude,
+            heading: h,
+            speed: s,
+            accuracy: position.coords?.accuracy ?? null,
+            timestamp: position.timestamp ?? Date.now()
+          });
           setCurrentLocation({ latitude, longitude });
           setHeading(h);
           setSpeed(s);
@@ -757,8 +765,32 @@ export default function DrivingMode() {
         },
         (err) => {
           console.error("[DrivingMode] watchPosition error:", err);
-          setLocationError("location_denied");
-          setStatus("location_denied");
+          const errorCode = Number(err?.code);
+
+          if (errorCode === 1) {
+            setLocationError("location_denied");
+            setErrorMessage("Please enable location permission from your browser settings to use Driving Mode.");
+            setStatus("location_denied");
+            return;
+          }
+
+          if (errorCode === 2) {
+            setLocationError("location_unavailable");
+            setErrorMessage("Live location is temporarily unavailable. Waiting for GPS to reconnect...");
+            setStatus((prev) => (prev === "AVAILABLE" || prev === "NO_RESTAURANTS" ? prev : "CHECKING_LOCATION"));
+            return;
+          }
+
+          if (errorCode === 3) {
+            setLocationError("location_timeout");
+            setErrorMessage("Location update timed out. Retrying live GPS...");
+            setStatus((prev) => (prev === "AVAILABLE" || prev === "NO_RESTAURANTS" ? prev : "CHECKING_LOCATION"));
+            return;
+          }
+
+          setLocationError("location_error");
+          setErrorMessage("Live location had a temporary issue. Retrying...");
+          setStatus((prev) => (prev === "AVAILABLE" || prev === "NO_RESTAURANTS" ? prev : "CHECKING_LOCATION"));
         },
         { enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS, maximumAge: GEOLOCATION_MAX_AGE_MS }
       );
@@ -1077,6 +1109,7 @@ export default function DrivingMode() {
   };
 
   const handleLiveTravelPositionChange = useCallback((nextPosition) => {
+    console.log("[DrivingMode][Cursor] onUserPositionChange", nextPosition);
     setLiveTravelPosition((prev) => {
       if (!nextPosition) {
         return prev ? null : prev;
@@ -1237,6 +1270,10 @@ export default function DrivingMode() {
     return rankedAheadStops[0] || null;
   }, [filteredRestaurants, activeRouteMetrics, effectiveTravelPosition]);
   const nextStop = nextStopMeta?.restaurant || null;
+
+  useEffect(() => {
+    console.log("[DrivingMode][Live] effectiveTravelPosition", effectiveTravelPosition);
+  }, [effectiveTravelPosition]);
 
   useEffect(() => {
     console.log("[DrivingMode][Browser] Next stop", nextStop

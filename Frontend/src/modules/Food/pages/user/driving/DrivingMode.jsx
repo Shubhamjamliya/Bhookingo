@@ -42,6 +42,13 @@ const NEXT_STOP_ALERT_COOLDOWN_MS = 90000;
 const PASSED_RESTAURANT_BUFFER_KM = 0.8;
 const ROUTE_SNAP_MAX_DISTANCE_KM = 3;
 const DRIVING_REFRESH_INTERVAL_MINUTES = 5;
+const DEFAULT_DRIVING_MODE_SETTINGS = {
+  enabled: true,
+  showAllRouteRestaurants: true,
+  googleRouteForwardRangeKm: 120,
+  highwayEntryRadiusMeters: 5000,
+  enableLiveSimulation: false
+};
 
 const buildRouteCacheKey = (journeyLike) => {
   if (!journeyLike) return "";
@@ -366,6 +373,7 @@ export default function DrivingMode() {
   const [loadingRestaurants, setLoadingRestaurants] = useState(false);
   const hasFetchedInitial = useRef(Boolean(restoredJourney && restoredResultData));
   const hasSyncedPlannedJourneyToLiveLocationRef = useRef(false);
+  const hasUsableRouteResults = Boolean(resultData && Array.isArray(resultData?.restaurants));
 
   // Unified State Machine
   // "CHECKING_LOCATION" | "CHECKING_HIGHWAY" | "LOADING_RESTAURANTS" | "AVAILABLE" | "OUTSIDE_HIGHWAY" | "NO_RESTAURANTS" | "AUTH_ERROR" | "ERROR" | "location_denied" | "PERMISSION_REQUIRED" | "disabled"
@@ -430,6 +438,10 @@ export default function DrivingMode() {
 
   // Intercept browser back button — go to driving start instead of history
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.pathname.includes("/food/user/driving/live")) {
+      window.history.pushState({ drivingLiveGuard: true }, "", window.location.href);
+    }
+
     const onPopState = () => handleExitDriving();
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -622,6 +634,7 @@ export default function DrivingMode() {
   // Abort handling & query timeout references
   const abortControllerRef = useRef(null);
   const timeoutIdRef = useRef(null);
+  const activeRequestKeyRef = useRef("");
   const lastNextStopAlertRef = useRef({
     restaurantId: null,
     announcedAt: 0
@@ -722,6 +735,18 @@ export default function DrivingMode() {
     } catch (err) {
       console.error("[DrivingMode] fetchSettings error:", err);
       const isAuthError = err.response?.status === 401 || err.response?.status === 403 || err.response?.data?.message?.includes("token");
+      const isTimeoutError =
+        err?.code === "ECONNABORTED" ||
+        err?.message?.toLowerCase?.().includes("timeout");
+
+      if (!isAuthError && (journey || hasUsableRouteResults) && isTimeoutError) {
+        setSettings(DEFAULT_DRIVING_MODE_SETTINGS);
+        setSettingsError(null);
+        setErrorMessage("Driving mode settings timed out, using default live settings.");
+        setStatus((prev) => (prev === "NO_RESTAURANTS" ? prev : "CHECKING_LOCATION"));
+        return DEFAULT_DRIVING_MODE_SETTINGS;
+      }
+
       setSettingsError(isAuthError ? "AUTH_ERROR" : "ERROR");
       setStatus(isAuthError ? "AUTH_ERROR" : "ERROR");
     } finally {
@@ -847,6 +872,16 @@ export default function DrivingMode() {
       return;
     }
 
+    const requestIdentity = [
+      Number(startLat).toFixed(6),
+      Number(startLng).toFixed(6),
+      currentJourney?.destination?.lat != null ? Number(currentJourney.destination.lat).toFixed(6) : "",
+      currentJourney?.destination?.lng != null ? Number(currentJourney.destination.lng).toFixed(6) : "",
+      currentJourney?.selectedHighway?._id || "",
+      currentJourney?.selectedHighway?.polyline || "",
+      currentJourney ? "journey" : "live"
+    ].join("|");
+
     const routeCacheKey = buildRouteCacheKey(currentJourney);
     const shouldUseCachedRouteResult = Boolean(currentJourney && routeCacheKey && (isInitial || activeJourney));
     if (shouldUseCachedRouteResult) {
@@ -861,6 +896,10 @@ export default function DrivingMode() {
       }
     }
 
+    if (abortControllerRef.current && activeRequestKeyRef.current === requestIdentity) {
+      return;
+    }
+
     // Cancel any in-flight requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -871,6 +910,7 @@ export default function DrivingMode() {
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    activeRequestKeyRef.current = requestIdentity;
 
     if (isInitial) {
       hasFetchedInitial.current = true;
@@ -943,6 +983,7 @@ export default function DrivingMode() {
 
       // Clear the timeout upon receiving the response
       clearTimeout(timeoutIdRef.current);
+      activeRequestKeyRef.current = "";
 
       if (res?.data?.success) {
         const data = res.data.data;
@@ -1004,10 +1045,14 @@ export default function DrivingMode() {
         return; // aborted or superseded request, ignore state transition
       }
 
+      activeRequestKeyRef.current = "";
       console.error("[DrivingMode] query request failure:", err);
       const isAuthError = err.response?.status === 401 || err.response?.status === 403 || err.response?.data?.message?.includes("token");
       setStatus(isAuthError ? "AUTH_ERROR" : "ERROR");
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
       if (isInitial) setLoadingRestaurants(false);
     }
   }, [journey]);
@@ -1270,6 +1315,8 @@ export default function DrivingMode() {
     return rankedAheadStops[0] || null;
   }, [filteredRestaurants, activeRouteMetrics, effectiveTravelPosition]);
   const nextStop = nextStopMeta?.restaurant || null;
+  const hasLoadedRouteResults = Array.isArray(resultData?.restaurants);
+  const hasVisibleRestaurants = filteredRestaurants.length > 0;
 
   useEffect(() => {
     console.log("[DrivingMode][Live] effectiveTravelPosition", effectiveTravelPosition);
@@ -1357,7 +1404,7 @@ export default function DrivingMode() {
 
 
   // Render Loader UI for intermediate loading states, wrapped with BottomNavigation
-  if ((status === "CHECKING_LOCATION" || status === "CHECKING_HIGHWAY" || status === "LOADING_RESTAURANTS") && journey) {
+  if ((status === "CHECKING_LOCATION" || status === "CHECKING_HIGHWAY" || status === "LOADING_RESTAURANTS") && journey && !hasUsableRouteResults) {
     return (
       <div className="flex flex-col h-screen justify-between bg-gray-50 dark:bg-[#0a0a0a] relative">
         <DrivingModeSkeleton className="flex-1" />
@@ -1391,7 +1438,7 @@ export default function DrivingMode() {
     return <Navigate to="/food/user/driving" replace />;
   }
 
-  if (status !== "AVAILABLE" && status !== "NO_RESTAURANTS") {
+  if (status !== "AVAILABLE" && status !== "NO_RESTAURANTS" && !hasUsableRouteResults) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#121212] flex flex-col justify-between relative">
         <div className="flex-1 overflow-y-auto pb-4">
@@ -1553,6 +1600,38 @@ export default function DrivingMode() {
                 recenterBottomOffset={isDrawerExpanded ? "hidden" : "bottom-[230px]"}
                 orderedRestaurantIds={orderedRestaurantIds}
               />
+              {hasLoadedRouteResults && !hasVisibleRestaurants && (
+                <div className="pointer-events-none absolute inset-x-4 bottom-[calc(112px+env(safe-area-inset-bottom))] z-30 flex justify-center">
+                  <div className="pointer-events-auto w-full max-w-md rounded-3xl border border-orange-100 bg-white/96 p-4 shadow-xl backdrop-blur dark:border-neutral-800 dark:bg-[#151515]/96">
+                    <div className="text-[11px] font-black uppercase tracking-[0.14em] text-orange-600">No Stops Ahead</div>
+                    <div className="mt-1 text-sm font-bold text-gray-900 dark:text-white">
+                      No restaurants are available on this route right now.
+                    </div>
+                    <div className="mt-1 text-xs font-medium text-gray-500 dark:text-neutral-400">
+                      Your live location and route are working. Try another route option or go back and change source or destination.
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      {hasMultipleRoutes && (
+                        <Button
+                          type="button"
+                          onClick={() => setIsRoutePickerOpen(true)}
+                          className="h-10 rounded-2xl bg-orange-600 px-4 text-xs font-black text-white hover:bg-orange-700"
+                        >
+                          Change Route
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleBackToPlanner}
+                        className="h-10 rounded-2xl px-4 text-xs font-black"
+                      >
+                        Back To Planner
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           ) : (
             <motion.div

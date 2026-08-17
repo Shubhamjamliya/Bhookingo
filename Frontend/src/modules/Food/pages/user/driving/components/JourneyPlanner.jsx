@@ -42,6 +42,7 @@ const writeSessionJson = (key, value) => {
 const normalizeLocationQuery = (value = "") => String(value).trim().replace(/\s+/g, " ").toLowerCase();
 
 const buildLatLngKey = (lat, lng) => `${Number(lat).toFixed(4)},${Number(lng).toFixed(4)}`;
+const isFiniteCoordinate = (value) => Number.isFinite(Number(value));
 
 export default function JourneyPlanner({ 
   currentLocation, 
@@ -447,13 +448,14 @@ export default function JourneyPlanner({
   });
 
   const handleContinue = async () => {
+    const originText = String(originInput || "").trim();
     const destinationText = String(destinationInput || "").trim();
     const gpsLat = Number(currentLocation?.latitude);
     const gpsLng = Number(currentLocation?.longitude);
     const hasCurrentGps = Number.isFinite(gpsLat) && Number.isFinite(gpsLng);
 
-    if (!hasCurrentGps) {
-      toast.error("Please allow location access so we can use your current location as the trip start.");
+    if (!originText && !hasCurrentGps) {
+      toast.error("Please choose a source location or allow current location access.");
       return;
     }
     if (!destinationText) {
@@ -464,15 +466,34 @@ export default function JourneyPlanner({
     try {
       setLoadingHighways(true);
 
-      const resolvedOrigin = { lat: gpsLat, lng: gpsLng };
+      let resolvedOrigin = originCoords;
       let resolvedDestination = destinationCoords;
+      
+      if (!resolvedOrigin && originText) {
+        const originMatch = await resolveLocationInput(originText, originCoords);
+        if (isFiniteCoordinate(originMatch?.lat) && isFiniteCoordinate(originMatch?.lng)) {
+          resolvedOrigin = { lat: originMatch.lat, lng: originMatch.lng };
+          setOriginCoords(resolvedOrigin);
+          if (originMatch.label) setOriginInput(originMatch.label);
+        }
+      }
 
-      setOriginCoords(resolvedOrigin);
-      setOriginInput("Current Location");
+      if (!resolvedOrigin && hasCurrentGps) {
+        resolvedOrigin = { lat: gpsLat, lng: gpsLng };
+        setOriginCoords(resolvedOrigin);
+        if (!originText) {
+          setOriginInput("Current Location");
+        }
+      }
+
+      if (!isFiniteCoordinate(resolvedOrigin?.lat) || !isFiniteCoordinate(resolvedOrigin?.lng)) {
+        toast.error("Please choose a valid source location.");
+        return;
+      }
 
       if (!resolvedDestination) {
         const destinationMatch = await resolveLocationInput(destinationText, destinationCoords);
-        if (!destinationMatch?.lat || !destinationMatch?.lng) {
+        if (!isFiniteCoordinate(destinationMatch?.lat) || !isFiniteCoordinate(destinationMatch?.lng)) {
           toast.error("Please choose a valid destination.");
           return;
         }
@@ -553,9 +574,11 @@ export default function JourneyPlanner({
       return;
     }
     if (!destinationCoords || !selectedHighway) return;
-    const resolvedOrigin = { lat: gpsLat, lng: gpsLng };
-    setOriginCoords(resolvedOrigin);
-    setOriginInput("Current Location");
+
+    const resolvedOrigin = originCoords && isFiniteCoordinate(originCoords.lat) && isFiniteCoordinate(originCoords.lng)
+      ? originCoords
+      : { lat: gpsLat, lng: gpsLng };
+
     onJourneyPlanSelected({
       origin: resolvedOrigin,
       destination: destinationCoords,

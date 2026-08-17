@@ -394,16 +394,23 @@ export default function DrivingMap({
     return navigationTargetInfo?.point || effectiveUserPosition || null;
   }, [navigationTargetInfo, effectiveUserPosition]);
 
+  const cursorTargetPosition = useMemo(() => {
+    if (simulationPosition && navigationTargetPosition) {
+      return navigationTargetPosition;
+    }
+    return effectiveUserPosition || navigationTargetPosition || null;
+  }, [simulationPosition, effectiveUserPosition, navigationTargetPosition]);
+
   const visibleRouteSnapInfo = useMemo(() => {
     if (simulationPosition && navigationTargetInfo) {
       return navigationTargetInfo;
     }
 
-    const routeAnchorPoint = displayedUserPosition || navigationTargetPosition;
+    const routeAnchorPoint = cursorTargetPosition || displayedUserPosition || navigationTargetPosition;
     if (!routeAnchorPoint) return navigationTargetInfo;
 
     return getPathSnapInfo(localRoutePath, routeAnchorPoint) || navigationTargetInfo;
-  }, [simulationPosition, navigationTargetInfo, displayedUserPosition, navigationTargetPosition, localRoutePath]);
+  }, [simulationPosition, navigationTargetInfo, cursorTargetPosition, displayedUserPosition, navigationTargetPosition, localRoutePath]);
 
   const visibleRoutePath = useMemo(() => {
     return buildRemainingRoutePath(localRoutePath, visibleRouteSnapInfo);
@@ -435,8 +442,8 @@ export default function DrivingMap({
   }, [simulationPosition, localRoutePath, simulationIndex, heading, derivedHeading, navigationTargetInfo, navigationTargetPosition]);
 
   const preferredCenter = useMemo(() => {
-    return displayedUserPosition || navigationTargetPosition || DEFAULT_CENTER;
-  }, [displayedUserPosition, navigationTargetPosition]);
+    return displayedUserPosition || cursorTargetPosition || navigationTargetPosition || DEFAULT_CENTER;
+  }, [displayedUserPosition, cursorTargetPosition, navigationTargetPosition]);
 
   useEffect(() => {
     console.log("[DrivingMap][Live] effectiveUserPosition", effectiveUserPosition);
@@ -460,7 +467,7 @@ export default function DrivingMap({
   }, [heading, derivedHeading, displayedHeading, isSimulationRunning]);
 
   useEffect(() => {
-    if (!navigationTargetPosition) {
+    if (!cursorTargetPosition) {
       displayedUserPositionRef.current = null;
       setDisplayedUserPosition((prev) => (prev ? null : prev));
       return undefined;
@@ -471,8 +478,8 @@ export default function DrivingMap({
       markerAnimationFrameRef.current = null;
     }
 
-    const start = displayedUserPositionRef.current || navigationTargetPosition;
-    const target = navigationTargetPosition;
+    const start = displayedUserPositionRef.current || cursorTargetPosition;
+    const target = cursorTargetPosition;
 
     if (!displayedUserPositionRef.current) {
       displayedUserPositionRef.current = target;
@@ -523,7 +530,7 @@ export default function DrivingMap({
         markerAnimationFrameRef.current = null;
       }
     };
-  }, [navigationTargetPosition, simulationPosition]);
+  }, [cursorTargetPosition, simulationPosition]);
 
   useEffect(() => {
     if (headingAnimationFrameRef.current) {
@@ -619,8 +626,8 @@ export default function DrivingMap({
   const fitMapBounds = useCallback(() => {
     if (!mapRef.current) return;
 
-    if (isFollowingUser && (displayedUserPosition || navigationTargetPosition)) {
-      const focusCenter = getNavigationCameraCenter(displayedUserPosition || navigationTargetPosition, displayedHeadingRef.current);
+    if (isFollowingUser && (displayedUserPosition || cursorTargetPosition || navigationTargetPosition)) {
+      const focusCenter = getNavigationCameraCenter(displayedUserPosition || cursorTargetPosition || navigationTargetPosition, displayedHeadingRef.current);
       mapCenterRef.current = focusCenter;
       mapRef.current.setCenter(focusCenter);
       mapRef.current.setZoom(NAVIGATION_ZOOM);
@@ -647,7 +654,7 @@ export default function DrivingMap({
 
     mapRef.current.setHeading(0);
     mapRef.current.setTilt(0);
-  }, [isFollowingUser, displayedUserPosition, navigationTargetPosition, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, localRoutePath]);
+  }, [isFollowingUser, displayedUserPosition, cursorTargetPosition, navigationTargetPosition, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, localRoutePath]);
 
   const onLoad = useCallback((map) => {
     mapRef.current = map;
@@ -680,29 +687,14 @@ export default function DrivingMap({
     setIsRotationEnabled(true);
 
     if (mapRef.current) {
-      if (displayedUserPosition || navigationTargetPosition) {
-        const nextCenter = getNavigationCameraCenter(displayedUserPosition || navigationTargetPosition, displayedHeadingRef.current);
+      if (displayedUserPosition || cursorTargetPosition || navigationTargetPosition) {
+        const nextCenter = getNavigationCameraCenter(displayedUserPosition || cursorTargetPosition || navigationTargetPosition, displayedHeadingRef.current);
         mapCenterRef.current = nextCenter;
         mapRef.current.setCenter(nextCenter);
         mapRef.current.setZoom(NAVIGATION_ZOOM);
       }
     }
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (pos?.coords && mapRef.current) {
-            const gpsCenter = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            mapCenterRef.current = gpsCenter;
-            mapRef.current.setCenter(gpsCenter);
-            mapRef.current.setZoom(NAVIGATION_ZOOM);
-          }
-        },
-        (err) => console.warn("GPS locate error:", err),
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-      );
-    }
-  }, [displayedUserPosition, navigationTargetPosition]);
+  }, [displayedUserPosition, cursorTargetPosition, navigationTargetPosition]);
 
   // Use the route geometry that was already resolved during journey planning/live route sync.
   useEffect(() => {
@@ -838,7 +830,7 @@ export default function DrivingMap({
   useEffect(() => {
     if (!mapRef.current) return;
 
-    if (!isFollowingUser || !navigationTargetPosition) {
+    if (!isFollowingUser || !(cursorTargetPosition || navigationTargetPosition)) {
       if (isRotationEnabled) {
         mapRef.current.setHeading(displayedHeadingRef.current || 0);
         mapRef.current.setTilt(0);
@@ -846,7 +838,7 @@ export default function DrivingMap({
       return;
     }
 
-    const targetCenter = getNavigationCameraCenter(navigationTargetPosition, displayedHeadingRef.current);
+    const targetCenter = getNavigationCameraCenter(cursorTargetPosition || navigationTargetPosition, displayedHeadingRef.current);
 
     if (pointsAlmostEqual(mapCenterRef.current, targetCenter, 0.00001)) {
       if (isRotationEnabled) {
@@ -865,7 +857,7 @@ export default function DrivingMap({
       mapRef.current.setHeading(displayedHeadingRef.current || 0);
       mapRef.current.setTilt(0);
     }
-  }, [navigationTargetPosition, simulationPosition, isFollowingUser, isRotationEnabled]);
+  }, [cursorTargetPosition, navigationTargetPosition, simulationPosition, isFollowingUser, isRotationEnabled]);
 
   const handleToggleNavigationMode = useCallback(() => {
     const nextMode = !isFollowingUser;
@@ -875,7 +867,7 @@ export default function DrivingMap({
     if (!mapRef.current) return;
 
     if (nextMode) {
-      const focusPoint = displayedUserPositionRef.current || displayedUserPosition || navigationTargetPosition;
+      const focusPoint = displayedUserPositionRef.current || displayedUserPosition || cursorTargetPosition || navigationTargetPosition;
       const focusHeading = displayedHeadingRef.current || effectiveHeading || 0;
       if (focusPoint) {
         const nextCenter = getNavigationCameraCenter(focusPoint, focusHeading);
@@ -906,7 +898,7 @@ export default function DrivingMap({
 
     mapRef.current.setHeading(0);
     mapRef.current.setTilt(0);
-  }, [isFollowingUser, displayedUserPosition, navigationTargetPosition, effectiveHeading, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, localRoutePath]);
+  }, [isFollowingUser, displayedUserPosition, cursorTargetPosition, navigationTargetPosition, effectiveHeading, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, localRoutePath]);
 
   const handleToggleSimulation = useCallback(() => {
     if (localRoutePath.length < 2) return;
@@ -1034,10 +1026,10 @@ export default function DrivingMap({
         )}
 
         {/* User Location Halo (Round White Circle around cursor like Google Maps) */}
-        {(displayedUserPosition || navigationTargetPosition) && (
+        {(displayedUserPosition || cursorTargetPosition || navigationTargetPosition) && (
           <Marker
             onLoad={(m) => { haloMarkerRef.current = m; }}
-            position={displayedUserPosition || navigationTargetPosition}
+            position={displayedUserPosition || cursorTargetPosition || navigationTargetPosition}
             options={{
               icon: {
                 path: window.google?.maps?.SymbolPath?.CIRCLE,
@@ -1054,10 +1046,10 @@ export default function DrivingMap({
         )}
 
         {/* User Location Marker (Navigation Arrow with smooth rotation) */}
-        {(displayedUserPosition || navigationTargetPosition) && (
+        {(displayedUserPosition || cursorTargetPosition || navigationTargetPosition) && (
           <Marker
             onLoad={(m) => { arrowMarkerRef.current = m; }}
-            position={displayedUserPosition || navigationTargetPosition}
+            position={displayedUserPosition || cursorTargetPosition || navigationTargetPosition}
             options={{
               icon: {
                 path: "M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z",

@@ -13,6 +13,8 @@ const ALT_ROUTE_STROKE = "#9ca3af";
 const NAVIGATION_ZOOM = 11;
 const LIVE_ROUTE_REFRESH_DISTANCE_METERS = 80;
 const MOVEMENT_HEADING_MIN_DISTANCE_METERS = 8;
+const CAMERA_PAN_MIN_DISTANCE_METERS = 14;
+const CAMERA_PAN_MIN_INTERVAL_MS = 550;
 const MUTED_MAP_STYLES = [
   {
     featureType: "all",
@@ -305,6 +307,7 @@ export default function DrivingMap({
   const lastStateUpdateRef = useRef(0);
   const lastHeadingUpdateRef = useRef(0);
   const lastLiveMovementSampleRef = useRef(null);
+  const lastCameraPanAtRef = useRef(0);
 
   const [localRoutePath, setLocalRoutePath] = useState([]);
   const [alternateRoutePaths, setAlternateRoutePaths] = useState([]);
@@ -445,6 +448,23 @@ export default function DrivingMap({
     return displayedUserPosition || cursorTargetPosition || navigationTargetPosition || DEFAULT_CENTER;
   }, [displayedUserPosition, cursorTargetPosition, navigationTargetPosition]);
 
+  const applyMapOrientation = useCallback((headingValue = 0) => {
+    if (!mapRef.current) return;
+    const normalizedHeading = Number.isFinite(headingValue) ? headingValue : 0;
+    const currentHeading = Number(mapRef.current.getHeading?.() ?? 0);
+    const headingDelta = Math.abs((((normalizedHeading - currentHeading) + 540) % 360) - 180);
+
+    if (isRotationEnabled && headingDelta > 1) {
+      mapRef.current.setHeading(normalizedHeading);
+    } else if (!isRotationEnabled && currentHeading !== 0) {
+      mapRef.current.setHeading(0);
+    }
+
+    if (Number(mapRef.current.getTilt?.() ?? 0) !== 0) {
+      mapRef.current.setTilt(0);
+    }
+  }, [isRotationEnabled]);
+
   useEffect(() => {
     console.log("[DrivingMap][Live] effectiveUserPosition", effectiveUserPosition);
   }, [effectiveUserPosition]);
@@ -510,7 +530,7 @@ export default function DrivingMap({
       if (haloMarkerRef.current) haloMarkerRef.current.setPosition(nextPosition);
       if (arrowMarkerRef.current) arrowMarkerRef.current.setPosition(nextPosition);
 
-      if (now - lastStateUpdateRef.current > 250 || progress === 1) {
+      if (now - lastStateUpdateRef.current > 400 || progress === 1) {
         lastStateUpdateRef.current = now;
         setDisplayedUserPosition(nextPosition);
       }
@@ -631,8 +651,7 @@ export default function DrivingMap({
       mapCenterRef.current = focusCenter;
       mapRef.current.setCenter(focusCenter);
       mapRef.current.setZoom(NAVIGATION_ZOOM);
-      mapRef.current.setHeading(displayedHeadingRef.current || 0);
-      mapRef.current.setTilt(0);
+      applyMapOrientation(displayedHeadingRef.current || 0);
       return;
     }
 
@@ -652,9 +671,8 @@ export default function DrivingMap({
       mapRef.current.setZoom(9);
     }
 
-    mapRef.current.setHeading(0);
-    mapRef.current.setTilt(0);
-  }, [isFollowingUser, displayedUserPosition, cursorTargetPosition, navigationTargetPosition, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, localRoutePath]);
+    applyMapOrientation(0);
+  }, [isFollowingUser, displayedUserPosition, cursorTargetPosition, navigationTargetPosition, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, localRoutePath, applyMapOrientation]);
 
   const onLoad = useCallback((map) => {
     mapRef.current = map;
@@ -822,42 +840,38 @@ export default function DrivingMap({
   }, [isSimulationRunning, localRoutePath]);
 
   useEffect(() => {
-    if (!mapRef.current || !isRotationEnabled) return;
-    mapRef.current.setHeading(displayedHeading || 0);
-    mapRef.current.setTilt(0);
-  }, [isRotationEnabled, displayedHeading]);
+    if (!mapRef.current) return;
+    applyMapOrientation(displayedHeading || 0);
+  }, [displayedHeading, applyMapOrientation]);
 
   useEffect(() => {
     if (!mapRef.current) return;
 
     if (!isFollowingUser || !(cursorTargetPosition || navigationTargetPosition)) {
-      if (isRotationEnabled) {
-        mapRef.current.setHeading(displayedHeadingRef.current || 0);
-        mapRef.current.setTilt(0);
-      }
+      applyMapOrientation(displayedHeadingRef.current || 0);
       return;
     }
 
     const targetCenter = getNavigationCameraCenter(cursorTargetPosition || navigationTargetPosition, displayedHeadingRef.current);
+    const distanceToTargetCenter = getApproxDistanceMeters(mapCenterRef.current, targetCenter);
+    const now = Date.now();
 
-    if (pointsAlmostEqual(mapCenterRef.current, targetCenter, 0.00001)) {
-      if (isRotationEnabled) {
-        mapRef.current.setHeading(displayedHeadingRef.current || 0);
-        mapRef.current.setTilt(0);
-      }
+    if (
+      pointsAlmostEqual(mapCenterRef.current, targetCenter, 0.00001) ||
+      (distanceToTargetCenter < CAMERA_PAN_MIN_DISTANCE_METERS && (now - lastCameraPanAtRef.current) < CAMERA_PAN_MIN_INTERVAL_MS)
+    ) {
+      applyMapOrientation(displayedHeadingRef.current || 0);
       return;
     }
 
     mapCenterRef.current = targetCenter;
+    lastCameraPanAtRef.current = now;
     
     // Use native Google Maps panning. This avoids the 60fps setCenter() calls which cause tile white-outs.
     mapRef.current.panTo(targetCenter);
 
-    if (isRotationEnabled) {
-      mapRef.current.setHeading(displayedHeadingRef.current || 0);
-      mapRef.current.setTilt(0);
-    }
-  }, [cursorTargetPosition, navigationTargetPosition, simulationPosition, isFollowingUser, isRotationEnabled]);
+    applyMapOrientation(displayedHeadingRef.current || 0);
+  }, [cursorTargetPosition, navigationTargetPosition, simulationPosition, isFollowingUser, applyMapOrientation]);
 
   const handleToggleNavigationMode = useCallback(() => {
     const nextMode = !isFollowingUser;
@@ -872,11 +886,11 @@ export default function DrivingMap({
       if (focusPoint) {
         const nextCenter = getNavigationCameraCenter(focusPoint, focusHeading);
         mapCenterRef.current = nextCenter;
+        lastCameraPanAtRef.current = Date.now();
         mapRef.current.setCenter(nextCenter);
         mapRef.current.setZoom(NAVIGATION_ZOOM);
       }
-      mapRef.current.setHeading(focusHeading);
-      mapRef.current.setTilt(0);
+      applyMapOrientation(focusHeading);
       return;
     }
 
@@ -896,9 +910,8 @@ export default function DrivingMap({
       mapRef.current.setZoom(9);
     }
 
-    mapRef.current.setHeading(0);
-    mapRef.current.setTilt(0);
-  }, [isFollowingUser, displayedUserPosition, cursorTargetPosition, navigationTargetPosition, effectiveHeading, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, localRoutePath]);
+    applyMapOrientation(0);
+  }, [isFollowingUser, displayedUserPosition, cursorTargetPosition, navigationTargetPosition, effectiveHeading, hasUserLocation, userLat, userLng, hasDestLocation, destLat, destLng, localRoutePath, applyMapOrientation]);
 
   const handleToggleSimulation = useCallback(() => {
     if (localRoutePath.length < 2) return;

@@ -315,17 +315,10 @@ function decorateRouteOptions(routeOptions, { includeRestaurantCounts = true } =
     const shortestDistance = Math.min(...distanceValues);
     const maxRestaurants = Math.max(...restaurantValues);
 
-    const scoredRoutes = routeOptions.map((route, index) => {
+    const decoratedRoutes = routeOptions.map((route, index) => {
         const durationSeconds = Number(route.route.durationSeconds) || Infinity;
         const distanceMeters = Number(route.route.distanceMeters) || Infinity;
         const restaurantCount = Number(route.restaurantCount) || 0;
-
-        const score =
-            (durationSeconds === fastestDuration ? 55 : 0) +
-            (distanceMeters === shortestDistance ? 20 : 0) +
-            (restaurantCount * 3) +
-            Math.round(durationSeconds / 1800) -
-            Math.round(distanceMeters / 25000);
 
         const badges = [];
         if (durationSeconds === fastestDuration) badges.push('Fastest');
@@ -338,15 +331,13 @@ function decorateRouteOptions(routeOptions, { includeRestaurantCounts = true } =
             ...route,
             name: routeName,
             summary,
-            badges,
-            score
+            badges
         };
     });
 
-    scoredRoutes.sort((a, b) => b.score - a.score);
-
-    const recommendedRouteId = scoredRoutes[0]?.routeId || null;
-    const finalRoutes = scoredRoutes.map((route) => ({
+    // Preserve Google's route ordering. The first route returned by Google should stay the default route.
+    const recommendedRouteId = decoratedRoutes[0]?.routeId || null;
+    const finalRoutes = decoratedRoutes.map((route) => ({
         ...route,
         badges: route.routeId === recommendedRouteId
             ? ['Recommended', ...route.badges.filter((badge) => badge !== 'Recommended')]

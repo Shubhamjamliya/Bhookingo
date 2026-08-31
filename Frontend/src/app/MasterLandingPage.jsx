@@ -60,11 +60,11 @@ export default function MasterLandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-[#E0332F] selection:text-white">
+    <div className="landing-shell min-h-screen text-[color:var(--landing-text)]">
       <LandingHeader />
 
       {/* 2. HERO SECTION */}
-      <section className="relative bg-[#0F172A] text-white overflow-hidden min-h-[640px] lg:min-h-[720px] flex items-center py-12 lg:py-16">
+      <section className="relative overflow-hidden bg-[color:var(--landing-hero)] text-white min-h-[640px] lg:min-h-[720px] flex items-center py-12 lg:py-16">
         {/* Background Image with Dark Gradient Overlay */}
         <div className="absolute inset-0 z-0">
           <img
@@ -72,7 +72,7 @@ export default function MasterLandingPage() {
             alt="Expressway Highway Sunset"
             className="w-full h-full object-cover opacity-100"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-black/25 to-black/25" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(12,8,6,0.84)_0%,rgba(12,8,6,0.68)_38%,rgba(12,8,6,0.42)_100%)]" />
         </div>
 
         <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -81,36 +81,36 @@ export default function MasterLandingPage() {
             {/* Left Column: Hero Text Content */}
             <div className="lg:col-span-5 space-y-6">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 bg-[#E0332F] text-white text-[11px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg shadow-red-500/30">
+              <div className="landing-section-label inline-flex items-center gap-2 rounded-full bg-[color:var(--landing-accent)] px-4 py-2 text-[11px] font-extrabold uppercase text-white shadow-lg shadow-red-900/20">
                 <Flame className="w-3.5 h-3.5 fill-current" />
                 <span>INDIA'S FIRST HIGHWAY FOOD APP</span>
               </div>
 
               {/* Headline */}
               <div className="space-y-2">
-                <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] xl:text-[3.5rem] font-black tracking-tight text-white leading-none">
+                <h1 className="landing-title text-4xl sm:text-5xl lg:text-[3.25rem] xl:text-[3.5rem] font-black text-white">
                   <span className="whitespace-nowrap">
                     <span className="text-white">Bhookingo</span>{" "}
-                    <span className="text-[#E0332F]">=</span>{" "}
-                  </span>
-                  <span className="text-[#E0332F] text-2xl sm:text-3xl lg:text-[2.35rem] xl:text-[2.6rem] font-extrabold tracking-[0.04em] whitespace-nowrap">
-                    Bhook + in + Go
+                    <span className="text-[color:var(--landing-accent)]">=</span>{" "}
                   </span>
                   <br />
-                  <span className="text-white text-3xl sm:text-4xl lg:text-5xl font-extrabold block mt-2">
+                  <span className="mt-2 inline-block text-[color:var(--landing-accent)] text-2xl sm:text-3xl lg:text-[2.35rem] xl:text-[2.6rem] font-extrabold tracking-[0.02em] whitespace-nowrap">
+                    Bhook + in + Go
+                  </span>
+                  <span className="landing-subtitle mt-3 block text-white text-3xl sm:text-4xl lg:text-5xl font-extrabold">
                     Highway Takeaway & Dine-In
                   </span>
                 </h1>
               </div>
 
               {/* Subheadline */}
-              <div className="text-xl sm:text-2xl font-bold text-gray-100 leading-snug">
+              <div className="landing-subtitle text-xl sm:text-2xl font-semibold text-[#f7efe7] leading-snug">
                 Order Before You Reach. <br />
-                <span className="text-gray-200">Pick Up Without Waiting.</span>
+                <span className="text-[#d8c8be]">Pick Up Without Waiting.</span>
               </div>
 
               {/* Description */}
-              <p className="text-sm sm:text-base text-gray-300 max-w-xl font-normal leading-relaxed">
+              <p className="max-w-xl text-sm sm:text-base leading-8 text-[#e2d5cc]">
                 India's first highway food discovery & pre-order app. Find only forward restaurants, pre-order takeaway or reserve dine-in and enjoy quality food on your journey.
               </p>
 
@@ -118,14 +118,14 @@ export default function MasterLandingPage() {
               <div className="pt-2 flex flex-wrap gap-4 justify-start">
                 <button
                   onClick={handleAuthClick}
-                  className="bg-gradient-to-r from-[#E0332F] to-[#C92824] hover:from-[#c92824] hover:to-[#a81f1c] text-white text-sm font-black px-8 py-4 rounded-full shadow-xl shadow-red-500/30 transition-all active:scale-95 flex items-center gap-2.5"
+                  className="landing-button-primary flex items-center gap-2.5 rounded-full px-8 py-4 text-sm font-extrabold transition-all active:scale-95"
                 >
                   <Smartphone className="w-4 h-4" />
                   <span>Download App</span>
                 </button>
                 <button
                   onClick={handleExploreWebClick}
-                  className="border border-white/25 bg-white/10 hover:bg-white/16 text-white text-sm font-black px-8 py-4 rounded-full shadow-lg transition-all active:scale-95 flex items-center gap-2.5 backdrop-blur-sm"
+                  className="landing-button-secondary flex items-center gap-2.5 rounded-full px-8 py-4 text-sm font-semibold shadow-lg transition-all active:scale-95 backdrop-blur-sm"
                 >
                   <Search className="w-4 h-4" />
                   <span>Browse on Web</span>
@@ -133,7 +133,7 @@ export default function MasterLandingPage() {
               </div>
 
               {/* Horizontal Feature Chips Row (Hero Bottom) */}
-              <div className="pt-6 border-t border-white/15 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 gap-3 border-t border-white/15 pt-6 sm:grid-cols-2 lg:grid-cols-3">
                 {[
                   { icon: MapPin, text: "Forward Restaurants" },
                   { icon: Clock, text: "Save Time & Money" },
@@ -143,9 +143,9 @@ export default function MasterLandingPage() {
                   { icon: Zap, text: "EV Charging On Route" },
                   { icon: ParkingIcon, text: "Parking Info Easy & Safe" }
                 ].map((item, idx) => (
-                  <div key={idx} className="bg-black/40 border border-white/10 rounded-xl px-3 py-3 flex items-center gap-2.5 backdrop-blur-sm hover:border-red-500/50 transition-colors w-full min-h-[60px] overflow-hidden">
-                    <item.icon className="w-4 h-4 text-[#E0332F] shrink-0" />
-                    <span className="text-[11px] sm:text-xs font-semibold text-gray-200 leading-tight break-words min-w-0">
+                  <div key={idx} className="min-h-[60px] w-full overflow-hidden rounded-2xl border border-white/12 bg-[rgba(255,251,247,0.92)] px-3.5 py-3 flex items-center gap-2.5 shadow-[0_16px_40px_rgba(15,8,5,0.18)] transition-colors hover:border-white/30">
+                    <item.icon className="w-4 h-4 text-[color:var(--landing-accent)] shrink-0" />
+                    <span className="text-[11px] sm:text-xs font-semibold text-[#5f463c] leading-tight break-words min-w-0">
                       {item.text}
                     </span>
                   </div>
@@ -177,12 +177,12 @@ export default function MasterLandingPage() {
                 ].map((item, idx) => (
                   <div
                     key={idx}
-                    className="bg-white text-gray-900 rounded-2xl p-2.5 flex items-center gap-3 shadow-md hover:shadow-lg transition-all border border-gray-100 cursor-pointer hover:translate-x-1 w-full"
+                    className="landing-surface-card cursor-pointer rounded-2xl p-3 flex items-center gap-3 transition-all hover:translate-x-1 w-full"
                   >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#E0332F] to-[#B91C1C] flex items-center justify-center shrink-0 shadow-sm">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[color:var(--landing-accent)] to-[color:var(--landing-accent-strong)] flex items-center justify-center shrink-0 shadow-sm">
                       <item.icon className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <span className="text-xs font-bold text-gray-800 break-words leading-tight flex-1">
+                    <span className="text-xs font-semibold text-[color:var(--landing-text)] break-words leading-tight flex-1">
                       {item.label}
                     </span>
                   </div>
@@ -195,15 +195,15 @@ export default function MasterLandingPage() {
       </section>
 
       {/* 3. HOW IT WORKS SECTION */}
-      <section id="how-it-works" className="py-16 md:py-24 bg-white">
+      <section id="how-it-works" className="py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Eyebrow */}
-          <span className="text-xs font-black text-[#E0332F] uppercase tracking-widest block mb-2">
+          <span className="landing-section-label mb-3 block text-xs font-extrabold uppercase text-[color:var(--landing-accent)]">
             HOW IT WORKS
           </span>
           {/* Heading */}
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-12">
-            Simple Steps for a <span className="text-[#E0332F]">Better Journey</span>
+          <h2 className="landing-subtitle mb-12 text-3xl sm:text-4xl font-extrabold text-[color:var(--landing-text)]">
+            Simple Steps for a <span className="text-[color:var(--landing-accent)]">Better Journey</span>
           </h2>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
@@ -235,21 +235,21 @@ export default function MasterLandingPage() {
                   desc: "Save time, money and enjoy a stress-free journey."
                 }
               ].map((step, idx) => (
-                <div key={idx} className="flex flex-col items-center text-center relative group">
+                <div key={idx} className="landing-surface-card flex flex-col items-center rounded-[var(--landing-radius)] p-6 text-center relative group">
                   {/* Icon Circle with Step Number Badge */}
                   <div className="relative mb-4">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FFF0F0] to-[#FFEBEB] border-2 border-[#E0332F]/20 flex items-center justify-center text-[#E0332F] group-hover:scale-105 transition-transform shadow-sm">
-                      <step.icon className="w-8 h-8 text-[#E0332F]" />
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#fff1f1] to-[color:var(--landing-accent-soft)] border-2 border-[#d62828]/20 flex items-center justify-center text-[color:var(--landing-accent)] group-hover:scale-105 transition-transform shadow-sm">
+                      <step.icon className="w-8 h-8 text-[color:var(--landing-accent)]" />
                     </div>
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-[#E0332F] text-white font-black text-xs flex items-center justify-center border-2 border-white shadow">
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-[color:var(--landing-accent)] text-white font-black text-xs flex items-center justify-center border-2 border-white shadow">
                       {step.num}
                     </div>
                   </div>
 
-                  <h3 className="text-base font-bold text-gray-900 mb-2">
+                  <h3 className="font-[var(--font-display)] mb-2 text-base font-bold text-[color:var(--landing-text)]">
                     {step.title}
                   </h3>
-                  <p className="text-xs text-gray-600 leading-relaxed max-w-xs">
+                  <p className="max-w-xs text-sm leading-6 text-[color:var(--landing-text-muted)]">
                     {step.desc}
                   </p>
                 </div>
@@ -258,7 +258,7 @@ export default function MasterLandingPage() {
 
             {/* Winding Road Graphic (Right 4 Cols) */}
             <div className="lg:col-span-4 flex justify-center py-6">
-              <div className="relative w-full max-w-[280px] h-[340px] bg-gray-900 rounded-3xl p-4 border border-gray-800 shadow-xl flex flex-col justify-between overflow-hidden">
+              <div className="relative w-full max-w-[280px] h-[340px] bg-[#1d1511] rounded-3xl p-4 border border-white/10 shadow-xl flex flex-col justify-between overflow-hidden">
                 {/* Simulated Winding Road */}
                 <svg className="absolute inset-0 w-full h-full text-gray-800" viewBox="0 0 280 340" fill="none">
                   <path
@@ -302,28 +302,28 @@ export default function MasterLandingPage() {
       </section>
 
       {/* 4. WHY BHOOKINGO & 5. EVERYTHING YOU NEED IN ONE APP */}
-      <section id="features" className="py-16 md:py-24 bg-gray-50 border-t border-b border-gray-200">
+      <section id="features" className="border-y border-[color:var(--landing-line)] bg-[rgba(255,255,255,0.58)] py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
 
             {/* Left Column: Why Bhookingo Comparison (5 Cols) */}
             <div className="lg:col-span-5 space-y-4">
-              <span className="text-xs font-black text-[#E0332F] tracking-widest block">
+              <span className="landing-section-label block text-xs font-extrabold text-[color:var(--landing-accent)]">
                 WHY Bhookingo?
               </span>
 
               <div className="relative grid grid-cols-2 gap-3 pt-2">
                 {/* VS Badge */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black text-white font-black text-xs flex items-center justify-center shadow-lg border-2 border-white">
+                <div className="absolute top-1/2 left-1/2 z-20 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-[#1d1511] text-xs font-black text-white shadow-lg">
                   VS
                 </div>
 
                 {/* Normal Highway Stop Card */}
-                <div className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm flex flex-col">
-                  <div className="bg-[#323535] text-white text-xs font-black px-3 py-3 text-center uppercase tracking-wider">
+                <div className="landing-surface-card flex flex-col overflow-hidden rounded-[var(--landing-radius)]">
+                  <div className="bg-[#3a312c] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-[0.16em] text-white">
                     Normal Highway Stop
                   </div>
-                  <div className="p-3.5 space-y-3 text-[11px] text-gray-600 flex-1">
+                  <div className="flex-1 space-y-3 p-4 text-sm text-[color:var(--landing-text-muted)]">
                     {[
                       "Wait time 20–40 mins",
                       "Unknown food quality",
@@ -343,11 +343,11 @@ export default function MasterLandingPage() {
                 </div>
 
                 {/* With Bhookingo Card */}
-                <div className="bg-white rounded-2xl overflow-hidden border border-emerald-200 shadow-md flex flex-col ring-1 ring-emerald-500/20">
-                  <div className="bg-[#22C55E] text-white text-xs font-black px-3 py-3 text-center uppercase tracking-wider">
+                <div className="flex flex-col overflow-hidden rounded-[var(--landing-radius)] border border-emerald-200 bg-white shadow-md ring-1 ring-emerald-500/15">
+                  <div className="bg-[#1f8a48] px-3 py-3 text-center text-xs font-extrabold uppercase tracking-[0.16em] text-white">
                     With Bhookingo
                   </div>
-                  <div className="p-3.5 space-y-3 text-[11px] text-gray-800 font-medium flex-1 bg-emerald-50/20">
+                  <div className="flex-1 space-y-3 bg-emerald-50/40 p-4 text-sm font-medium text-[#21442f]">
                     {[
                       "Pre-order & save time",
                       "Verified & quality food",
@@ -370,7 +370,7 @@ export default function MasterLandingPage() {
 
             {/* Right Column: Everything You Need in One App (7 Cols) */}
             <div className="lg:col-span-7 space-y-6">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+              <h2 className="landing-subtitle text-2xl sm:text-3xl font-extrabold text-[color:var(--landing-text)]">
                 Everything You Need in One App
               </h2>
 
@@ -425,14 +425,14 @@ export default function MasterLandingPage() {
                     desc: "Pay securely using UPI, Cards, Wallets & more."
                   }
                 ].map((card, idx) => (
-                  <div key={idx} className="bg-white rounded-2xl p-4 border border-gray-150 shadow-sm hover:shadow-md transition-all group">
+                  <div key={idx} className="landing-surface-card group rounded-[24px] p-5 transition-all hover:-translate-y-1">
                     <div className={`w-10 h-10 rounded-xl ${card.color} border flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-xs`}>
                       <card.icon className="w-5 h-5" />
                     </div>
-                    <h3 className="text-sm font-bold text-gray-900 mb-1">
+                    <h3 className="mb-1 font-[var(--font-display)] text-base font-bold text-[color:var(--landing-text)]">
                       {card.title}
                     </h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">
+                    <p className="text-sm leading-6 text-[color:var(--landing-text-muted)]">
                       {card.desc}
                     </p>
                   </div>
@@ -445,7 +445,7 @@ export default function MasterLandingPage() {
       </section>
 
       {/* 6. STATS BAR */}
-      <section className="bg-[#D70000] text-white py-6 shadow-inner">
+      <section className="bg-gradient-to-r from-[#bf341b] via-[#d9471f] to-[#e36d3f] py-6 text-white shadow-inner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-0 divide-y md:divide-y-0 md:divide-x divide-white/20 text-center">
             <div className="py-2 md:py-0 px-2 flex flex-col items-center">
@@ -475,20 +475,20 @@ export default function MasterLandingPage() {
       </section>
 
       {/* 7. CHOOSE YOUR WAY TO EXPLORE */}
-      <section className="py-16 md:py-24 bg-white">
+      <section className="py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 flex items-center justify-center gap-3">
-              <span className="w-8 h-0.5 bg-[#E0332F] rounded-full hidden sm:block" />
+            <h2 className="landing-subtitle flex items-center justify-center gap-3 text-2xl sm:text-3xl font-black text-[color:var(--landing-text)]">
+              <span className="hidden h-0.5 w-8 rounded-full bg-[#d9471f] sm:block" />
               Choose Your Way to Explore
-              <span className="w-8 h-0.5 bg-[#E0332F] rounded-full hidden sm:block" />
+              <span className="hidden h-0.5 w-8 rounded-full bg-[#d9471f] sm:block" />
             </h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
             {/* DRIVE MODE CARD (Vertical Image on Left) */}
-            <div className="bg-[#FFF5F5] rounded-3xl border border-red-150 shadow-md relative overflow-hidden flex flex-col md:flex-row items-stretch">
+            <div className="landing-surface-card relative overflow-hidden rounded-[32px] flex flex-col md:flex-row items-stretch bg-[#fff7f2]">
 
               {/* Left Vertical Image / Banner */}
               <div className="w-full md:w-48 lg:w-52 relative bg-gray-900 shrink-0 min-h-[220px] md:min-h-full overflow-hidden">
@@ -515,19 +515,19 @@ export default function MasterLandingPage() {
               {/* Right Content Column */}
               <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between relative">
                 {/* Recommended Tag */}
-                <div className="absolute top-4 right-4 bg-[#E0332F] text-white text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow">
+                  <div className="absolute top-4 right-4 rounded-full bg-[#d9471f] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.16em] text-white shadow">
                   RECOMMENDED
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-2.5">
-                    <h3 className="text-2xl font-black text-gray-900">Drive Mode</h3>
-                    <span className="bg-[#E0332F]/10 text-[#E0332F] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase border border-[#E0332F]/20">
+                    <h3 className="font-[var(--font-display)] text-2xl font-black text-[color:var(--landing-text)]">Drive Mode</h3>
+                    <span className="rounded-full border border-[#d62828]/20 bg-[#d62828]/10 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-[color:var(--landing-accent)]">
                       Live Highway
                     </span>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed">
+                  <p className="text-sm font-medium leading-7 text-[color:var(--landing-text-muted)]">
                     Real-time highway mode that shows only forward restaurants on your live route.
                   </p>
 
@@ -538,8 +538,8 @@ export default function MasterLandingPage() {
                       "No need to search",
                       "Save fuel, time & effort"
                     ].map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2.5 text-xs font-bold text-gray-800">
-                        <div className="w-4 h-4 rounded-full bg-[#E0332F] flex items-center justify-center shrink-0 shadow-xs">
+                      <div key={idx} className="flex items-center gap-2.5 text-sm font-semibold text-[color:var(--landing-text)]">
+                        <div className="w-4 h-4 rounded-full bg-[color:var(--landing-accent)] flex items-center justify-center shrink-0 shadow-xs">
                           <Check className="w-2.5 h-2.5 text-white stroke-[3]" />
                         </div>
                         <span>{item}</span>
@@ -550,7 +550,7 @@ export default function MasterLandingPage() {
 
                 <button
                   onClick={handleDriveModeClick}
-                  className="mt-6 w-full bg-[#E0332F] hover:bg-[#c92824] text-white text-xs font-black uppercase tracking-wider py-3.5 rounded-2xl shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                  className="landing-button-primary mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-xs font-extrabold uppercase tracking-[0.18em] transition-all active:scale-[0.98]"
                 >
                   <span>Start Drive Mode</span>
                   <Navigation2 className="w-4 h-4 fill-white" />
@@ -559,19 +559,19 @@ export default function MasterLandingPage() {
             </div>
 
             {/* SEARCH MODE CARD (Vertical Restaurant Illustration on Right) */}
-            <div className="bg-[#F4FBF7] rounded-3xl border border-emerald-150 shadow-md relative overflow-hidden flex flex-col md:flex-row items-stretch">
+            <div className="landing-surface-card relative overflow-hidden rounded-[32px] flex flex-col md:flex-row items-stretch bg-[#f4fbf7]">
 
               {/* Left Content Column */}
               <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="flex items-center gap-2.5">
-                    <h3 className="text-2xl font-black text-gray-900">Search Mode</h3>
-                    <span className="bg-emerald-600/10 text-emerald-700 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase border border-emerald-600/20">
+                    <h3 className="font-[var(--font-display)] text-2xl font-black text-[color:var(--landing-text)]">Search Mode</h3>
+                    <span className="rounded-full border border-emerald-600/20 bg-emerald-600/10 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-emerald-700">
                       Any Restaurant
                     </span>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed">
+                  <p className="text-sm font-medium leading-7 text-[color:var(--landing-text-muted)]">
                     Search any restaurant by name, city or location.
                   </p>
 
@@ -582,7 +582,7 @@ export default function MasterLandingPage() {
                       "View menu, ratings & more",
                       "Order takeaway or dine-in"
                     ].map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2.5 text-xs font-bold text-gray-800">
+                      <div key={idx} className="flex items-center gap-2.5 text-sm font-semibold text-[color:var(--landing-text)]">
                         <div className="w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center shrink-0 shadow-xs">
                           <Check className="w-2.5 h-2.5 text-white stroke-[3]" />
                         </div>
@@ -594,7 +594,7 @@ export default function MasterLandingPage() {
 
                 <button
                   onClick={handleExploreWebClick}
-                  className="mt-6 w-full bg-white border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-xs font-black uppercase tracking-wider py-3.5 rounded-2xl shadow-xs transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-emerald-600 bg-white py-3.5 text-xs font-extrabold uppercase tracking-[0.18em] text-emerald-700 transition-all active:scale-[0.98] hover:bg-emerald-50"
                 >
                   <span>Search Restaurants</span>
                   <Search className="w-4 h-4 stroke-[2.5]" />
@@ -623,17 +623,17 @@ export default function MasterLandingPage() {
       </section>
 
       {/* 8. BOTTOM CTA BANNER */}
-      <section className="bg-[#FFF0F0] py-10 border-t border-b border-red-100">
+      <section className="border-y border-[color:var(--landing-line)] bg-[linear-gradient(180deg,#fff7f2_0%,#ffefe5_100%)] py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4 text-center md:text-left">
             <div className="w-12 h-12 rounded-2xl bg-[#E0332F] flex items-center justify-center shadow-md shadow-red-500/20 shrink-0 hidden sm:flex">
               <MapPin className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h3 className="text-xl sm:text-2xl font-black text-gray-900">
+              <h3 className="font-[var(--font-display)] text-xl sm:text-2xl font-black text-[color:var(--landing-text)]">
                 Hungry? Order Before You Arrive.
               </h3>
-              <p className="text-xs sm:text-sm font-semibold text-gray-600 mt-1">
+              <p className="mt-1 text-sm font-medium text-[color:var(--landing-text-muted)]">
                 Save Time. Save Money. Eat Quality.
               </p>
             </div>

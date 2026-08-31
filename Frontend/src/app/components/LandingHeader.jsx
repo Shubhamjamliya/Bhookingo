@@ -46,8 +46,8 @@ export default function LandingHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-150 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+    <header className="sticky top-0 z-50 border-b border-[color:var(--landing-line)] bg-[rgba(252,250,247,0.88)] backdrop-blur-xl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[76px] flex items-center justify-between gap-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5">
           <BhookingoWordmark
@@ -58,17 +58,17 @@ export default function LandingHeader() {
         </Link>
 
         {/* Center Navigation Links */}
-        <nav className="hidden md:flex items-center space-x-8 text-sm font-semibold text-gray-700">
+        <nav className="hidden md:flex items-center space-x-8 text-sm font-semibold text-[color:var(--landing-text-muted)]">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.path;
             return (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`${isActive ? 'text-[#E0332F] font-extrabold relative py-1' : 'hover:text-[#E0332F] transition-colors py-1'}`}
+                className={`${isActive ? 'text-[#d9471f] font-bold relative py-1.5' : 'hover:text-[#d9471f] transition-colors py-1.5'}`}
               >
                 {link.name}
-                {isActive && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#E0332F] rounded-full" />}
+                {isActive && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#d9471f] rounded-full" />}
               </Link>
             );
           })}
@@ -78,7 +78,7 @@ export default function LandingHeader() {
         <div className="hidden sm:flex items-center gap-3">
           <button
             onClick={handleAuthClick}
-            className="bg-gradient-to-r from-[#E0332F] to-[#C92824] hover:from-[#c92824] hover:to-[#a81f1c] text-white text-xs font-black uppercase tracking-wider px-6 py-3 rounded-full shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all active:scale-95 flex items-center gap-2"
+            className="landing-button-primary text-white text-xs font-extrabold uppercase tracking-[0.18em] px-6 py-3 rounded-full transition-all active:scale-95 flex items-center gap-2"
           >
             <Smartphone className="w-4 h-4" />
             <span>Download App</span>
@@ -88,7 +88,7 @@ export default function LandingHeader() {
         {/* Mobile Menu Trigger */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100"
+          className="md:hidden p-2 rounded-xl text-[color:var(--landing-text)] hover:bg-white/80 transition-colors"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -96,13 +96,13 @@ export default function LandingHeader() {
 
       {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-gray-200 px-4 pt-2 pb-6 space-y-3">
+        <div className="md:hidden bg-[rgba(255,253,249,0.98)] border-b border-[color:var(--landing-line)] px-4 pt-2 pb-6 space-y-3">
           {navLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
               onClick={() => setMobileMenuOpen(false)}
-              className={`block py-2 ${location.pathname === link.path ? 'text-[#E0332F] font-bold' : 'text-gray-700 font-medium'}`}
+              className={`block rounded-xl px-3 py-2.5 ${location.pathname === link.path ? 'bg-[#fff1de] text-[#d9471f] font-bold' : 'text-[color:var(--landing-text-muted)] font-medium hover:bg-white'}`}
             >
               {link.name}
             </Link>
@@ -110,7 +110,7 @@ export default function LandingHeader() {
           <div className="pt-2">
             <button
               onClick={handleAuthClick}
-              className="w-full bg-[#E0332F] text-white text-xs font-bold py-3 rounded-full shadow-md flex items-center justify-center gap-2"
+              className="landing-button-primary w-full text-white text-xs font-extrabold uppercase tracking-[0.18em] py-3 rounded-full transition-all flex items-center justify-center gap-2"
             >
               <Smartphone className="w-4 h-4" />
               <span>Download App</span>

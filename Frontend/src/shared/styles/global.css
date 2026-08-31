@@ -5,10 +5,12 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  font-family: 'Poppins', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  --font-poppins: 'Poppins', sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
+  --font-sans: 'Manrope', system-ui, sans-serif;
+  --font-display: 'Outfit', 'Manrope', sans-serif;
+  --font-poppins: 'Manrope', sans-serif;
   --font-outfit: 'Outfit', sans-serif;
-  line-height: 1.5;
+  line-height: 1.55;
   font-weight: 400;
 
   font-synthesis: none;
@@ -17,32 +19,44 @@
   -moz-osx-font-smoothing: grayscale;
   --radius: 0.625rem;
   
-  --background: #F9F9FB;
-  --foreground: #1a0505;
+  --background: #fcfaf7;
+  --foreground: #1f1813;
   --card: #ffffff;
-  --card-foreground: #1a0505;
+  --card-foreground: #1f1813;
   --popover: #ffffff;
-  --popover-foreground: #3c0f3d;
-  --primary: #DC2626;
+  --popover-foreground: #1f1813;
+  --primary: #d62828;
   --primary-foreground: #ffffff;
-  --secondary: #DC2626;
-  --secondary-foreground: #ffffff;
-  --muted: #f1f5f9;
-  --muted-foreground: #fca5a5;
-  --accent: #fca5a5;
-  --accent-foreground: #ffffff;
+  --secondary: #fff1de;
+  --secondary-foreground: #8a3412;
+  --muted: #f5efe7;
+  --muted-foreground: #7a6659;
+  --accent: #ffedd5;
+  --accent-foreground: #7c2d12;
   --destructive: #ef4444;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #DC2626;
+  --border: #eadfd2;
+  --input: #eadfd2;
+  --ring: #d62828;
   --sidebar: #ffffff;
-  --sidebar-foreground: #1a0505;
-  --sidebar-primary: #DC2626;
+  --sidebar-foreground: #1f1813;
+  --sidebar-primary: #d62828;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #DC2626;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #DC2626;
+  --sidebar-accent: #fff1de;
+  --sidebar-accent-foreground: #8a3412;
+  --sidebar-border: #eadfd2;
+  --sidebar-ring: #d62828;
+  --landing-bg: #fcfaf7;
+  --landing-surface: rgba(255, 255, 255, 0.88);
+  --landing-surface-strong: #fffdf9;
+  --landing-hero: #18110d;
+  --landing-text: #231913;
+  --landing-text-muted: #6f5c51;
+  --landing-line: rgba(131, 93, 69, 0.16);
+  --landing-shadow: 0 20px 60px rgba(71, 43, 24, 0.12);
+  --landing-radius: 28px;
+  --landing-accent: #d62828;
+  --landing-accent-strong: #b91c1c;
+  --landing-accent-soft: #ffe5e5;
 }
 
 .user-app-theme {
@@ -150,6 +164,26 @@
   }
   body {
     @apply bg-background text-foreground m-0 min-h-screen;
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: rgba(214, 40, 40, 0.16);
+    color: #1f1813;
   }
 }
 
@@ -197,4 +231,67 @@
 .pac-container {
   z-index: 999999 !important;
   pointer-events: auto !important;
+}
+
+.landing-shell {
+  background:
+    radial-gradient(circle at top left, rgba(255, 210, 170, 0.22), transparent 32%),
+    linear-gradient(180deg, #fffdfa 0%, var(--landing-bg) 32%, #f7f0e8 100%);
+  color: var(--landing-text);
+}
+
+.landing-section-label {
+  font-family: var(--font-display);
+  letter-spacing: 0.22em;
+}
+
+.landing-title {
+  font-family: var(--font-display);
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+}
+
+.landing-subtitle {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.landing-copy {
+  color: var(--landing-text-muted);
+  line-height: 1.75;
+}
+
+.landing-panel {
+  background: var(--landing-surface);
+  border: 1px solid var(--landing-line);
+  box-shadow: var(--landing-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.landing-surface-card {
+  background: var(--landing-surface-strong);
+  border: 1px solid var(--landing-line);
+  box-shadow: 0 18px 45px rgba(71, 43, 24, 0.08);
+}
+
+.landing-button-primary {
+  background: linear-gradient(135deg, var(--landing-accent) 0%, var(--landing-accent-strong) 100%);
+  color: #fff;
+  box-shadow: 0 16px 30px rgba(185, 28, 28, 0.24);
+}
+
+.landing-button-primary:hover {
+  filter: brightness(1.02);
+  transform: translateY(-1px);
+}
+
+.landing-button-secondary {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.landing-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

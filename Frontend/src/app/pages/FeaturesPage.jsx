@@ -103,13 +103,7 @@ function FeatureCard({
   };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 24, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ duration: 0.4, ease: EASING.smooth }}
-      whileHover={{ y: -8, scale: 1.015 }}
+    <div
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={() => onSelect(index)}
@@ -117,7 +111,7 @@ function FeatureCard({
         transformStyle: 'preserve-3d',
         transform: `perspective(1000px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg)`
       }}
-      className={`group relative rounded-[28px] p-6.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none overflow-hidden ${
+      className={`group relative rounded-[28px] p-6.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none overflow-hidden hover:-translate-y-2 ${
         isSelected
           ? 'border-2 border-[color:var(--landing-accent)] bg-gradient-to-b from-[#FFFDF9] via-[#FFFAF7] to-[#FFF5F2] text-[color:var(--landing-text)] shadow-[0_22px_50px_rgba(224,51,47,0.14)]'
           : isFirstCard
@@ -221,7 +215,7 @@ function FeatureCard({
           <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-1.5" />
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -611,32 +605,27 @@ export default function FeaturesPage() {
             </div>
 
             {/* Features Cards Grid (Image 3 layout + Bhookingo Brand Palette) */}
-            <motion.div
-              layout
-              className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-            >
-              <AnimatePresence mode="popLayout">
-                {filteredFeatures.map((feature) => {
-                  const originalIdx = featuresList.findIndex(f => f.title === feature.title);
-                  const isSelected = selectedFeatureIdx === originalIdx;
+            <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredFeatures.map((feature) => {
+                const originalIdx = featuresList.findIndex(f => f.title === feature.title);
+                const isSelected = selectedFeatureIdx === originalIdx;
 
-                  return (
-                    <FeatureCard
-                      key={feature.title}
-                      feature={feature}
-                      index={originalIdx}
-                      isSelected={isSelected}
-                      onSelect={(idx) => setSelectedFeatureIdx(idx)}
-                      onExplore={() => {
-                        setSelectedFeatureIdx(originalIdx);
-                        openUserFlow();
-                      }}
-                      shouldReduceMotion={shouldReduceMotion}
-                    />
-                  );
-                })}
-              </AnimatePresence>
-            </motion.div>
+                return (
+                  <FeatureCard
+                    key={feature.title}
+                    feature={feature}
+                    index={originalIdx}
+                    isSelected={isSelected}
+                    onSelect={(idx) => setSelectedFeatureIdx(idx)}
+                    onExplore={() => {
+                      setSelectedFeatureIdx(originalIdx);
+                      openUserFlow();
+                    }}
+                    shouldReduceMotion={shouldReduceMotion}
+                  />
+                );
+              })}
+            </div>
           </div>
         </section>
 

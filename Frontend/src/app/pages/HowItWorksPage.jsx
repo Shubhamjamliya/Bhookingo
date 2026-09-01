@@ -236,61 +236,61 @@ function ParallaxStepCard({ step, index, openUserFlow, shouldReduceMotion }) {
     offset: ['start end', 'end start']
   });
 
-  // Parallax offsets
-  const textParallaxY = useTransform(scrollYProgress, [0, 1], [18, -18]);
-  const phoneParallaxY = useTransform(scrollYProgress, [0, 1], [-26, 26]);
-  const smoothTextY = useSpring(textParallaxY, { stiffness: 110, damping: 20 });
-  const smoothPhoneY = useSpring(phoneParallaxY, { stiffness: 110, damping: 20 });
+  // Subtle, stable offsets so content doesn't jump or move excessively
+  const textParallaxY = useTransform(scrollYProgress, [0, 1], [4, -4]);
+  const phoneParallaxY = useTransform(scrollYProgress, [0, 1], [-4, 4]);
+  const smoothTextY = useSpring(textParallaxY, { stiffness: 120, damping: 25 });
+  const smoothPhoneY = useSpring(phoneParallaxY, { stiffness: 120, damping: 25 });
 
   return (
     <motion.div
       ref={cardRef}
-      initial={{ opacity: 0, y: 35 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15 }}
-      transition={{ duration: 0.55, delay: 0.05, ease: EASING.smooth }}
-      className="group relative z-10 rounded-[36px] border border-red-100/90 bg-[linear-gradient(180deg,#fffdfa_0%,#fbf6f2_50%,#f8ede6_100%)] p-7 sm:p-9 lg:p-11 shadow-[0_18px_45px_rgba(71,43,24,0.06)] hover:shadow-[0_25px_60px_rgba(224,51,47,0.12)] hover:border-[#E0332F]/35 transition-all duration-400"
+      transition={{ duration: 0.45, ease: EASING.smooth }}
+      className="group relative z-10 rounded-[32px] border border-red-100/90 bg-[linear-gradient(180deg,#fffdfa_0%,#fbf6f2_50%,#f8ede6_100%)] p-6 sm:p-8 lg:p-10 shadow-[0_14px_38px_rgba(71,43,24,0.05)] hover:shadow-[0_20px_50px_rgba(224,51,47,0.10)] hover:border-[#E0332F]/30 transition-all duration-300"
     >
       <div className="grid gap-8 lg:grid-cols-12 items-center">
-        {/* Text Column with subtle parallax */}
+        {/* Text Column */}
         <motion.div
           style={{ y: shouldReduceMotion ? 0 : smoothTextY }}
-          className={`space-y-6 ${isEven ? 'lg:col-span-7 lg:order-1' : 'lg:col-span-7 lg:order-2'}`}
+          className={`space-y-5 ${isEven ? 'lg:col-span-7 lg:order-1' : 'lg:col-span-7 lg:order-2'}`}
         >
           {/* Top Step Badge & Tone Tag */}
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="font-[var(--font-display)] text-4xl sm:text-5xl font-black text-[color:var(--landing-accent)]">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="font-[var(--font-display)] text-3xl sm:text-4xl font-black text-[color:var(--landing-accent)]">
               {step.number}
             </span>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#18110D] text-white shadow-md transition-transform duration-300 group-hover:scale-108 group-hover:-rotate-3 group-hover:bg-[#E0332F]">
-              <step.icon className="h-6 w-6" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#18110D] text-white shadow-md transition-colors duration-300 group-hover:bg-[#E0332F]">
+              <step.icon className="h-5 w-5" />
             </div>
-            <span className="rounded-full bg-[#ffe5e5] px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-[0.16em] text-[color:var(--landing-accent)] font-[var(--font-ui)]">
+            <span className="rounded-full bg-[#ffe5e5] px-3 py-1 text-xs font-extrabold uppercase tracking-[0.14em] text-[color:var(--landing-accent)] font-[var(--font-ui)]">
               {step.tone}
             </span>
-            <span className="rounded-full bg-white/90 border border-red-100/80 px-3 py-1 text-[11px] font-bold text-slate-700 shadow-2xs font-[var(--font-ui)]">
+            <span className="rounded-full bg-white/90 border border-red-100/80 px-2.5 py-0.5 text-[11px] font-bold text-slate-700 shadow-2xs font-[var(--font-ui)]">
               {step.stat}
             </span>
           </div>
 
           {/* Title & Description */}
-          <div className="space-y-3">
-            <h3 className="font-[var(--font-display)] text-2xl sm:text-3xl font-black text-[color:var(--landing-text)] leading-tight">
+          <div className="space-y-2.5">
+            <h3 className="font-[var(--font-display)] text-2xl sm:text-[26px] font-black text-[color:var(--landing-text)] leading-tight">
               {step.title}
             </h3>
-            <p className="text-base leading-relaxed text-[color:var(--landing-text-muted)] font-[var(--font-ui)]">
+            <p className="text-sm sm:text-base leading-relaxed text-[color:var(--landing-text-muted)] font-[var(--font-ui)]">
               {step.description}
             </p>
           </div>
 
           {/* Highlight Pills */}
-          <div className="grid gap-3 sm:grid-cols-2 pt-2">
+          <div className="grid gap-2.5 sm:grid-cols-2 pt-1">
             {step.highlights.map((item) => (
               <div
                 key={item}
-                className="flex items-start gap-3 rounded-2xl bg-white/90 border border-red-100/70 px-4 py-3 shadow-2xs transition-colors hover:border-[#E0332F]/30"
+                className="flex items-start gap-2.5 rounded-2xl bg-white/90 border border-red-100/70 px-3.5 py-2.5 shadow-2xs transition-colors hover:border-[#E0332F]/30"
               >
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 <span className="text-xs sm:text-sm font-semibold text-[color:var(--landing-text)] font-[var(--font-ui)]">
                   {item}
                 </span>
@@ -302,48 +302,48 @@ function ParallaxStepCard({ step, index, openUserFlow, shouldReduceMotion }) {
           <div className="pt-2">
             <button
               onClick={openUserFlow}
-              className="inline-flex items-center gap-2.5 rounded-full bg-[#18110D] px-6 py-3.5 text-xs font-extrabold uppercase tracking-[0.16em] text-white shadow-md transition-all duration-300 hover:bg-[color:var(--landing-accent)] hover:shadow-lg active:scale-95 cursor-pointer font-[var(--font-ui)] group/btn"
+              className="inline-flex items-center gap-2 rounded-full bg-[#18110D] px-5 sm:px-6 py-3 text-xs font-extrabold uppercase tracking-[0.14em] text-white shadow-md transition-all duration-300 hover:bg-[color:var(--landing-accent)] hover:shadow-lg active:scale-95 cursor-pointer font-[var(--font-ui)] group/btn"
             >
               <span>Explore Step {step.number}</span>
-              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1.5" />
+              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
             </button>
           </div>
         </motion.div>
 
-        {/* Mobile Phone Mockup Column with Opposing Parallax */}
+        {/* Scaled-down Mobile Phone Mockup Column */}
         <motion.div
           style={{ y: shouldReduceMotion ? 0 : smoothPhoneY }}
           className={`flex justify-center ${isEven ? 'lg:col-span-5 lg:order-2' : 'lg:col-span-5 lg:order-1'}`}
         >
-          <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[310px]">
+          <div className="relative mx-auto w-full max-w-[210px] sm:max-w-[230px] md:max-w-[245px]">
             {/* Ambient Glow behind phone */}
-            <div className="pointer-events-none absolute -inset-3 rounded-[46px] bg-[rgba(224,51,47,0.14)] blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="pointer-events-none absolute -inset-2.5 rounded-[40px] bg-[rgba(224,51,47,0.12)] blur-lg opacity-70 transition-opacity duration-300" />
 
             {/* Phone Mockup Frame */}
-            <div className="relative overflow-hidden rounded-[40px] border-[7px] border-[#18110D] bg-[#18110D] p-1 shadow-[0_25px_60px_rgba(71,43,24,0.22)] transition-transform duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1.5">
-              {/* Dynamic Island / Speaker notch */}
-              <div className="absolute left-1/2 top-3 -translate-x-1/2 h-3.5 w-20 rounded-full bg-[#18110D] z-20" />
+            <div className="relative overflow-hidden rounded-[36px] border-[5.5px] border-[#18110D] bg-[#18110D] p-0.5 shadow-[0_20px_45px_rgba(71,43,24,0.18)] transition-all duration-300">
+              {/* Dynamic Island notch */}
+              <div className="absolute left-1/2 top-2.5 -translate-x-1/2 h-3 w-16 rounded-full bg-[#18110D] z-20" />
 
               {/* Phone Screen Image */}
-              <div className="overflow-hidden rounded-[32px] bg-white aspect-[9/19.5]">
+              <div className="overflow-hidden rounded-[30px] bg-white aspect-[9/19]">
                 <img
                   src={step.image}
                   alt={step.title}
-                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-full object-cover object-top"
                   loading="lazy"
                 />
               </div>
 
               {/* Floating Step Tag */}
-              <div className="absolute -bottom-1.5 right-3 z-20 flex items-center gap-2 rounded-2xl border border-white/90 bg-white/95 px-3 py-1.5 shadow-lg backdrop-blur-md">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#fff1f1] text-[#E0332F]">
-                  <step.icon className="h-3.5 w-3.5" />
+              <div className="absolute -bottom-1.5 right-2 z-20 flex items-center gap-1.5 rounded-xl border border-white/90 bg-white/95 px-2.5 py-1 shadow-md backdrop-blur-md">
+                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#fff1f1] text-[#E0332F]">
+                  <step.icon className="h-3 w-3" />
                 </div>
                 <div>
-                  <div className="text-[9px] font-extrabold uppercase tracking-wider text-[#E0332F] font-[var(--font-ui)]">
+                  <div className="text-[8.5px] font-extrabold uppercase tracking-wider text-[#E0332F] font-[var(--font-ui)]">
                     Step {step.number}
                   </div>
-                  <div className="text-[11px] font-bold text-slate-900 font-[var(--font-ui)]">
+                  <div className="text-[10px] font-bold text-slate-900 font-[var(--font-ui)]">
                     {step.stat}
                   </div>
                 </div>

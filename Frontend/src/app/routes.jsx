@@ -8,6 +8,7 @@ const NATIVE_LAST_ROUTE_KEY = 'native_last_route'
 const FoodApp = lazy(() => import('../modules/Food/routes'))
 const AuthApp = lazy(() => import('../modules/auth/routes'))
 import ProtectedRoute from '@food/components/ProtectedRoute'
+import ScrollToTop from '../shared/components/motion/ScrollToTop'
 
 const PageLoader = () => (
   <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-6 bg-white dark:bg-[#0a0a0a]">
@@ -103,14 +104,18 @@ const AppRoutes = () => {
   }, [location.pathname, location.search])
 
   return (
-    <Suspense fallback={<AppShellSkeleton />}>
-      <Routes>
-        {/* Landing Page */}
-        <Route path="/" element={
-          <Suspense fallback={<PageLoader />}>
-            <MasterLandingPage />
-          </Suspense>
-        } />
+    <>
+      {/* Scroll to Top Manager & Floating Back-To-Top Button */}
+      <ScrollToTop />
+
+      <Suspense fallback={<AppShellSkeleton />}>
+        <Routes>
+          {/* Landing Page */}
+          <Route path="/" element={
+            <Suspense fallback={<PageLoader />}>
+              <MasterLandingPage />
+            </Suspense>
+          } />
         <Route path="/how-it-works" element={<Suspense fallback={<PageLoader />}><HowItWorksPage /></Suspense>} />
         <Route path="/features" element={<Suspense fallback={<PageLoader />}><FeaturesPage /></Suspense>} />
         <Route path="/for-restaurants" element={<Suspense fallback={<PageLoader />}><ForRestaurantsPage /></Suspense>} />
@@ -147,6 +152,7 @@ const AppRoutes = () => {
         <Route path="/*" element={<FoodAppWrapper />} />
       </Routes>
     </Suspense>
+    </>
   )
 }
 

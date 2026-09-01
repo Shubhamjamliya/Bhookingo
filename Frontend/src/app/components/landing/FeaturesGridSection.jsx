@@ -97,20 +97,20 @@ export default function FeaturesGridSection() {
   const shouldReduceMotion = useReducedMotionSafe();
 
   return (
-    <section id="features" className="py-20 md:py-28 bg-white relative overflow-hidden">
+    <section id="features" className="py-12 md:py-16 bg-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <div className="text-center max-w-3xl mx-auto mb-10 space-y-2.5">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: MOTION_RULES.interaction, ease: EASING.smooth }}
-            className="inline-flex items-center gap-2 rounded-full border border-[#E0332F]/20 bg-red-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#E0332F]"
+            className="inline-flex items-center gap-2 rounded-full border border-[#E0332F]/20 bg-red-50 px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#E0332F]"
             style={{ fontFamily: 'var(--font-ui)' }}
           >
-            <Layers className="w-3.5 h-3.5" />
+            <Layers className="w-3 h-3" />
             <span>COMPREHENSIVE HIGHWAY AMENITIES</span>
           </motion.div>
 
@@ -119,7 +119,7 @@ export default function FeaturesGridSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: MOTION_RULES.reveal, delay: 0.08, ease: EASING.smooth }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-[1.05]"
+            className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight leading-[1.1]"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Everything You Need in <span className="text-[#E0332F]">One Highway App</span>
@@ -130,7 +130,7 @@ export default function FeaturesGridSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: MOTION_RULES.reveal, delay: 0.15, ease: EASING.smooth }}
-            className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal"
+            className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal"
             style={{ fontFamily: 'var(--font-ui)' }}
           >
             Engineered from ground up to solve real roadside problems with precision technology.
@@ -144,36 +144,36 @@ export default function FeaturesGridSection() {
           whileInView="visible"
           viewport={{ once: true, amount: 0.1 }}
           style={{ fontFamily: 'var(--font-ui)' }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4.5"
         >
           {FEATURES.map((feature, idx) => (
             <motion.div
               key={idx}
               variants={cardVariants}
               whileHover={{ y: -MOTION_RULES.maxHoverLift }}
-              className="relative group rounded-3xl border border-slate-200/80 bg-[#FCFAF8] p-6 shadow-sm transition-all hover:bg-white hover:border-[#E0332F]/30 hover:shadow-[0_16px_35px_rgba(224,51,47,0.08)] flex flex-col justify-between cursor-pointer"
+              className="relative group rounded-2xl border border-slate-200/80 bg-[#FCFAF8] p-4.5 sm:p-5 shadow-2xs transition-all hover:bg-white hover:border-[#E0332F]/30 hover:shadow-[0_12px_28px_rgba(224,51,47,0.08)] flex flex-col justify-between cursor-pointer"
             >
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-2xl ${feature.theme} border flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-md transition-all duration-300`}>
-                    <feature.icon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-6" />
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`w-10 h-10 rounded-xl ${feature.theme} border flex items-center justify-center shadow-2xs group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-xs transition-all duration-300`}>
+                    <feature.icon className="w-4.5 h-4.5 transition-transform duration-300 group-hover:rotate-6" />
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-200/60 text-slate-700 group-hover:bg-red-50 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
+                  <span className="text-[9.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-200/60 text-slate-700 group-hover:bg-red-50 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                     {feature.badge}
                   </span>
                 </div>
 
-                <h3 className="text-base font-bold text-slate-900 mb-2 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-1.5 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                   {feature.title}
                 </h3>
 
-                <p className="text-sm text-slate-600 leading-relaxed font-normal" style={{ fontFamily: 'var(--font-ui)' }}>
+                <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed font-normal" style={{ fontFamily: 'var(--font-ui)' }}>
                   {feature.desc}
                 </p>
               </div>
 
               {/* Bottom Subtle Accent */}
-              <div className="mt-5 pt-3 border-t border-slate-200/60 flex items-center text-[11px] font-bold text-slate-400 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
+              <div className="mt-4 pt-2.5 border-t border-slate-200/60 flex items-center text-[10.5px] font-bold text-slate-400 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                 <span>Explore Feature &rarr;</span>
               </div>
             </motion.div>

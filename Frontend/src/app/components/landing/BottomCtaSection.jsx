@@ -8,7 +8,7 @@ export default function BottomCtaSection({ onAuthClick }) {
   const shouldReduceMotion = useReducedMotionSafe();
 
   return (
-    <section className="relative overflow-hidden bg-[#150F0B] py-16 md:py-20 text-white border-y border-white/10">
+    <section className="relative overflow-hidden bg-[#150F0B] py-10 md:py-14 text-white border-y border-white/10">
       {/* Background highway ambient glow */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#E0332F]/15 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#D62828]/10 rounded-full blur-3xl pointer-events-none -z-10" />
@@ -19,33 +19,33 @@ export default function BottomCtaSection({ onAuthClick }) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: MOTION_RULES.section, ease: EASING.smooth }}
-          className="flex flex-col lg:flex-row items-center justify-between gap-8 rounded-[36px] bg-gradient-to-r from-white/8 via-white/5 to-white/8 p-8 sm:p-12 border border-white/15 backdrop-blur-xl shadow-2xl"
+          className="flex flex-col lg:flex-row items-center justify-between gap-6 rounded-3xl bg-gradient-to-r from-white/8 via-white/5 to-white/8 p-6 sm:p-8 border border-white/15 backdrop-blur-xl shadow-2xl"
         >
           {/* Left Text */}
-          <div className="space-y-3 text-center lg:text-left max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#E0332F]/30 bg-red-950/60 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.12em] text-[#FF8582]" style={{ fontFamily: 'var(--font-ui)' }}>
-              <Star className="w-3.5 h-3.5 fill-current text-[#E0332F]" />
+          <div className="space-y-2 text-center lg:text-left max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#E0332F]/30 bg-red-950/60 px-3 py-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#FF8582]" style={{ fontFamily: 'var(--font-ui)' }}>
+              <Star className="w-3 h-3 fill-current text-[#E0332F]" />
               <span>START TRAVELING SMARTER</span>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight leading-[1.05]" style={{ fontFamily: 'var(--font-display)' }}>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-[1.1]" style={{ fontFamily: 'var(--font-display)' }}>
               Hungry on the Highway? <br className="hidden sm:inline" />
               <span className="text-[#E0332F]">Order Before You Arrive.</span>
             </h2>
 
-            <p className="text-base text-slate-300 font-normal leading-relaxed" style={{ fontFamily: 'var(--font-ui)' }}>
+            <p className="text-xs sm:text-sm text-slate-300 font-normal leading-relaxed" style={{ fontFamily: 'var(--font-ui)' }}>
               Save 30-45 minutes per stop. Experience verified dhabas, clean restrooms, and piping hot food ready the moment you step in.
             </p>
           </div>
 
           {/* Right App Store & Google Play Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4 shrink-0" style={{ fontFamily: 'var(--font-ui)' }}>
+          <div className="flex flex-wrap items-center justify-center gap-3 shrink-0" style={{ fontFamily: 'var(--font-ui)' }}>
             {/* Google Play Button */}
             <motion.button
               onClick={onAuthClick}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.97 }}
-              className="bg-black hover:bg-slate-900 text-white px-6 py-3.5 rounded-2xl border border-white/20 flex items-center gap-3.5 shadow-xl transition-all group cursor-pointer"
+              className="bg-black hover:bg-slate-900 text-white px-5 py-3 rounded-xl border border-white/20 flex items-center gap-3 shadow-lg transition-all group cursor-pointer"
             >
               <svg className="w-7 h-7 shrink-0" viewBox="0 0 24 24" fill="none">
                 <path d="M3.25 2.3c-.15.15-.25.38-.25.68v18.04c0 .3.1.53.25.68l.08.08L13.5 12.18v-.18L3.33 2.22l-.08.08z" fill="url(#bottomCtaPlay1)" />

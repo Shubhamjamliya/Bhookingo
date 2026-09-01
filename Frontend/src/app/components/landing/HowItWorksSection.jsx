@@ -59,7 +59,7 @@ export default function HowItWorksSection() {
   };
 
   return (
-    <section id="how-it-works" className="py-20 md:py-28 relative overflow-hidden bg-gradient-to-b from-[#FCFAF7] via-white to-[#F9F6F1]">
+    <section id="how-it-works" className="py-12 md:py-16 relative overflow-hidden bg-gradient-to-b from-[#FCFAF7] via-white to-[#F9F6F1]">
       {/* Decorative highway background watermarks */}
       <div className="absolute -top-24 right-0 w-96 h-96 bg-red-100/40 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-100/30 rounded-full blur-3xl pointer-events-none -z-10" />
@@ -67,16 +67,16 @@ export default function HowItWorksSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+        <div className="text-center max-w-3xl mx-auto mb-10 space-y-2.5">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 rounded-full border border-[#E0332F]/20 bg-red-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#E0332F]"
+            className="inline-flex items-center gap-2 rounded-full border border-[#E0332F]/20 bg-red-50 px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#E0332F]"
             style={{ fontFamily: 'var(--font-ui)' }}
           >
-            <Navigation2 className="w-3.5 h-3.5 fill-current" />
+            <Navigation2 className="w-3 h-3 fill-current" />
             <span>HOW BHOOKINGO WORKS</span>
           </motion.div>
 
@@ -85,7 +85,7 @@ export default function HowItWorksSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-[1.05]"
+            className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight leading-[1.1]"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Seamless Highway Dining in <span className="text-[#E0332F]">4 Simple Steps</span>
@@ -96,14 +96,14 @@ export default function HowItWorksSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal"
+            className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal"
             style={{ fontFamily: 'var(--font-ui)' }}
           >
             No more wandering for unknown dhabas. Experience smart food-tech built specifically for Indian highways.
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
           {/* Left Column: Interactive 4-Step Journey Grid (8 Cols) */}
           <div className="lg:col-span-8">
@@ -116,49 +116,49 @@ export default function HowItWorksSection() {
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.2 }}
                 style={{ fontFamily: 'var(--font-ui)' }}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10"
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 relative z-10"
               >
                 {STEPS.map((step, idx) => (
                   <motion.div
                     key={idx}
                     variants={cardVariants}
                     whileHover={{ y: -MOTION_RULES.maxHoverLift }}
-                    className="relative group rounded-3xl border border-red-100/80 bg-[linear-gradient(180deg,#fff9f8_0%,#fcf5f2_50%,#f8ede8_100%)] p-7 shadow-[0_14px_35px_rgba(71,43,24,0.05)] transition-all duration-300 hover:border-[#E0332F]/40 hover:shadow-[0_22px_50px_rgba(224,51,47,0.12)] flex flex-col justify-between"
+                    className="relative group rounded-2xl border border-red-100/80 bg-[linear-gradient(180deg,#fff9f8_0%,#fcf5f2_50%,#f8ede8_100%)] p-5 sm:p-5.5 shadow-[0_10px_25px_rgba(71,43,24,0.04)] transition-all duration-300 hover:border-[#E0332F]/40 hover:shadow-[0_18px_40px_rgba(224,51,47,0.1)] flex flex-col justify-between"
                   >
                     {/* Top Step Number & Badge */}
-                    <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center justify-between mb-4">
                       <div className="relative">
-                        <div className="w-14 h-14 rounded-2xl bg-[#18110D] border border-[#2B1E17] flex items-center justify-center text-white shadow-md group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-[#E0332F] group-hover:text-white transition-all duration-300">
-                          <step.icon className="w-6 h-6 transition-transform duration-300 group-hover:rotate-6" />
+                        <div className="w-11 h-11 rounded-xl bg-[#18110D] border border-[#2B1E17] flex items-center justify-center text-white shadow-sm group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-[#E0332F] group-hover:text-white transition-all duration-300">
+                          <step.icon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-6" />
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 border border-red-100/80 text-slate-700 group-hover:bg-red-50 group-hover:text-[#E0332F] transition-colors shadow-2xs" style={{ fontFamily: 'var(--font-ui)' }}>
+                        <span className="text-[9.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/90 border border-red-100/80 text-slate-700 group-hover:bg-red-50 group-hover:text-[#E0332F] transition-colors shadow-2xs" style={{ fontFamily: 'var(--font-ui)' }}>
                           {step.badge}
                         </span>
-                        <span className="text-xl font-bold text-slate-300 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
+                        <span className="text-lg font-bold text-slate-300 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                           {step.num}
                         </span>
                       </div>
                     </div>
 
                     {/* Step Title & Desc */}
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
+                    <div className="space-y-1.5">
+                      <h3 className="text-base font-bold text-slate-900 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                         {step.title}
                       </h3>
-                      <p className="text-sm text-slate-600 leading-relaxed font-normal" style={{ fontFamily: 'var(--font-ui)' }}>
+                      <p className="text-xs sm:text-[13px] text-slate-600 leading-relaxed font-normal" style={{ fontFamily: 'var(--font-ui)' }}>
                         {step.desc}
                       </p>
                     </div>
 
                     {/* Subtle bottom progress indicator */}
-                    <div className="mt-5 pt-4 border-t border-red-100/70 flex items-center justify-between text-xs font-semibold text-slate-400" style={{ fontFamily: 'var(--font-ui)' }}>
+                    <div className="mt-4 pt-3 border-t border-red-100/70 flex items-center justify-between text-[11px] font-semibold text-slate-400" style={{ fontFamily: 'var(--font-ui)' }}>
                       <span className="flex items-center gap-1.5 text-emerald-600">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <CheckCircle2 className="w-3 h-3" />
                         <span>Instant Sync</span>
                       </span>
-                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 group-hover:text-[#E0332F] transition-all" />
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:translate-x-1 group-hover:text-[#E0332F] transition-all" />
                     </div>
                   </motion.div>
                 ))}

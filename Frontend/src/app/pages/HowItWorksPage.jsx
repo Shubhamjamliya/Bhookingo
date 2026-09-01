@@ -315,17 +315,17 @@ function ParallaxStepCard({ step, index, openUserFlow, shouldReduceMotion }) {
           style={{ y: shouldReduceMotion ? 0 : smoothPhoneY }}
           className={`flex justify-center ${isEven ? 'lg:col-span-5 lg:order-2' : 'lg:col-span-5 lg:order-1'}`}
         >
-          <div className="relative mx-auto w-full max-w-[210px] sm:max-w-[230px] md:max-w-[245px]">
+          <div className="relative mx-auto w-full max-w-[165px] sm:max-w-[185px] md:max-w-[195px] lg:max-w-[205px]">
             {/* Ambient Glow behind phone */}
-            <div className="pointer-events-none absolute -inset-2.5 rounded-[40px] bg-[rgba(224,51,47,0.12)] blur-lg opacity-70 transition-opacity duration-300" />
+            <div className="pointer-events-none absolute -inset-2 rounded-[34px] bg-[rgba(224,51,47,0.12)] blur-md opacity-70 transition-opacity duration-300" />
 
             {/* Phone Mockup Frame */}
-            <div className="relative overflow-hidden rounded-[36px] border-[5.5px] border-[#18110D] bg-[#18110D] p-0.5 shadow-[0_20px_45px_rgba(71,43,24,0.18)] transition-all duration-300">
+            <div className="relative overflow-hidden rounded-[30px] border-[4.5px] border-[#18110D] bg-[#18110D] p-0.5 shadow-[0_16px_36px_rgba(71,43,24,0.16)] transition-all duration-300">
               {/* Dynamic Island notch */}
-              <div className="absolute left-1/2 top-2.5 -translate-x-1/2 h-3 w-16 rounded-full bg-[#18110D] z-20" />
+              <div className="absolute left-1/2 top-2 -translate-x-1/2 h-2.5 w-12 rounded-full bg-[#18110D] z-20" />
 
               {/* Phone Screen Image */}
-              <div className="overflow-hidden rounded-[30px] bg-white aspect-[9/19]">
+              <div className="overflow-hidden rounded-[24px] bg-white aspect-[9/19]">
                 <img
                   src={step.image}
                   alt={step.title}
@@ -335,15 +335,15 @@ function ParallaxStepCard({ step, index, openUserFlow, shouldReduceMotion }) {
               </div>
 
               {/* Floating Step Tag */}
-              <div className="absolute -bottom-1.5 right-2 z-20 flex items-center gap-1.5 rounded-xl border border-white/90 bg-white/95 px-2.5 py-1 shadow-md backdrop-blur-md">
-                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#fff1f1] text-[#E0332F]">
-                  <step.icon className="h-3 w-3" />
+              <div className="absolute -bottom-1 right-1.5 z-20 flex items-center gap-1 rounded-lg border border-white/90 bg-white/95 px-2 py-0.5 shadow-md backdrop-blur-md">
+                <div className="flex h-4.5 w-4.5 items-center justify-center rounded-md bg-[#fff1f1] text-[#E0332F]">
+                  <step.icon className="h-2.5 w-2.5" />
                 </div>
                 <div>
-                  <div className="text-[8.5px] font-extrabold uppercase tracking-wider text-[#E0332F] font-[var(--font-ui)]">
+                  <div className="text-[7.5px] font-extrabold uppercase tracking-wider text-[#E0332F] font-[var(--font-ui)]">
                     Step {step.number}
                   </div>
-                  <div className="text-[10px] font-bold text-slate-900 font-[var(--font-ui)]">
+                  <div className="text-[9px] font-bold text-slate-900 font-[var(--font-ui)]">
                     {step.stat}
                   </div>
                 </div>
@@ -376,7 +376,7 @@ export default function HowItWorksPage() {
 
       <PageTransition>
         <main className="flex-1">
-        <section className="relative overflow-hidden bg-[#100B08] text-white flex items-center py-12 sm:py-16 lg:py-20 min-h-[640px] lg:min-h-[700px]">
+        <section className="relative overflow-hidden bg-[#100B08] text-white flex items-center py-8 sm:py-10 lg:py-12 min-h-[500px] lg:min-h-[560px]">
           <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
             <img
               src="/assets/images/landingbg.png"
@@ -389,7 +389,7 @@ export default function HowItWorksPage() {
           </div>
 
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-6">
               {/* Left Content Column */}
               <div className="lg:col-span-7 flex flex-col justify-center">
                 <div>
@@ -398,19 +398,19 @@ export default function HowItWorksPage() {
                   </span>
                 </div>
 
-                <div className="mt-6 sm:mt-7">
+                <div className="mt-4 sm:mt-5">
                   <h1 className="landing-hero-h1 max-w-2xl">
                     From highway hunger to a planned stop <span className="text-[color:var(--landing-accent)]">without the chaos</span>
                   </h1>
-                  <p className="landing-hero-body mt-4 sm:mt-5">
+                  <p className="landing-hero-body mt-3 sm:mt-3.5">
                     Bhookingo is built for real road journeys. It helps travelers discover better highway restaurants ahead, order before arrival, and turn random breaks into smoother, smarter stops.
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 mt-7 sm:mt-8">
+                <div className="flex flex-wrap items-center gap-3 mt-5 sm:mt-6">
                   <button
                     onClick={openUserFlow}
-                    className="landing-button-primary flex items-center gap-2.5 rounded-full px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_25px_rgba(224,51,47,0.35)] hover:shadow-[0_12px_32px_rgba(224,51,47,0.55)] transition-all active:scale-95 group cursor-pointer"
+                    className="landing-button-primary flex items-center gap-2 rounded-full px-6 sm:px-7 py-3 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_25px_rgba(224,51,47,0.35)] hover:shadow-[0_12px_32px_rgba(224,51,47,0.55)] transition-all active:scale-95 group cursor-pointer"
                   >
                     <Smartphone className="h-4 w-4 transition-transform group-hover:rotate-12" />
                     <span>Try Bhookingo</span>
@@ -418,7 +418,7 @@ export default function HowItWorksPage() {
                   </button>
                   <a
                     href="#journey-steps"
-                    className="landing-button-secondary flex items-center gap-2.5 rounded-full px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold tracking-wider text-white shadow-lg backdrop-blur-md transition-all group cursor-pointer"
+                    className="landing-button-secondary flex items-center gap-2 rounded-full px-6 sm:px-7 py-3 text-xs sm:text-sm font-bold tracking-wider text-white shadow-lg backdrop-blur-md transition-all group cursor-pointer"
                   >
                     <span>See The Flow</span>
                     <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -426,7 +426,7 @@ export default function HowItWorksPage() {
                 </div>
 
                 {/* Standardized Three Pillar Cards in Hero */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 sm:mt-9">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-6 sm:mt-7">
                   {[
                     { value: 'Forward-First', label: 'Restaurant discovery built for highway direction' },
                     { value: 'Pre-Order', label: 'Food before arrival, not after the wait' },
@@ -444,47 +444,47 @@ export default function HowItWorksPage() {
               </div>
 
               {/* Right Mobile Flow Mockup */}
-              <div className="lg:col-span-5 lg:pl-2 xl:pl-4 mt-8 lg:mt-0">
+              <div className="lg:col-span-5 lg:pl-2 xl:pl-4 mt-6 lg:mt-0">
                 <div className="landing-showcase-panel-outer">
                   <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
                   <div className="pointer-events-none absolute -left-8 bottom-8 h-20 w-20 rounded-full bg-white/8 blur-2xl" />
 
                   <div className="landing-showcase-panel-inner">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                       <div>
-                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#FF8582]">
+                        <div className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#FF8582]">
                           Example journey
                         </div>
-                        <h2 className="pt-0.5 font-[var(--font-display)] text-lg sm:text-xl font-bold text-white">
+                        <h2 className="pt-0.5 font-[var(--font-display)] text-base sm:text-lg font-bold text-white">
                           Hyderabad to Vijayawada
                         </h2>
-                        <p className="pt-0.5 text-[11px] sm:text-xs text-[#e8d8ce] leading-relaxed font-[var(--font-ui)]">
+                        <p className="pt-0.5 text-[10.5px] sm:text-[11px] text-[#e8d8ce] leading-relaxed font-[var(--font-ui)]">
                           See how Bhookingo guides one highway food stop from route detection to pickup.
                         </p>
                       </div>
-                      <div className="rounded-xl border border-white/10 bg-white/8 p-2.5 text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                        <Navigation className="h-4.5 w-4.5" />
+                      <div className="rounded-xl border border-white/10 bg-white/8 p-2 text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                        <Navigation className="h-4 w-4" />
                       </div>
                     </div>
 
-                    <div className="space-y-2 pt-3">
+                    <div className="space-y-1.5 pt-2.5">
                       {[
                         { icon: LocateFixed, title: 'Route detected', detail: 'The app understands your highway direction and focuses only on stops ahead.' },
                         { icon: Store, title: 'Best stop options appear', detail: 'You see relevant restaurants with parking, washroom, and comfort details early.' },
                         { icon: UtensilsCrossed, title: 'Order before arrival', detail: 'Choose takeaway or dine-in, then place the order while you are still on the road.' },
                         { icon: Sparkles, title: 'Stop smarter, continue faster', detail: 'You arrive with more confidence, spend less time waiting, and get back on route smoothly.' }
                       ].map((item, index) => (
-                        <div key={item.title} className="rounded-xl border border-white/8 bg-white/[0.04] p-2 sm:p-2.5 backdrop-blur-sm">
-                          <div className="flex items-start gap-3">
+                        <div key={item.title} className="rounded-xl border border-white/8 bg-white/[0.04] p-2 backdrop-blur-sm">
+                          <div className="flex items-start gap-2.5">
                             <div className="flex flex-col items-center">
-                              <div className="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.04)_100%)] text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                                <item.icon className="h-4 w-4" />
+                              <div className="flex h-7.5 w-7.5 items-center justify-center rounded-lg border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.04)_100%)] text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                                <item.icon className="h-3.5 w-3.5" />
                               </div>
-                              {index < 3 ? <div className="my-0.5 h-2.5 sm:h-3 w-px bg-white/15" /> : null}
+                              {index < 3 ? <div className="my-0.5 h-2 w-px bg-white/15" /> : null}
                             </div>
                             <div className="pt-0.5 min-w-0">
-                              <h3 className="font-[var(--font-display)] text-xs sm:text-sm font-bold text-white leading-tight">{item.title}</h3>
-                              <p className="pt-0.5 text-[10.5px] sm:text-[11px] leading-4 text-[#dccac0] font-[var(--font-ui)]">{item.detail}</p>
+                              <h3 className="font-[var(--font-display)] text-xs sm:text-[13px] font-bold text-white leading-tight">{item.title}</h3>
+                              <p className="pt-0.5 text-[10px] sm:text-[10.5px] leading-3.5 text-[#dccac0] font-[var(--font-ui)]">{item.detail}</p>
                             </div>
                           </div>
                         </div>
@@ -497,31 +497,31 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        <section className="border-y border-[color:var(--landing-line)] bg-[rgba(255,255,255,0.65)] py-8">
-          <div className="mx-auto grid max-w-7xl gap-4 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+        <section className="border-y border-[color:var(--landing-line)] bg-[rgba(255,255,255,0.65)] py-6">
+          <div className="mx-auto grid max-w-7xl gap-3.5 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
             {benefitCards.map((item, index) => (
               <div
                 key={item.title}
-                className="relative rounded-[24px] border border-[color:var(--landing-line)] bg-white p-5 shadow-[0_14px_35px_rgba(71,43,24,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(71,43,24,0.1)]"
+                className="relative rounded-2xl border border-[color:var(--landing-line)] bg-white p-4 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
               >
-                <div className="absolute left-0 top-6 h-12 w-1 rounded-r-full bg-[color:var(--landing-accent)]" />
-                <div className="flex items-start justify-between gap-4 pl-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff1f1] text-[color:var(--landing-accent)]">
-                    <item.icon className="h-5 w-5" />
+                <div className="absolute left-0 top-5 h-10 w-1 rounded-r-full bg-[color:var(--landing-accent)]" />
+                <div className="flex items-start justify-between gap-3 pl-2.5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff1f1] text-[color:var(--landing-accent)]">
+                    <item.icon className="h-4.5 w-4.5" />
                   </div>
-                  <span className="text-sm font-black text-[#d1c3b9]">
+                  <span className="text-xs font-black text-[#d1c3b9]">
                     0{index + 1}
                   </span>
                 </div>
-                <h3 className="pt-5 pl-3 font-[var(--font-display)] text-lg font-black text-[color:var(--landing-text)]">
+                <h3 className="pt-3.5 pl-2.5 font-[var(--font-display)] text-base font-black text-[color:var(--landing-text)]">
                   {item.title}
                 </h3>
-                <p className="pt-2 pl-3 text-sm leading-7 text-[color:var(--landing-text-muted)]">
+                <p className="pt-1.5 pl-2.5 text-xs sm:text-[13px] leading-relaxed text-[color:var(--landing-text-muted)]">
                   {item.copy}
                 </p>
-                <div className="pt-5 pl-3">
-                  <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[color:var(--landing-accent)]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--landing-accent)]" />
+                <div className="pt-3 pl-2.5">
+                  <div className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[color:var(--landing-accent)]">
+                    <ShieldCheck className="h-3.5 w-3.5" />
                     <span>Highway Advantage</span>
                   </div>
                 </div>
@@ -530,28 +530,28 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        <section id="journey-steps" ref={stepsSectionRef} className="relative overflow-hidden bg-[linear-gradient(180deg,#fff9f7_0%,#fcf5f1_50%,#f8ece6_100%)] border-b border-[color:var(--landing-line)] py-20 md:py-28">
+        <section id="journey-steps" ref={stepsSectionRef} className="relative overflow-hidden bg-[linear-gradient(180deg,#fff9f7_0%,#fcf5f1_50%,#f8ece6_100%)] border-b border-[color:var(--landing-line)] py-12 md:py-16">
           {/* Atmospheric Glow Highlights */}
           <div className="pointer-events-none absolute -right-24 top-1/4 h-96 w-96 rounded-full bg-[rgba(224,51,47,0.08)] blur-3xl" />
           <div className="pointer-events-none absolute -left-24 bottom-1/4 h-96 w-96 rounded-full bg-[rgba(245,158,11,0.06)] blur-3xl" />
 
           <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {/* Section Header */}
-            <div className="mx-auto max-w-3xl text-center space-y-3">
-              <span className="landing-section-label text-xs font-extrabold uppercase tracking-[0.16em] text-[color:var(--landing-accent)]" style={{ fontFamily: 'var(--font-ui)' }}>
+            <div className="mx-auto max-w-3xl text-center space-y-2.5">
+              <span className="landing-section-label text-[11px] font-extrabold uppercase tracking-[0.16em] text-[color:var(--landing-accent)]" style={{ fontFamily: 'var(--font-ui)' }}>
                 Step By Step Journey
               </span>
-              <h2 className="landing-subtitle text-3xl font-black sm:text-4xl text-[color:var(--landing-text)]" style={{ fontFamily: 'var(--font-display)' }}>
+              <h2 className="landing-subtitle text-2xl sm:text-3xl font-black text-[color:var(--landing-text)]" style={{ fontFamily: 'var(--font-display)' }}>
                 A Better Highway Food Experience,
                 <span className="text-[color:var(--landing-accent)]"> Broken into Simple Moments</span>
               </h2>
-              <p className="text-base font-bold leading-8 text-[color:var(--landing-text-muted)] max-w-2xl mx-auto" style={{ fontFamily: 'var(--font-ui)' }}>
+              <p className="text-sm font-bold leading-relaxed text-[color:var(--landing-text-muted)] max-w-2xl mx-auto" style={{ fontFamily: 'var(--font-ui)' }}>
                 Follow the highway path: discover what lies ahead, customize your order before the stop, and keep your trip seamless.
               </p>
             </div>
 
             {/* Curved Journey Highway with Real App Screens & Parallax */}
-            <div className="relative mt-16 space-y-6 sm:space-y-8">
+            <div className="relative mt-10 space-y-5 sm:space-y-6">
               {steps.map((step, index) => {
                 const isEven = index % 2 === 0;
                 const fromSide = isEven ? 'right' : 'left';
@@ -587,17 +587,17 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        <section className="border-y border-[color:var(--landing-line)] bg-[linear-gradient(180deg,#fff8f7_0%,#fff2f2_100%)] py-16 md:py-24">
+        <section className="border-y border-[color:var(--landing-line)] bg-[linear-gradient(180deg,#fff8f7_0%,#fff2f2_100%)] py-10 md:py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-8 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2">
               {paths.map((path, index) => (
-                <div key={path.title} className="landing-surface-card rounded-[32px] p-7 sm:p-8">
+                <div key={path.title} className="landing-surface-card rounded-2xl p-6 sm:p-7">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <span className={`rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${index === 0 ? 'bg-[#ffe5e5] text-[color:var(--landing-accent)]' : 'bg-emerald-100 text-emerald-700'}`}>
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.16em] ${index === 0 ? 'bg-[#ffe5e5] text-[color:var(--landing-accent)]' : 'bg-emerald-100 text-emerald-700'}`}>
                         {path.label}
                       </span>
-                      <h3 className="pt-4 font-[var(--font-display)] text-3xl font-black text-[color:var(--landing-text)]">{path.title}</h3>
+                      <h3 className="pt-3 font-[var(--font-display)] text-2xl font-black text-[color:var(--landing-text)]">{path.title}</h3>
                     </div>
                     <div className={`rounded-2xl p-3 ${index === 0 ? 'bg-[#fff1f1] text-[color:var(--landing-accent)]' : 'bg-emerald-50 text-emerald-700'}`}>
                       <path.icon className="h-6 w-6" />

@@ -108,7 +108,7 @@ export default function HowItWorksPage() {
       <LandingHeader />
 
       <main className="flex-1">
-        <section className="relative overflow-hidden bg-[#16100d] text-white">
+        <section className="relative overflow-hidden bg-[#16100d] text-white flex flex-col justify-center lg:min-h-[calc(100vh-76px)]">
           <div className="absolute inset-0">
             <img
               src="/assets/images/landingbg.png"
@@ -118,95 +118,105 @@ export default function HowItWorksPage() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(214,40,40,0.24),transparent_28%),linear-gradient(180deg,rgba(12,8,8,0.7)_0%,rgba(12,8,8,0.78)_48%,rgba(12,8,8,0.88)_100%)]" />
           </div>
 
-          <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-24">
-            <div className="lg:col-span-7 space-y-6">
-              <span className="landing-section-label inline-flex rounded-full border border-white/15 bg-white/12 px-4 py-2 text-[11px] font-extrabold uppercase text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
+          <div className="relative mx-auto grid max-w-7xl items-center gap-6 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-12 lg:gap-8 lg:px-8 lg:py-8 xl:py-10">
+            {/* Left Content Column */}
+            <div className="lg:col-span-7 space-y-4 sm:space-y-5">
+              <span className="landing-section-label inline-flex rounded-full border border-white/15 bg-white/12 px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
                 The Bhookingo Journey
               </span>
-              <div className="space-y-4">
-                <h1 className="landing-title max-w-4xl text-4xl font-black text-white sm:text-5xl lg:text-[3.75rem]">
+
+              <div className="space-y-2.5 sm:space-y-3">
+                <h1 className="landing-title max-w-2xl text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-[2.85rem] xl:text-[3.25rem] leading-[1.1]">
                   From highway hunger
                   <br />
                   to a planned stop
                   <br />
                   <span className="text-[color:var(--landing-accent)]">without the chaos</span>
                 </h1>
-                <p className="max-w-2xl text-base leading-8 text-[#f1e4db] sm:text-lg">
+                <p className="max-w-xl text-xs sm:text-sm md:text-base leading-relaxed text-[#f1e4db]">
                   Bhookingo is built for real road journeys. It helps travelers discover better highway restaurants ahead, order before arrival, and turn random breaks into smoother, smarter stops.
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-4 pt-2">
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <button
                   onClick={openUserFlow}
-                  className="landing-button-primary flex items-center gap-2 rounded-full px-8 py-4 text-sm font-extrabold uppercase tracking-[0.18em] transition-all active:scale-95"
+                  className="landing-button-primary flex items-center gap-2 rounded-full px-6 py-3 sm:px-7 sm:py-3.5 text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] transition-all active:scale-95 shadow-md group"
                 >
                   <Smartphone className="h-4 w-4" />
                   <span>Try Bhookingo</span>
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </button>
                 <a
                   href="#journey-steps"
-                  className="landing-button-secondary flex items-center gap-2 rounded-full px-8 py-4 text-sm font-semibold transition-all"
+                  className="landing-button-secondary flex items-center gap-2 rounded-full px-6 py-3 sm:px-7 sm:py-3.5 text-xs sm:text-sm font-semibold transition-all group"
                 >
                   <span>See The Flow</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </a>
               </div>
 
-              <div className="grid gap-3 pt-4 sm:grid-cols-3">
+              <div className="grid gap-2.5 pt-2 sm:grid-cols-3">
                 {[
                   { value: 'Forward-first', label: 'Restaurant discovery built for highway direction' },
                   { value: 'Pre-order', label: 'Food before arrival, not after the wait' },
                   { value: 'Comfort-led', label: 'Facilities and trust signals along the way' }
                 ].map((item) => (
-                  <div key={item.value} className="rounded-[24px] border border-white/12 bg-[rgba(255,255,255,0.12)] px-4 py-4 shadow-[0_18px_45px_rgba(0,0,0,0.16)] backdrop-blur-md">
-                    <div className="font-[var(--font-display)] text-lg font-bold text-white">{item.value}</div>
-                    <p className="pt-1 text-sm leading-6 text-[#f0e2d7]">{item.label}</p>
+                  <div
+                    key={item.value}
+                    className="rounded-2xl border border-white/12 bg-[rgba(255,255,255,0.12)] p-3 sm:p-3.5 shadow-[0_14px_35px_rgba(0,0,0,0.14)] backdrop-blur-md transition-all hover:bg-[rgba(255,255,255,0.16)]"
+                  >
+                    <div className="font-[var(--font-display)] text-sm sm:text-base font-bold text-white tracking-tight">{item.value}</div>
+                    <p className="pt-1 text-[11px] sm:text-xs leading-4.5 text-[#f0e2d7]">{item.label}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="lg:col-span-5 lg:pl-10 xl:pl-16">
-              <div className="relative overflow-hidden rounded-[36px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0.12)_100%)] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.32)] backdrop-blur-xl">
-                <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.18)] blur-3xl" />
-                <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
-                <div className="relative rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,rgba(28,18,15,0.96)_0%,rgba(20,13,11,0.92)_100%)] p-6 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_22px_55px_rgba(12,8,6,0.32)]">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            {/* Right Mobile Flow Mockup */}
+            <div className="lg:col-span-5 lg:pl-2 xl:pl-6">
+              <div className="relative overflow-hidden rounded-[32px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.1)_100%)] p-3.5 sm:p-4 shadow-[0_25px_70px_rgba(0,0,0,0.32)] backdrop-blur-xl">
+                <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
+                <div className="pointer-events-none absolute -left-8 bottom-8 h-20 w-20 rounded-full bg-white/8 blur-2xl" />
+
+                <div className="relative rounded-[24px] border border-white/12 bg-[linear-gradient(180deg,rgba(28,18,15,0.96)_0%,rgba(20,13,11,0.92)_100%)] p-4 sm:p-5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_45px_rgba(12,8,6,0.32)]">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
                     <div>
-                      <div className="landing-section-label text-[10px] font-extrabold text-[#f2b2b2]">
+                      <div className="landing-section-label text-[9.5px] font-extrabold uppercase tracking-wider text-[#f2b2b2]">
                         Example journey
                       </div>
-                      <h2 className="pt-2 font-[var(--font-display)] text-2xl font-black text-white">Hyderabad to Vijayawada</h2>
-                      <p className="pt-2 text-sm leading-6 text-[#e8d8ce]">
+                      <h2 className="pt-0.5 font-[var(--font-display)] text-lg sm:text-xl font-black text-white">
+                        Hyderabad to Vijayawada
+                      </h2>
+                      <p className="pt-0.5 text-[11px] sm:text-xs text-[#e8d8ce] leading-relaxed">
                         See how Bhookingo guides one highway food stop from route detection to pickup.
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/8 p-3 text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                      <Navigation className="h-6 w-6" />
+                    <div className="rounded-xl border border-white/10 bg-white/8 p-2.5 text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                      <Navigation className="h-4.5 w-4.5" />
                     </div>
                   </div>
 
-                  <div className="space-y-4 pt-5">
+                  <div className="space-y-2 pt-3">
                     {[
                       { icon: LocateFixed, title: 'Route detected', detail: 'The app understands your highway direction and focuses only on stops ahead.' },
                       { icon: Store, title: 'Best stop options appear', detail: 'You see relevant restaurants with parking, washroom, and comfort details early.' },
                       { icon: UtensilsCrossed, title: 'Order before arrival', detail: 'Choose takeaway or dine-in, then place the order while you are still on the road.' },
                       { icon: Sparkles, title: 'Stop smarter, continue faster', detail: 'You arrive with more confidence, spend less time waiting, and get back on route smoothly.' }
                     ].map((item, index) => (
-                      <div key={item.title} className="rounded-[22px] border border-white/8 bg-white/[0.04] px-3 py-3 backdrop-blur-sm">
-                        <div className="flex gap-4">
-                        <div className="flex flex-col items-center">
-                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.04)_100%)] text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                            <item.icon className="h-5 w-5" />
+                      <div key={item.title} className="rounded-xl border border-white/8 bg-white/[0.04] p-2 sm:p-2.5 backdrop-blur-sm">
+                        <div className="flex items-start gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.04)_100%)] text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                              <item.icon className="h-4 w-4" />
+                            </div>
+                            {index < 3 ? <div className="my-0.5 h-2.5 sm:h-3 w-px bg-white/15" /> : null}
                           </div>
-                          {index < 3 ? <div className="mt-2 h-10 w-px bg-white/12" /> : null}
+                          <div className="pt-0.5 min-w-0">
+                            <h3 className="font-[var(--font-display)] text-xs sm:text-sm font-bold text-white leading-tight">{item.title}</h3>
+                            <p className="pt-0.5 text-[10.5px] sm:text-[11px] leading-4 text-[#dccac0]">{item.detail}</p>
+                          </div>
                         </div>
-                        <div className="pt-1">
-                          <h3 className="font-[var(--font-display)] text-base font-bold text-white">{item.title}</h3>
-                          <p className="pt-1 text-sm leading-6 text-[#dccac0]">{item.detail}</p>
-                        </div>
-                      </div>
                       </div>
                     ))}
                   </div>

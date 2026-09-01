@@ -1,10 +1,28 @@
 import React, { useState } from 'react';
 import LandingHeader from '../components/LandingHeader';
 import LandingFooter from '../components/LandingFooter';
-import { Calendar, User, ArrowRight, ArrowLeft, Clock, Award, Shield } from 'lucide-react';
+import {
+  Calendar,
+  User,
+  ArrowRight,
+  ArrowLeft,
+  Clock,
+  Award,
+  Shield,
+  Sparkles,
+  Search,
+  BookOpen,
+  MapPin,
+  Share2,
+  Navigation,
+  Compass,
+  CheckCircle2
+} from 'lucide-react';
 
 export default function BlogPage() {
   const [selectedPostId, setSelectedPostId] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const blogPosts = [
     {
@@ -12,27 +30,36 @@ export default function BlogPage() {
       title: "Top 10 Food Stops on NH 48 You Shouldn't Miss",
       date: "July 20, 2026",
       author: "Highway Foodie",
+      authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=80",
       category: "Guides",
-      img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80",
-      excerpt: "Discover authentic dhabas and gourmet rest stops on NH 48 between Delhi and Mumbai."
+      img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
+      excerpt: "Discover authentic dhabas and gourmet rest stops on NH 48 between Delhi and Mumbai.",
+      readTime: "6 min read",
+      highlight: "★ Prime Route Pick"
     },
     {
       id: 2,
       title: "How Pre-Ordering Food Saves 45 Mins Per Highway Stop",
       date: "July 15, 2026",
       author: "Travel Team",
+      authorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&q=80",
       category: "Tips",
-      img: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80",
-      excerpt: "Learn how smart pre-ordering transforms road-tripping and prevents travel fatigue."
+      img: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80",
+      excerpt: "Learn how smart pre-ordering transforms road-tripping and prevents travel fatigue.",
+      readTime: "4 min read",
+      highlight: "⏱ Time Hack"
     },
     {
       id: 3,
       title: "EV Charging & Highway Dining: The Perfect Combination",
       date: "July 10, 2026",
       author: "EV Explorer",
+      authorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&q=80",
       category: "EV Travel",
-      img: "/ev_charging_highway.png",
-      excerpt: "Charge your EV hassle-free while enjoying delicious local food at verified highway hubs."
+      img: "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=1200&q=80",
+      excerpt: "Charge your EV hassle-free while enjoying delicious local food at verified highway hubs.",
+      readTime: "5 min read",
+      highlight: "⚡ Eco Travel"
     }
   ];
 
@@ -152,117 +179,407 @@ export default function BlogPage() {
     }
   };
 
+  const categories = ['All', 'Guides', 'Tips', 'EV Travel'];
+
+  const filteredPosts = blogPosts.filter((post) => {
+    const matchesCategory = activeCategory === 'All' || post.category === activeCategory;
+    const matchesQuery = searchQuery === '' ||
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesQuery;
+  });
+
   const selectedPost = blogPosts.find(p => p.id === selectedPostId);
   const selectedDetail = selectedPostId ? blogDetails[selectedPostId] : null;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans text-gray-900 selection:bg-[#E0332F] selection:text-white">
+    <div className="landing-shell min-h-screen flex flex-col text-[color:var(--landing-text)]">
       <LandingHeader />
 
       <main className="flex-1">
         {selectedPost && selectedDetail ? (
-          /* BLOG DETAIL VIEW */
-          <article className="py-12 bg-gray-50">
+          /* ========================================================================= */
+          /* BLOG DETAIL ARTICLE VIEW                                                  */
+          /* ========================================================================= */
+          <article className="py-12 md:py-20">
             <div className="max-w-4xl mx-auto px-4 sm:px-6">
-              {/* Back to Blog List */}
+              {/* Back to Blog Button */}
               <button
                 onClick={() => setSelectedPostId(null)}
-                className="inline-flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-[#E0332F] transition-colors mb-6 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[color:var(--landing-text)] hover:text-[color:var(--landing-accent)] transition-all mb-8 bg-white px-5 py-2.5 rounded-full border border-[color:var(--landing-line)] shadow-sm hover:shadow-md cursor-pointer group"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Back to Blog
+                <ArrowLeft className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-1" />
+                <span>Back to Stories</span>
               </button>
 
-              {/* Detail Card */}
-              <div className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
-                <div className="h-64 sm:h-[400px] overflow-hidden relative">
+              {/* Detail Card Container */}
+              <div className="bg-white rounded-[36px] overflow-hidden border border-[color:var(--landing-line)] shadow-[0_22px_60px_rgba(71,43,24,0.08)]">
+                <div className="h-72 sm:h-[420px] overflow-hidden relative">
                   <img src={selectedPost.img} alt={selectedPost.title} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent flex flex-col justify-end p-6 sm:p-8">
-                    <span className="bg-[#E0332F] text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider w-max mb-3">
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#16100d] via-[#16100d]/50 to-transparent flex flex-col justify-end p-6 sm:p-10">
+                    <span className="bg-[color:var(--landing-accent)] text-white text-[10px] font-extrabold px-3.5 py-1.5 rounded-full uppercase tracking-wider w-max mb-3 shadow-md">
                       {selectedPost.category}
                     </span>
-                    <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight">
+                    <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight font-[var(--font-display)]">
                       {selectedPost.title}
                     </h1>
                   </div>
                 </div>
 
-                <div className="p-6 sm:p-10 space-y-6">
-                  {/* Metadata Bar */}
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 border-b border-gray-100 pb-4">
-                    <span className="flex items-center gap-1"><Calendar className="w-4 h-4 text-gray-400" /> {selectedPost.date}</span>
-                    <span className="flex items-center gap-1"><User className="w-4 h-4 text-gray-400" /> {selectedPost.author}</span>
-                    <span className="flex items-center gap-1"><Clock className="w-4 h-4 text-gray-400" /> {selectedDetail.readTime}</span>
+                <div className="p-6 sm:p-10 space-y-8">
+                  {/* Author Component inside Detail View */}
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--landing-line)] pb-6">
+                    <div className="flex items-center gap-3.5">
+                      <img
+                        src={selectedPost.authorAvatar}
+                        alt={selectedPost.author}
+                        className="h-12 w-12 rounded-full object-cover border-2 border-[color:var(--landing-accent)] shadow-sm"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-extrabold text-gray-900">{selectedPost.author}</span>
+                        <span className="text-xs text-gray-500">{selectedPost.date}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 rounded-full bg-gray-50 px-4 py-2 border border-gray-200 text-xs font-bold text-gray-700">
+                      <Clock className="w-3.5 h-3.5 text-[color:var(--landing-accent)]" />
+                      <span>{selectedDetail.readTime}</span>
+                    </div>
                   </div>
 
                   {/* Body Content */}
-                  <div>
+                  <div className="prose max-w-none">
                     {selectedDetail.content}
                   </div>
 
-                  {/* Tags & Share */}
-                  <div className="pt-6 border-t border-gray-100 flex flex-wrap gap-2">
-                    {selectedDetail.tags.map((tag, idx) => (
-                      <span key={idx} className="bg-gray-100 text-gray-600 text-[10px] font-bold px-3 py-1 rounded-md uppercase tracking-wider">
-                        #{tag}
-                      </span>
-                    ))}
+                  {/* Tags */}
+                  <div className="pt-6 border-t border-[color:var(--landing-line)] flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDetail.tags.map((tag, idx) => (
+                        <span key={idx} className="bg-[#fff1f1] text-[color:var(--landing-accent)] text-[10px] font-extrabold px-3 py-1.5 rounded-full uppercase tracking-wider border border-red-100">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedPostId(null)}
+                      className="text-xs font-extrabold text-[color:var(--landing-accent)] flex items-center gap-1 hover:underline"
+                    >
+                      <span>Read Next Story</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </article>
         ) : (
-          /* BLOG LIST VIEW */
+          /* ========================================================================= */
+          /* BLOG LIST VIEW                                                            */
+          /* ========================================================================= */
           <>
-            {/* Hero */}
-            <section className="bg-gradient-to-b from-[#0F172A] to-[#1E293B] text-white py-16 md:py-24 text-center px-4">
-              <div className="max-w-4xl mx-auto space-y-4">
-                <span className="text-xs font-black text-[#E0332F] uppercase tracking-widest bg-red-500/10 px-4 py-1.5 rounded-full border border-red-500/20">
-                  BHOOKINGO BLOG
-                </span>
-                <h1 className="text-4xl md:text-5xl font-black tracking-tight">
-                  Highway Stories & <span className="text-[#E0332F]">Travel Guides</span>
-                </h1>
-                <p className="text-gray-300 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
-                  Insider tips, food recommendations, and road-trip guides for Indian highway travelers.
-                </p>
+            {/* Hero Section (Matches HowItWorks Cinematic Dark Road Theme) */}
+            <section className="relative overflow-hidden bg-[#16100d] text-white">
+              <div className="absolute inset-0">
+                <img
+                  src="/assets/images/landingbg.png"
+                  alt="Highway road"
+                  className="h-full w-full object-cover opacity-55"
+                />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(214,40,40,0.28),transparent_35%),linear-gradient(180deg,rgba(12,8,8,0.72)_0%,rgba(12,8,8,0.8)_48%,rgba(12,8,8,0.92)_100%)]" />
+              </div>
+
+              <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-24">
+                <div className="lg:col-span-7 space-y-6">
+                  <span className="landing-section-label inline-flex rounded-full border border-white/15 bg-white/12 px-4 py-2 text-[11px] font-extrabold uppercase text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
+                    BHOOKINGO BLOG
+                  </span>
+
+                  <div className="space-y-4">
+                    <h1 className="landing-title max-w-4xl text-4xl font-black text-white sm:text-5xl lg:text-[3.75rem]">
+                      Highway Stories &
+                      <br />
+                      <span className="text-[color:var(--landing-accent)]">Travel Guides</span>
+                    </h1>
+                    <p className="max-w-2xl text-base leading-8 text-[#f1e4db] sm:text-lg">
+                      Insider tips, food recommendations, and road-trip guides for Indian highway travelers.
+                    </p>
+                  </div>
+
+                  {/* Search Bar & Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-3 pt-2 max-w-xl">
+                    <div className="flex-1 min-w-[240px] relative">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+                      <input
+                        type="text"
+                        placeholder="Search highway stories, tips, dhabas..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full rounded-full border border-white/15 bg-white/10 pl-11 pr-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[color:var(--landing-accent)] backdrop-blur-md transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Three Highway Story Pillars in Hero */}
+                  <div className="grid gap-3 pt-4 sm:grid-cols-3">
+                    {[
+                      { value: 'Verified Dhabas', label: 'Curated taste & hygiene tests across NH corridors' },
+                      { value: 'Pre-Order Hacks', label: 'Save 45+ minutes on long distance drives' },
+                      { value: 'EV Highway Hubs', label: 'Simultaneous fast charging & dining locations' }
+                    ].map((item) => (
+                      <div
+                        key={item.value}
+                        className="rounded-[24px] border border-white/12 bg-[rgba(255,255,255,0.12)] px-4 py-4 shadow-[0_18px_45px_rgba(0,0,0,0.16)] backdrop-blur-md transition-all hover:bg-[rgba(255,255,255,0.16)]"
+                      >
+                        <div className="font-[var(--font-display)] text-lg font-bold text-white">{item.value}</div>
+                        <p className="pt-1 text-xs leading-5 text-[#f0e2d7]">{item.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right Hero: Featured Story Spotlight Card */}
+                <div className="lg:col-span-5 lg:pl-6 xl:pl-8">
+                  <div className="relative overflow-hidden rounded-[36px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0.12)_100%)] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.32)] backdrop-blur-xl">
+                    <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
+                    <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
+
+                    <div className="relative rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,rgba(28,18,15,0.96)_0%,rgba(20,13,11,0.92)_100%)] p-6 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_22px_55px_rgba(12,8,6,0.32)]">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                        <div>
+                          <div className="landing-section-label text-[10px] font-extrabold text-[#f2b2b2]">
+                            FEATURED STORY
+                          </div>
+                          <h2 className="pt-1 font-[var(--font-display)] text-xl font-black text-white">
+                            Editor's Highway Pick
+                          </h2>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-white/8 p-3 text-[color:var(--landing-accent)]">
+                          <BookOpen className="h-5 w-5" />
+                        </div>
+                      </div>
+
+                      <div className="mt-5 rounded-2xl overflow-hidden relative h-36 border border-white/10">
+                        <img
+                          src={blogPosts[0].img}
+                          alt="Featured"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-3 flex flex-col justify-end">
+                          <span className="text-[10px] font-extrabold uppercase text-[#f2b2b2]">
+                            {blogPosts[0].category}
+                          </span>
+                          <span className="text-xs font-bold text-white line-clamp-1">
+                            {blogPosts[0].title}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="pt-4 text-xs leading-6 text-[#dccac0]">
+                        {blogPosts[0].excerpt}
+                      </p>
+
+                      <div className="pt-5 border-t border-white/10 mt-4 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={blogPosts[0].authorAvatar}
+                            alt={blogPosts[0].author}
+                            className="h-8 w-8 rounded-full object-cover border border-white/20"
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-white leading-tight">{blogPosts[0].author}</span>
+                            <span className="text-[10px] text-gray-400">{blogPosts[0].date}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => setSelectedPostId(1)}
+                          className="flex items-center gap-1 text-xs font-bold text-[color:var(--landing-accent)] hover:underline group"
+                        >
+                          <span>Read</span>
+                          <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
-            {/* Blog Posts Grid */}
-            <section className="py-16 md:py-24 bg-gray-50">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Quick Benefit Metric Strip */}
+            <section className="border-y border-[color:var(--landing-line)] bg-[rgba(255,255,255,0.65)] py-8">
+              <div className="mx-auto grid max-w-7xl gap-4 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+                {[
+                  { title: "NH Corridor Guides", copy: "Tested recommendations for Delhi-Mumbai, NH-44 and major highways." },
+                  { title: "Pre-Order Travel Hacks", copy: "Smart timings & route tricks to eliminate mealtime stops delay." },
+                  { title: "EV Highway Hubs", copy: "Verified DC fast charging points paired with comfortable eateries." },
+                  { title: "Family Rest Stops", copy: "Pristine washroom ratings, ample parking and kid-friendly dining." }
+                ].map((item, index) => (
+                  <div
+                    key={item.title}
+                    className="relative rounded-[24px] border border-[color:var(--landing-line)] bg-white p-5 shadow-[0_14px_35px_rgba(71,43,24,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(71,43,24,0.1)]"
+                  >
+                    <div className="absolute left-0 top-6 h-12 w-1 rounded-r-full bg-[color:var(--landing-accent)]" />
+                    <div className="flex items-start justify-between gap-4 pl-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1f1] text-[color:var(--landing-accent)]">
+                        <Sparkles className="h-5 w-5" />
+                      </div>
+                      <span className="text-sm font-black text-[#d1c3b9]">
+                        0{index + 1}
+                      </span>
+                    </div>
+                    <h3 className="pt-4 pl-3 font-[var(--font-display)] text-lg font-black text-[color:var(--landing-text)]">
+                      {item.title}
+                    </h3>
+                    <p className="pt-1.5 pl-3 text-xs leading-6 text-[color:var(--landing-text-muted)]">
+                      {item.copy}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ========================================================================= */}
+            {/* BLOG POSTS FULL-IMAGE CARDS (MATCHING IMAGE 3 REFERENCE)                  */}
+            {/* ========================================================================= */}
+            <section id="articles-grid" className="py-16 md:py-24">
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
+                {/* Header & Category Filters */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-[color:var(--landing-line)]">
+                  <div className="max-w-2xl space-y-3">
+                    <span className="landing-section-label text-xs font-extrabold text-[color:var(--landing-accent)]">
+                      EXPLORE CHRONICLES
+                    </span>
+                    <h2 className="landing-subtitle text-3xl font-black sm:text-4xl text-[color:var(--landing-text)]">
+                      Latest Highway Articles &
+                      <span className="text-[color:var(--landing-accent)]"> Food Chronicles</span>
+                    </h2>
+                    <p className="text-base leading-7 text-[color:var(--landing-text-muted)]">
+                      Handpicked guides crafted by experienced highway trippers and culinary explorers.
+                    </p>
+                  </div>
+
+                  {/* Category Filter Pills */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        className={`rounded-full px-4 py-2 text-xs font-extrabold tracking-wide transition-all ${
+                          activeCategory === cat
+                            ? 'bg-[#1b130f] text-white shadow-md'
+                            : 'border border-[color:var(--landing-line)] bg-white text-[color:var(--landing-text-muted)] hover:border-[#1b130f]/30 hover:text-[color:var(--landing-text)]'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3 Full-Image Cards (Image 3 Style with Avatar, Name, Date below Name) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {blogPosts.map((post) => (
-                    <article key={post.id} className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-sm flex flex-col justify-between group hover:shadow-md transition-all">
-                      <div>
-                        <div className="h-48 overflow-hidden relative">
-                          <img src={post.img} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          <span className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase">
+                  {filteredPosts.map((post) => (
+                    <article
+                      key={post.id}
+                      onClick={() => setSelectedPostId(post.id)}
+                      className="group relative h-[480px] sm:h-[520px] rounded-[32px] overflow-hidden border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.18)] cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_70px_rgba(214,40,40,0.22)]"
+                    >
+                      {/* Full-bleed Background Image with Hover Zoom */}
+                      <img
+                        src={post.img}
+                        alt={post.title}
+                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+                      />
+
+                      {/* Multi-Layer Cinematic Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0e0a08]/98 via-[#0e0a08]/60 to-black/20" />
+
+                      {/* Top Badges (Category & Highlight) */}
+                      <div className="absolute top-5 left-5 right-5 flex items-center justify-between z-10">
+                        <span className="rounded-full border border-white/25 bg-white/20 px-3.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-white shadow-md backdrop-blur-md">
+                          {post.highlight}
+                        </span>
+
+                        <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-bold text-gray-200 backdrop-blur-md">
+                          {post.readTime}
+                        </span>
+                      </div>
+
+                      {/* Bottom Content Area */}
+                      <div className="absolute inset-x-0 bottom-0 p-6 sm:p-7 flex flex-col justify-end z-10 space-y-4">
+                        {/* Category Label */}
+                        <div>
+                          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#f2b2b2]">
                             {post.category}
                           </span>
+                          <h2 className="pt-1.5 font-[var(--font-display)] text-xl sm:text-2xl font-black text-white leading-snug group-hover:text-[#ffe5e5] transition-colors">
+                            {post.title}
+                          </h2>
+                          <p className="pt-2 text-xs sm:text-sm text-[#d8c7bb] leading-relaxed line-clamp-2">
+                            {post.excerpt}
+                          </p>
                         </div>
-                        <div className="p-6 space-y-3">
-                          <div className="flex items-center gap-4 text-[11px] text-gray-500">
-                            <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {post.date}</span>
-                            <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" /> {post.author}</span>
+
+                        {/* Author Info Bar (Avatar on Left, Name on Top, Date Below Name) */}
+                        <div className="pt-4 border-t border-white/15 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={post.authorAvatar}
+                              alt={post.author}
+                              className="h-10 w-10 rounded-full object-cover border-2 border-white/30 shadow-md group-hover:border-[color:var(--landing-accent)] transition-colors"
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-white leading-tight group-hover:text-[color:var(--landing-accent-soft)] transition-colors">
+                                By • {post.author}
+                              </span>
+                              <span className="text-[11px] font-medium text-[#d8c7bb] pt-0.5">
+                                {post.date}
+                              </span>
+                            </div>
                           </div>
-                          <h2 className="text-lg font-bold text-gray-900 leading-snug group-hover:text-[#E0332F] transition-colors">{post.title}</h2>
-                          <p className="text-xs text-gray-600 leading-relaxed">{post.excerpt}</p>
+
+                          <div className="h-9 w-9 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white group-hover:bg-[color:var(--landing-accent)] transition-colors">
+                            <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                          </div>
                         </div>
-                      </div>
-                      <div className="px-6 pb-6 pt-2">
-                        <button
-                          onClick={() => setSelectedPostId(post.id)}
-                          className="text-xs font-bold text-[#E0332F] flex items-center gap-1.5 hover:gap-2 transition-all cursor-pointer"
-                        >
-                          <span>Read Full Article</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     </article>
                   ))}
+                </div>
+              </div>
+            </section>
+
+            {/* High Conversion Bottom CTA Banner */}
+            <section className="pb-16 md:pb-24">
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="overflow-hidden rounded-[36px] bg-[#1a120f] px-6 py-10 text-white shadow-[0_30px_80px_rgba(35,20,14,0.22)] sm:px-10 md:py-14 relative">
+                  <div className="pointer-events-none absolute -right-10 -bottom-10 h-48 w-48 rounded-full bg-[rgba(214,40,40,0.25)] blur-3xl" />
+
+                  <div className="relative grid items-center gap-8 lg:grid-cols-12">
+                    <div className="lg:col-span-8 space-y-3">
+                      <span className="landing-section-label text-[11px] font-extrabold text-[#f2b2b2]">
+                        ROAD TRIP READY
+                      </span>
+                      <h2 className="font-[var(--font-display)] text-3xl font-black sm:text-4xl">
+                        Have a Highway Story or Dhaba Recommendation?
+                      </h2>
+                      <p className="max-w-2xl text-base leading-8 text-[#d8c7bb]">
+                        Share your highway travel insights with thousands of travelers across India on Bhookingo.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 lg:col-span-4 lg:justify-end">
+                      <button
+                        onClick={() => window.open('https://play.google.com/store/apps/details?id=com.bhookingo.user', '_blank')}
+                        className="landing-button-primary flex items-center gap-2 rounded-full px-8 py-4 text-sm font-extrabold uppercase tracking-[0.18em] group active:scale-95 shadow-lg"
+                      >
+                        <span>Download App</span>
+                        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -274,3 +591,4 @@ export default function BlogPage() {
     </div>
   );
 }
+

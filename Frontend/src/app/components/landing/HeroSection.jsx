@@ -100,10 +100,10 @@ export default function HeroSection({
               initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.15 }}
-              className="mt-4 sm:mt-5"
+              className="mt-3 sm:mt-3.5"
             >
               <h1
-                className="text-2xl sm:text-3xl lg:text-[2.5rem] xl:text-[2.85rem] font-bold text-white tracking-tight leading-[1.12]"
+                className="text-xl sm:text-2xl lg:text-[1.85rem] xl:text-[2.1rem] font-bold text-white tracking-tight leading-[1.2]"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
                 Highway Takeaway <br className="hidden sm:inline" />
@@ -116,7 +116,7 @@ export default function HeroSection({
               initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="mt-3.5 sm:mt-4"
+              className="mt-5 sm:mt-6"
             >
               <p
                 className="text-sm sm:text-base lg:text-lg font-bold text-slate-100 tracking-tight leading-snug"

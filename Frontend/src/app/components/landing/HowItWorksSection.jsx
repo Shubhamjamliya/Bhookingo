@@ -1,6 +1,8 @@
 import React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Search, ShoppingBag, Utensils, Car, MapPin, Navigation2, CheckCircle2, ArrowRight } from 'lucide-react';
+import { useReducedMotionSafe } from '@/shared/motion/useReducedMotionSafe';
+import { EASING, MOTION_RULES } from '@/shared/motion/tokens';
 
 const STEPS = [
   {
@@ -34,26 +36,25 @@ const STEPS = [
 ];
 
 export default function HowItWorksSection() {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useReducedMotionSafe();
 
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.18,
-        delayChildren: 0.2
+        staggerChildren: 0.12,
+        delayChildren: 0.15
       }
     }
   };
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 35, scale: 0.96 },
+    hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
-      scale: 1,
-      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+      transition: { duration: MOTION_RULES.reveal, ease: EASING.smooth }
     }
   };
 
@@ -72,7 +73,8 @@ export default function HowItWorksSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-50 px-4 py-1.5 text-xs font-extrabold uppercase text-[#E11D48]"
+            className="inline-flex items-center gap-2 rounded-full border border-[#E0332F]/20 bg-red-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#E0332F]"
+            style={{ fontFamily: 'var(--font-ui)' }}
           >
             <Navigation2 className="w-3.5 h-3.5 fill-current" />
             <span>HOW BHOOKINGO WORKS</span>
@@ -83,10 +85,10 @@ export default function HowItWorksSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-[1.05]"
+            style={{ fontFamily: 'var(--font-display)' }}
           >
-            Seamless Highway Dining in <span className="text-[#E11D48]">4 Simple Steps</span>
+            Seamless Highway Dining in <span className="text-[#E0332F]">4 Simple Steps</span>
           </motion.h2>
 
           <motion.p
@@ -94,8 +96,8 @@ export default function HowItWorksSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-base sm:text-lg text-slate-600 leading-relaxed"
-            style={{ fontFamily: 'var(--font-body)' }}
+            className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal"
+            style={{ fontFamily: 'var(--font-ui)' }}
           >
             No more wandering for unknown dhabas. Experience smart food-tech built specifically for Indian highways.
           </motion.p>
@@ -113,27 +115,28 @@ export default function HowItWorksSection() {
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.2 }}
+                style={{ fontFamily: 'var(--font-ui)' }}
                 className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10"
               >
                 {STEPS.map((step, idx) => (
                   <motion.div
                     key={idx}
                     variants={cardVariants}
-                    whileHover={{ y: -6, scale: 1.02 }}
-                    className="relative group rounded-3xl border border-slate-200/80 bg-white p-7 shadow-[0_12px_35px_rgba(0,0,0,0.04)] transition-all hover:border-[#E11D48]/30 hover:shadow-[0_20px_45px_rgba(225,29,72,0.12)] flex flex-col justify-between"
+                    whileHover={{ y: -MOTION_RULES.maxHoverLift }}
+                    className="relative group rounded-3xl border border-slate-200/80 bg-white p-7 shadow-[0_12px_35px_rgba(0,0,0,0.04)] transition-all hover:border-[#E0332F]/30 hover:shadow-[0_20px_45px_rgba(224,51,47,0.12)] flex flex-col justify-between"
                   >
                     {/* Top Step Number & Badge */}
                     <div className="flex items-center justify-between mb-5">
                       <div className="relative">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-50 to-red-100/70 border border-rose-200/60 flex items-center justify-center text-[#E11D48] group-hover:scale-110 group-hover:bg-[#E11D48] group-hover:text-white transition-all shadow-sm">
-                          <step.icon className="w-6 h-6 transition-transform group-hover:rotate-6" />
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-50 to-red-100/70 border border-red-200/60 flex items-center justify-center text-[#E0332F] group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-[#E0332F] group-hover:text-white transition-all duration-300 shadow-sm">
+                          <step.icon className="w-6 h-6 transition-transform duration-300 group-hover:rotate-6" />
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 group-hover:bg-rose-50 group-hover:text-[#E11D48] transition-colors">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 group-hover:bg-red-50 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                           {step.badge}
                         </span>
-                        <span className="text-xl font-black text-slate-300 group-hover:text-[#E11D48] transition-colors" style={{ fontFamily: 'var(--font-heading)' }}>
+                        <span className="text-xl font-bold text-slate-300 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                           {step.num}
                         </span>
                       </div>
@@ -141,21 +144,21 @@ export default function HowItWorksSection() {
 
                     {/* Step Title & Desc */}
                     <div className="space-y-2">
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#E11D48] transition-colors" style={{ fontFamily: 'var(--font-heading)' }}>
+                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                         {step.title}
                       </h3>
-                      <p className="text-sm text-slate-600 leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
+                      <p className="text-sm text-slate-600 leading-relaxed font-normal" style={{ fontFamily: 'var(--font-ui)' }}>
                         {step.desc}
                       </p>
                     </div>
 
                     {/* Subtle bottom progress indicator */}
-                    <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400">
+                    <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400" style={{ fontFamily: 'var(--font-ui)' }}>
                       <span className="flex items-center gap-1.5 text-emerald-600">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Instant Sync</span>
                       </span>
-                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 group-hover:text-[#E11D48] transition-all" />
+                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 group-hover:text-[#E0332F] transition-all" />
                     </div>
                   </motion.div>
                 ))}
@@ -170,6 +173,7 @@ export default function HowItWorksSection() {
               whileInView={{ opacity: 1, scale: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7 }}
+              style={{ fontFamily: 'var(--font-ui)' }}
               className="relative w-full max-w-[320px] rounded-[32px] bg-[#140E0A] p-5 border border-white/15 shadow-2xl overflow-hidden text-white"
             >
               {/* Highway night atmosphere background */}
@@ -180,7 +184,7 @@ export default function HowItWorksSection() {
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping inline-block" />
                   <span className="text-xs font-extrabold tracking-wider uppercase text-slate-300">Live Highway Radar</span>
                 </div>
-                <span className="text-[10px] font-bold text-rose-400 bg-rose-950/80 px-2 py-0.5 rounded-md border border-rose-800/40">
+                <span className="text-[10px] font-bold text-[#FF8582] bg-red-950/80 px-2 py-0.5 rounded-md border border-red-800/40">
                   NH-48 Corridor
                 </span>
               </div>
@@ -225,7 +229,7 @@ export default function HowItWorksSection() {
                 {/* Milestone 3: Route Forward Verified */}
                 <motion.div
                   whileHover={{ scale: 1.05 }}
-                  className="relative z-10 flex items-center gap-2 bg-[#E11D48] text-white text-[11px] font-extrabold px-3 py-1.5 rounded-full shadow-lg border border-rose-400/40 self-start cursor-pointer"
+                  className="relative z-10 flex items-center gap-2 bg-[#E0332F] text-white text-[11px] font-extrabold px-3 py-1.5 rounded-full shadow-lg border border-red-400/40 self-start cursor-pointer"
                 >
                   <MapPin className="w-3.5 h-3.5 fill-white" />
                   <span>Only Forward Restaurants</span>

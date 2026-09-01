@@ -57,7 +57,7 @@ export default function LandingFooter() {
             <BhookingoWordmark
               logoSrc={contactInfo.logo}
               companyName={contactInfo.companyName}
-              accentClassName="text-[#d62828]"
+              accentClassName="text-[#E0332F]"
               textClassName="text-2xl font-black tracking-tight text-white leading-none"
               logoClassName="h-14 w-14 rounded-lg object-contain"
               gapClassName="gap-3"
@@ -68,7 +68,7 @@ export default function LandingFooter() {
           </div>
 
           <div>
-            <h4 className="mb-4 font-[var(--font-display)] text-base font-semibold text-white">Quick Links</h4>
+            <h4 className="mb-4 font-[var(--font-ui)] text-sm font-bold uppercase tracking-wider text-white">Quick Links</h4>
             <ul className="space-y-2.5">
               <li><Link to="/" className="transition-colors hover:text-white">Home</Link></li>
               <li><Link to="/how-it-works" className="transition-colors hover:text-white">How It Works</Link></li>
@@ -79,7 +79,7 @@ export default function LandingFooter() {
           </div>
 
           <div>
-            <h4 className="mb-4 font-[var(--font-display)] text-base font-semibold text-white">For Travelers</h4>
+            <h4 className="mb-4 font-[var(--font-ui)] text-sm font-bold uppercase tracking-wider text-white">For Travelers</h4>
             <ul className="space-y-2.5">
               <li><button onClick={handleExploreWebClick} className="transition-colors hover:text-white">Browse on Web</button></li>
               <li><button onClick={handleExploreWebClick} className="transition-colors hover:text-white">Search Restaurants</button></li>
@@ -90,7 +90,7 @@ export default function LandingFooter() {
           </div>
 
           <div>
-            <h4 className="mb-4 font-[var(--font-display)] text-base font-semibold text-white">Support</h4>
+            <h4 className="mb-4 font-[var(--font-ui)] text-sm font-bold uppercase tracking-wider text-white">Support</h4>
             <ul className="space-y-2.5">
               <li><Link to="/contact" className="transition-colors hover:text-white">Help Center</Link></li>
               <li><a href={`mailto:${contactInfo.email}`} className="transition-colors hover:text-white">{contactInfo.email}</a></li>
@@ -101,7 +101,7 @@ export default function LandingFooter() {
           </div>
 
           <div>
-            <h4 className="mb-4 font-[var(--font-display)] text-base font-semibold text-white">Download App</h4>
+            <h4 className="mb-4 font-[var(--font-ui)] text-sm font-bold uppercase tracking-wider text-white">Download App</h4>
             <div className="space-y-2.5">
               <button
                 onClick={handleAuthClick}

@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { X, Check, ShieldAlert, Sparkles, Clock, Zap } from 'lucide-react';
+import { useReducedMotionSafe } from '@/shared/motion/useReducedMotionSafe';
+import { EASING, MOTION_RULES } from '@/shared/motion/tokens';
 
 const NORMAL_STOP_POINTS = [
   "Unpredictable 25–45 min waiting time",
@@ -21,73 +23,88 @@ const BHOOKINGO_POINTS = [
 ];
 
 export default function WhyBhookingoSection() {
+  const shouldReduceMotion = useReducedMotionSafe();
+
   return (
     <section className="py-20 md:py-28 bg-[#FAF8F5] border-y border-slate-200/80 relative overflow-hidden">
       {/* Decorative ambient light */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-rose-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-red-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Heading */}
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-50 px-4 py-1.5 text-xs font-extrabold uppercase text-[#E11D48]"
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: MOTION_RULES.interaction, ease: EASING.smooth }}
+            className="inline-flex items-center gap-2 rounded-full border border-[#E0332F]/20 bg-red-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#E0332F]"
+            style={{ fontFamily: 'var(--font-ui)' }}
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>THE BHOOKINGO ADVANTAGE</span>
           </motion.div>
 
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: MOTION_RULES.reveal, delay: 0.08, ease: EASING.smooth }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-[1.05]"
+            style={{ fontFamily: 'var(--font-display)' }}
           >
-            Why Smart Travelers Choose <span className="text-[#E11D48]">Bhookingo</span>
+            Why Smart Travelers Choose <span className="text-[#E0332F]">Bhookingo</span>
           </motion.h2>
 
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-base sm:text-lg text-slate-600 leading-relaxed"
-            style={{ fontFamily: 'var(--font-body)' }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: MOTION_RULES.reveal, delay: 0.15, ease: EASING.smooth }}
+            className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal"
+            style={{ fontFamily: 'var(--font-ui)' }}
           >
             See how pre-ordering and verified highway amenities completely transform your road trips.
           </motion.p>
         </div>
 
         {/* Interactive Comparison Cards */}
-        <div className="relative max-w-5xl mx-auto">
+        <div className="relative max-w-5xl mx-auto" style={{ fontFamily: 'var(--font-ui)' }}>
           
           {/* Central Floating VS Badge */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#FAF8F5] bg-slate-950 text-sm font-black text-white shadow-2xl shadow-black/30">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.7 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 20,
+              delay: 0.15
+            }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#FAF8F5] bg-slate-950 text-sm font-bold text-white shadow-2xl shadow-black/30"
+            style={{ fontFamily: 'var(--font-ui)' }}
+          >
             <span className="tracking-wider">VS</span>
-          </div>
+          </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-6 items-stretch">
             
-            {/* Card 1: Normal Highway Stop (Left - slides in from left) */}
+            {/* Card 1: Normal Highway Stop (Left - slides in first) */}
             <motion.div
-              initial={{ opacity: 0, x: -40 }}
+              initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              whileHover={{ y: -6 }}
+              transition={{ duration: MOTION_RULES.section, ease: EASING.smooth }}
+              whileHover={{ y: -MOTION_RULES.maxHoverLift }}
               className="rounded-[32px] border border-slate-300/80 bg-white shadow-lg shadow-slate-200/50 overflow-hidden flex flex-col justify-between transition-all"
             >
               <div>
                 {/* Header */}
                 <div className="bg-slate-800 px-6 py-4 flex items-center justify-between text-white">
                   <div className="flex items-center gap-2.5">
-                    <ShieldAlert className="w-5 h-5 text-rose-400" />
+                    <ShieldAlert className="w-5 h-5 text-[#FF8582]" />
                     <span className="text-sm font-bold uppercase tracking-wider">Normal Highway Stop</span>
                   </div>
                   <span className="text-xs font-semibold text-slate-400">Without App</span>
@@ -97,8 +114,8 @@ export default function WhyBhookingoSection() {
                 <div className="p-6 sm:p-8 space-y-4">
                   {NORMAL_STOP_POINTS.map((point, idx) => (
                     <div key={idx} className="flex items-start gap-3 text-slate-600">
-                      <div className="w-5 h-5 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center shrink-0 mt-0.5">
-                        <X className="w-3 h-3 text-rose-600 stroke-[3]" />
+                      <div className="w-5 h-5 rounded-full bg-red-100 border border-red-200 flex items-center justify-center shrink-0 mt-0.5">
+                        <X className="w-3 h-3 text-[#E0332F] stroke-[3]" />
                       </div>
                       <span className="text-sm font-medium leading-snug">{point}</span>
                     </div>
@@ -107,25 +124,25 @@ export default function WhyBhookingoSection() {
               </div>
 
               {/* Bottom Result */}
-              <div className="bg-rose-50/60 p-5 border-t border-rose-100 text-center">
-                <span className="text-xs font-bold text-rose-700 uppercase tracking-wide">
+              <div className="bg-red-50/60 p-5 border-t border-red-100 text-center">
+                <span className="text-xs font-bold text-[#E0332F] uppercase tracking-wide">
                   ⚠️ Average Highway Delay: +40 Mins
                 </span>
               </div>
             </motion.div>
 
-            {/* Card 2: With Bhookingo (Right - slides in from right) */}
+            {/* Card 2: With Bhookingo (Right - slides in slightly after) */}
             <motion.div
-              initial={{ opacity: 0, x: 40 }}
+              initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              whileHover={{ y: -6 }}
+              transition={{ duration: MOTION_RULES.section, delay: 0.1, ease: EASING.smooth }}
+              whileHover={{ y: -MOTION_RULES.maxHoverLift }}
               className="rounded-[32px] border-2 border-emerald-500/40 bg-gradient-to-b from-white via-emerald-50/30 to-emerald-50/70 shadow-2xl shadow-emerald-900/10 overflow-hidden flex flex-col justify-between transition-all relative"
             >
               {/* Highlight ribbon */}
               <div className="absolute top-3 right-3 z-10">
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-md">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md">
                   <Sparkles className="w-3 h-3 fill-white" />
                   Recommended
                 </span>
@@ -136,7 +153,7 @@ export default function WhyBhookingoSection() {
                 <div className="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-4 flex items-center justify-between text-white">
                   <div className="flex items-center gap-2.5">
                     <Clock className="w-5 h-5 text-emerald-200" />
-                    <span className="text-sm font-black uppercase tracking-wider">With Bhookingo</span>
+                    <span className="text-sm font-bold uppercase tracking-wider">With Bhookingo</span>
                   </div>
                   <span className="text-xs font-bold text-emerald-200">Smart Highway</span>
                 </div>
@@ -156,7 +173,7 @@ export default function WhyBhookingoSection() {
 
               {/* Bottom Result */}
               <div className="bg-emerald-600/10 p-5 border-t border-emerald-200/60 text-center">
-                <span className="text-xs font-black text-emerald-800 uppercase tracking-wide flex items-center justify-center gap-1.5">
+                <span className="text-xs font-bold text-emerald-800 uppercase tracking-wide flex items-center justify-center gap-1.5">
                   <Zap className="w-4 h-4 text-emerald-600 fill-current" />
                   Save 35+ Mins per stop • 100% Peace of Mind
                 </span>

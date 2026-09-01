@@ -11,6 +11,8 @@ import {
   Sparkles
 } from 'lucide-react';
 import { RestroomIcon, ParkingIcon } from './FloatingFeatureCards';
+import { useReducedMotionSafe } from '@/shared/motion/useReducedMotionSafe';
+import { EASING, MOTION_RULES } from '@/shared/motion/tokens';
 
 const FEATURES = [
   {
@@ -18,7 +20,7 @@ const FEATURES = [
     title: "Takeaway & Dine-in",
     desc: "Pre-order piping hot food for fast highway takeaway or reserve your dining table ahead.",
     badge: "Fast Ordering",
-    theme: "text-[#E11D48] bg-rose-50 border-rose-200/70"
+    theme: "text-[#E0332F] bg-red-50 border-red-200/70"
   },
   {
     icon: MapPin,
@@ -76,23 +78,24 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1
+      staggerChildren: 0.06,
+      delayChildren: 0.08
     }
   }
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.96 },
+  hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
-    scale: 1,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: MOTION_RULES.reveal, ease: EASING.smooth }
   }
 };
 
 export default function FeaturesGridSection() {
+  const shouldReduceMotion = useReducedMotionSafe();
+
   return (
     <section id="features" className="py-20 md:py-28 bg-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -100,34 +103,35 @@ export default function FeaturesGridSection() {
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
+            initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-50 px-4 py-1.5 text-xs font-extrabold uppercase text-[#E11D48]"
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: MOTION_RULES.interaction, ease: EASING.smooth }}
+            className="inline-flex items-center gap-2 rounded-full border border-[#E0332F]/20 bg-red-50 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-[#E0332F]"
+            style={{ fontFamily: 'var(--font-ui)' }}
           >
             <Layers className="w-3.5 h-3.5" />
             <span>COMPREHENSIVE HIGHWAY AMENITIES</span>
           </motion.div>
 
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight"
-            style={{ fontFamily: 'var(--font-heading)' }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: MOTION_RULES.reveal, delay: 0.08, ease: EASING.smooth }}
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-[1.05]"
+            style={{ fontFamily: 'var(--font-display)' }}
           >
-            Everything You Need in <span className="text-[#E11D48]">One Highway App</span>
+            Everything You Need in <span className="text-[#E0332F]">One Highway App</span>
           </motion.h2>
 
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-base sm:text-lg text-slate-600 leading-relaxed"
-            style={{ fontFamily: 'var(--font-body)' }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: MOTION_RULES.reveal, delay: 0.15, ease: EASING.smooth }}
+            className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal"
+            style={{ fontFamily: 'var(--font-ui)' }}
           >
             Engineered from ground up to solve real roadside problems with precision technology.
           </motion.p>
@@ -138,37 +142,38 @@ export default function FeaturesGridSection() {
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, amount: 0.15 }}
+          viewport={{ once: true, amount: 0.1 }}
+          style={{ fontFamily: 'var(--font-ui)' }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
         >
           {FEATURES.map((feature, idx) => (
             <motion.div
               key={idx}
               variants={cardVariants}
-              whileHover={{ y: -8, scale: 1.02 }}
-              className="relative group rounded-3xl border border-slate-200/80 bg-[#FCFAF8] p-6 shadow-sm transition-all hover:bg-white hover:border-[#E11D48]/30 hover:shadow-[0_20px_40px_rgba(225,29,72,0.1)] flex flex-col justify-between"
+              whileHover={{ y: -MOTION_RULES.maxHoverLift }}
+              className="relative group rounded-3xl border border-slate-200/80 bg-[#FCFAF8] p-6 shadow-sm transition-all hover:bg-white hover:border-[#E0332F]/30 hover:shadow-[0_16px_35px_rgba(224,51,47,0.08)] flex flex-col justify-between cursor-pointer"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-2xl ${feature.theme} border flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
-                    <feature.icon className="w-5 h-5" />
+                  <div className={`w-12 h-12 rounded-2xl ${feature.theme} border flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-md transition-all duration-300`}>
+                    <feature.icon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-6" />
                   </div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-200/60 text-slate-700 group-hover:bg-rose-50 group-hover:text-[#E11D48] transition-colors">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-200/60 text-slate-700 group-hover:bg-red-50 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                     {feature.badge}
                   </span>
                 </div>
 
-                <h3 className="text-base font-bold text-slate-900 mb-2 group-hover:text-[#E11D48] transition-colors" style={{ fontFamily: 'var(--font-heading)' }}>
+                <h3 className="text-base font-bold text-slate-900 mb-2 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                   {feature.title}
                 </h3>
 
-                <p className="text-sm text-slate-600 leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
+                <p className="text-sm text-slate-600 leading-relaxed font-normal" style={{ fontFamily: 'var(--font-ui)' }}>
                   {feature.desc}
                 </p>
               </div>
 
               {/* Bottom Subtle Accent */}
-              <div className="mt-5 pt-3 border-t border-slate-200/60 flex items-center text-[11px] font-bold text-slate-400 group-hover:text-[#E11D48] transition-colors">
+              <div className="mt-5 pt-3 border-t border-slate-200/60 flex items-center text-[11px] font-bold text-slate-400 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
                 <span>Explore Feature &rarr;</span>
               </div>
             </motion.div>

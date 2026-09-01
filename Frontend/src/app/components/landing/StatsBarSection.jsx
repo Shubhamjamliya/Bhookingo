@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Utensils, Navigation, MapPin, ShieldCheck, Heart } from 'lucide-react';
+import AnimatedCounter from '@/shared/components/motion/AnimatedCounter';
+import { EASING, MOTION_RULES } from '@/shared/motion/tokens';
 
 const STATS = [
   {
@@ -37,7 +39,7 @@ const STATS = [
 
 export default function StatsBarSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-r from-[#B91C1C] via-[#DC2626] to-[#E11D48] py-10 text-white shadow-xl">
+    <section className="relative overflow-hidden bg-gradient-to-r from-[#B81D1A] via-[#D62828] to-[#E0332F] py-10 text-white shadow-xl">
       {/* Decorative ambient road overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/10 via-transparent to-black/20 pointer-events-none" />
 
@@ -46,22 +48,26 @@ export default function StatsBarSection() {
           {STATS.map((stat, idx) => (
             <motion.div
               key={idx}
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.08 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: MOTION_RULES.reveal, delay: idx * 0.08, ease: EASING.smooth }}
               className={`p-3 flex flex-col items-center justify-center space-y-1 ${idx === 4 ? 'col-span-2 md:col-span-1' : ''}`}
             >
               <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center mb-1 text-white shadow-xs backdrop-blur-sm">
                 <stat.icon className="w-4 h-4" />
               </div>
-              <span className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-heading)' }}>
-                {stat.value}
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>
+                {stat.value.includes('+') || stat.value.includes('%') ? (
+                  <AnimatedCounter value={stat.value} duration={1.2} />
+                ) : (
+                  stat.value
+                )}
               </span>
-              <span className="text-xs sm:text-sm font-bold text-white/95 leading-tight">
+              <span className="text-xs sm:text-sm font-bold text-white/95 leading-tight" style={{ fontFamily: 'var(--font-ui)' }}>
                 {stat.label}
               </span>
-              <span className="text-[10px] sm:text-[11px] font-medium text-rose-100/80">
+              <span className="text-[10px] sm:text-[11px] font-normal text-white/80" style={{ fontFamily: 'var(--font-ui)' }}>
                 {stat.sublabel}
               </span>
             </motion.div>

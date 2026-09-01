@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import LandingHeader from '../components/LandingHeader';
 import LandingFooter from '../components/LandingFooter';
+import PageTransition from '@/shared/components/motion/PageTransition';
+import { EASING, MOTION_RULES } from '@/shared/motion/tokens';
+import { useReducedMotionSafe } from '@/shared/motion/useReducedMotionSafe';
 import {
   TrendingUp,
   Clock,
@@ -25,6 +29,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function ForRestaurantsPage() {
   const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotionSafe();
   const [activeAppTab, setActiveAppTab] = useState('appView');
   const [dailyOrders, setDailyOrders] = useState(60);
 
@@ -83,81 +88,86 @@ export default function ForRestaurantsPage() {
     <div className="landing-shell min-h-screen flex flex-col text-[color:var(--landing-text)]">
       <LandingHeader />
 
-      <main className="flex-1">
+      <PageTransition>
+        <main className="flex-1">
         {/* ========================================================================= */}
-        {/* HERO SECTION (Matches HowItWorks Cinematic Dark Road Theme)              */}
+        {/* HERO SECTION (Matches Centralized Cinematic Dark Road Theme)              */}
         {/* ========================================================================= */}
-        <section className="relative overflow-hidden bg-[#16100d] text-white">
-          <div className="absolute inset-0">
+        <section className="relative overflow-hidden bg-[#100B08] text-white flex items-center py-12 sm:py-16 lg:py-20 min-h-[640px] lg:min-h-[700px]">
+          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
             <img
               src="/assets/images/landingbg.png"
               alt="Highway road"
-              className="h-full w-full object-cover opacity-55"
+              className="h-full w-full object-cover opacity-75"
             />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(214,40,40,0.28),transparent_35%),linear-gradient(180deg,rgba(12,8,8,0.72)_0%,rgba(12,8,8,0.8)_48%,rgba(12,8,8,0.92)_100%)]" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0C0806]/96 via-[#0E0907]/85 to-[#0E0907]/45" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#100B08] via-transparent to-black/60" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-[#0C0806]/30 to-[#0C0806]/90" />
           </div>
 
-          <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-24">
-            <div className="lg:col-span-7 space-y-6">
-              <span className="landing-section-label inline-flex rounded-full border border-white/15 bg-white/12 px-4 py-2 text-[11px] font-extrabold uppercase text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
-                PARTNER WITH BHOOKINGO
-              </span>
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
+              {/* Left Content Column */}
+              <div className="lg:col-span-7 flex flex-col justify-center">
+                <div>
+                  <span className="landing-hero-badge">
+                    Partner With Bhookingo
+                  </span>
+                </div>
 
-              <div className="space-y-4">
-                <h1 className="landing-title max-w-4xl text-4xl font-black text-white sm:text-5xl lg:text-[3.75rem]">
-                  Grow Your
-                  <br />
-                  <span className="text-[color:var(--landing-accent)]">Highway Restaurant</span> Business
-                </h1>
-                <p className="max-w-2xl text-base leading-8 text-[#f1e4db] sm:text-lg">
-                  Connect directly with thousands of daily highway travelers and road-trippers passing by your outlet. Boost orders and reduce table turnaround time.
-                </p>
-              </div>
+                <div className="mt-6 sm:mt-7">
+                  <h1 className="landing-hero-h1 max-w-2xl">
+                    Grow Your <span className="text-[color:var(--landing-accent)]">Highway Restaurant</span> Business
+                  </h1>
+                  <p className="landing-hero-body mt-4 sm:mt-5">
+                    Connect directly with thousands of daily highway travelers and road-trippers passing by your outlet. Boost orders and reduce table turnaround time.
+                  </p>
+                </div>
 
-              <div className="flex flex-wrap gap-4 pt-2">
-                <button
-                  onClick={() => window.open(partnerLink, '_blank')}
-                  className="landing-button-primary flex items-center gap-2 rounded-full px-8 py-4 text-sm font-extrabold uppercase tracking-[0.18em] transition-all active:scale-95 group shadow-lg"
-                >
-                  <Store className="h-4 w-4" />
-                  <span>Register Your Restaurant</span>
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
-                </button>
-                <a
-                  href="#partner-benefits"
-                  className="landing-button-secondary flex items-center gap-2 rounded-full px-8 py-4 text-sm font-semibold transition-all group"
-                >
-                  <span>See Partner Benefits</span>
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
-                </a>
-              </div>
-
-              {/* Three Partner Pillars in Hero */}
-              <div className="grid gap-3 pt-4 sm:grid-cols-3">
-                {[
-                  { value: '+40% Pre-Orders', label: 'Capture drive-by traffic before they pass your door' },
-                  { value: '0 min Rush Chaos', label: 'Predictable kitchen preparation schedules' },
-                  { value: 'Verified Travelers', label: 'Build long-term loyalty with interstate travelers' }
-                ].map((item) => (
-                  <div
-                    key={item.value}
-                    className="rounded-[24px] border border-white/12 bg-[rgba(255,255,255,0.12)] px-4 py-4 shadow-[0_18px_45px_rgba(0,0,0,0.16)] backdrop-blur-md transition-all hover:bg-[rgba(255,255,255,0.16)]"
+                <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 mt-7 sm:mt-8">
+                  <button
+                    onClick={() => window.open(partnerLink, '_blank')}
+                    className="landing-button-primary flex items-center gap-2.5 rounded-full px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_25px_rgba(224,51,47,0.35)] hover:shadow-[0_12px_32px_rgba(224,51,47,0.55)] transition-all active:scale-95 group cursor-pointer"
                   >
-                    <div className="font-[var(--font-display)] text-lg font-bold text-white">{item.value}</div>
-                    <p className="pt-1 text-xs leading-5 text-[#f0e2d7]">{item.label}</p>
-                  </div>
-                ))}
+                    <Store className="h-4 w-4" />
+                    <span>Register Your Restaurant</span>
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </button>
+                  <a
+                    href="#partner-benefits"
+                    className="landing-button-secondary flex items-center gap-2.5 rounded-full px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold tracking-wider text-white shadow-lg backdrop-blur-md transition-all group cursor-pointer"
+                  >
+                    <span>See Partner Benefits</span>
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </a>
+                </div>
+
+                {/* Standardized Three Pillar Cards in Hero */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 sm:mt-9">
+                  {[
+                    { value: '+40% Pre-Orders', label: 'Capture drive-by traffic before they pass your door' },
+                    { value: '0 min Rush Chaos', label: 'Predictable kitchen preparation schedules' },
+                    { value: 'Verified Travelers', label: 'Build long-term loyalty with interstate travelers' }
+                  ].map((item) => (
+                    <div
+                      key={item.value}
+                      className="landing-pillar-card"
+                    >
+                      <div className="landing-pillar-title">{item.value}</div>
+                      <p className="landing-pillar-body">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Right Hero: High-Fidelity Mobile App Showcase (Reference Image 3) */}
-            <div className="lg:col-span-5 lg:pl-6 xl:pl-8">
-              <div className="relative overflow-hidden rounded-[36px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0.12)_100%)] p-4 sm:p-5 shadow-[0_30px_90px_rgba(0,0,0,0.32)] backdrop-blur-xl">
-                <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
-                <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
+              {/* Right Hero: High-Fidelity Mobile App Showcase */}
+              <div className="lg:col-span-5 lg:pl-2 xl:pl-4 mt-8 lg:mt-0">
+                <div className="landing-showcase-panel-outer">
+                  <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
+                  <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
 
-                {/* Mobile Device Frame */}
-                <div className="relative mx-auto max-w-[340px] rounded-[32px] border-4 border-[#2b1f1a] bg-[#fafafa] text-gray-900 shadow-2xl overflow-hidden">
+                  {/* Mobile Device Frame */}
+                  <div className="relative mx-auto max-w-[320px] sm:max-w-[340px] rounded-[28px] sm:rounded-[32px] border-4 border-[#2b1f1a] bg-[#fafafa] text-gray-900 shadow-2xl overflow-hidden font-[var(--font-ui)]">
                   {/* Phone Status Bar */}
                   <div className="bg-[#fffdfa] px-4 pt-2.5 pb-2 flex items-center justify-between text-[11px] font-bold text-gray-800 border-b border-gray-100">
                     <span>4:37 PM</span>
@@ -246,7 +256,7 @@ export default function ForRestaurantsPage() {
                     </div>
 
                     {/* Fast Travel Delivery Banner */}
-                    <div className="rounded-2xl bg-gradient-to-r from-red-600 to-rose-700 p-2.5 text-white shadow-sm flex items-center justify-between">
+                    <div className="rounded-2xl bg-gradient-to-r from-[#E0332F] to-[#C72420] p-2.5 text-white shadow-sm flex items-center justify-between">
                       <div className="space-y-0.5">
                         <div className="text-[10px] font-black uppercase tracking-wider text-red-200">Express Pickup</div>
                         <div className="text-xs font-black">Food Ready in 10 Mins</div>
@@ -282,7 +292,8 @@ export default function ForRestaurantsPage() {
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
         {/* ========================================================================= */}
         {/* QUICK BENEFIT METRIC STRIP                                               */}
@@ -536,6 +547,7 @@ export default function ForRestaurantsPage() {
           </div>
         </section>
       </main>
+      </PageTransition>
 
       <LandingFooter />
     </div>

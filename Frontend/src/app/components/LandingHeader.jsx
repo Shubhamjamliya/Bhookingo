@@ -79,8 +79,8 @@ export default function LandingHeader() {
             <BhookingoWordmark
               logoSrc={headerInfo.logo}
               companyName={headerInfo.companyName}
-              accentClassName="text-[#E11D48]"
-              textClassName="text-2xl font-black tracking-tight text-slate-900 leading-none group-hover:text-[#E11D48] transition-colors"
+              accentClassName="text-[#E0332F]"
+              textClassName="text-2xl font-black tracking-tight text-slate-900 leading-none group-hover:text-[#E0332F] transition-colors"
             />
           </motion.div>
         </Link>
@@ -94,22 +94,20 @@ export default function LandingHeader() {
                 key={link.path}
                 to={link.path}
                 className="relative px-3.5 py-2 rounded-full transition-colors group"
-                style={{ fontFamily: 'var(--font-body)' }}
+                style={{ fontFamily: 'var(--font-ui)' }}
               >
-                <span className={`transition-colors ${isActive ? 'text-[#E11D48] font-bold' : 'text-slate-700 group-hover:text-[#E11D48]'}`}>
+                <span className={`transition-colors ${isActive ? 'text-[#E0332F] font-bold' : 'text-slate-700 group-hover:text-[#E0332F]'}`}>
                   {link.name}
                 </span>
                 
                 {/* Active or Hover Animated Underline Indicator */}
                 {isActive ? (
                   <motion.span
-                    layoutId="activeNavIndicator"
-                    className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#E11D48] rounded-full"
+                    layoutId="landingNavUnderline"
+                    className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#E0332F] rounded-full"
                     transition={{ type: "spring", stiffness: 350, damping: 30 }}
                   />
-                ) : (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-[#E11D48] rounded-full transition-all duration-300 group-hover:w-4/5" />
-                )}
+                ) : null}
               </Link>
             );
           })}
@@ -119,12 +117,12 @@ export default function LandingHeader() {
         <div className="hidden sm:flex items-center gap-3">
           <motion.button
             onClick={handleAuthClick}
-            whileHover={{ scale: 1.04, y: -1 }}
-            whileTap={{ scale: 0.96 }}
-            className="relative group overflow-hidden rounded-full bg-gradient-to-r from-[#E11D48] to-[#BE123C] text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 shadow-[0_4px_15px_rgba(225,29,72,0.3)] hover:shadow-[0_8px_25px_rgba(225,29,72,0.45)] transition-all flex items-center gap-2"
-            style={{ fontFamily: 'var(--font-body)' }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            className="relative group overflow-hidden rounded-full bg-gradient-to-r from-[#E0332F] via-[#D62828] to-[#C72420] text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 shadow-[0_4px_15px_rgba(224,51,47,0.3)] hover:shadow-[0_8px_25px_rgba(224,51,47,0.5)] transition-all flex items-center gap-2 cursor-pointer"
+            style={{ fontFamily: 'var(--font-ui)' }}
           >
-            <Smartphone className="w-3.5 h-3.5 transition-transform group-hover:rotate-12" />
+            <Smartphone className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-110" />
             <span>Download App</span>
           </motion.button>
         </div>
@@ -148,6 +146,7 @@ export default function LandingHeader() {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
             className="md:hidden bg-white/95 border-b border-slate-200/80 px-4 pt-3 pb-6 space-y-2 backdrop-blur-xl shadow-xl overflow-hidden"
+            style={{ fontFamily: 'var(--font-ui)' }}
           >
             {navLinks.map((link) => (
               <Link
@@ -156,8 +155,8 @@ export default function LandingHeader() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`block rounded-2xl px-4 py-3 text-sm font-semibold transition-colors ${
                   location.pathname === link.path
-                    ? 'bg-rose-50 text-[#E11D48] font-bold'
-                    : 'text-slate-700 hover:bg-slate-50 hover:text-[#E11D48]'
+                    ? 'bg-red-50 text-[#E0332F] font-bold'
+                    : 'text-slate-700 hover:bg-slate-50 hover:text-[#E0332F]'
                 }`}
               >
                 {link.name}
@@ -169,7 +168,7 @@ export default function LandingHeader() {
                   setMobileMenuOpen(false);
                   handleAuthClick();
                 }}
-                className="w-full rounded-2xl bg-gradient-to-r from-[#E11D48] to-[#BE123C] text-white text-xs font-bold uppercase tracking-wider py-3.5 shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2"
+                className="w-full rounded-2xl bg-gradient-to-r from-[#E0332F] via-[#D62828] to-[#C72420] text-white text-xs font-bold uppercase tracking-wider py-3.5 shadow-lg shadow-red-600/30 flex items-center justify-center gap-2"
               >
                 <Smartphone className="w-4 h-4" />
                 <span>Download App</span>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin,
   Clock,
@@ -21,9 +22,13 @@ import {
 } from 'lucide-react';
 import LandingHeader from '../components/LandingHeader';
 import LandingFooter from '../components/LandingFooter';
+import PageTransition from '@/shared/components/motion/PageTransition';
+import { EASING, MOTION_RULES } from '@/shared/motion/tokens';
+import { useReducedMotionSafe } from '@/shared/motion/useReducedMotionSafe';
 
 export default function FeaturesPage() {
   const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotionSafe();
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedFeatureIdx, setSelectedFeatureIdx] = useState(0);
 
@@ -102,8 +107,8 @@ export default function FeaturesPage() {
       icon: CreditCard,
       title: "Multiple Secure Payment Modes",
       desc: "Support for modern digital payments helps checkout feel familiar, quick, and trustworthy.",
-      color: "bg-rose-50 text-rose-600",
-      badgeColor: "bg-rose-100 text-rose-800",
+      color: "bg-red-50 text-[#E0332F]",
+      badgeColor: "bg-red-100 text-red-800",
       category: "Ordering",
       pill: "Frictionless Checkout",
       tag: "Encrypted & Safe"
@@ -124,155 +129,170 @@ export default function FeaturesPage() {
     <div className="landing-shell min-h-screen flex flex-col text-[color:var(--landing-text)]">
       <LandingHeader />
 
-      <main className="flex-1">
+      <PageTransition>
+        <main className="flex-1">
         {/* ========================================================================= */}
-        {/* HERO SECTION (Matches HowItWorks Cinematic Dark Road Theme)              */}
+        {/* HERO SECTION (Matches Centralized Cinematic Dark Road Theme)              */}
         {/* ========================================================================= */}
-        <section className="relative overflow-hidden bg-[#16100d] text-white">
-          <div className="absolute inset-0">
+        <section className="relative overflow-hidden bg-[#100B08] text-white flex items-center py-12 sm:py-16 lg:py-20 min-h-[640px] lg:min-h-[700px]">
+          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
             <img
               src="/assets/images/landingbg.png"
               alt="Highway road"
-              className="h-full w-full object-cover opacity-55"
+              className="h-full w-full object-cover opacity-75"
             />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(214,40,40,0.28),transparent_35%),linear-gradient(180deg,rgba(12,8,8,0.72)_0%,rgba(12,8,8,0.8)_48%,rgba(12,8,8,0.92)_100%)]" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0C0806]/96 via-[#0E0907]/85 to-[#0E0907]/45" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#100B08] via-transparent to-black/60" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-[#0C0806]/30 to-[#0C0806]/90" />
           </div>
 
-          <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-24">
-            <div className="lg:col-span-7 space-y-6">
-              <span className="landing-section-label inline-flex rounded-full border border-white/15 bg-white/12 px-4 py-2 text-[11px] font-extrabold uppercase text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
-                PLATFORM FEATURES
-              </span>
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
+              {/* Left Content Column */}
+              <div className="lg:col-span-7 flex flex-col justify-center">
+                <div>
+                  <span className="landing-hero-badge">
+                    The Complete Platform
+                  </span>
+                </div>
 
-              <div className="space-y-4">
-                <h1 className="landing-title max-w-4xl text-4xl font-black text-white sm:text-5xl lg:text-[3.75rem]">
-                  Everything You Need
-                  <br />
-                  on the <span className="text-[color:var(--landing-accent)]">Highway</span>
-                </h1>
-                <p className="max-w-2xl text-base leading-8 text-[#f1e4db] sm:text-lg">
-                  Explore the features that make Bhookingo more useful for real highway travel, planned stops, and faster food decisions.
-                </p>
-              </div>
+                <div className="mt-6 sm:mt-7">
+                  <h1 className="landing-hero-h1 max-w-2xl">
+                    Every highway tool built for <span className="text-[color:var(--landing-accent)]">clarity, speed & comfort</span>
+                  </h1>
+                  <p className="landing-hero-body mt-4 sm:mt-5">
+                    Bhookingo replaces random roadside decisions with verified stops, live corridor detection, and frictionless meal pre-ordering.
+                  </p>
+                </div>
 
-              <div className="flex flex-wrap gap-4 pt-2">
-                <button
-                  onClick={openUserFlow}
-                  className="landing-button-primary flex items-center gap-2 rounded-full px-8 py-4 text-sm font-extrabold uppercase tracking-[0.18em] transition-all active:scale-95 group"
-                >
-                  <Smartphone className="h-4 w-4" />
-                  <span>Try Bhookingo</span>
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
-                </button>
-                <a
-                  href="#features-catalog"
-                  className="landing-button-secondary flex items-center gap-2 rounded-full px-8 py-4 text-sm font-semibold transition-all group"
-                >
-                  <span>Explore Capabilities</span>
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
-                </a>
-              </div>
-
-              {/* Three Highway Pillars in Hero */}
-              <div className="grid gap-3 pt-4 sm:grid-cols-3">
-                {[
-                  { value: 'Forward-first', label: 'Zero U-turns with route-aware precision' },
-                  { value: 'Pre-order', label: 'Food hot & ready before you arrive' },
-                  { value: 'Comfort-led', label: 'Clean washrooms, parking & EV verified' }
-                ].map((item) => (
-                  <div
-                    key={item.value}
-                    className="rounded-[24px] border border-white/12 bg-[rgba(255,255,255,0.12)] px-4 py-4 shadow-[0_18px_45px_rgba(0,0,0,0.16)] backdrop-blur-md transition-all hover:bg-[rgba(255,255,255,0.16)]"
+                <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 mt-7 sm:mt-8">
+                  <button
+                    onClick={openUserFlow}
+                    className="landing-button-primary flex items-center gap-2.5 rounded-full px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_25px_rgba(224,51,47,0.35)] hover:shadow-[0_12px_32px_rgba(224,51,47,0.55)] transition-all active:scale-95 group cursor-pointer"
                   >
-                    <div className="font-[var(--font-display)] text-lg font-bold text-white">{item.value}</div>
-                    <p className="pt-1 text-xs leading-5 text-[#f0e2d7]">{item.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+                    <Smartphone className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                    <span>Try Platform Free</span>
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </button>
+                  <a
+                    href="#features-catalog"
+                    className="landing-button-secondary flex items-center gap-2.5 rounded-full px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold tracking-wider text-white shadow-lg backdrop-blur-md transition-all group cursor-pointer"
+                  >
+                    <span>Browse All Features</span>
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </a>
+                </div>
 
-            {/* Right Hero: Interactive Feature Spotlight Simulator */}
-            <div className="lg:col-span-5 lg:pl-6 xl:pl-10">
-              <div className="relative overflow-hidden rounded-[36px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0.12)_100%)] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.32)] backdrop-blur-xl">
-                <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
-                <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
-
-                <div className="relative rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,rgba(28,18,15,0.96)_0%,rgba(20,13,11,0.92)_100%)] p-6 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_22px_55px_rgba(12,8,6,0.32)]">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                    <div>
-                      <div className="landing-section-label text-[10px] font-extrabold text-[#f2b2b2]">
-                        Live Platform Spotlight
-                      </div>
-                      <h2 className="pt-1 font-[var(--font-display)] text-xl font-black text-white">
-                        Smart Highway Assistant
-                      </h2>
-                    </div>
-                    <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400 border border-emerald-500/30">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>Live on Route</span>
-                    </div>
-                  </div>
-
-                  {/* Active Selected Feature Details */}
-                  <div className="mt-5 rounded-[22px] border border-white/10 bg-white/[0.05] p-4.5 backdrop-blur-sm">
-                    {(() => {
-                      const feat = featuresList[selectedFeatureIdx] || featuresList[0];
-                      const IconComp = feat.icon;
-                      return (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[color:var(--landing-accent)] text-white shadow-[0_8px_20px_rgba(214,40,40,0.35)]">
-                              <IconComp className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#f2b2b2]">
-                                {feat.tag}
-                              </span>
-                              <h3 className="font-[var(--font-display)] text-base font-bold text-white">
-                                {feat.title}
-                              </h3>
-                            </div>
-                          </div>
-                          <p className="text-xs leading-6 text-[#dccac0]">
-                            {feat.desc}
-                          </p>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Interactive Feature Selectors */}
-                  <div className="space-y-2 pt-4">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-[#dccac0]">
-                      Click to Preview Core Features:
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {featuresList.slice(0, 4).map((item, idx) => (
-                        <button
-                          key={item.title}
-                          onClick={() => setSelectedFeatureIdx(idx)}
-                          className={`flex items-center gap-2 rounded-xl p-2.5 text-left text-xs font-semibold transition-all ${
-                            selectedFeatureIdx === idx
-                              ? 'border border-[color:var(--landing-accent)] bg-white/12 text-white shadow-sm'
-                              : 'border border-white/8 bg-white/[0.03] text-[#d8c7bb] hover:bg-white/[0.07]'
-                          }`}
-                        >
-                          <item.icon className="h-3.5 w-3.5 shrink-0 text-[color:var(--landing-accent)]" />
-                          <span className="truncate">{item.title.split(' ')[0]} {item.title.split(' ')[1] || ''}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-5 border-t border-white/10 mt-5 flex items-center justify-between">
-                    <span className="text-xs text-[#d8c7bb]">Ready to test on your highway?</span>
-                    <button
-                      onClick={openUserFlow}
-                      className="flex items-center gap-1 text-xs font-bold text-[color:var(--landing-accent)] hover:underline group"
+                {/* Standardized Three Pillar Cards in Hero */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 sm:mt-9">
+                  {[
+                    { value: '1000+', label: 'Verified highway dining partners' },
+                    { value: '0 Mins', label: 'Waiting time on pre-ordered meals' },
+                    { value: '200+', label: 'Indian highway corridors mapped' }
+                  ].map((item) => (
+                    <div
+                      key={item.value}
+                      className="landing-pillar-card"
                     >
-                      <span>Launch App</span>
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-                    </button>
+                      <div className="landing-pillar-title">{item.value}</div>
+                      <p className="landing-pillar-body">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Interactive Mockup Column */}
+              <div className="lg:col-span-5 lg:pl-2 xl:pl-4 mt-8 lg:mt-0">
+                <div className="landing-showcase-panel-outer">
+                  <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
+                  <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
+
+                  <div className="landing-showcase-panel-inner">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
+                      <div>
+                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#FF8582]">
+                          Live Platform Spotlight
+                        </div>
+                        <h2 className="pt-0.5 font-[var(--font-display)] text-lg sm:text-xl font-bold text-white">
+                          Smart Highway Assistant
+                        </h2>
+                      </div>
+                      <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-[11px] font-bold text-emerald-400 border border-emerald-500/30 font-[var(--font-ui)]">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>Live on Route</span>
+                      </div>
+                    </div>
+
+                    {/* Active Selected Feature Details with AnimatePresence crossfade */}
+                    <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur-sm min-h-[110px]">
+                      <AnimatePresence mode="wait">
+                        {(() => {
+                          const feat = featuresList[selectedFeatureIdx] || featuresList[0];
+                          const IconComp = feat.icon;
+                          return (
+                            <motion.div
+                              key={selectedFeatureIdx}
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -8 }}
+                              transition={{ duration: 0.2 }}
+                              className="space-y-2.5"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#E0332F] to-[#C72420] text-white shadow-[0_6px_16px_rgba(224,51,47,0.35)]">
+                                  <IconComp className="h-5 w-5" />
+                                </div>
+                                <div>
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#FF8582] font-[var(--font-ui)]">
+                                    {feat.tag}
+                                  </span>
+                                  <h3 className="font-[var(--font-display)] text-sm sm:text-base font-bold text-white leading-tight">
+                                    {feat.title}
+                                  </h3>
+                                </div>
+                              </div>
+                              <p className="text-xs leading-relaxed text-[#dccac0] font-[var(--font-ui)]">
+                                {feat.desc}
+                              </p>
+                            </motion.div>
+                          );
+                        })()}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Interactive Feature Selectors */}
+                    <div className="space-y-2 pt-3.5">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#dccac0] font-[var(--font-ui)]">
+                        Click to Preview Core Features:
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {featuresList.slice(0, 4).map((item, idx) => (
+                          <button
+                            key={item.title}
+                            onClick={() => setSelectedFeatureIdx(idx)}
+                            className={`flex items-center gap-2 rounded-xl p-2.5 text-left text-xs font-semibold transition-all cursor-pointer font-[var(--font-ui)] ${
+                              selectedFeatureIdx === idx
+                                ? 'border border-[color:var(--landing-accent)] bg-white/15 text-white shadow-sm'
+                                : 'border border-white/8 bg-white/[0.04] text-[#d8c7bb] hover:bg-white/[0.08]'
+                            }`}
+                          >
+                            <item.icon className="h-3.5 w-3.5 shrink-0 text-[color:var(--landing-accent)]" />
+                            <span className="truncate">{item.title.split(' ')[0]} {item.title.split(' ')[1] || ''}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/10 mt-4 flex items-center justify-between font-[var(--font-ui)]">
+                      <span className="text-xs text-[#d8c7bb]">Ready to test on your highway?</span>
+                      <button
+                        onClick={openUserFlow}
+                        className="text-xs font-bold text-[#FF8582] flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <span>Open Map</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -542,6 +562,7 @@ export default function FeaturesPage() {
           </div>
         </section>
       </main>
+      </PageTransition>
 
       <LandingFooter />
     </div>

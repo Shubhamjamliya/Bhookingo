@@ -51,7 +51,7 @@ export default function MasterLandingPage() {
   };
 
   return (
-    <div className="landing-shell min-h-screen flex flex-col text-slate-900 bg-[#FCFAF7] selection:bg-rose-500 selection:text-white">
+    <div className="landing-shell min-h-screen flex flex-col text-slate-900 bg-[#FCFAF7] selection:bg-[#E0332F] selection:text-white">
       {/* 1. Floating Animated Navbar */}
       <LandingHeader />
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   ArrowRight,
   Car,
@@ -20,6 +21,9 @@ import {
 } from 'lucide-react';
 import LandingHeader from '../components/LandingHeader';
 import LandingFooter from '../components/LandingFooter';
+import PageTransition from '@/shared/components/motion/PageTransition';
+import { EASING, MOTION_RULES } from '@/shared/motion/tokens';
+import { useReducedMotionSafe } from '@/shared/motion/useReducedMotionSafe';
 
 const steps = [
   {
@@ -107,118 +111,122 @@ export default function HowItWorksPage() {
     <div className="landing-shell min-h-screen flex flex-col text-[color:var(--landing-text)]">
       <LandingHeader />
 
-      <main className="flex-1">
-        <section className="relative overflow-hidden bg-[#16100d] text-white flex flex-col justify-center lg:min-h-[calc(100vh-76px)]">
-          <div className="absolute inset-0">
+      <PageTransition>
+        <main className="flex-1">
+        <section className="relative overflow-hidden bg-[#100B08] text-white flex items-center py-12 sm:py-16 lg:py-20 min-h-[640px] lg:min-h-[700px]">
+          <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
             <img
               src="/assets/images/landingbg.png"
               alt="Highway road"
-              className="h-full w-full object-cover opacity-55"
+              className="h-full w-full object-cover opacity-75"
             />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(214,40,40,0.24),transparent_28%),linear-gradient(180deg,rgba(12,8,8,0.7)_0%,rgba(12,8,8,0.78)_48%,rgba(12,8,8,0.88)_100%)]" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0C0806]/96 via-[#0E0907]/85 to-[#0E0907]/45" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#100B08] via-transparent to-black/60" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-[#0C0806]/30 to-[#0C0806]/90" />
           </div>
 
-          <div className="relative mx-auto grid max-w-7xl items-center gap-6 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-12 lg:gap-8 lg:px-8 lg:py-8 xl:py-10">
-            {/* Left Content Column */}
-            <div className="lg:col-span-7 space-y-4 sm:space-y-5">
-              <span className="landing-section-label inline-flex rounded-full border border-white/15 bg-white/12 px-3.5 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
-                The Bhookingo Journey
-              </span>
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
+              {/* Left Content Column */}
+              <div className="lg:col-span-7 flex flex-col justify-center">
+                <div>
+                  <span className="landing-hero-badge">
+                    The Bhookingo Journey
+                  </span>
+                </div>
 
-              <div className="space-y-2.5 sm:space-y-3">
-                <h1 className="landing-title max-w-2xl text-3xl font-black tracking-tight text-white sm:text-4xl lg:text-[2.85rem] xl:text-[3.25rem] leading-[1.1]">
-                  From highway hunger
-                  <br />
-                  to a planned stop
-                  <br />
-                  <span className="text-[color:var(--landing-accent)]">without the chaos</span>
-                </h1>
-                <p className="max-w-xl text-xs sm:text-sm md:text-base leading-relaxed text-[#f1e4db]">
-                  Bhookingo is built for real road journeys. It helps travelers discover better highway restaurants ahead, order before arrival, and turn random breaks into smoother, smarter stops.
-                </p>
-              </div>
+                <div className="mt-6 sm:mt-7">
+                  <h1 className="landing-hero-h1 max-w-2xl">
+                    From highway hunger to a planned stop <span className="text-[color:var(--landing-accent)]">without the chaos</span>
+                  </h1>
+                  <p className="landing-hero-body mt-4 sm:mt-5">
+                    Bhookingo is built for real road journeys. It helps travelers discover better highway restaurants ahead, order before arrival, and turn random breaks into smoother, smarter stops.
+                  </p>
+                </div>
 
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <button
-                  onClick={openUserFlow}
-                  className="landing-button-primary flex items-center gap-2 rounded-full px-6 py-3 sm:px-7 sm:py-3.5 text-xs sm:text-sm font-extrabold uppercase tracking-[0.16em] transition-all active:scale-95 shadow-md group"
-                >
-                  <Smartphone className="h-4 w-4" />
-                  <span>Try Bhookingo</span>
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </button>
-                <a
-                  href="#journey-steps"
-                  className="landing-button-secondary flex items-center gap-2 rounded-full px-6 py-3 sm:px-7 sm:py-3.5 text-xs sm:text-sm font-semibold transition-all group"
-                >
-                  <span>See The Flow</span>
-                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </a>
-              </div>
-
-              <div className="grid gap-2.5 pt-2 sm:grid-cols-3">
-                {[
-                  { value: 'Forward-first', label: 'Restaurant discovery built for highway direction' },
-                  { value: 'Pre-order', label: 'Food before arrival, not after the wait' },
-                  { value: 'Comfort-led', label: 'Facilities and trust signals along the way' }
-                ].map((item) => (
-                  <div
-                    key={item.value}
-                    className="rounded-2xl border border-white/12 bg-[rgba(255,255,255,0.12)] p-3 sm:p-3.5 shadow-[0_14px_35px_rgba(0,0,0,0.14)] backdrop-blur-md transition-all hover:bg-[rgba(255,255,255,0.16)]"
+                <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 mt-7 sm:mt-8">
+                  <button
+                    onClick={openUserFlow}
+                    className="landing-button-primary flex items-center gap-2.5 rounded-full px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_25px_rgba(224,51,47,0.35)] hover:shadow-[0_12px_32px_rgba(224,51,47,0.55)] transition-all active:scale-95 group cursor-pointer"
                   >
-                    <div className="font-[var(--font-display)] text-sm sm:text-base font-bold text-white tracking-tight">{item.value}</div>
-                    <p className="pt-1 text-[11px] sm:text-xs leading-4.5 text-[#f0e2d7]">{item.label}</p>
-                  </div>
-                ))}
+                    <Smartphone className="h-4 w-4 transition-transform group-hover:rotate-12" />
+                    <span>Try Bhookingo</span>
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </button>
+                  <a
+                    href="#journey-steps"
+                    className="landing-button-secondary flex items-center gap-2.5 rounded-full px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold tracking-wider text-white shadow-lg backdrop-blur-md transition-all group cursor-pointer"
+                  >
+                    <span>See The Flow</span>
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </a>
+                </div>
+
+                {/* Standardized Three Pillar Cards in Hero */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 sm:mt-9">
+                  {[
+                    { value: 'Forward-First', label: 'Restaurant discovery built for highway direction' },
+                    { value: 'Pre-Order', label: 'Food before arrival, not after the wait' },
+                    { value: 'Comfort-Led', label: 'Facilities and trust signals along the way' }
+                  ].map((item) => (
+                    <div
+                      key={item.value}
+                      className="landing-pillar-card"
+                    >
+                      <div className="landing-pillar-title">{item.value}</div>
+                      <p className="landing-pillar-body">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* Right Mobile Flow Mockup */}
-            <div className="lg:col-span-5 lg:pl-2 xl:pl-6">
-              <div className="relative overflow-hidden rounded-[32px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.1)_100%)] p-3.5 sm:p-4 shadow-[0_25px_70px_rgba(0,0,0,0.32)] backdrop-blur-xl">
-                <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
-                <div className="pointer-events-none absolute -left-8 bottom-8 h-20 w-20 rounded-full bg-white/8 blur-2xl" />
+              {/* Right Mobile Flow Mockup */}
+              <div className="lg:col-span-5 lg:pl-2 xl:pl-4 mt-8 lg:mt-0">
+                <div className="landing-showcase-panel-outer">
+                  <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
+                  <div className="pointer-events-none absolute -left-8 bottom-8 h-20 w-20 rounded-full bg-white/8 blur-2xl" />
 
-                <div className="relative rounded-[24px] border border-white/12 bg-[linear-gradient(180deg,rgba(28,18,15,0.96)_0%,rgba(20,13,11,0.92)_100%)] p-4 sm:p-5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_45px_rgba(12,8,6,0.32)]">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                    <div>
-                      <div className="landing-section-label text-[9.5px] font-extrabold uppercase tracking-wider text-[#f2b2b2]">
-                        Example journey
+                  <div className="landing-showcase-panel-inner">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                      <div>
+                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#FF8582]">
+                          Example journey
+                        </div>
+                        <h2 className="pt-0.5 font-[var(--font-display)] text-lg sm:text-xl font-bold text-white">
+                          Hyderabad to Vijayawada
+                        </h2>
+                        <p className="pt-0.5 text-[11px] sm:text-xs text-[#e8d8ce] leading-relaxed font-[var(--font-ui)]">
+                          See how Bhookingo guides one highway food stop from route detection to pickup.
+                        </p>
                       </div>
-                      <h2 className="pt-0.5 font-[var(--font-display)] text-lg sm:text-xl font-black text-white">
-                        Hyderabad to Vijayawada
-                      </h2>
-                      <p className="pt-0.5 text-[11px] sm:text-xs text-[#e8d8ce] leading-relaxed">
-                        See how Bhookingo guides one highway food stop from route detection to pickup.
-                      </p>
+                      <div className="rounded-xl border border-white/10 bg-white/8 p-2.5 text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                        <Navigation className="h-4.5 w-4.5" />
+                      </div>
                     </div>
-                    <div className="rounded-xl border border-white/10 bg-white/8 p-2.5 text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                      <Navigation className="h-4.5 w-4.5" />
-                    </div>
-                  </div>
 
-                  <div className="space-y-2 pt-3">
-                    {[
-                      { icon: LocateFixed, title: 'Route detected', detail: 'The app understands your highway direction and focuses only on stops ahead.' },
-                      { icon: Store, title: 'Best stop options appear', detail: 'You see relevant restaurants with parking, washroom, and comfort details early.' },
-                      { icon: UtensilsCrossed, title: 'Order before arrival', detail: 'Choose takeaway or dine-in, then place the order while you are still on the road.' },
-                      { icon: Sparkles, title: 'Stop smarter, continue faster', detail: 'You arrive with more confidence, spend less time waiting, and get back on route smoothly.' }
-                    ].map((item, index) => (
-                      <div key={item.title} className="rounded-xl border border-white/8 bg-white/[0.04] p-2 sm:p-2.5 backdrop-blur-sm">
-                        <div className="flex items-start gap-3">
-                          <div className="flex flex-col items-center">
-                            <div className="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.04)_100%)] text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                              <item.icon className="h-4 w-4" />
+                    <div className="space-y-2 pt-3">
+                      {[
+                        { icon: LocateFixed, title: 'Route detected', detail: 'The app understands your highway direction and focuses only on stops ahead.' },
+                        { icon: Store, title: 'Best stop options appear', detail: 'You see relevant restaurants with parking, washroom, and comfort details early.' },
+                        { icon: UtensilsCrossed, title: 'Order before arrival', detail: 'Choose takeaway or dine-in, then place the order while you are still on the road.' },
+                        { icon: Sparkles, title: 'Stop smarter, continue faster', detail: 'You arrive with more confidence, spend less time waiting, and get back on route smoothly.' }
+                      ].map((item, index) => (
+                        <div key={item.title} className="rounded-xl border border-white/8 bg-white/[0.04] p-2 sm:p-2.5 backdrop-blur-sm">
+                          <div className="flex items-start gap-3">
+                            <div className="flex flex-col items-center">
+                              <div className="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.04)_100%)] text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                                <item.icon className="h-4 w-4" />
+                              </div>
+                              {index < 3 ? <div className="my-0.5 h-2.5 sm:h-3 w-px bg-white/15" /> : null}
                             </div>
-                            {index < 3 ? <div className="my-0.5 h-2.5 sm:h-3 w-px bg-white/15" /> : null}
-                          </div>
-                          <div className="pt-0.5 min-w-0">
-                            <h3 className="font-[var(--font-display)] text-xs sm:text-sm font-bold text-white leading-tight">{item.title}</h3>
-                            <p className="pt-0.5 text-[10.5px] sm:text-[11px] leading-4 text-[#dccac0]">{item.detail}</p>
+                            <div className="pt-0.5 min-w-0">
+                              <h3 className="font-[var(--font-display)] text-xs sm:text-sm font-bold text-white leading-tight">{item.title}</h3>
+                              <p className="pt-0.5 text-[10.5px] sm:text-[11px] leading-4 text-[#dccac0] font-[var(--font-ui)]">{item.detail}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -464,6 +472,7 @@ export default function HowItWorksPage() {
           </div>
         </section>
       </main>
+      </PageTransition>
 
       <LandingFooter />
     </div>

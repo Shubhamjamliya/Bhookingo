@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import LandingHeader from '../components/LandingHeader';
 import LandingFooter from '../components/LandingFooter';
+import PageTransition from '@/shared/components/motion/PageTransition';
+import { EASING, MOTION_RULES } from '@/shared/motion/tokens';
+import { useReducedMotionSafe } from '@/shared/motion/useReducedMotionSafe';
 import {
   Calendar,
   User,
@@ -20,6 +24,7 @@ import {
 } from 'lucide-react';
 
 export default function BlogPage() {
+  const shouldReduceMotion = useReducedMotionSafe();
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -196,7 +201,8 @@ export default function BlogPage() {
     <div className="landing-shell min-h-screen flex flex-col text-[color:var(--landing-text)]">
       <LandingHeader />
 
-      <main className="flex-1">
+      <PageTransition>
+        <main className="flex-1">
         {selectedPost && selectedDetail ? (
           /* ========================================================================= */
           /* BLOG DETAIL ARTICLE VIEW                                                  */
@@ -279,127 +285,132 @@ export default function BlogPage() {
           /* BLOG LIST VIEW                                                            */
           /* ========================================================================= */
           <>
-            {/* Hero Section (Matches HowItWorks Cinematic Dark Road Theme) */}
-            <section className="relative overflow-hidden bg-[#16100d] text-white">
-              <div className="absolute inset-0">
+            {/* Hero Section (Matches Centralized Cinematic Dark Road Theme) */}
+            <section className="relative overflow-hidden bg-[#100B08] text-white flex items-center py-12 sm:py-16 lg:py-20 min-h-[640px] lg:min-h-[700px]">
+              <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
                 <img
                   src="/assets/images/landingbg.png"
                   alt="Highway road"
-                  className="h-full w-full object-cover opacity-55"
+                  className="h-full w-full object-cover opacity-75"
                 />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(214,40,40,0.28),transparent_35%),linear-gradient(180deg,rgba(12,8,8,0.72)_0%,rgba(12,8,8,0.8)_48%,rgba(12,8,8,0.92)_100%)]" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0C0806]/96 via-[#0E0907]/85 to-[#0E0907]/45" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#100B08] via-transparent to-black/60" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-[#0C0806]/30 to-[#0C0806]/90" />
               </div>
 
-              <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-24">
-                <div className="lg:col-span-7 space-y-6">
-                  <span className="landing-section-label inline-flex rounded-full border border-white/15 bg-white/12 px-4 py-2 text-[11px] font-extrabold uppercase text-white shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-md">
-                    BHOOKINGO BLOG
-                  </span>
+              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
+                  {/* Left Content Column */}
+                  <div className="lg:col-span-7 flex flex-col justify-center">
+                    <div>
+                      <span className="landing-hero-badge">
+                        Bhookingo Blog
+                      </span>
+                    </div>
 
-                  <div className="space-y-4">
-                    <h1 className="landing-title max-w-4xl text-4xl font-black text-white sm:text-5xl lg:text-[3.75rem]">
-                      Highway Stories &
-                      <br />
-                      <span className="text-[color:var(--landing-accent)]">Travel Guides</span>
-                    </h1>
-                    <p className="max-w-2xl text-base leading-8 text-[#f1e4db] sm:text-lg">
-                      Insider tips, food recommendations, and road-trip guides for Indian highway travelers.
-                    </p>
-                  </div>
+                    <div className="mt-6 sm:mt-7">
+                      <h1 className="landing-hero-h1 max-w-2xl">
+                        Highway Stories & <span className="text-[color:var(--landing-accent)]">Travel Guides</span>
+                      </h1>
+                      <p className="landing-hero-body mt-4 sm:mt-5">
+                        Insider tips, food recommendations, and road-trip guides for Indian highway travelers.
+                      </p>
+                    </div>
 
-                  {/* Search Bar & Action Buttons */}
-                  <div className="flex flex-wrap items-center gap-3 pt-2 max-w-xl">
-                    <div className="flex-1 min-w-[240px] relative">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
-                      <input
-                        type="text"
-                        placeholder="Search highway stories, tips, dhabas..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full rounded-full border border-white/15 bg-white/10 pl-11 pr-4 py-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[color:var(--landing-accent)] backdrop-blur-md transition-all"
-                      />
+                    {/* Search Bar & Action Input */}
+                    <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 mt-7 sm:mt-8 max-w-xl">
+                      <div className="flex-1 min-w-[240px] relative font-[var(--font-ui)]">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+                        <input
+                          type="text"
+                          placeholder="Search highway stories, tips, dhabas..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full rounded-full border border-white/20 bg-white/10 pl-11 pr-4 py-3.5 text-xs sm:text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[color:var(--landing-accent)] backdrop-blur-md transition-all shadow-inner"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Standardized Three Story Pillar Cards in Hero */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 sm:mt-9">
+                      {[
+                        { value: 'Verified Dhabas', label: 'Curated taste & hygiene tests across NH corridors' },
+                        { value: 'Pre-Order Hacks', label: 'Save 45+ minutes on long distance drives' },
+                        { value: 'EV Highway Hubs', label: 'Simultaneous fast charging & dining locations' }
+                      ].map((item) => (
+                        <div
+                          key={item.value}
+                          className="landing-pillar-card"
+                        >
+                          <div className="landing-pillar-title">{item.value}</div>
+                          <p className="landing-pillar-body">{item.label}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Three Highway Story Pillars in Hero */}
-                  <div className="grid gap-3 pt-4 sm:grid-cols-3">
-                    {[
-                      { value: 'Verified Dhabas', label: 'Curated taste & hygiene tests across NH corridors' },
-                      { value: 'Pre-Order Hacks', label: 'Save 45+ minutes on long distance drives' },
-                      { value: 'EV Highway Hubs', label: 'Simultaneous fast charging & dining locations' }
-                    ].map((item) => (
-                      <div
-                        key={item.value}
-                        className="rounded-[24px] border border-white/12 bg-[rgba(255,255,255,0.12)] px-4 py-4 shadow-[0_18px_45px_rgba(0,0,0,0.16)] backdrop-blur-md transition-all hover:bg-[rgba(255,255,255,0.16)]"
-                      >
-                        <div className="font-[var(--font-display)] text-lg font-bold text-white">{item.value}</div>
-                        <p className="pt-1 text-xs leading-5 text-[#f0e2d7]">{item.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                  {/* Right Hero: Featured Story Spotlight Card */}
+                  <div className="lg:col-span-5 lg:pl-2 xl:pl-4 mt-8 lg:mt-0">
+                    <div className="landing-showcase-panel-outer">
+                      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
+                      <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
 
-                {/* Right Hero: Featured Story Spotlight Card */}
-                <div className="lg:col-span-5 lg:pl-6 xl:pl-8">
-                  <div className="relative overflow-hidden rounded-[36px] border border-white/16 bg-[linear-gradient(180deg,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0.12)_100%)] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.32)] backdrop-blur-xl">
-                    <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
-                    <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
-
-                    <div className="relative rounded-[28px] border border-white/12 bg-[linear-gradient(180deg,rgba(28,18,15,0.96)_0%,rgba(20,13,11,0.92)_100%)] p-6 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_22px_55px_rgba(12,8,6,0.32)]">
-                      <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                        <div>
-                          <div className="landing-section-label text-[10px] font-extrabold text-[#f2b2b2]">
-                            FEATURED STORY
+                      <div className="landing-showcase-panel-inner">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
+                          <div>
+                            <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#FF8582]">
+                              FEATURED STORY
+                            </div>
+                            <h2 className="pt-0.5 font-[var(--font-display)] text-lg sm:text-xl font-bold text-white">
+                              Editor's Highway Pick
+                            </h2>
                           </div>
-                          <h2 className="pt-1 font-[var(--font-display)] text-xl font-black text-white">
-                            Editor's Highway Pick
-                          </h2>
+                          <div className="rounded-xl border border-white/10 bg-white/8 p-2.5 text-[color:var(--landing-accent)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                            <BookOpen className="h-4.5 w-4.5" />
+                          </div>
                         </div>
-                        <div className="rounded-2xl border border-white/10 bg-white/8 p-3 text-[color:var(--landing-accent)]">
-                          <BookOpen className="h-5 w-5" />
-                        </div>
-                      </div>
 
-                      <div className="mt-5 rounded-2xl overflow-hidden relative h-36 border border-white/10">
-                        <img
-                          src={blogPosts[0].img}
-                          alt="Featured"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-3 flex flex-col justify-end">
-                          <span className="text-[10px] font-extrabold uppercase text-[#f2b2b2]">
-                            {blogPosts[0].category}
-                          </span>
-                          <span className="text-xs font-bold text-white line-clamp-1">
-                            {blogPosts[0].title}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p className="pt-4 text-xs leading-6 text-[#dccac0]">
-                        {blogPosts[0].excerpt}
-                      </p>
-
-                      <div className="pt-5 border-t border-white/10 mt-4 flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
+                        <div className="mt-4 rounded-2xl overflow-hidden relative h-36 border border-white/10">
                           <img
-                            src={blogPosts[0].authorAvatar}
-                            alt={blogPosts[0].author}
-                            className="h-8 w-8 rounded-full object-cover border border-white/20"
+                            src={blogPosts[0].img}
+                            alt="Featured"
+                            className="w-full h-full object-cover"
                           />
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold text-white leading-tight">{blogPosts[0].author}</span>
-                            <span className="text-[10px] text-gray-400">{blogPosts[0].date}</span>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent p-3 flex flex-col justify-end">
+                            <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-[#FF8582] font-[var(--font-ui)]">
+                              {blogPosts[0].category}
+                            </span>
+                            <span className="text-xs font-bold text-white line-clamp-1 font-[var(--font-ui)]">
+                              {blogPosts[0].title}
+                            </span>
                           </div>
                         </div>
 
-                        <button
-                          onClick={() => setSelectedPostId(1)}
-                          className="flex items-center gap-1 text-xs font-bold text-[color:var(--landing-accent)] hover:underline group"
-                        >
-                          <span>Read</span>
-                          <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-                        </button>
+                        <p className="pt-3 text-xs leading-relaxed text-[#dccac0] font-[var(--font-ui)]">
+                          {blogPosts[0].excerpt}
+                        </p>
+
+                        <div className="pt-4 border-t border-white/10 mt-4 flex items-center justify-between font-[var(--font-ui)]">
+                          <div className="flex items-center gap-2.5">
+                            <img
+                              src={blogPosts[0].authorAvatar}
+                              alt={blogPosts[0].author}
+                              className="h-8 w-8 rounded-full object-cover border border-white/20"
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-white leading-tight">{blogPosts[0].author}</span>
+                              <span className="text-[10px] text-gray-400">{blogPosts[0].date}</span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => setSelectedPostId(1)}
+                            className="flex items-center gap-1 text-xs font-bold text-[#FF8582] hover:text-white transition-colors cursor-pointer"
+                          >
+                            <span>Read Story</span>
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -586,6 +597,7 @@ export default function BlogPage() {
           </>
         )}
       </main>
+      </PageTransition>
 
       <LandingFooter />
     </div>

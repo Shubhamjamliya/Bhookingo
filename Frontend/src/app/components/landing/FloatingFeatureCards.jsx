@@ -29,13 +29,13 @@ function ParkingIcon(props) {
 }
 
 const FEATURE_ITEMS = [
-  { icon: MapPin, label: "Forward Restaurants", desc: "Only ahead on your highway" },
-  { icon: Clock, label: "Save Time & Money", desc: "Zero waiting at highway stops" },
-  { icon: Star, label: "Quality Food Every Time", desc: "Curated & verified highway dining" },
-  { icon: RestroomIcon, label: "Clean Washrooms Info", desc: "Real traveler ratings & photos" },
-  { icon: Utensils, label: "Dine-in & Takeaway", desc: "Ready before you step in" },
-  { icon: Zap, label: "EV Charging On Route", desc: "Fast chargers at dining stops" },
-  { icon: ParkingIcon, label: "Parking Info Easy & Safe", desc: "Spacious & secure parking spots" }
+  { icon: MapPin, label: "Forward Restaurants", desc: "Only ahead on your highway", iconAnim: "group-hover:-translate-y-1.5 group-hover:scale-120" },
+  { icon: Clock, label: "Save Time & Money", desc: "Zero waiting at highway stops", iconAnim: "group-hover:rotate-180 group-hover:scale-120 duration-500" },
+  { icon: Star, label: "Quality Food Every Time", desc: "Curated & verified highway dining", iconAnim: "group-hover:rotate-45 group-hover:scale-125" },
+  { icon: RestroomIcon, label: "Clean Washrooms Info", desc: "Real traveler ratings & photos", iconAnim: "group-hover:-rotate-12 group-hover:scale-120" },
+  { icon: Utensils, label: "Dine-in & Takeaway", desc: "Ready before you step in", iconAnim: "group-hover:rotate-12 group-hover:scale-125" },
+  { icon: Zap, label: "EV Charging On Route", desc: "Fast chargers at dining stops", iconAnim: "group-hover:scale-130 group-hover:translate-x-1" },
+  { icon: ParkingIcon, label: "Parking Info Easy & Safe", desc: "Spacious & secure parking spots", iconAnim: "group-hover:-translate-y-1 group-hover:scale-120" }
 ];
 
 const containerVariants = {
@@ -70,8 +70,8 @@ export default function FloatingFeatureCards({ layout = "vertical" }) {
             key={idx}
             className="rounded-2xl border border-white/40 bg-[#EDE8E3]/95 p-3 flex items-center gap-3 shadow-md transition-all hover:bg-white hover:shadow-lg cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E0332F] to-[#C72420] text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-              <item.icon className="w-4 h-4 text-white" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E0332F] to-[#C72420] text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-115 group-hover:-rotate-12 group-hover:shadow-[0_6px_16px_rgba(224,51,47,0.4)] transition-all duration-300">
+              <item.icon className={`w-4 h-4 text-white transition-transform duration-300 ${item.iconAnim || 'group-hover:scale-110'}`} />
             </div>
             <div className="min-w-0 flex-1">
               <span className="block text-xs sm:text-sm font-bold text-slate-900 truncate">
@@ -98,13 +98,13 @@ export default function FloatingFeatureCards({ layout = "vertical" }) {
           variants={itemVariants}
           whileHover={{
             x: 6,
-            scale: 1.02,
+            scale: 1.03,
             transition: { duration: 0.2 }
           }}
           className="relative rounded-[22px] border border-white/60 bg-[#EDE8E3]/95 hover:bg-white px-4 py-2.5 flex items-center gap-3.5 shadow-md hover:shadow-xl transition-all cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E0332F] to-[#C72420] text-white flex items-center justify-center shrink-0 shadow-sm shadow-red-900/30 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300">
-            <item.icon className="w-4.5 h-4.5 text-white transition-transform duration-300 group-hover:rotate-6" />
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#E0332F] to-[#C72420] text-white flex items-center justify-center shrink-0 shadow-sm shadow-red-900/30 group-hover:scale-115 group-hover:-rotate-12 group-hover:shadow-[0_6px_20px_rgba(224,51,47,0.45)] transition-all duration-300">
+            <item.icon className={`w-4.5 h-4.5 text-white transition-transform duration-300 ${item.iconAnim || 'group-hover:rotate-6 group-hover:scale-110'}`} />
           </div>
           <div className="flex-1 min-w-0">
             <span className="block text-[13px] font-bold text-slate-900 leading-snug group-hover:text-[#E0332F] transition-colors">

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import {
   ArrowRight,
   Car,
@@ -35,7 +35,8 @@ const steps = [
     highlights: ['Live route-aware experience', 'Works for planning or in-motion discovery', 'Built for highway travelers, not city browsing'],
     stat: 'Forward-only logic',
     tone: 'Travel flow',
-    accent: 'from-[#fff1f1] to-[#ffe5e5]'
+    accent: 'from-[#fff1f1] to-[#ffe5e5]',
+    image: '/assets/images/how-step1-driving.png'
   },
   {
     number: '02',
@@ -46,7 +47,8 @@ const steps = [
     highlights: ['Stops ahead on your route', 'Helpful travel filters', 'Amenities before you arrive'],
     stat: 'Cleaner decisions',
     tone: 'Better discovery',
-    accent: 'from-[#fff8f3] to-[#fff0ea]'
+    accent: 'from-[#fff8f3] to-[#fff0ea]',
+    image: '/assets/images/how-step2-restaurants.png'
   },
   {
     number: '03',
@@ -57,7 +59,8 @@ const steps = [
     highlights: ['Pre-order before arrival', 'Takeaway and dine-in options', 'Digital menu and secure checkout'],
     stat: 'Less waiting',
     tone: 'Fast ordering',
-    accent: 'from-[#f8fff8] to-[#ecfff1]'
+    accent: 'from-[#f8fff8] to-[#ecfff1]',
+    image: '/assets/images/how-step2-restaurants.png'
   },
   {
     number: '04',
@@ -68,7 +71,8 @@ const steps = [
     highlights: ['More predictable stops', 'Higher comfort and confidence', 'Saves time on long journeys'],
     stat: 'Smoother travel',
     tone: 'Journey regained',
-    accent: 'from-[#fff7f7] to-[#fff2f2]'
+    accent: 'from-[#fff7f7] to-[#fff2f2]',
+    image: '/assets/images/how-step3-rewards.png'
   }
 ];
 
@@ -100,8 +104,267 @@ const paths = [
   }
 ];
 
+function StepConnectorRoad({ fromSide, toSide, stepNumber, note, shouldReduceMotion }) {
+  const isRightToLeft = fromSide === 'right';
+
+  // Desktop S-curve from one side to the other
+  const desktopPathD = isRightToLeft
+    ? "M 750,0 C 750,90 250,40 250,130"
+    : "M 250,0 C 250,90 750,40 750,130";
+
+  // Mobile centered gentle curve
+  const mobilePathD = "M 500,0 C 500,60 500,70 500,130";
+
+  return (
+    <div className="relative my-[-10px] sm:my-[-14px] h-28 sm:h-36 w-full z-20 flex items-center justify-center overflow-visible">
+      {/* SVG Curved Highway Connector (Desktop & Mobile) */}
+      <svg
+        className="absolute inset-0 h-full w-full pointer-events-none overflow-visible"
+        viewBox="0 0 1000 130"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <filter id={`connectorGlow-${stepNumber}`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="7" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+
+          <linearGradient id={`connectorGrad-${stepNumber}`} x1={isRightToLeft ? "100%" : "0%"} y1="0%" x2={isRightToLeft ? "0%" : "100%"} y2="100%">
+            <stop offset="0%" stopColor="#E0332F" stopOpacity="0.95" />
+            <stop offset="50%" stopColor="#FF5753" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="#E0332F" stopOpacity="0.95" />
+          </linearGradient>
+
+          <linearGradient id={`connectorBed-${stepNumber}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#E0332F" stopOpacity="0.1" />
+            <stop offset="50%" stopColor="#E0332F" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#E0332F" stopOpacity="0.1" />
+          </linearGradient>
+        </defs>
+
+        {/* Desktop Path */}
+        <g className="hidden sm:inline">
+          {/* Road Bed */}
+          <path
+            d={desktopPathD}
+            stroke={`url(#connectorBed-${stepNumber})`}
+            strokeWidth="58"
+            strokeLinecap="round"
+          />
+
+          {/* Red Glowing Line */}
+          <path
+            d={desktopPathD}
+            stroke={`url(#connectorGrad-${stepNumber})`}
+            strokeWidth="5"
+            strokeLinecap="round"
+            filter={`url(#connectorGlow-${stepNumber})`}
+          />
+
+          {/* Animated Dashed White Centerline */}
+          <path
+            d={desktopPathD}
+            stroke="#FFFFFF"
+            strokeWidth="2.8"
+            strokeDasharray="10 10"
+            className="animate-road-dash"
+            strokeLinecap="round"
+          />
+
+          {/* Start and End Waypoint Pulsing Nodes */}
+          <circle cx={isRightToLeft ? 750 : 250} cy="4" r="14" fill="#E0332F" opacity="0.25" className="animate-soft-pulse" />
+          <circle cx={isRightToLeft ? 750 : 250} cy="4" r="6.5" fill="#E0332F" stroke="#FFFFFF" strokeWidth="2" />
+
+          <circle cx={isRightToLeft ? 250 : 750} cy="126" r="14" fill="#E0332F" opacity="0.25" className="animate-soft-pulse" />
+          <circle cx={isRightToLeft ? 250 : 750} cy="126" r="6.5" fill="#E0332F" stroke="#FFFFFF" strokeWidth="2" />
+        </g>
+
+        {/* Mobile Path (Vertical center) */}
+        <g className="inline sm:hidden">
+          <path
+            d={mobilePathD}
+            stroke={`url(#connectorBed-${stepNumber})`}
+            strokeWidth="42"
+            strokeLinecap="round"
+          />
+          <path
+            d={mobilePathD}
+            stroke={`url(#connectorGrad-${stepNumber})`}
+            strokeWidth="4"
+            strokeLinecap="round"
+            filter={`url(#connectorGlow-${stepNumber})`}
+          />
+          <path
+            d={mobilePathD}
+            stroke="#FFFFFF"
+            strokeWidth="2.5"
+            strokeDasharray="8 8"
+            className="animate-road-dash"
+            strokeLinecap="round"
+          />
+          <circle cx="500" cy="4" r="6" fill="#E0332F" stroke="#FFFFFF" strokeWidth="2" />
+          <circle cx="500" cy="126" r="6" fill="#E0332F" stroke="#FFFFFF" strokeWidth="2" />
+        </g>
+      </svg>
+
+      {/* Floating Highway Milestone Badge in the middle of the road curve */}
+      {note && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 8 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          className="relative z-30 flex items-center gap-2 rounded-full border border-red-200/90 bg-white/95 px-4 sm:px-5 py-1.5 sm:py-2 shadow-[0_8px_20px_rgba(224,51,47,0.12)] backdrop-blur-md"
+        >
+          <span className="h-2 w-2 rounded-full bg-[#E0332F] animate-ping" />
+          <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-slate-800 font-[var(--font-ui)]">
+            {note}
+          </span>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+function ParallaxStepCard({ step, index, openUserFlow, shouldReduceMotion }) {
+  const cardRef = useRef(null);
+  const isEven = index % 2 === 0;
+
+  const { scrollYProgress } = useScroll({
+    target: cardRef,
+    offset: ['start end', 'end start']
+  });
+
+  // Parallax offsets
+  const textParallaxY = useTransform(scrollYProgress, [0, 1], [18, -18]);
+  const phoneParallaxY = useTransform(scrollYProgress, [0, 1], [-26, 26]);
+  const smoothTextY = useSpring(textParallaxY, { stiffness: 110, damping: 20 });
+  const smoothPhoneY = useSpring(phoneParallaxY, { stiffness: 110, damping: 20 });
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial={{ opacity: 0, y: 35 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.55, delay: 0.05, ease: EASING.smooth }}
+      className="group relative z-10 rounded-[36px] border border-red-100/90 bg-[linear-gradient(180deg,#fffdfa_0%,#fbf6f2_50%,#f8ede6_100%)] p-7 sm:p-9 lg:p-11 shadow-[0_18px_45px_rgba(71,43,24,0.06)] hover:shadow-[0_25px_60px_rgba(224,51,47,0.12)] hover:border-[#E0332F]/35 transition-all duration-400"
+    >
+      <div className="grid gap-8 lg:grid-cols-12 items-center">
+        {/* Text Column with subtle parallax */}
+        <motion.div
+          style={{ y: shouldReduceMotion ? 0 : smoothTextY }}
+          className={`space-y-6 ${isEven ? 'lg:col-span-7 lg:order-1' : 'lg:col-span-7 lg:order-2'}`}
+        >
+          {/* Top Step Badge & Tone Tag */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-[var(--font-display)] text-4xl sm:text-5xl font-black text-[color:var(--landing-accent)]">
+              {step.number}
+            </span>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#18110D] text-white shadow-md transition-transform duration-300 group-hover:scale-108 group-hover:-rotate-3 group-hover:bg-[#E0332F]">
+              <step.icon className="h-6 w-6" />
+            </div>
+            <span className="rounded-full bg-[#ffe5e5] px-3.5 py-1.5 text-xs font-extrabold uppercase tracking-[0.16em] text-[color:var(--landing-accent)] font-[var(--font-ui)]">
+              {step.tone}
+            </span>
+            <span className="rounded-full bg-white/90 border border-red-100/80 px-3 py-1 text-[11px] font-bold text-slate-700 shadow-2xs font-[var(--font-ui)]">
+              {step.stat}
+            </span>
+          </div>
+
+          {/* Title & Description */}
+          <div className="space-y-3">
+            <h3 className="font-[var(--font-display)] text-2xl sm:text-3xl font-black text-[color:var(--landing-text)] leading-tight">
+              {step.title}
+            </h3>
+            <p className="text-base leading-relaxed text-[color:var(--landing-text-muted)] font-[var(--font-ui)]">
+              {step.description}
+            </p>
+          </div>
+
+          {/* Highlight Pills */}
+          <div className="grid gap-3 sm:grid-cols-2 pt-2">
+            {step.highlights.map((item) => (
+              <div
+                key={item}
+                className="flex items-start gap-3 rounded-2xl bg-white/90 border border-red-100/70 px-4 py-3 shadow-2xs transition-colors hover:border-[#E0332F]/30"
+              >
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                <span className="text-xs sm:text-sm font-semibold text-[color:var(--landing-text)] font-[var(--font-ui)]">
+                  {item}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Interactive CTA Button */}
+          <div className="pt-2">
+            <button
+              onClick={openUserFlow}
+              className="inline-flex items-center gap-2.5 rounded-full bg-[#18110D] px-6 py-3.5 text-xs font-extrabold uppercase tracking-[0.16em] text-white shadow-md transition-all duration-300 hover:bg-[color:var(--landing-accent)] hover:shadow-lg active:scale-95 cursor-pointer font-[var(--font-ui)] group/btn"
+            >
+              <span>Explore Step {step.number}</span>
+              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1.5" />
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Mobile Phone Mockup Column with Opposing Parallax */}
+        <motion.div
+          style={{ y: shouldReduceMotion ? 0 : smoothPhoneY }}
+          className={`flex justify-center ${isEven ? 'lg:col-span-5 lg:order-2' : 'lg:col-span-5 lg:order-1'}`}
+        >
+          <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[310px]">
+            {/* Ambient Glow behind phone */}
+            <div className="pointer-events-none absolute -inset-3 rounded-[46px] bg-[rgba(224,51,47,0.14)] blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-500" />
+
+            {/* Phone Mockup Frame */}
+            <div className="relative overflow-hidden rounded-[40px] border-[7px] border-[#18110D] bg-[#18110D] p-1 shadow-[0_25px_60px_rgba(71,43,24,0.22)] transition-transform duration-500 group-hover:scale-[1.02] group-hover:-translate-y-1.5">
+              {/* Dynamic Island / Speaker notch */}
+              <div className="absolute left-1/2 top-3 -translate-x-1/2 h-3.5 w-20 rounded-full bg-[#18110D] z-20" />
+
+              {/* Phone Screen Image */}
+              <div className="overflow-hidden rounded-[32px] bg-white aspect-[9/19.5]">
+                <img
+                  src={step.image}
+                  alt={step.title}
+                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  loading="lazy"
+                />
+              </div>
+
+              {/* Floating Step Tag */}
+              <div className="absolute -bottom-1.5 right-3 z-20 flex items-center gap-2 rounded-2xl border border-white/90 bg-white/95 px-3 py-1.5 shadow-lg backdrop-blur-md">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#fff1f1] text-[#E0332F]">
+                  <step.icon className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <div className="text-[9px] font-extrabold uppercase tracking-wider text-[#E0332F] font-[var(--font-ui)]">
+                    Step {step.number}
+                  </div>
+                  <div className="text-[11px] font-bold text-slate-900 font-[var(--font-ui)]">
+                    {step.stat}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function HowItWorksPage() {
   const navigate = useNavigate();
+  const shouldReduceMotion = useReducedMotionSafe();
+  const stepsSectionRef = useRef(null);
+
+  const { scrollYProgress: stepsScrollProgress } = useScroll({
+    target: stepsSectionRef,
+    offset: ['start end', 'end start']
+  });
 
   const openUserFlow = () => {
     navigate('/user/auth/login');
@@ -267,89 +530,59 @@ export default function HowItWorksPage() {
           </div>
         </section>
 
-        <section id="journey-steps" className="py-16 md:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-3xl text-center">
-              <span className="landing-section-label text-xs font-extrabold text-[color:var(--landing-accent)]">
-                Step By Step
+        <section id="journey-steps" ref={stepsSectionRef} className="relative overflow-hidden bg-[linear-gradient(180deg,#fff9f7_0%,#fcf5f1_50%,#f8ece6_100%)] border-b border-[color:var(--landing-line)] py-20 md:py-28">
+          {/* Atmospheric Glow Highlights */}
+          <div className="pointer-events-none absolute -right-24 top-1/4 h-96 w-96 rounded-full bg-[rgba(224,51,47,0.08)] blur-3xl" />
+          <div className="pointer-events-none absolute -left-24 bottom-1/4 h-96 w-96 rounded-full bg-[rgba(245,158,11,0.06)] blur-3xl" />
+
+          <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            {/* Section Header */}
+            <div className="mx-auto max-w-3xl text-center space-y-3">
+              <span className="landing-section-label text-xs font-extrabold uppercase tracking-[0.16em] text-[color:var(--landing-accent)]" style={{ fontFamily: 'var(--font-ui)' }}>
+                Step By Step Journey
               </span>
-              <h2 className="landing-subtitle pt-4 text-3xl font-black sm:text-4xl">
-                A better highway food experience,
-                <span className="text-[color:var(--landing-accent)]"> broken into simple moments</span>
+              <h2 className="landing-subtitle text-3xl font-black sm:text-4xl text-[color:var(--landing-text)]" style={{ fontFamily: 'var(--font-display)' }}>
+                A Better Highway Food Experience,
+                <span className="text-[color:var(--landing-accent)]"> Broken into Simple Moments</span>
               </h2>
-              <p className="pt-4 text-base leading-8 text-[color:var(--landing-text-muted)]">
-                The page flow mirrors the product logic: discover what matters, order before the stop, and keep the journey moving.
+              <p className="text-base font-bold leading-8 text-[color:var(--landing-text-muted)] max-w-2xl mx-auto" style={{ fontFamily: 'var(--font-ui)' }}>
+                Follow the highway path: discover what lies ahead, customize your order before the stop, and keep your trip seamless.
               </p>
             </div>
 
-            <div className="relative mt-14 space-y-8">
-              {steps.map((step, index) => (
-                <div
-                  key={step.number}
-                  className={`grid gap-6 rounded-[32px] border border-[color:var(--landing-line)] bg-white/80 p-6 shadow-[0_20px_60px_rgba(71,43,24,0.08)] backdrop-blur-xl lg:grid-cols-12 lg:p-8 ${index % 2 === 1 ? 'lg:[&>div:first-child]:order-2 lg:[&>div:last-child]:order-1' : ''}`}
-                >
-                  <div className="lg:col-span-7">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="font-[var(--font-display)] text-4xl font-black text-[color:var(--landing-accent)]">{step.number}</span>
-                      <div className={`rounded-2xl bg-gradient-to-br ${step.accent} p-3 text-[color:var(--landing-accent)]`}>
-                        <step.icon className="h-6 w-6" />
-                      </div>
-                      <span className="rounded-full bg-[#fff1f1] px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[color:var(--landing-accent)]">
-                        {step.tone}
-                      </span>
-                    </div>
+            {/* Curved Journey Highway with Real App Screens & Parallax */}
+            <div className="relative mt-16 space-y-6 sm:space-y-8">
+              {steps.map((step, index) => {
+                const isEven = index % 2 === 0;
+                const fromSide = isEven ? 'right' : 'left';
+                const toSide = isEven ? 'left' : 'right';
+                const connectorNotes = [
+                  "Step 01 ➔ Step 02: Real-Time Corridor Detection",
+                  "Step 02 ➔ Step 03: Live Menu Browse & Pre-Order",
+                  "Step 03 ➔ Step 04: Zero-Wait Arrival & Dining"
+                ];
 
-                    <h3 className="pt-5 font-[var(--font-display)] text-2xl font-black sm:text-3xl">{step.title}</h3>
-                    <p className="pt-4 max-w-2xl text-base leading-8 text-[color:var(--landing-text-muted)]">{step.description}</p>
+                return (
+                  <React.Fragment key={step.number}>
+                    <ParallaxStepCard
+                      step={step}
+                      index={index}
+                      openUserFlow={openUserFlow}
+                      shouldReduceMotion={shouldReduceMotion}
+                    />
 
-                    <div className="grid gap-3 pt-6 sm:grid-cols-2">
-                      {step.highlights.map((item) => (
-                        <div key={item} className="flex items-start gap-3 rounded-2xl bg-[#fcf7f3] px-4 py-3">
-                          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-                          <span className="text-sm font-semibold text-[color:var(--landing-text)]">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="lg:col-span-5">
-                    <div className="h-full rounded-[28px] bg-[#19120e] p-5 text-white">
-                      <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                        <div>
-                          <div className="landing-section-label text-[10px] font-extrabold text-[#f2b2b2]">Bhookingo advantage</div>
-                          <div className="pt-2 font-[var(--font-display)] text-2xl font-black">{step.stat}</div>
-                        </div>
-                        <div className="rounded-2xl bg-white/8 p-3">
-                          <step.icon className="h-6 w-6 text-[color:var(--landing-accent)]" />
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 pt-5">
-                        <div className="rounded-[24px] bg-white/6 p-4">
-                          <div className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#f2b2b2]">Why it matters</div>
-                          <p className="pt-2 text-sm leading-7 text-[#ddcec3]">
-                            Bhookingo is not just an ordering layer. It improves the quality of stop decisions for people moving on highways.
-                          </p>
-                        </div>
-                        <div className="rounded-[24px] bg-white/6 p-4">
-                          <div className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#f2b2b2]">What changes for the user</div>
-                          <p className="pt-2 text-sm leading-7 text-[#ddcec3]">
-                            Instead of reacting late, the traveler gets earlier choices, better context, and more control over time and comfort.
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={openUserFlow}
-                        className="mt-6 flex items-center gap-2 rounded-full bg-white px-5 py-3 text-xs font-extrabold uppercase tracking-[0.16em] text-[#1b130f] transition-transform hover:-translate-y-0.5"
-                      >
-                        <span>Try This Step</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                    {index < steps.length - 1 && (
+                      <StepConnectorRoad
+                        fromSide={fromSide}
+                        toSide={toSide}
+                        stepNumber={index + 1}
+                        note={connectorNotes[index]}
+                        shouldReduceMotion={shouldReduceMotion}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </div>
           </div>
         </section>

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import LandingHeader from '../components/LandingHeader';
 import LandingFooter from '../components/LandingFooter';
 import PageTransition from '@/shared/components/motion/PageTransition';
+import TiltCard from '@/shared/components/motion/TiltCard';
 import { EASING, MOTION_RULES } from '@/shared/motion/tokens';
 import { useReducedMotionSafe } from '@/shared/motion/useReducedMotionSafe';
 import {
@@ -109,22 +110,36 @@ export default function ForRestaurantsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
               {/* Left Content Column */}
               <div className="lg:col-span-7 flex flex-col justify-center">
-                <div>
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45, ease: EASING.smooth }}
+                >
                   <span className="landing-hero-badge">
                     Partner With Bhookingo
                   </span>
-                </div>
+                </motion.div>
 
-                <div className="mt-6 sm:mt-7">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.10, ease: EASING.smooth }}
+                  className="mt-6 sm:mt-7"
+                >
                   <h1 className="landing-hero-h1 max-w-2xl">
                     Grow Your <span className="text-[color:var(--landing-accent)]">Highway Restaurant</span> Business
                   </h1>
                   <p className="landing-hero-body mt-4 sm:mt-5">
                     Connect directly with thousands of daily highway travelers and road-trippers passing by your outlet. Boost orders and reduce table turnaround time.
                   </p>
-                </div>
+                </motion.div>
 
-                <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 mt-7 sm:mt-8">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.20, ease: EASING.smooth }}
+                  className="flex flex-wrap items-center gap-3.5 sm:gap-4 mt-7 sm:mt-8"
+                >
                   <button
                     onClick={() => window.open(partnerLink, '_blank')}
                     className="landing-button-primary flex items-center gap-2.5 rounded-full px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-[0_8px_25px_rgba(224,51,47,0.35)] hover:shadow-[0_12px_32px_rgba(224,51,47,0.55)] transition-all active:scale-95 group cursor-pointer"
@@ -140,43 +155,60 @@ export default function ForRestaurantsPage() {
                     <span>See Partner Benefits</span>
                     <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                   </a>
-                </div>
+                </motion.div>
 
                 {/* Standardized Three Pillar Cards in Hero */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 sm:mt-9">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.32, ease: EASING.smooth }}
+                  className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 sm:mt-9"
+                >
                   {[
                     { value: '+40% Pre-Orders', label: 'Capture drive-by traffic before they pass your door' },
                     { value: '0 min Rush Chaos', label: 'Predictable kitchen preparation schedules' },
                     { value: 'Verified Travelers', label: 'Build long-term loyalty with interstate travelers' }
                   ].map((item) => (
-                    <div
+                    <motion.div
                       key={item.value}
-                      className="landing-pillar-card"
+                      whileHover={{ y: -4 }}
+                      transition={{ duration: 0.2 }}
+                      className="landing-pillar-card cursor-default"
                     >
                       <div className="landing-pillar-title">{item.value}</div>
                       <p className="landing-pillar-body">{item.label}</p>
-                    </div>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
 
-              {/* Right Hero: High-Fidelity Mobile App Showcase */}
-              <div className="lg:col-span-5 lg:pl-2 xl:pl-4 mt-8 lg:mt-0">
-                <div className="landing-showcase-panel-outer">
-                  <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
-                  <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
+              {/* Right Hero: High-Fidelity Mobile App Showcase with 3D Tilt and Float */}
+              <motion.div
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.65, delay: 0.35, ease: EASING.smooth }}
+                className="lg:col-span-5 lg:pl-2 xl:pl-4 mt-8 lg:mt-0"
+              >
+                <TiltCard maxTiltX={3} maxTiltY={4}>
+                  <motion.div
+                    animate={shouldReduceMotion ? {} : { y: [0, -7, 0] }}
+                    transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <div className="landing-showcase-panel-outer">
+                      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
+                      <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
 
-                  {/* Mobile Device Frame */}
-                  <div className="relative mx-auto max-w-[320px] sm:max-w-[340px] rounded-[28px] sm:rounded-[32px] border-4 border-[#2b1f1a] bg-[#fafafa] text-gray-900 shadow-2xl overflow-hidden font-[var(--font-ui)]">
-                  {/* Phone Status Bar */}
-                  <div className="bg-[#fffdfa] px-4 pt-2.5 pb-2 flex items-center justify-between text-[11px] font-bold text-gray-800 border-b border-gray-100">
-                    <span>4:37 PM</span>
-                    <div className="flex items-center gap-1.5 text-[10px]">
-                      <span>VoLTE</span>
-                      <span>5G</span>
-                      <span className="rounded bg-gray-800 text-white px-1 text-[9px]">71%</span>
-                    </div>
-                  </div>
+                      {/* Mobile Device Frame */}
+                      <div className="relative mx-auto max-w-[320px] sm:max-w-[340px] rounded-[28px] sm:rounded-[32px] border-4 border-[#2b1f1a] bg-[#fafafa] text-gray-900 shadow-2xl overflow-hidden font-[var(--font-ui)]">
+                      {/* Phone Status Bar */}
+                      <div className="bg-[#fffdfa] px-4 pt-2.5 pb-2 flex items-center justify-between text-[11px] font-bold text-gray-800 border-b border-gray-100">
+                        <span>4:37 PM</span>
+                        <div className="flex items-center gap-1.5 text-[10px]">
+                          <span>VoLTE</span>
+                          <span>5G</span>
+                          <span className="rounded bg-gray-800 text-white px-1 text-[9px]">71%</span>
+                        </div>
+                      </div>
 
                   {/* App Header (Matching Bhookingo Mobile App Interface) */}
                   <div className="bg-white px-3.5 pt-2.5 pb-2.5 border-b border-gray-100">
@@ -290,10 +322,12 @@ export default function ForRestaurantsPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
+            </motion.div>
+          </TiltCard>
+        </motion.div>
+      </div>
+    </div>
+  </section>
 
         {/* ========================================================================= */}
         {/* QUICK BENEFIT METRIC STRIP                                               */}
@@ -359,16 +393,18 @@ export default function ForRestaurantsPage() {
 
             {/* 3 Core Benefit Cards with Animated Hover Arrow */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {benefitsList.map((benefit, idx) => {
+              {benefitsList.map((benefit) => {
                 const IconComponent = benefit.icon;
                 return (
-                  <div
+                  <motion.div
                     key={benefit.title}
-                    className="group relative rounded-[28px] border border-[color:var(--landing-line)] bg-white p-7 shadow-[0_14px_35px_rgba(71,43,24,0.06)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_22px_50px_rgba(214,40,40,0.12)] hover:border-[#d62828]/40 flex flex-col justify-between"
+                    whileHover={{ y: -6, scale: 1.01 }}
+                    transition={{ duration: 0.25, ease: EASING.smooth }}
+                    className="group relative rounded-[28px] border border-[color:var(--landing-line)] bg-white p-7 shadow-[0_14px_35px_rgba(71,43,24,0.06)] hover:shadow-[0_22px_50px_rgba(214,40,40,0.12)] hover:border-[#d62828]/40 flex flex-col justify-between cursor-default select-none"
                   >
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <div className={`h-13 w-13 rounded-2xl ${benefit.color} flex items-center justify-center shadow-xs transition-transform duration-300 group-hover:scale-105`}>
+                        <div className={`h-13 w-13 rounded-2xl ${benefit.color} flex items-center justify-center shadow-xs transition-transform duration-300 group-hover:scale-106 group-hover:-rotate-2`}>
                           <IconComponent className="h-6 w-6" />
                         </div>
                         <span className={`rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider ${benefit.badgeColor}`}>
@@ -387,13 +423,13 @@ export default function ForRestaurantsPage() {
                     <div className="pt-6 mt-4 border-t border-[color:var(--landing-line)]">
                       <button
                         onClick={() => window.open(partnerLink, '_blank')}
-                        className="w-full flex items-center justify-between rounded-full bg-gray-50 px-5 py-3 text-xs font-extrabold uppercase tracking-[0.14em] text-gray-800 transition-all duration-300 group-hover:bg-[#E0332F] group-hover:text-white"
+                        className="w-full flex items-center justify-between rounded-full bg-gray-50 px-5 py-3 text-xs font-extrabold uppercase tracking-[0.14em] text-gray-800 transition-all duration-300 group-hover:bg-[#E0332F] group-hover:text-white cursor-pointer active:scale-95"
                       >
                         <span>Learn More</span>
                         <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

@@ -38,6 +38,9 @@ export function Reveal({
         return { x: distance, opacity: 0 };
       case 'right':
         return { x: -distance, opacity: 0 };
+      case 'scale':
+        return { scale: 0.96, opacity: 0 };
+      case 'fade':
       case 'none':
       default:
         return { opacity: 0 };

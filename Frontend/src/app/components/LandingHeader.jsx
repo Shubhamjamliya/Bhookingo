@@ -96,14 +96,18 @@ export default function LandingHeader() {
                 className="relative px-3.5 py-2 rounded-full transition-colors group"
                 style={{ fontFamily: 'var(--font-ui)' }}
               >
-                <span className={`transition-colors ${isActive ? 'text-[#E0332F] font-bold' : 'text-slate-700 group-hover:text-[#E0332F]'}`}>
+                <motion.span
+                  whileHover={{ y: -1 }}
+                  transition={{ duration: 0.18 }}
+                  className={`inline-block transition-colors ${isActive ? 'text-[#E0332F] font-bold' : 'text-slate-700 group-hover:text-[#E0332F]'}`}
+                >
                   {link.name}
-                </span>
+                </motion.span>
                 
-                {/* Active or Hover Animated Underline Indicator */}
+                {/* Active Animated Navigation Indicator */}
                 {isActive ? (
                   <motion.span
-                    layoutId="landingNavUnderline"
+                    layoutId="landingNavIndicator"
                     className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#E0332F] rounded-full"
                     transition={{ type: "spring", stiffness: 350, damping: 30 }}
                   />
@@ -117,9 +121,9 @@ export default function LandingHeader() {
         <div className="hidden sm:flex items-center gap-3">
           <motion.button
             onClick={handleAuthClick}
-            whileHover={{ y: -2 }}
+            whileHover={{ y: -2, scale: 1.015 }}
             whileTap={{ scale: 0.97 }}
-            className="relative group overflow-hidden rounded-full bg-gradient-to-r from-[#E0332F] via-[#D62828] to-[#C72420] text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 shadow-[0_4px_15px_rgba(224,51,47,0.3)] hover:shadow-[0_8px_25px_rgba(224,51,47,0.5)] transition-all flex items-center gap-2 cursor-pointer"
+            className="relative group overflow-hidden rounded-full bg-gradient-to-r from-[#E0332F] via-[#D62828] to-[#C72420] text-white text-xs font-bold uppercase tracking-wider px-5 py-2.5 shadow-[0_4px_15px_rgba(224,51,47,0.3)] hover:shadow-[0_8px_25px_rgba(224,51,47,0.55)] transition-all flex items-center gap-2 cursor-pointer"
             style={{ fontFamily: 'var(--font-ui)' }}
           >
             <Smartphone className="w-3.5 h-3.5 transition-transform duration-200 group-hover:scale-110" />

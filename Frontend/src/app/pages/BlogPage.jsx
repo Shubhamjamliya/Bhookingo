@@ -302,23 +302,37 @@ export default function BlogPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
                   {/* Left Content Column */}
                   <div className="lg:col-span-7 flex flex-col justify-center">
-                    <div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.45, ease: EASING.smooth }}
+                    >
                       <span className="landing-hero-badge">
                         Bhookingo Blog
                       </span>
-                    </div>
+                    </motion.div>
 
-                    <div className="mt-6 sm:mt-7">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.10, ease: EASING.smooth }}
+                      className="mt-6 sm:mt-7"
+                    >
                       <h1 className="landing-hero-h1 max-w-2xl">
                         Highway Stories & <span className="text-[color:var(--landing-accent)]">Travel Guides</span>
                       </h1>
                       <p className="landing-hero-body mt-4 sm:mt-5">
                         Insider tips, food recommendations, and road-trip guides for Indian highway travelers.
                       </p>
-                    </div>
+                    </motion.div>
 
                     {/* Search Bar & Action Input */}
-                    <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 mt-7 sm:mt-8 max-w-xl">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.20, ease: EASING.smooth }}
+                      className="flex flex-wrap items-center gap-3.5 sm:gap-4 mt-7 sm:mt-8 max-w-xl"
+                    >
                       <div className="flex-1 min-w-[240px] relative font-[var(--font-ui)]">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
                         <input
@@ -329,10 +343,15 @@ export default function BlogPage() {
                           className="w-full rounded-full border border-white/20 bg-white/10 pl-11 pr-4 py-3.5 text-xs sm:text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[color:var(--landing-accent)] backdrop-blur-md transition-all shadow-inner"
                         />
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Standardized Three Story Pillar Cards in Hero */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 sm:mt-9">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.32, ease: EASING.smooth }}
+                      className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 sm:mt-9"
+                    >
                       {[
                         { value: 'Verified Dhabas', label: 'Curated taste & hygiene tests across NH corridors' },
                         { value: 'Pre-Order Hacks', label: 'Save 45+ minutes on long distance drives' },
@@ -346,11 +365,16 @@ export default function BlogPage() {
                           <p className="landing-pillar-body">{item.label}</p>
                         </div>
                       ))}
-                    </div>
+                    </motion.div>
                   </div>
 
                   {/* Right Hero: Featured Story Spotlight Card */}
-                  <div className="lg:col-span-5 lg:pl-2 xl:pl-4 mt-8 lg:mt-0">
+                  <motion.div
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: 0.35, ease: EASING.smooth }}
+                    className="lg:col-span-5 lg:pl-2 xl:pl-4 mt-8 lg:mt-0"
+                  >
                     <div className="landing-showcase-panel-outer">
                       <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[rgba(214,40,40,0.22)] blur-3xl" />
                       <div className="pointer-events-none absolute -left-8 bottom-8 h-24 w-24 rounded-full bg-white/8 blur-2xl" />
@@ -413,7 +437,7 @@ export default function BlogPage() {
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </div>
             </section>
@@ -471,94 +495,123 @@ export default function BlogPage() {
                     </p>
                   </div>
 
-                  {/* Category Filter Pills */}
+                  {/* Category Filter Pills with layoutId */}
                   <div className="flex flex-wrap items-center gap-2">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setActiveCategory(cat)}
-                        className={`rounded-full px-4 py-2 text-xs font-extrabold tracking-wide transition-all ${
-                          activeCategory === cat
-                            ? 'bg-[#1b130f] text-white shadow-md'
-                            : 'border border-[color:var(--landing-line)] bg-white text-[color:var(--landing-text-muted)] hover:border-[#1b130f]/30 hover:text-[color:var(--landing-text)]'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
+                    {categories.map((cat) => {
+                      const isActive = activeCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setActiveCategory(cat)}
+                          className={`relative rounded-full px-4.5 py-2 text-xs font-extrabold tracking-wide transition-colors cursor-pointer select-none ${
+                            isActive
+                              ? 'text-white'
+                              : 'text-[color:var(--landing-text-muted)] hover:text-[color:var(--landing-text)]'
+                          }`}
+                        >
+                          {isActive && (
+                            <motion.div
+                              layoutId="blogFilterActive"
+                              className="absolute inset-0 rounded-full bg-[#1b130f] shadow-md -z-10"
+                              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                            />
+                          )}
+                          {!isActive && (
+                            <span className="absolute inset-0 rounded-full border border-[color:var(--landing-line)] bg-white -z-20" />
+                          )}
+                          <span className="relative z-10">{cat}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* 3 Full-Image Cards (Image 3 Style with Avatar, Name, Date below Name) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {filteredPosts.map((post) => (
-                    <article
-                      key={post.id}
-                      onClick={() => setSelectedPostId(post.id)}
-                      className="group relative h-[480px] sm:h-[520px] rounded-[32px] overflow-hidden border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.18)] cursor-pointer transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_70px_rgba(214,40,40,0.22)]"
-                    >
-                      {/* Full-bleed Background Image with Hover Zoom */}
-                      <img
-                        src={post.img}
-                        alt={post.title}
-                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
-                      />
-
-                      {/* Multi-Layer Cinematic Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0e0a08]/98 via-[#0e0a08]/60 to-black/20" />
-
-                      {/* Top Badges (Category & Highlight) */}
-                      <div className="absolute top-5 left-5 right-5 flex items-center justify-between z-10">
-                        <span className="rounded-full border border-white/25 bg-white/20 px-3.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-white shadow-md backdrop-blur-md">
-                          {post.highlight}
-                        </span>
-
-                        <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-bold text-gray-200 backdrop-blur-md">
-                          {post.readTime}
-                        </span>
-                      </div>
-
-                      {/* Bottom Content Area */}
-                      <div className="absolute inset-x-0 bottom-0 p-6 sm:p-7 flex flex-col justify-end z-10 space-y-4">
-                        {/* Category Label */}
-                        <div>
-                          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#f2b2b2]">
-                            {post.category}
-                          </span>
-                          <h2 className="pt-1.5 font-[var(--font-display)] text-xl sm:text-2xl font-black text-white leading-snug group-hover:text-[#ffe5e5] transition-colors">
-                            {post.title}
-                          </h2>
-                          <p className="pt-2 text-xs sm:text-sm text-[#d8c7bb] leading-relaxed line-clamp-2">
-                            {post.excerpt}
-                          </p>
+                {/* 3 Full-Image 3-Layer Editorial Cards */}
+                <motion.div
+                  layout
+                  className="grid grid-cols-1 md:grid-cols-3 gap-8"
+                >
+                  <AnimatePresence mode="popLayout">
+                    {filteredPosts.map((post, idx) => (
+                      <motion.article
+                        layout
+                        key={post.id}
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.96 }}
+                        transition={{ duration: 0.35, ease: EASING.smooth }}
+                        whileHover={{ y: -6 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => setSelectedPostId(post.id)}
+                        className={`group relative h-[480px] sm:h-[520px] rounded-[32px] overflow-hidden border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.18)] cursor-pointer select-none transition-shadow duration-500 hover:shadow-[0_30px_70px_rgba(214,40,40,0.22)] ${
+                          idx === 0 && activeCategory === 'All' ? 'ring-1 ring-[color:var(--landing-accent)]/30' : ''
+                        }`}
+                      >
+                        {/* Layer 1: Parallax Zoom Image */}
+                        <div className="absolute inset-0 overflow-hidden">
+                          <img
+                            src={post.img}
+                            alt={post.title}
+                            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-108"
+                          />
                         </div>
 
-                        {/* Author Info Bar (Avatar on Left, Name on Top, Date Below Name) */}
-                        <div className="pt-4 border-t border-white/15 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={post.authorAvatar}
-                              alt={post.author}
-                              className="h-10 w-10 rounded-full object-cover border-2 border-white/30 shadow-md group-hover:border-[color:var(--landing-accent)] transition-colors"
-                            />
-                            <div className="flex flex-col">
-                              <span className="text-xs font-bold text-white leading-tight group-hover:text-[color:var(--landing-accent-soft)] transition-colors">
-                                By • {post.author}
-                              </span>
-                              <span className="text-[11px] font-medium text-[#d8c7bb] pt-0.5">
-                                {post.date}
-                              </span>
+                        {/* Layer 2: Multi-Layer Cinematic Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0a08]/98 via-[#0e0a08]/60 to-black/25 transition-opacity duration-300 group-hover:opacity-90" />
+
+                        {/* Top Badges (Category & Highlight) */}
+                        <div className="absolute top-5 left-5 right-5 flex items-center justify-between z-10">
+                          <span className="rounded-full border border-white/25 bg-white/20 px-3.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-white shadow-md backdrop-blur-md">
+                            {post.highlight}
+                          </span>
+
+                          <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[10px] font-bold text-gray-200 backdrop-blur-md">
+                            {post.readTime}
+                          </span>
+                        </div>
+
+                        {/* Layer 3: Bottom Content Area with Smooth Elevation on Hover */}
+                        <div className="absolute inset-x-0 bottom-0 p-6 sm:p-7 flex flex-col justify-end z-10 space-y-4 transition-transform duration-300 ease-out group-hover:-translate-y-1">
+                          {/* Category Label */}
+                          <div>
+                            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#f2b2b2]">
+                              {post.category}
+                            </span>
+                            <h2 className="pt-1.5 font-[var(--font-display)] text-xl sm:text-2xl font-black text-white leading-snug group-hover:text-[#ffe5e5] transition-colors">
+                              {post.title}
+                            </h2>
+                            <p className="pt-2 text-xs sm:text-sm text-[#d8c7bb] leading-relaxed line-clamp-2">
+                              {post.excerpt}
+                            </p>
+                          </div>
+
+                          {/* Author Info Bar */}
+                          <div className="pt-4 border-t border-white/15 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={post.authorAvatar}
+                                alt={post.author}
+                                className="h-10 w-10 rounded-full object-cover border-2 border-white/30 shadow-md group-hover:border-[color:var(--landing-accent)] group-hover:scale-105 transition-all duration-300"
+                              />
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold text-white leading-tight group-hover:text-[color:var(--landing-accent-soft)] transition-colors">
+                                  By • {post.author}
+                                </span>
+                                <span className="text-[11px] font-medium text-[#d8c7bb] pt-0.5">
+                                  {post.date}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="h-9 w-9 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white group-hover:bg-[color:var(--landing-accent)] transition-colors">
+                              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                             </div>
                           </div>
-
-                          <div className="h-9 w-9 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white group-hover:bg-[color:var(--landing-accent)] transition-colors">
-                            <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                          </div>
                         </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                      </motion.article>
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
               </div>
             </section>
 

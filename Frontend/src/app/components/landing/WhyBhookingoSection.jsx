@@ -26,11 +26,12 @@ export default function WhyBhookingoSection() {
   const shouldReduceMotion = useReducedMotionSafe();
 
   return (
-    <section className="py-20 md:py-28 bg-[#FAF8F5] border-y border-slate-200/80 relative overflow-hidden">
+    <section className="py-20 md:py-28 bg-[linear-gradient(180deg,#fff5f4_0%,#fef0ee_45%,#fae2df_100%)] border-y border-[color:var(--landing-line)] relative overflow-hidden">
       {/* Decorative ambient light */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-red-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="pointer-events-none absolute -right-20 top-1/4 h-96 w-96 rounded-full bg-[rgba(224,51,47,0.08)] blur-3xl" />
+      <div className="pointer-events-none absolute -left-20 bottom-1/4 h-96 w-96 rounded-full bg-[rgba(244,63,94,0.06)] blur-3xl" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Heading */}
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
@@ -83,7 +84,7 @@ export default function WhyBhookingoSection() {
               damping: 20,
               delay: 0.15
             }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#FAF8F5] bg-slate-950 text-sm font-bold text-white shadow-2xl shadow-black/30"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 hidden md:flex h-14 w-14 items-center justify-center rounded-full border-4 border-[#fff5f4] bg-slate-950 text-sm font-bold text-white shadow-2xl shadow-black/30"
             style={{ fontFamily: 'var(--font-ui)' }}
           >
             <span className="tracking-wider">VS</span>

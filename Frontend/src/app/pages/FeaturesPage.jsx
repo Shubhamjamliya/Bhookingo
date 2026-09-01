@@ -26,6 +26,205 @@ import PageTransition from '@/shared/components/motion/PageTransition';
 import { EASING, MOTION_RULES } from '@/shared/motion/tokens';
 import { useReducedMotionSafe } from '@/shared/motion/useReducedMotionSafe';
 
+// Reusable Interactive Feature Card with 3D Tilt, Cursor Spotlight, SVG Highway Route, and Micro-Motion
+function FeatureCard({
+  feature,
+  index,
+  isSelected,
+  onSelect,
+  onExplore,
+  shouldReduceMotion
+}) {
+  const isFirstCard = index === 0;
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0, active: false });
+  const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0 });
+
+  const handleMouseMove = (e) => {
+    if (shouldReduceMotion || (typeof window !== 'undefined' && window.innerWidth < 768)) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setMousePos({ x, y, active: true });
+
+    const maxTilt = 3.5;
+    const rotateY = ((x / rect.width) - 0.5) * (maxTilt * 2);
+    const rotateX = ((y / rect.height) - 0.5) * -(maxTilt * 2);
+    setTilt({ rotateX, rotateY });
+  };
+
+  const handleMouseLeave = () => {
+    setMousePos({ x: 0, y: 0, active: false });
+    setTilt({ rotateX: 0, rotateY: 0 });
+  };
+
+  // Feature-specific micro-icon animations on hover
+  const renderIconMicroMotion = () => {
+    switch (index) {
+      case 0: // Forward-Only Highway (MapPin)
+        return (
+          <div className="relative flex items-center justify-center">
+            <span className="absolute -inset-1.5 rounded-full bg-[#E0332F]/20 animate-ping pointer-events-none opacity-50" />
+            <MapPin className="h-6 w-6 transition-transform duration-300 group-hover:scale-110 text-[#E0332F]" />
+          </div>
+        );
+      case 1: // Pre-ordering (Clock)
+        return (
+          <Clock className="h-6 w-6 transition-transform duration-300 group-hover:rotate-45 text-[#EA580C]" />
+        );
+      case 2: // Verified Hygiene (Utensils)
+        return (
+          <Utensils className="h-6 w-6 transition-transform duration-300 group-hover:-rotate-12 group-hover:scale-110 text-emerald-600" />
+        );
+      case 3: // Clean Washroom (ShieldCheck)
+        return (
+          <ShieldCheck className="h-6 w-6 transition-transform duration-300 group-hover:scale-110 text-teal-700" />
+        );
+      case 4: // Parking (ParkingCircle)
+        return (
+          <ParkingCircle className="h-6 w-6 transition-transform duration-300 group-hover:-translate-y-1 text-amber-600" />
+        );
+      case 5: // EV Charging (Zap)
+        return (
+          <Zap className="h-6 w-6 transition-transform duration-300 group-hover:scale-115 text-purple-600 group-hover:drop-shadow-[0_0_8px_rgba(147,51,234,0.4)]" />
+        );
+      case 6: // Reviews (Star)
+        return (
+          <Star className="h-6 w-6 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 text-yellow-600" />
+        );
+      case 7: // Payment (CreditCard)
+        return (
+          <CreditCard className="h-6 w-6 transition-transform duration-300 group-hover:translate-x-1 text-[#E0332F]" />
+        );
+      default: {
+        const IconComponent = feature.icon;
+        return <IconComponent className="h-6 w-6" />;
+      }
+    }
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 24, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      transition={{ duration: 0.4, ease: EASING.smooth }}
+      whileHover={{ y: -8, scale: 1.015 }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={() => onSelect(index)}
+      style={{
+        transformStyle: 'preserve-3d',
+        transform: `perspective(1000px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg)`
+      }}
+      className={`group relative rounded-[28px] p-6.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none overflow-hidden ${
+        isSelected
+          ? 'border-2 border-[color:var(--landing-accent)] bg-gradient-to-b from-[#FFFDF9] via-[#FFFAF7] to-[#FFF5F2] text-[color:var(--landing-text)] shadow-[0_22px_50px_rgba(224,51,47,0.14)]'
+          : isFirstCard
+          ? 'border border-[color:var(--landing-accent)]/35 bg-gradient-to-b from-[#FFFDF9] via-[#FFFAF7] to-[#FFF6F3] text-[color:var(--landing-text)] shadow-[0_14px_36px_rgba(224,51,47,0.07)] hover:border-[color:var(--landing-accent)]/60 hover:shadow-[0_22px_50px_rgba(224,51,47,0.12)]'
+          : 'border border-[color:var(--landing-line)] bg-white/95 text-[color:var(--landing-text)] shadow-[0_10px_30px_rgba(71,43,24,0.04)] hover:shadow-[0_20px_45px_rgba(224,51,47,0.10)] hover:border-[#d62828]/40'
+      }`}
+    >
+      {/* Mouse-Following Radial Spotlight */}
+      {mousePos.active && !shouldReduceMotion && (
+        <div
+          className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(280px circle at ${mousePos.x}px ${mousePos.y}px, rgba(224, 51, 47, 0.08), transparent 70%)`
+          }}
+        />
+      )}
+
+      {/* Featured Card Decorative Animated Highway Route Graphic */}
+      {(isFirstCard || isSelected) && (
+        <div className="pointer-events-none absolute -right-2 top-2 w-36 h-28 opacity-25 overflow-hidden -z-0">
+          <svg className="w-full h-full" viewBox="0 0 140 110" fill="none">
+            <path
+              d="M 10,95 Q 65,85 75,45 T 130,15"
+              stroke="#E0332F"
+              strokeWidth="2.5"
+              strokeDasharray="4 4"
+              className="animate-road-dash"
+            />
+            {/* Start location marker */}
+            <circle cx="10" cy="95" r="3.5" fill="#E0332F" />
+            <circle cx="10" cy="95" r="7" stroke="#E0332F" strokeWidth="1" opacity="0.4" />
+            {/* Mid waypoint */}
+            <circle cx="75" cy="45" r="2.5" fill="#E0332F" />
+            {/* Destination / Restaurant Pin */}
+            <circle cx="130" cy="15" r="4" fill="#E0332F" />
+            <circle cx="130" cy="15" r="8" stroke="#E0332F" strokeWidth="1" opacity="0.5" />
+          </svg>
+        </div>
+      )}
+
+      {/* Top Accent & Icon */}
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center justify-between">
+          <div
+            className={`flex h-13 w-13 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-108 group-hover:-rotate-2 ${
+              isSelected
+                ? 'bg-[#ffebee] text-[#E0332F] shadow-xs'
+                : isFirstCard
+                ? 'bg-[#fff1f1] text-[#E0332F] shadow-xs border border-red-100'
+                : `${feature.color} shadow-xs`
+            }`}
+          >
+            {renderIconMicroMotion()}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {isSelected && (
+              <span className="flex h-2 w-2 rounded-full bg-[color:var(--landing-accent)] animate-pulse" />
+            )}
+            <span
+              className={`rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider font-[var(--font-ui)] ${
+                isSelected || isFirstCard
+                  ? 'bg-[#ffe5e5] text-[#d62828]'
+                  : feature.badgeColor
+              }`}
+            >
+              {feature.tag}
+            </span>
+          </div>
+        </div>
+
+        {/* Title & Description */}
+        <div className="space-y-2 pt-2">
+          <h3
+            className="font-[var(--font-ui)] text-lg font-bold tracking-tight text-[color:var(--landing-text)] leading-snug transition-transform duration-300 group-hover:translate-x-1"
+          >
+            {feature.title}
+          </h3>
+          <p
+            className="font-[var(--font-ui)] text-xs sm:text-sm leading-relaxed text-[color:var(--landing-text-muted)] transition-opacity duration-300"
+          >
+            {feature.desc}
+          </p>
+        </div>
+      </div>
+
+      {/* Bottom Action Button with Animated Arrow */}
+      <div className="relative z-10 pt-6 mt-4 border-t border-[color:var(--landing-line)]">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onExplore(index);
+          }}
+          className={`w-full flex items-center justify-between rounded-full px-5 py-3 text-xs font-extrabold uppercase tracking-[0.14em] transition-all duration-300 active:scale-95 cursor-pointer font-[var(--font-ui)] ${
+            isSelected
+              ? 'bg-[color:var(--landing-accent)] text-white shadow-md'
+              : 'bg-[#FAF7F4] text-[#1B130E] border border-[color:var(--landing-line)] group-hover:bg-[color:var(--landing-accent)] group-hover:text-white group-hover:border-[color:var(--landing-accent)] shadow-xs'
+          }`}
+        >
+          <span>{isSelected ? 'Selected' : 'Explore Feature'}</span>
+          <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-1.5" />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function FeaturesPage() {
   const navigate = useNavigate();
   const shouldReduceMotion = useReducedMotionSafe();
@@ -362,8 +561,12 @@ export default function FeaturesPage() {
         {/* ========================================================================= */}
         {/* MAIN FEATURES CATALOG (IMAGE 3 STYLING WITH BHOOKINGO THEME)             */}
         {/* ========================================================================= */}
-        <section id="features-catalog" className="py-16 md:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <section id="features-catalog" className="relative overflow-hidden bg-[linear-gradient(180deg,#fff9f7_0%,#fcf5f0_45%,#f8ede4_100%)] border-b border-[color:var(--landing-line)] py-16 md:py-24">
+          {/* Atmospheric Glow Highlights */}
+          <div className="pointer-events-none absolute -right-20 top-1/4 h-96 w-96 rounded-full bg-[rgba(224,51,47,0.06)] blur-3xl" />
+          <div className="pointer-events-none absolute -left-20 bottom-1/4 h-96 w-96 rounded-full bg-[rgba(245,158,11,0.05)] blur-3xl" />
+
+          <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {/* Top Section Header (Inspired by Image 3) */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-12 border-b border-[color:var(--landing-line)]">
               <div className="max-w-2xl space-y-3">
@@ -374,20 +577,20 @@ export default function FeaturesPage() {
                   Built for Highway Journeys,
                   <span className="text-[color:var(--landing-accent)]"> Not City Guesswork</span>
                 </h2>
-                <p className="text-base leading-7 text-[color:var(--landing-text-muted)]">
+                <p className="text-base font-bold leading-7 text-[color:var(--landing-text-muted)]">
                   Our commitment to your road experience goes beyond simple food listings. Discover the unique features that set us apart and ensure a seamless travel stop.
                 </p>
               </div>
 
-              {/* Category Filter Pills with layoutId */}
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Category Filter Pills Container */}
+              <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-full bg-white/90 border border-[color:var(--landing-line)] shadow-[0_4px_16px_rgba(71,43,24,0.06)] backdrop-blur-md">
                 {categories.map((cat) => {
                   const isActive = activeCategory === cat;
                   return (
                     <button
                       key={cat}
                       onClick={() => setActiveCategory(cat)}
-                      className={`relative rounded-full px-4.5 py-2 text-xs font-extrabold tracking-wide transition-colors cursor-pointer select-none ${
+                      className={`relative rounded-full px-5 py-2 text-xs font-extrabold tracking-wide transition-colors cursor-pointer select-none ${
                         isActive
                           ? 'text-white'
                           : 'text-[color:var(--landing-text-muted)] hover:text-[color:var(--landing-text)]'
@@ -396,12 +599,9 @@ export default function FeaturesPage() {
                       {isActive && (
                         <motion.div
                           layoutId="featureFilterActive"
-                          className="absolute inset-0 rounded-full bg-[#1b130f] shadow-md -z-10"
-                          transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                          className="absolute inset-0 rounded-full bg-[#1b130f] shadow-md"
+                          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                         />
-                      )}
-                      {!isActive && (
-                        <span className="absolute inset-0 rounded-full border border-[color:var(--landing-line)] bg-white -z-20" />
                       )}
                       <span className="relative z-10">{cat}</span>
                     </button>
@@ -419,96 +619,20 @@ export default function FeaturesPage() {
                 {filteredFeatures.map((feature) => {
                   const originalIdx = featuresList.findIndex(f => f.title === feature.title);
                   const isSelected = selectedFeatureIdx === originalIdx;
-                  const IconComponent = feature.icon;
-                  const isFirstHighlighted = originalIdx === 0 && activeCategory === 'All';
 
                   return (
-                    <motion.div
-                      layout
+                    <FeatureCard
                       key={feature.title}
-                      initial={{ opacity: 0, scale: 0.96 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.96 }}
-                      transition={{ duration: 0.35, ease: EASING.smooth }}
-                      whileHover={{ y: -6, scale: 1.01 }}
-                      onClick={() => setSelectedFeatureIdx(originalIdx)}
-                      className={`group relative rounded-[28px] p-6.5 transition-all duration-300 flex flex-col justify-between cursor-pointer select-none ${
-                        isSelected
-                          ? 'ring-2 ring-[color:var(--landing-accent)] bg-white text-[color:var(--landing-text)] shadow-[0_20px_45px_rgba(224,51,47,0.14)]'
-                          : isFirstHighlighted
-                          ? 'border border-[#2a1c17] bg-[#1a120f] text-white shadow-[0_22px_55px_rgba(26,18,15,0.22)]'
-                          : 'border border-[color:var(--landing-line)] bg-white text-[color:var(--landing-text)] shadow-[0_12px_32px_rgba(71,43,24,0.05)] hover:shadow-[0_20px_45px_rgba(214,40,40,0.1)] hover:border-[#d62828]/40'
-                      }`}
-                    >
-                      {/* Top Accent & Icon */}
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div
-                            className={`flex h-13 w-13 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-106 group-hover:-rotate-2 ${
-                              isFirstHighlighted && !isSelected
-                                ? 'bg-[color:var(--landing-accent)] text-white shadow-[0_8px_20px_rgba(214,40,40,0.35)]'
-                                : `${feature.color} shadow-xs`
-                            }`}
-                          >
-                            <IconComponent className="h-6 w-6" />
-                          </div>
-
-                          <div className="flex items-center gap-1.5">
-                            {isSelected && (
-                              <span className="flex h-2 w-2 rounded-full bg-[color:var(--landing-accent)] animate-pulse" />
-                            )}
-                            <span
-                              className={`rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider ${
-                                isFirstHighlighted && !isSelected
-                                  ? 'bg-white/12 text-[#f2b2b2]'
-                                  : feature.badgeColor
-                              }`}
-                            >
-                              {feature.tag}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Title & Description */}
-                        <div className="space-y-2 pt-2">
-                          <h3
-                            className={`font-[var(--font-display)] text-lg font-black tracking-tight leading-snug ${
-                              isFirstHighlighted && !isSelected ? 'text-white' : 'text-[color:var(--landing-text)]'
-                            }`}
-                          >
-                            {feature.title}
-                          </h3>
-                          <p
-                            className={`text-xs sm:text-sm leading-relaxed ${
-                              isFirstHighlighted && !isSelected ? 'text-[#ddcec3]' : 'text-[color:var(--landing-text-muted)]'
-                            }`}
-                          >
-                            {feature.desc}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Bottom Action Button with Animated Arrow */}
-                      <div className="pt-6 mt-4 border-t border-current/10">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedFeatureIdx(originalIdx);
-                            openUserFlow();
-                          }}
-                          className={`w-full flex items-center justify-between rounded-full px-5 py-3 text-xs font-extrabold uppercase tracking-[0.14em] transition-all duration-300 active:scale-95 cursor-pointer ${
-                            isSelected
-                              ? 'bg-[color:var(--landing-accent)] text-white shadow-md'
-                              : isFirstHighlighted
-                              ? 'bg-white text-[#1a120f] hover:bg-[color:var(--landing-accent)] hover:text-white shadow-md'
-                              : 'bg-[#1b130f] text-white hover:bg-[color:var(--landing-accent)] shadow-sm'
-                          }`}
-                        >
-                          <span>{isSelected ? 'Selected' : 'Explore Feature'}</span>
-                          <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-1.5" />
-                        </button>
-                      </div>
-                    </motion.div>
+                      feature={feature}
+                      index={originalIdx}
+                      isSelected={isSelected}
+                      onSelect={(idx) => setSelectedFeatureIdx(idx)}
+                      onExplore={() => {
+                        setSelectedFeatureIdx(originalIdx);
+                        openUserFlow();
+                      }}
+                      shouldReduceMotion={shouldReduceMotion}
+                    />
                   );
                 })}
               </AnimatePresence>

@@ -123,17 +123,17 @@ export default function HowItWorksSection() {
                     key={idx}
                     variants={cardVariants}
                     whileHover={{ y: -MOTION_RULES.maxHoverLift }}
-                    className="relative group rounded-3xl border border-slate-200/80 bg-white p-7 shadow-[0_12px_35px_rgba(0,0,0,0.04)] transition-all hover:border-[#E0332F]/30 hover:shadow-[0_20px_45px_rgba(224,51,47,0.12)] flex flex-col justify-between"
+                    className="relative group rounded-3xl border border-red-100/80 bg-[linear-gradient(180deg,#fff9f8_0%,#fcf5f2_50%,#f8ede8_100%)] p-7 shadow-[0_14px_35px_rgba(71,43,24,0.05)] transition-all duration-300 hover:border-[#E0332F]/40 hover:shadow-[0_22px_50px_rgba(224,51,47,0.12)] flex flex-col justify-between"
                   >
                     {/* Top Step Number & Badge */}
                     <div className="flex items-center justify-between mb-5">
                       <div className="relative">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-50 to-red-100/70 border border-red-200/60 flex items-center justify-center text-[#E0332F] group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-[#E0332F] group-hover:text-white transition-all duration-300 shadow-sm">
+                        <div className="w-14 h-14 rounded-2xl bg-[#18110D] border border-[#2B1E17] flex items-center justify-center text-white shadow-md group-hover:scale-110 group-hover:-rotate-6 group-hover:bg-[#E0332F] group-hover:text-white transition-all duration-300">
                           <step.icon className="w-6 h-6 transition-transform duration-300 group-hover:rotate-6" />
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 group-hover:bg-red-50 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/90 border border-red-100/80 text-slate-700 group-hover:bg-red-50 group-hover:text-[#E0332F] transition-colors shadow-2xs" style={{ fontFamily: 'var(--font-ui)' }}>
                           {step.badge}
                         </span>
                         <span className="text-xl font-bold text-slate-300 group-hover:text-[#E0332F] transition-colors" style={{ fontFamily: 'var(--font-ui)' }}>
@@ -153,7 +153,7 @@ export default function HowItWorksSection() {
                     </div>
 
                     {/* Subtle bottom progress indicator */}
-                    <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400" style={{ fontFamily: 'var(--font-ui)' }}>
+                    <div className="mt-5 pt-4 border-t border-red-100/70 flex items-center justify-between text-xs font-semibold text-slate-400" style={{ fontFamily: 'var(--font-ui)' }}>
                       <span className="flex items-center gap-1.5 text-emerald-600">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Instant Sync</span>

@@ -478,8 +478,12 @@ export default function BlogPage() {
             {/* ========================================================================= */}
             {/* BLOG POSTS FULL-IMAGE CARDS (MATCHING IMAGE 3 REFERENCE)                  */}
             {/* ========================================================================= */}
-            <section id="articles-grid" className="py-16 md:py-24">
-              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
+            <section id="articles-grid" className="relative overflow-hidden bg-[linear-gradient(180deg,#fff9f7_0%,#fcf5f0_45%,#f8ede4_100%)] border-b border-[color:var(--landing-line)] py-16 md:py-24">
+              {/* Atmospheric Glow Highlights */}
+              <div className="pointer-events-none absolute -right-20 top-1/4 h-96 w-96 rounded-full bg-[rgba(224,51,47,0.06)] blur-3xl" />
+              <div className="pointer-events-none absolute -left-20 bottom-1/4 h-96 w-96 rounded-full bg-[rgba(245,158,11,0.05)] blur-3xl" />
+
+              <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
                 {/* Header & Category Filters */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-[color:var(--landing-line)]">
                   <div className="max-w-2xl space-y-3">
@@ -495,15 +499,15 @@ export default function BlogPage() {
                     </p>
                   </div>
 
-                  {/* Category Filter Pills with layoutId */}
-                  <div className="flex flex-wrap items-center gap-2">
+                  {/* Category Filter Pills Container */}
+                  <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-full bg-white/90 border border-[color:var(--landing-line)] shadow-[0_4px_16px_rgba(71,43,24,0.06)] backdrop-blur-md">
                     {categories.map((cat) => {
                       const isActive = activeCategory === cat;
                       return (
                         <button
                           key={cat}
                           onClick={() => setActiveCategory(cat)}
-                          className={`relative rounded-full px-4.5 py-2 text-xs font-extrabold tracking-wide transition-colors cursor-pointer select-none ${
+                          className={`relative rounded-full px-5 py-2 text-xs font-extrabold tracking-wide transition-colors cursor-pointer select-none ${
                             isActive
                               ? 'text-white'
                               : 'text-[color:var(--landing-text-muted)] hover:text-[color:var(--landing-text)]'
@@ -512,12 +516,9 @@ export default function BlogPage() {
                           {isActive && (
                             <motion.div
                               layoutId="blogFilterActive"
-                              className="absolute inset-0 rounded-full bg-[#1b130f] shadow-md -z-10"
-                              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                              className="absolute inset-0 rounded-full bg-[#1b130f] shadow-md"
+                              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                             />
-                          )}
-                          {!isActive && (
-                            <span className="absolute inset-0 rounded-full border border-[color:var(--landing-line)] bg-white -z-20" />
                           )}
                           <span className="relative z-10">{cat}</span>
                         </button>

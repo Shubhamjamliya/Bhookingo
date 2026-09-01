@@ -367,8 +367,12 @@ export default function ForRestaurantsPage() {
         {/* ========================================================================= */}
         {/* WHY JOIN BHOOKINGO NETWORK (UPGRADED BENEFIT CARDS)                      */}
         {/* ========================================================================= */}
-        <section id="partner-benefits" className="py-16 md:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
+        <section id="partner-benefits" className="relative overflow-hidden bg-[linear-gradient(180deg,#fff5f4_0%,#fef0ee_45%,#fae2df_100%)] border-b border-[color:var(--landing-line)] py-16 md:py-24">
+          {/* Shaded Red Atmospheric Glow Highlights */}
+          <div className="pointer-events-none absolute -right-20 top-1/4 h-96 w-96 rounded-full bg-[rgba(224,51,47,0.08)] blur-3xl" />
+          <div className="pointer-events-none absolute -left-20 bottom-1/4 h-96 w-96 rounded-full bg-[rgba(244,63,94,0.06)] blur-3xl" />
+
+          <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-[color:var(--landing-line)]">
               <div className="max-w-2xl space-y-3">
                 <span className="landing-section-label text-xs font-extrabold text-[color:var(--landing-accent)]">

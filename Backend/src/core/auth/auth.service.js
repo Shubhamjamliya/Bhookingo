@@ -874,10 +874,11 @@ export const deleteAccount = async (id, role) => {
 
   try {
     if (role === ROLES.USER) {
-      // Soft delete user: deactivate and pull tokens. 
-      // We DO NOT delete orders, transactions, or wallet history to preserve admin revenue data.
-      await FoodUser.updateOne({ _id: id }, { isActive: false, deletedAt: new Date(), fcmTokens: [], fcmTokenMobile: [] });
-      await FoodRefreshToken.deleteMany({ userId: id });
+      // Delete only the profile document. Related records are intentionally kept.
+      const deletedUser = await FoodUser.deleteOne({ _id: id });
+      if (deletedUser.deletedCount !== 1) {
+        throw new AuthError("User account not found");
+      }
     } else if (role === ROLES.RESTAURANT) {
       // Soft delete restaurant: mark as deleted.
       // We keep orders and transactions for admin analytics.

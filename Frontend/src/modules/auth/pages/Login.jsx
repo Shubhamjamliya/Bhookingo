@@ -975,7 +975,7 @@ export default function UnifiedOTPFastLogin() {
                 {", "}
                 <Link to="/user/profile/privacy" state={{ from: "/user/auth/login" }} className="text-[var(--primary)] hover:underline font-bold">Privacy Policy</Link>
                 {" & "}
-                <Link to="/food/user" className="text-[var(--primary)] hover:underline font-bold">Support</Link>
+                <Link to="/user/profile/support-info" state={{ from: "/user/auth/login" }} className="text-[var(--primary)] hover:underline font-bold">Support</Link>
               </div>
             </div>
 
